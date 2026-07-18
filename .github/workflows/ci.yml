@@ -1,0 +1,38 @@
+# ---
+# file: ci.yml
+# stack: nextjs
+# purpose: GitHub Actions CI — lint, typecheck, and test inside Docker
+# created-by: project-lead
+# ---
+
+name: CI
+
+on:
+  push:
+    branches: [main, "feature/**"]
+    paths-ignore:
+      - 'scrum-master/**'
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build containers
+        run: docker compose build
+
+      - name: Lint
+        run: docker compose run --rm web npx eslint . --max-warnings 0
+
+      - name: Type check
+        run: docker compose run --rm web npx tsc --noEmit
+
+      - name: Run tests with coverage
+        run: docker compose run --rm web npm test -- --coverage --coverageThreshold='{"global":{"branches":80,"functions":80,"lines":80}}'
+
+      - name: Teardown
+        if: always()
+        run: docker compose down -v
