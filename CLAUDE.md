@@ -1,16 +1,36 @@
 # earthandhoney
 
 ## Product Vision
-[Captured during standup — Project Lead will fill this in]
+A premium, gallery-first photography business website powered by a world-class lightweight **Gallery Engine**, combined with simple business workflow tools (leads, sessions, contracts, payments, client delivery).
+
+- The **Gallery Engine is the core IP** and must be built before any website pages. The gallery — not the image — is the primary content object; one reusable engine powers the homepage hero, portfolio, blog galleries, and client delivery. No separate image systems.
+- The public website's goal is **lead generation**, not gallery browsing. Every contact form and WhatsApp click captures a lead before anything else happens.
+- The platform is **not permanent photo storage**. Client lifecycle: Visitor → Lead → Booking → Contract → Payment → Session → temporary Gallery Delivery → Download → Archive. Clients do not live inside the platform.
+- The photographer manages everything through the CMS without developer assistance.
+- **Design template:** `public/photobuddy/` — the end product should look exactly like it (creative direction is already done; replace its pictures with our gallery concept). Its images (multiple dimensions) may be reused.
+- Full PRD: `/scrum-master/PRD.md`
 
 ## Product Pillars
-- [Pillar 1]
-- [Pillar 2]
-- [Pillar 3]
+1. **Gallery speed** — performance is a core feature; the gallery must feel instant (static generation + ISR, lazy/progressive loading, never load a full gallery upfront)
+2. **Image quality** — Sharp pipeline generating thumbnail/medium/large from originals stored in Cloudflare R2
+3. **Mobile-first experience** — touch navigation, swipe gestures, thumbnail drawer on tap; desktop adds hover previews; subtle black CSS gradient overlay on every gallery for the premium aesthetic
+4. **CMS simplicity** — Payload collections (Media, Galleries, Portfolio, Blog, Homepage, Testimonials, Packages, FAQ); blog posts use galleries, never featured images
+5. **Lead conversion** — contact form (Name, Email OR Phone, Photography Type, Preferred Date, Message) and WhatsApp lead-capture flow; no anonymous WhatsApp conversations
+6. **Customer workflow management** — lightweight dashboard (not a CRM): Leads, Clients, and Sessions as the central business object linking Contract → Payment → Gallery
 
 ## Technology Stack
 - Stack: nextjs
-- [Details captured during standup]
+- Frontend: Next.js App Router, TypeScript, React Server Components
+- Styling: Tailwind CSS + shadcn/ui
+- CMS: Payload CMS
+- Database: PostgreSQL (in Docker)
+- Storage: Cloudflare R2
+- Image processing: Sharp
+- Gallery viewer: PhotoSwipe
+- Auth: Better Auth
+- Email: Resend
+- Payments: Stripe Checkout (checkout/processing) + Invoice Ninja (invoices, receipts, balances — app displays status only, never recreates billing logic)
+- Contracts: Adobe Acrobat Sign (webhook-driven signing status, signed PDF stored)
 
 ## Docker Rules (ALL AGENTS MUST FOLLOW)
 - ALL services (databases, caches, queues) run INSIDE Docker containers
