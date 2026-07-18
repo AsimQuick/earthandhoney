@@ -1,0 +1,293 @@
+{
+  "sprint": "sprint-1",
+  "phase": "planning",
+  "goal": "Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.",
+  "reference_docs": [
+    "scrum-master/PRD.md",
+    "CLAUDE.md"
+  ],
+  "definition_of_done": [
+    "All ACs verified by CI",
+    "No critical defects",
+    "Coverage threshold met",
+    "Code file headers include metadata",
+    "All services run in Docker",
+    "retrospective.md updated"
+  ],
+  "stories": [
+    {
+      "id": "US-1",
+      "title": "Project foundation: Payload CMS + PostgreSQL running in Docker",
+      "status": "draft",
+      "priority": "high",
+      "dependencies": [],
+      "acceptance_criteria": [
+        {
+          "id": "1.1",
+          "text": "Payload CMS is integrated into the Next.js App Router project and its admin panel is reachable at /admin when the stack is running.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "1.2",
+          "text": "PostgreSQL runs as a service in docker-compose.yml; Payload connects to it via the Docker network hostname 'db' (not localhost) and runs its initial schema migration successfully.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "1.3",
+          "text": "The web app and database start together via `docker compose up -d`; no database or service is installed on the host machine.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "1.4",
+          "text": "All required config (database URL, Payload secret, R2 credentials) is read from environment variables and documented in .env.example with placeholder values.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "1.5",
+          "text": "Every new code file includes the project metadata front-matter header comment.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "Independently reviewed: all 5 ACs are objectively verifiable via automated checks (HTTP check on /admin, docker-compose service inspection, migration success logs, .env.example diff against required keys, header-comment lint/grep across new files). No vague language, no ambiguity about 'done,' and no scope conflict — foundation setup is explicitly this sprint's goal. No edits needed."
+    },
+    {
+      "id": "US-2",
+      "title": "Media system: Sharp image pipeline with Cloudflare R2 storage",
+      "status": "draft",
+      "priority": "high",
+      "dependencies": ["US-1"],
+      "acceptance_criteria": [
+        {
+          "id": "2.1",
+          "text": "A Payload 'Media' collection exists storing original file reference, alt text, and metadata; relationships/metadata live in Payload while binary files live in Cloudflare R2 (not in Postgres or the local filesystem in production).",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "2.2",
+          "text": "On upload, a Sharp pipeline generates three derivative sizes — thumbnail, medium, large — plus retains the original, and all four variants are persisted to R2.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "2.3",
+          "text": "Each Media record exposes the URLs/keys for original, thumbnail, medium and large variants so consumers can request the correct size.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "2.4",
+          "text": "Alt text is a required field on Media to support accessibility and SEO.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "2.5",
+          "text": "R2 credentials and bucket configuration are read from environment variables; a local/dev R2-compatible target may be used but no service is installed on the host.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "Independently reviewed: all 5 ACs are objectively verifiable (schema/collection inspection, upload-triggered pipeline test asserting exactly 4 persisted R2 objects — original/thumbnail/medium/large, field-presence checks for URLs/keys, required-field validation test for alt text, env-var/config inspection for R2 credentials with any dev-time R2-compatible target run as a Docker service, not host-installed). No scope issues — Media collection is explicitly in-scope. No edits needed."
+    },
+    {
+      "id": "US-3",
+      "title": "Gallery data model: reusable Galleries collection in Payload",
+      "status": "draft",
+      "priority": "high",
+      "dependencies": ["US-1", "US-2"],
+      "acceptance_criteria": [
+        {
+          "id": "3.1",
+          "text": "A Payload 'Galleries' collection exists as an independent, reusable object with fields: id, title, description, ordered images[] (relations to Media), cover image, and settings.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "3.2",
+          "text": "No CMS collection or code path other than Media and Galleries manages, uploads, or displays images — e.g. no per-page/per-post image-upload field or standalone image list duplicates what the Media + Galleries model already provides.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "3.3",
+          "text": "The photographer can upload images to a gallery, reorder them, remove them, and select a cover image entirely through the Payload admin UI without developer assistance.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "3.4",
+          "text": "Gallery 'settings' capture a display-mode configuration (e.g. slideshow, hover-preview, fullscreen, download, authentication toggles) so one gallery object can drive multiple display experiences.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "3.5",
+          "text": "Galleries are readable via Payload's API/local API so the gallery viewer components can consume them.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "Independently reviewed: AC-3.1, 3.3, 3.4, 3.5 are clear and testable via schema inspection, admin-UI e2e test, settings-field inspection, and API read test. AC-3.2 is phrased as a concrete, auditable negative check (no CMS collection/code path other than Media+Galleries manages images) rather than a vague design-principle restatement — confirmed this remains verifiable via codebase/schema audit. No scope issues; the Galleries collection is explicitly in-scope. No edits needed."
+    },
+    {
+      "id": "US-4",
+      "title": "Gallery Engine core components: container, main display, thumbnails, navigation, gradient overlay",
+      "status": "draft",
+      "priority": "high",
+      "dependencies": ["US-3"],
+      "acceptance_criteria": [
+        {
+          "id": "4.1",
+          "text": "A single reusable Gallery Engine component set renders any gallery: Gallery Container, Main Image Display, Thumbnail Preview strip, and Navigation Controls (next/previous).",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "4.2",
+          "text": "Every gallery display includes a subtle black CSS gradient overlay implemented purely in CSS (no image processing), applied consistently across displays.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "4.3",
+          "text": "Images render via Next.js Image with responsive srcset drawn from the thumbnail/medium/large variants, choosing an appropriate size per viewport.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "4.4",
+          "text": "The same engine is instantiated in at least two distinct display-mode contexts (e.g. a hero-mode instance and a portfolio-mode instance) on internal demo/test-harness routes — not linked from public navigation, and not backed by the out-of-scope Portfolio/Homepage CMS collections — and not the public marketing pages, which remain out of scope this sprint — driven purely by gallery settings, demonstrating reuse with no duplicated image systems. The real public pages will reuse this same engine unmodified in the later sprint that builds them.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "4.5",
+          "text": "The engine's layout, spacing, typography, and gradient-overlay treatment visually match the public/photobuddy template when compared side-by-side (verified via manual visual QA checklist against the template), and template images are used as placeholder content in the rendered contexts.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "Independently re-derived judgment, differing from the prior pass. AC-4.4 as written does NOT require building an out-of-scope public page: it explicitly scopes proof of reuse to internal demo/test-harness routes, expressly excluding the public marketing pages. Instantiating the engine twice (hero-mode, portfolio-mode) on a non-navigable internal route, driven only by gallery settings, requires no out-of-scope CMS collection (Portfolio/Homepage) and no out-of-scope public page — so it is fully testable within sprint-1 scope (render engine twice with different settings; assert a single shared component tree with no duplicated image system). Tightened AC-4.4 wording to explicitly state the demo route must not be linked from public navigation and must not depend on the out-of-scope Portfolio/Homepage CMS collections, closing the residual ambiguity about what 'internal' means. Reclassified from requirements-defect to approved — the prior flag appears to reference an earlier 'homepage hero + portfolio' framing rather than the current, already-scoped AC text; there is no outstanding PO decision required here. AC-4.1, 4.2, 4.3, 4.5 remain clear, testable, and in-scope — no changes."
+    },
+    {
+      "id": "US-5",
+      "title": "Mobile-first interaction: PhotoSwipe fullscreen viewer, thumbnail drawer, swipe & keyboard navigation",
+      "status": "draft",
+      "priority": "high",
+      "dependencies": ["US-4"],
+      "acceptance_criteria": [
+        {
+          "id": "5.1",
+          "text": "Clicking/tapping any gallery image opens a fullscreen viewer powered by PhotoSwipe supporting next, previous, close, swipe, and keyboard navigation.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "5.2",
+          "text": "The gallery is designed mobile-first: touch navigation and swipe gestures work, and tapping a gallery opens a thumbnail drawer (mobile has no hover).",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "5.3",
+          "text": "On desktop, hovering a gallery reveals a thumbnail preview strip for previewing images (hover-preview honored per gallery settings).",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "5.4",
+          "text": "Display-mode settings are respected: e.g. hero disables fullscreen/hover and enables slideshow; portfolio enables hover + fullscreen; client-delivery enables download + fullscreen + required auth (auth enforcement may be stubbed this sprint but the setting is wired).",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "Independently reviewed: all 4 ACs are testable via component/e2e tests driven by gallery settings values (touch/swipe emulation, hover simulation, keyboard events, per-mode toggle assertions) and can be exercised against any gallery instance, including a test-harness route — no dependency on out-of-scope public pages. AC-5.4's stubbed-auth carve-out is explicit and bounded (setting must be wired and assertable even though enforcement is stubbed), so it remains objectively verifiable. No scope issues. No edits needed."
+    },
+    {
+      "id": "US-6",
+      "title": "Gallery performance: progressive/lazy loading, partial load, and static generation with ISR",
+      "status": "draft",
+      "priority": "high",
+      "dependencies": ["US-4"],
+      "acceptance_criteria": [
+        {
+          "id": "6.1",
+          "text": "A gallery never loads its full set of images upfront — only visible images and required thumbnails are loaded initially; remaining images load lazily/progressively.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "6.2",
+          "text": "Gallery-bearing routes use static generation with incremental regeneration (ISR), proven this sprint against an internal demo/test-harness route — not linked from public navigation, and not backed by the out-of-scope Portfolio/Homepage CMS collections — rendering a gallery. Real public pages are out of scope this sprint and will re-verify the identical ISR wiring in the sprint that builds them.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "6.3",
+          "text": "Updating a gallery in Payload triggers on-demand revalidation/regeneration of the affected gallery-bearing route(s), demonstrated this sprint against an internal demo/test-harness route — not linked from public navigation, and not backed by out-of-scope CMS collections (real public pages deferred; the same revalidation hook re-verifies against them in the sprint that builds them).",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        },
+        {
+          "id": "6.4",
+          "text": "Images below the fold use loading='lazy' and responsive sizes/srcset so only in-viewport images are requested on initial load, reducing initial page payload on a mobile connection (verified via network waterfall / Lighthouse mobile performance check).",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "approved"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "Independently re-derived judgment, differing from the prior pass. AC-6.2 and AC-6.3 as written already scope ISR/revalidation proof to an internal demo/test-harness route, expressly excluding public pages ('Real public pages are out of scope this sprint...' / 'real public pages deferred...'). This requires nothing on the out-of-scope list (no Home/Portfolio/Blog/Packages/About/Contact page, no Portfolio/Homepage CMS collection) and is objectively verifiable: inspect the demo route for a revalidate/ISR config and confirm static generation, then trigger a Payload gallery update and assert the demo route's cached output regenerates via the revalidation hook (timestamp/ETag diff). Tightened both ACs' wording to state the demo route must not be linked from public navigation and must not depend on out-of-scope CMS collections, closing the ambiguity gap. Reclassified from requirements-defect to approved — the prior flag appears to reference an earlier 'public gallery-bearing pages' framing rather than the current, already-scoped AC text; there is no outstanding PO decision required here. AC-6.1 and AC-6.4 remain clear and testable (network-request-count assertion; Lighthouse mobile / network waterfall check) — no changes."
+    }
+  ]
+}
