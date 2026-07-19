@@ -1,8 +1,14 @@
 # ---
 # file: ci.yml
 # stack: nextjs
-# purpose: GitHub Actions CI — lint, typecheck, and test inside Docker
-# created-by: project-lead
+# purpose: GitHub Actions CI — lint, typecheck, and test inside Docker; also
+#          runs a clean-checkout smoke path that boots web+db via
+#          `docker compose up` so latent config gaps (e.g. the sprint-1
+#          PAYLOAD_SECRET bug) surface immediately rather than several ACs
+#          later
+# created-by: dev-team
+# related-story: US-7
+# related-ac: 7.2
 # ---
 
 name: CI
@@ -35,6 +41,45 @@ jobs:
 
       - name: Run tests with coverage
         run: docker compose run --rm web npm test -- --coverage --coverageThreshold='{"global":{"branches":80,"functions":80,"lines":80}}'
+
+      - name: Teardown
+        if: always()
+        run: docker compose down -v
+
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare env file
+        run: cp .env.example .env
+
+      - name: Boot web + db
+        run: docker compose up -d --wait --wait-timeout 120
+
+      - name: Smoke-check a Payload-backed route responds (not a config-gap 500)
+        run: |
+          http_code="000"
+          for i in $(seq 1 30); do
+            http_code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/users || echo "000")
+            if [ "$http_code" != "000" ]; then
+              echo "web responded with HTTP $http_code"
+              break
+            fi
+            sleep 2
+          done
+          if [ "$http_code" = "000" ]; then
+            echo "web never responded on port 3000 within the smoke window"
+            exit 1
+          fi
+          if [ "$http_code" = "500" ]; then
+            echo "web responded 500 — latent config gap (e.g. missing PAYLOAD_SECRET)"
+            exit 1
+          fi
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
 
       - name: Teardown
         if: always()
