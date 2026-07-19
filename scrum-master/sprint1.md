@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 0/6 stories | 1/28 ACs
-**Last Updated:** 2026-07-19T05:41:23+00:00
+**Progress:** 0/6 stories | 2/28 ACs
+**Last Updated:** 2026-07-19T06:05:15+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -27,7 +27,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 #### Acceptance Criteria
 - [x] **AC-1.1:** Payload CMS is integrated into the Next.js App Router project and its admin panel is reachable at /admin when the stack is running.
   - Dev: done
-- [ ] **AC-1.2:** PostgreSQL runs as a service in docker-compose.yml; Payload connects to it via the Docker network hostname 'db' (not localhost) and runs its initial schema migration successfully.
+- [x] **AC-1.2:** PostgreSQL runs as a service in docker-compose.yml; Payload connects to it via the Docker network hostname 'db' (not localhost) and runs its initial schema migration successfully.
+  - Dev: done
 - [ ] **AC-1.3:** The web app and database start together via `docker compose up -d`; no database or service is installed on the host machine.
 - [ ] **AC-1.4:** All required config (database URL, Payload secret, R2 credentials) is read from environment variables and documented in .env.example with placeholder values.
 - [ ] **AC-1.5:** Every new code file includes the project metadata front-matter header comment.
@@ -35,6 +36,19 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 **Dev Team Status:** not-started
 **Dev Team Notes:**
   AC-1.1 fixed: Fixed and pushed. Root cause: `.github/workflows/ci.yml` never created a `.env` file before `docker compose` commands ran, so every step failed with "env file not found" on a clean CI checkout. Added a `Prepare env file` step (`cp .env.example .env`) before the "Build containers" step. `.env.example` already comments out empty-value secrets, so Pattern 6 doesn't apply here. Left the unrelated pre-existing `docker-compose.yml` change (PORT override) untouched, as it wasn't part of this CI failure. Commit `c135762` pushed to `feature/US-1-AC-1.1`.
+  AC-1.2 done: Committed and pushed to `feature/US-1-AC-1.2`.
+  
+  ## Implementation Summary — US-1 AC-1.2
+  
+  **Finding:** The AC-1.2 *production wiring* already existed on `main` from the AC-1.1 scaffold:
+  - `docker-compose.yml` → `db` service (`postgres:16-alpine`, healthcheck, named `pgdata` volume)
+  - `src/payload.config.ts` → `postgresAdapter({ pool: { connectionString: process.env.DATABASE_URL } })`
+  - `.env.example` → `DATABASE_URL=postgresql://postgres:postgres@db:5432/earthandhoney` (the `db` Docker-network hostname, not localhost)
+  
+  So no production code needed inventing. This branch delivers the **verification** for the AC, which had none.
+  
+  **Files changed (committed `3268b97`):**
+  - `src/__tests__/us1-ac1.2-postgres-migration.test.ts` (new) — 8 tests: compose `db` service shape (image/healthcheck/named volume), Payload reads `DATABASE_URL`, env template resolves to hostname `db` and rejects `localhost`/`127.0.0.1`, web service doesn't override to localhost, plus a live test that (inside the compose network) boots the real Next/Payload entrypoint and asserts a Payload-backed route returns non-500 — proving the initial schema migration ran. Live portion self-skips on a bare host where `db` doesn't …
 
 **Tester Status:** approved
 **Tester Notes:**
