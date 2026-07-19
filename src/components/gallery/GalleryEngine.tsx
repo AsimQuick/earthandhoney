@@ -21,6 +21,9 @@
  * updated-by: dev-team
  * related-story: US-4
  * related-ac: 4.5
+ * updated-by: dev-team
+ * related-story: US-5
+ * related-ac: 5.1
  * ---
  */
 'use client'
@@ -31,6 +34,7 @@ import { Rubik } from 'next/font/google'
 import { MainImageDisplay } from './MainImageDisplay'
 import { NavigationControls } from './NavigationControls'
 import { ThumbnailStrip } from './ThumbnailStrip'
+import { useFullscreenViewer } from './useFullscreenViewer'
 import type { GalleryImage, GallerySettings } from './types'
 
 // Mirrors public/photobuddy/index.html's Google Fonts <link> ("Rubik:300,300i,
@@ -62,6 +66,7 @@ export function GalleryEngine({ images, initialIndex = 0, settings = DEFAULT_SET
     ? Math.min(Math.max(initialIndex, 0), images.length - 1)
     : 0
   const [currentIndex, setCurrentIndex] = useState(startIndex)
+  const openFullscreen = useFullscreenViewer(images)
 
   if (images.length === 0) {
     return (
@@ -85,7 +90,7 @@ export function GalleryEngine({ images, initialIndex = 0, settings = DEFAULT_SET
       data-require-auth={settings.requireAuth}
     >
       <div className="relative">
-        <MainImageDisplay image={images[currentIndex]} />
+        <MainImageDisplay image={images[currentIndex]} onOpenFullscreen={() => openFullscreen(currentIndex)} />
         <NavigationControls onPrevious={goToPrevious} onNext={goToNext} />
       </div>
       <ThumbnailStrip images={images} activeIndex={currentIndex} onSelect={setCurrentIndex} />

@@ -14,6 +14,9 @@
  * updated-by: dev-team
  * related-story: US-4
  * related-ac: 4.4
+ * updated-by: dev-team
+ * related-story: US-5
+ * related-ac: 5.1
  * ---
  */
 
@@ -28,6 +31,10 @@ export interface GalleryImage {
   mediumUrl?: string
   /** Sharp-generated 2048px variant. */
   largeUrl?: string
+  /** Original file's pixel width, if known — lets the PhotoSwipe fullscreen viewer (US-5) lay out/zoom correctly before the full-size image loads. */
+  width?: number
+  /** Original file's pixel height, if known. */
+  height?: number
 }
 
 /**
