@@ -39,7 +39,7 @@ describe('AC-8.2: Rubik is loaded as a webfont via next/font/google', () => {
   it('instantiates Rubik with a CSS variable and applies it to the <html> element', () => {
     const src = read(LAYOUT_PATH)
 
-    expect(src).toMatch(/Rubik\(\s*\{[^}]*variable:\s*["']--font-rubik["']/s)
+    expect(src).toMatch(/Rubik\(\s*\{[^}]*variable:\s*["']--font-rubik["']/)
     expect(src).toMatch(/className=\{`\$\{rubik\.variable\}/)
   })
 
@@ -55,7 +55,7 @@ describe('AC-8.2: the base font-family resolves to Rubik with the template fallb
     const src = read(GLOBALS_CSS_PATH)
 
     expect(src).toMatch(
-      /body\s*\{[^}]*font-family:\s*var\(--font-rubik\),\s*Arial,\s*Helvetica,\s*sans-serif;/s,
+      /body\s*\{[^}]*font-family:\s*var\(--font-rubik\),\s*Arial,\s*Helvetica,\s*sans-serif;/,
     )
   })
 
@@ -70,7 +70,7 @@ describe('AC-8.2: the base font-family resolves to Rubik with the template fallb
     const cssFiles = fs.readdirSync(cssDir).filter((f) => f.endsWith('.css'))
     const rubikFontFace = cssFiles.some((f) => {
       const contents = fs.readFileSync(path.join(cssDir, f), 'utf8')
-      return /@font-face\s*\{[^}]*Rubik/is.test(contents)
+      return /@font-face\s*\{[^}]*Rubik/i.test(contents)
     })
 
     expect(rubikFontFace).toBe(false)
