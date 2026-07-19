@@ -19,6 +19,7 @@ import fs from 'fs'
 import path from 'path'
 
 import { Galleries } from '@/collections/Galleries'
+import { getLiveApiAuthToken } from '@/test-support/liveApiAuth'
 
 const root = process.cwd()
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8')
@@ -29,8 +30,6 @@ const GRAPHQL_ROUTE = 'src/app/(payload)/api/graphql/route.ts'
 const LOCAL_API_FIND = 'node_modules/payload/dist/collections/operations/local/find.js'
 
 const LIVE_TEST_PORT = 4282
-const FIXTURE_EMAIL = 'ac3.5-fixture@earthandhoney.test'
-const FIXTURE_PASSWORD = 'ac3.5-Fixture-Password!23'
 
 /**
  * `payload` is an ESM-only package that assumes it is loaded through Next's
@@ -69,30 +68,6 @@ function killServer(child: ChildProcessWithoutNullStreams): Promise<void> {
     }, 10000)
     forceKillTimer.unref()
   })
-}
-
-/** Obtain a JWT for the fixture user, registering it as the first user if none exists yet. */
-async function getAuthToken(base: string): Promise<string> {
-  const registerRes = await fetch(`${base}/api/users/first-register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: FIXTURE_EMAIL, password: FIXTURE_PASSWORD }),
-  })
-  if (registerRes.status < 300) {
-    const body = await registerRes.json()
-    return body.token as string
-  }
-
-  // A user already exists (e.g. a prior run against the same Postgres volume)
-  // — fall back to logging in with the same fixture credentials.
-  const loginRes = await fetch(`${base}/api/users/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: FIXTURE_EMAIL, password: FIXTURE_PASSWORD }),
-  })
-  expect(loginRes.status).toBeLessThan(300)
-  const body = await loginRes.json()
-  return body.token as string
 }
 
 describe('AC-3.5: galleries are readable via Payload REST/GraphQL API and the Local API', () => {
@@ -167,7 +142,7 @@ describe('AC-3.5: galleries are readable via Payload REST/GraphQL API and the Lo
         try {
           await waitForServer(`${base}/api/users`, 60000)
 
-          const token = await getAuthToken(base)
+          const token = await getLiveApiAuthToken(base)
           const authHeaders = {
             'Content-Type': 'application/json',
             Authorization: `JWT ${token}`,

@@ -13,13 +13,22 @@
  *          regenerate it in the background at most once every
  *          ISR_REVALIDATE_SECONDS (the route-segment `revalidate` config
  *          below), per Next's documented pattern for non-`fetch` data
- *          sources like an ORM/DB call. On-demand revalidation triggered by
- *          a Payload update is AC-6.3's job, not bundled here. The real
- *          public pages will re-verify this identical ISR wiring in the
- *          sprint that builds them.
+ *          sources like an ORM/DB call. On-demand revalidation of this route
+ *          when its gallery is updated is wired on the Galleries collection
+ *          itself (src/collections/Galleries.ts `afterChange` hook, AC-6.3),
+ *          via src/lib/galleryRevalidation.ts's title-to-path map, not here.
+ *          This route additionally surfaces the gallery's resolved display
+ *          settings as `data-*` attributes on its section (AC-6.3) so the
+ *          effect of that on-demand regeneration is observable in the rendered
+ *          output even for a gallery with no images. The real public pages
+ *          will re-verify this identical ISR wiring in the sprint that builds
+ *          them.
  * created-by: dev-team
  * related-story: US-6
  * related-ac: 6.2
+ * updated-by: dev-team
+ * related-story: US-6
+ * related-ac: 6.3
  * ---
  */
 import type { Metadata } from 'next'
@@ -28,6 +37,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { GalleryEngine } from '@/components/gallery/GalleryEngine'
 import { mapPayloadGalleryToImages, type PayloadGalleryDoc } from '@/components/gallery/payloadGalleryMapper'
+import { ISR_DEMO_GALLERY_TITLE } from '@/lib/galleryRevalidation'
 
 // Internal-only: excluded from search indexing since this route is not part
 // of the public site.
@@ -43,11 +53,6 @@ export const metadata: Metadata = {
 // literal here — Next's build-time segment-config validation rejects a
 // value that's merely a reference to another local constant.
 export const revalidate = 60
-
-// Fixed title identifying the demo gallery this route renders — exported so
-// tests can create/find the same fixture record without duplicating the
-// string.
-export const ISR_DEMO_GALLERY_TITLE = 'US-6 AC-6.2 ISR demo gallery'
 
 async function getDemoGallery(): Promise<PayloadGalleryDoc | undefined> {
   const payload = await getPayload({ config })
@@ -75,7 +80,23 @@ export default async function GalleryIsrDemoPage() {
       </p>
 
       {gallery ? (
-        <section aria-labelledby="isr-demo-heading" data-testid="isr-demo-gallery" className="w-full">
+        // Surface the gallery's resolved display settings on the harness route
+        // itself (AC-6.3). GalleryEngine only exposes these `data-*` attributes
+        // once a gallery has images; the demo gallery may legitimately have
+        // none, so mirroring them here makes on-demand revalidation observable
+        // end-to-end: updating the gallery in Payload fires the Galleries
+        // collection's afterChange revalidation hook, and the regenerated route
+        // reflects the new setting value here regardless of image count.
+        <section
+          aria-labelledby="isr-demo-heading"
+          data-testid="isr-demo-gallery"
+          className="w-full"
+          data-slideshow={gallery.settings?.slideshow ?? false}
+          data-hover-preview={gallery.settings?.hoverPreview ?? true}
+          data-fullscreen={gallery.settings?.fullscreen ?? true}
+          data-download={gallery.settings?.download ?? false}
+          data-require-auth={gallery.settings?.requireAuth ?? false}
+        >
           <h2 id="isr-demo-heading" className="px-8 pb-4 text-2xl font-normal tracking-[3px] uppercase">
             {gallery.title}
           </h2>
