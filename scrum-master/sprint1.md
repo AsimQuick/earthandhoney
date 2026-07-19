@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 4/6 stories | 21/28 ACs
-**Last Updated:** 2026-07-19T10:36:09+00:00
+**Progress:** 4/6 stories | 22/28 ACs
+**Last Updated:** 2026-07-19T10:56:25+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -326,7 +326,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 #### Acceptance Criteria
 - [x] **AC-5.1:** Clicking/tapping any gallery image opens a fullscreen viewer powered by PhotoSwipe supporting next, previous, close, swipe, and keyboard navigation.
   - Dev: done
-- [ ] **AC-5.2:** The gallery is designed mobile-first: touch navigation and swipe gestures work, and tapping a gallery opens a thumbnail drawer (mobile has no hover).
+- [x] **AC-5.2:** The gallery is designed mobile-first: touch navigation and swipe gestures work, and tapping a gallery opens a thumbnail drawer (mobile has no hover).
+  - Dev: done
 - [ ] **AC-5.3:** On desktop, hovering a gallery reveals a thumbnail preview strip for previewing images (hover-preview honored per gallery settings).
 - [ ] **AC-5.4:** Display-mode settings are respected: e.g. hero disables fullscreen/hover and enables slideshow; portfolio enables hover + fullscreen; client-delivery enables download + fullscreen + required auth (auth enforcement may be stubbed this sprint but the setting is wired).
 
@@ -345,6 +346,17 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   **Files changed (commit `39f9718`, pushed to `feature/US-5-AC-5.1`):**
   - `src/components/gallery/useFullscreenViewer.ts` (new) — React hook that creates one `PhotoSwipeLightbox` per gallery from an in-memory `dataSource` (no DOM scanning; images already in React state), exposes an imperative `open(index)`, lazy-loads the PhotoSwipe core via `pswpModule`, and destroys the instance on unmount. Next/prev/close/swipe/keyboard are PhotoSwipe defaults — none disabled.
   - `src/components/gallery/MainImageDisplay.tsx` — renders an accessible `<button>` trigger (keyboard-activatable, `aria-label`) **only** when `onOpenFullscreen` is supplied; o …
+  AC-5.2 done: Pushed successfully. No `package-lock.json` changes were needed (no new dependencies added).
+  
+  ## Implementation Summary — US-5 AC-5.2
+  
+  **AC:** "The gallery is designed mobile-first: touch navigation and swipe gestures work, and tapping a gallery opens a thumbnail drawer (mobile has no hover)."
+  
+  **Finding:** No touch/swipe or mobile-drawer behavior existed yet — `ThumbnailStrip` was always rendered inline (AC-4.1's desktop-oriented layout), and the main image had no gesture handling beyond click (AC-5.1). Confirmed via PRD §5.5/§5.7 that "tap gallery → thumbnail drawer opens" is mobile's no-hover equivalent of desktop's future hover-to-reveal (AC-5.3), so this AC only needed to change mobile behavior and leave the `sm:`-and-up desktop layout untouched.
+  
+  **Files changed (commit `247e8ae`):**
+  - `src/components/gallery/useSwipeNavigation.ts` (new) — touch handlers (`onTouchStart`/`onTouchEnd`) that detect a horizontal swipe past a 50px threshold and call `onSwipeLeft`/`onSwipeRight`; ignores gestures that are mostly vertical so normal page scrolling isn't hijacked.
+  - `src/components/gallery/ThumbnailDrawer.tsx` (new) — wraps the existing, unmodified `ThumbnailStrip` with a tap toggle ( …
 
 **Tester Status:** approved
 **Tester Notes:**
