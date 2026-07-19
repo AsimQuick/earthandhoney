@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 1/6 stories | 8/28 ACs
-**Last Updated:** 2026-07-19T07:22:48+00:00
+**Progress:** 1/6 stories | 9/28 ACs
+**Last Updated:** 2026-07-19T07:29:58+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -95,7 +95,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-2.3:** Each Media record exposes the URLs/keys for original, thumbnail, medium and large variants so consumers can request the correct size.
   - Dev: done
-- [ ] **AC-2.4:** Alt text is a required field on Media to support accessibility and SEO.
+- [x] **AC-2.4:** Alt text is a required field on Media to support accessibility and SEO.
+  - Dev: done
 - [ ] **AC-2.5:** R2 credentials and bucket configuration are read from environment variables; a local/dev R2-compatible target may be used but no service is installed on the host.
 
 **Dependencies:** US-1
@@ -130,6 +131,21 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   **Files changed (commit `3e62c0a`):**
   - `src/__tests__/us2-ac2.3-media-variant-urls.test.ts` (new, 8 tests):
     - Config-level checks: `Media.upload.imageSizes` still names exactly `thumbnail`/`medium`/`large`; `Media.fields` doesn't declare a custom `url`/`filename`/`sizes`/`thumbnailURL` field …
+  AC-2.4 done: Pushed to `feature/US-2-AC-2.4` (commit `9098804`).
+  
+  ## Implementation Summary — US-2 AC-2.4
+  
+  **Finding:** AC-2.1 established the `alt` field on `Media` but deliberately left it optional ("required-ness is AC-2.4's job" per its dev notes). Only `required: true` needed adding.
+  
+  **Files changed:**
+  - `src/collections/Media.ts` — added `required: true` to the `alt` field; extended the front-matter header with a `related-ac: 2.4` entry.
+  - `src/__tests__/us2-ac2.4-alt-text-required.test.ts` (new, 3 tests) — verifies the config declares `alt` as a required text field, plus a live round-trip (self-skips outside the Docker `db` network, matching the AC-2.3 pattern) that POSTs an upload with no alt text and asserts Payload rejects it with a 4xx, then confirms the same upload succeeds once `alt` is supplied.
+  
+  **Verification (via `docker compose run --rm web ...`):**
+  - Full suite: 9 test suites, 141 tests, all passing.
+  - Coverage (CI's exact threshold command): 100% stmts/branch/funcs/lines — well above the 80% gate.
+  - `eslint` and `tsc --noEmit`: clean.
+  - Excluded an unrelated `tsconfig.json` reformat that Next's tooling auto-generated as a side effect of running dev/test — reverted before co …
 
 **Tester Status:** approved
 **Tester Notes:**
