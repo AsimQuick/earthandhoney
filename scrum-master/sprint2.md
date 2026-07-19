@@ -1,8 +1,8 @@
 # Sprint 2
 
 **Phase:** planning
-**Progress:** 0/7 stories | 1/31 ACs
-**Last Updated:** 2026-07-19T16:57:28+00:00
+**Progress:** 0/7 stories | 2/31 ACs
+**Last Updated:** 2026-07-19T17:11:56+00:00
 
 ## Sprint Goal
 Ship the public, lead-generating photography website on top of the Gallery Engine delivered in sprint-1. Port the photobuddy design system into the app shell; add the content-driving CMS collections (Homepage, Portfolio, Blog, Testimonials, Packages, FAQ) the photographer manages without a developer; render all public marketing pages (Home, Galleries, Blog, and About with Packages/Testimonials/FAQ sections) with static generation + ISR powered by the existing Gallery Engine; and deliver lead conversion (contact form + WhatsApp capture) writing to a Leads collection with Resend email notification. Close sprint-1's carried-over deploy/CI/flake follow-ups first.
@@ -29,7 +29,8 @@ Ship the public, lead-generating photography website on top of the Gallery Engin
 #### Acceptance Criteria
 - [x] **AC-7.1:** A valid `.github/workflows/deploy.yml` exists (triggered on push to `main` and via `workflow_dispatch`) so a sprint-close deploy no longer returns HTTP 404 for the missing workflow; the workflow parses cleanly and builds the app inside Docker per the CLAUDE.md Docker rules.
   - Dev: done
-- [ ] **AC-7.2:** CI includes a clean-checkout smoke path (fresh `actions/checkout` -> `cp .env.example .env` -> `docker compose up` that boots `web`+`db`), so latent config gaps (like the sprint-1 `PAYLOAD_SECRET` bug) surface immediately rather than several ACs later.
+- [x] **AC-7.2:** CI includes a clean-checkout smoke path (fresh `actions/checkout` -> `cp .env.example .env` -> `docker compose up` that boots `web`+`db`), so latent config gaps (like the sprint-1 `PAYLOAD_SECRET` bug) surface immediately rather than several ACs later.
+  - Dev: done
 - [ ] **AC-7.3:** The AC-1.2 live-boot test is stabilized so it no longer false-fails in the full local Docker suite (live/server-spawning suites are isolated from parallel jest, e.g. `--runInBand`, or given an adaptive timeout); verified by 5 consecutive full local-suite runs with zero false failures and by the test remaining green on CI runners.
 - [ ] **AC-7.4:** `.env.example` is authoritative for every variable required by sprint-2 (adds `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL`, `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_SITE_URL`) with placeholder values only and no real secrets committed.
 
@@ -48,6 +49,15 @@ Ship the public, lead-generating photography website on top of the Gallery Engin
   **Test results:**
   - New test file: 9/9 passing.
   - Full suite run in-band (`--runInBand`, needed to avoid the documented AC-1.2 live-boot parallelism flake — see MEMORY.md `ac1.2-live-boot-tes …
+  AC-7.2 done: Pushed successfully to `feature/US-7-AC-7.2`.
+  
+  ## Implementation Summary
+  
+  **AC-7.2**: CI now includes a clean-checkout smoke path (fresh `actions/checkout` → `cp .env.example .env` → `docker compose up` that boots `web`+`db`), so latent config gaps like the sprint-1 `PAYLOAD_SECRET` bug surface immediately.
+  
+  **Files changed:**
+  - `.github/workflows/ci.yml` — added a new `smoke` job (alongside the existing `test` job, same push/PR triggers) with structured metadata header (`related-story: US-7`, `related-ac: 7.2`). Steps: fresh checkout → `cp .env.example .env` → `docker compose up -d --wait --wait-timeout 120` (boots both `web` and `db`, no service scoping) → polls `http://localhost:3000/api/users` and fails the job on a `500` or no response (this is what actually catches a boot-time config gap, not just "container process is running") → dumps `docker compose logs` on failure → `docker compose down -v` teardown (`if: always()`).
+  - `src/__tests__/us7-ac7.2-ci-clean-checkout-smoke.test.ts` (new) — 12 unit tests verifying the workflow structure: `smoke` job exists as distinct from `test`, starts with `actions/checkout`, `cp .env.example .env` runs before `docker compose up`, `docker co …
 
 **Tester Status:** approved
 **Tester Notes:**
