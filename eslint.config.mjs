@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendor design-template assets (CLAUDE.md) — not our code, never linted.
+    "public/photobuddy/**",
+    // Generated test coverage report.
+    "coverage/**",
   ]),
 ]);
 
