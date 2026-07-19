@@ -1,3 +1,13 @@
+/**
+ * ---
+ * file: src/app/(frontend)/layout.tsx
+ * project: earthandhoney
+ * purpose: Root layout for the public-facing Next.js route group, kept separate from the (payload) admin route group
+ * created-by: dev-team
+ * related-story: US-1
+ * related-ac: 1.1
+ * ---
+ */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";

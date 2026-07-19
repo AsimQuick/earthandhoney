@@ -1,3 +1,13 @@
+/*
+ * ---
+ * file: src/app/(frontend)/globals.css
+ * project: earthandhoney
+ * purpose: Global styles for the public-facing (frontend) route group
+ * created-by: dev-team
+ * related-story: US-1
+ * related-ac: 1.1
+ * ---
+ */
 @import "tailwindcss";
 
 :root {
