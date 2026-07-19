@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 0/6 stories | 3/28 ACs
-**Last Updated:** 2026-07-19T06:37:48+00:00
+**Progress:** 0/6 stories | 4/28 ACs
+**Last Updated:** 2026-07-19T06:44:29+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -31,7 +31,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-1.3:** The web app and database start together via `docker compose up -d`; no database or service is installed on the host machine.
   - Dev: done
-- [ ] **AC-1.4:** All required config (database URL, Payload secret, R2 credentials) is read from environment variables and documented in .env.example with placeholder values.
+- [x] **AC-1.4:** All required config (database URL, Payload secret, R2 credentials) is read from environment variables and documented in .env.example with placeholder values.
+  - Dev: done
 - [ ] **AC-1.5:** Every new code file includes the project metadata front-matter header comment.
 
 **Dev Team Status:** not-started
@@ -57,6 +58,16 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   **How I found it:** cloned `HEAD` into a scratch directory to exactly match CI's `actions/checkout@v4` (no stray local `.env`, no `public/photobuddy/`), ran `cp .env.example .env` + `docker compose down -v` for a genuinely fresh Postgres volume, then ran the CI steps. Lint/typecheck passed but the test suite failed on AC-1.2's live check with a 500. Booting `next dev` manually and inspecting server logs showed `Error: missing secret key. A secret key is needed to secure Payload.`
   
   **Fix:** added `PAYLOAD_SECRE …
+  AC-1.4 done: Committed and pushed to `feature/US-1-AC-1.4`.
+  
+  ## Implementation Summary — US-1 AC-1.4
+  
+  **Finding:** `DATABASE_URL` and `PAYLOAD_SECRET` were already documented in `.env.example` and read from `process.env` in `src/payload.config.ts` (established during AC-1.1/1.2/1.3). The only gap: **R2 credentials were entirely undocumented** — no `.env.example` entries, no `.env` entries, not referenced anywhere in the codebase (expected, since the Media/storage collection is US-2, not yet started).
+  
+  **Files changed (commit `70aa5c6`):**
+  - `.env.example` — added a `Cloudflare R2` section with placeholder values (`change-me-in-production`, consistent with existing `PAYLOAD_SECRET`/`SECRET_KEY` convention) for `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT`.
+  - `.env` (local, gitignored, not committed) — mirrored the same block for dev parity.
+  - `src/__tests__/us1-ac1.4-env-config.test.ts` (new, 15 tests) — verifies: all 7 required vars (`DATABASE_URL`, `PAYLOAD_SECRET`, 5 R2 vars) are documented in `.env.example` with non-empty placeholders; `DATABASE_URL` targets the Docker hostname `db`; `payload.config.ts` reads `DATABASE_URL`/`PAYLOAD_SECRET` via `proc …
 
 **Tester Status:** approved
 **Tester Notes:**
