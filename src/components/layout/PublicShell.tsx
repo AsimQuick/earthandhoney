@@ -14,8 +14,13 @@
  * created-by: dev-team
  * related-story: US-8
  * related-ac: 8.1
+ * updated-by: dev-team
+ * related-story: US-8
+ * related-ac: 8.3
  * ---
  */
+import { MobileMenuProvider } from './MobileMenuContext'
+import { MobileMenuTrigger } from './MobileMenuTrigger'
 import { SiteFooter } from './SiteFooter'
 import { VerticalMenu } from './VerticalMenu'
 
@@ -24,8 +29,13 @@ export function PublicShell({ children }: Readonly<{ children: React.ReactNode }
     <div className="photobuddy_fl_wrapper_all" data-testid="site-shell">
       <header className="photobuddy_fl_header" data-testid="site-header" />
       <div className="photobuddy_fl_content">
-        <VerticalMenu />
-        <div className="photobuddy_fl_content_in">{children}</div>
+        <MobileMenuProvider>
+          <VerticalMenu />
+          <div className="photobuddy_fl_content_in">
+            <MobileMenuTrigger />
+            {children}
+          </div>
+        </MobileMenuProvider>
       </div>
       <SiteFooter />
     </div>

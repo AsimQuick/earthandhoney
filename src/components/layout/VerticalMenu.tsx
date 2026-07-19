@@ -8,14 +8,24 @@
  *          and class names mirror public/photobuddy/index.html's
  *          `.photobuddy_fl_vertical_menu` block (nav labels kept lowercase
  *          to match the template's own markup; its CSS applies the visible
- *          uppercase transform).
+ *          uppercase transform). Below the `lg` breakpoint it is an
+ *          off-canvas drawer toggled by MobileMenuTrigger via
+ *          MobileMenuContext; at `lg` and above it is always visible,
+ *          matching the template's fixed left sidebar.
  * created-by: dev-team
  * related-story: US-8
  * related-ac: 8.1
+ * updated-by: dev-team
+ * related-story: US-8
+ * related-ac: 8.3
  * ---
  */
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
+
+import { useMobileMenu } from './MobileMenuContext'
 
 const NAV_LINKS = [
   { href: '/', label: 'home' },
@@ -34,8 +44,17 @@ const SOCIAL_LINKS = [
 ]
 
 export function VerticalMenu() {
+  const { isOpen } = useMobileMenu()
+
   return (
-    <div className="photobuddy_fl_vertical_menu" data-testid="vertical-menu">
+    <div
+      id="vertical-menu"
+      data-testid="vertical-menu"
+      data-state={isOpen ? 'open' : 'closed'}
+      className={`photobuddy_fl_vertical_menu fixed inset-y-0 left-0 z-40 w-72 -translate-x-full overflow-y-auto transition-transform duration-300 ease-in-out lg:static lg:z-auto lg:w-80 lg:translate-x-0 ${
+        isOpen ? 'translate-x-0' : ''
+      }`}
+    >
       <div className="photobuddy_fl_vertical_menu_in scrollable">
         <div className="photobuddy_fl_logo">
           <Link href="/">
