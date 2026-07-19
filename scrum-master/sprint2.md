@@ -1,8 +1,8 @@
 # Sprint 2
 
 **Phase:** planning
-**Progress:** 0/7 stories | 2/31 ACs
-**Last Updated:** 2026-07-19T17:11:56+00:00
+**Progress:** 0/7 stories | 3/31 ACs
+**Last Updated:** 2026-07-19T21:50:24+00:00
 
 ## Sprint Goal
 Ship the public, lead-generating photography website on top of the Gallery Engine delivered in sprint-1. Port the photobuddy design system into the app shell; add the content-driving CMS collections (Homepage, Portfolio, Blog, Testimonials, Packages, FAQ) the photographer manages without a developer; render all public marketing pages (Home, Galleries, Blog, and About with Packages/Testimonials/FAQ sections) with static generation + ISR powered by the existing Gallery Engine; and deliver lead conversion (contact form + WhatsApp capture) writing to a Leads collection with Resend email notification. Close sprint-1's carried-over deploy/CI/flake follow-ups first.
@@ -31,7 +31,8 @@ Ship the public, lead-generating photography website on top of the Gallery Engin
   - Dev: done
 - [x] **AC-7.2:** CI includes a clean-checkout smoke path (fresh `actions/checkout` -> `cp .env.example .env` -> `docker compose up` that boots `web`+`db`), so latent config gaps (like the sprint-1 `PAYLOAD_SECRET` bug) surface immediately rather than several ACs later.
   - Dev: done
-- [ ] **AC-7.3:** The AC-1.2 live-boot test is stabilized so it no longer false-fails in the full local Docker suite (live/server-spawning suites are isolated from parallel jest, e.g. `--runInBand`, or given an adaptive timeout); verified by 5 consecutive full local-suite runs with zero false failures and by the test remaining green on CI runners.
+- [x] **AC-7.3:** The AC-1.2 live-boot test is stabilized so it no longer false-fails in the full local Docker suite (live/server-spawning suites are isolated from parallel jest, e.g. `--runInBand`, or given an adaptive timeout); verified by 5 consecutive full local-suite runs with zero false failures and by the test remaining green on CI runners.
+  - Dev: done
 - [ ] **AC-7.4:** `.env.example` is authoritative for every variable required by sprint-2 (adds `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL`, `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_SITE_URL`) with placeholder values only and no real secrets committed.
 
 **Dev Team Status:** not-started
@@ -58,6 +59,17 @@ Ship the public, lead-generating photography website on top of the Gallery Engin
   **Files changed:**
   - `.github/workflows/ci.yml` — added a new `smoke` job (alongside the existing `test` job, same push/PR triggers) with structured metadata header (`related-story: US-7`, `related-ac: 7.2`). Steps: fresh checkout → `cp .env.example .env` → `docker compose up -d --wait --wait-timeout 120` (boots both `web` and `db`, no service scoping) → polls `http://localhost:3000/api/users` and fails the job on a `500` or no response (this is what actually catches a boot-time config gap, not just "container process is running") → dumps `docker compose logs` on failure → `docker compose down -v` teardown (`if: always()`).
   - `src/__tests__/us7-ac7.2-ci-clean-checkout-smoke.test.ts` (new) — 12 unit tests verifying the workflow structure: `smoke` job exists as distinct from `test`, starts with `actions/checkout`, `cp .env.example .env` runs before `docker compose up`, `docker co …
+  AC-7.3 done: **AC-7.3 implemented and pushed to `feature/US-7-AC-7.3`.**
+  
+  ## Implementation Summary
+  
+  **Root cause:** 6 test suites (`us1-ac1.2-postgres-migration`, `us2-ac2.3-media-variant-urls`, `us2-ac2.4-alt-text-required`, `us3-ac3.3-admin-ui-image-management`, `us3-ac3.5-galleries-api-read`, `us6-ac6.3-on-demand-revalidation`) each spawn a real `next dev` process and poll it over HTTP. Under jest's default parallel worker pool, these competed for CPU with ~23 other suites on the Docker-on-macOS host, frequently pushing the cold Payload boot past its 60s timeout.
+  
+  **Fix:** `package.json` — `"test": "jest"` → `"test": "jest --runInBand"`. This serializes the entire suite, removing the cross-suite CPU contention at the root rather than special-casing each server-spawning file individually. Since the script remains a single `jest` invocation (no chaining), CI's `npm test -- --coverage --coverageThreshold=...` still composes correctly.
+  
+  **Files changed:**
+  - `package.json` — added `--runInBand` to the `test` script.
+  - `src/__tests__/us7-ac7.3-live-boot-isolation.test.ts` (new, 12 tests) — verifies the `test` script runs jest serially and as a single invocation (so CI-appended flags apply suite-w …
 
 **Tester Status:** approved
 **Tester Notes:**
