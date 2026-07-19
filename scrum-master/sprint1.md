@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 3/6 stories | 19/28 ACs
-**Last Updated:** 2026-07-19T09:43:53+00:00
+**Progress:** 4/6 stories | 20/28 ACs
+**Last Updated:** 2026-07-19T10:11:07+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -243,7 +243,7 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 ---
 
 ### US-4: Gallery Engine core components: container, main display, thumbnails, navigation, gradient overlay
-**Status:** in-progress | **Priority:** high
+**Status:** done | **Priority:** high
 
 #### Acceptance Criteria
 - [x] **AC-4.1:** A single reusable Gallery Engine component set renders any gallery: Gallery Container, Main Image Display, Thumbnail Preview strip, and Navigation Controls (next/previous).
@@ -254,7 +254,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-4.4:** The same engine is instantiated in at least two distinct display-mode contexts (e.g. a hero-mode instance and a portfolio-mode instance) on internal demo/test-harness routes — not linked from public navigation, and not backed by the out-of-scope Portfolio/Homepage CMS collections — and not the public marketing pages, which remain out of scope this sprint — driven purely by gallery settings, demonstrating reuse with no duplicated image systems. The real public pages will reuse this same engine unmodified in the later sprint that builds them.
   - Dev: done
-- [ ] **AC-4.5:** The engine's layout, spacing, typography, and gradient-overlay treatment visually match the public/photobuddy template when compared side-by-side (verified via manual visual QA checklist against the template), and template images are used as placeholder content in the rendered contexts.
+- [x] **AC-4.5:** The engine's layout, spacing, typography, and gradient-overlay treatment visually match the public/photobuddy template when compared side-by-side (verified via manual visual QA checklist against the template), and template images are used as placeholder content in the rendered contexts.
+  - Dev: done
 
 **Dependencies:** US-3
 
@@ -302,6 +303,16 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - `src/components/gallery/types.ts` — added `GallerySettings` interface mirroring the Payload `Galleries.settings` group (`slideshow`/`hoverPreview`/`fullscreen`/`download`/`requireAuth`).
   - `src/components/gallery/GalleryEngine.tsx` — added an optional `settings` prop (defaulting to the same values a freshly-created Payload gallery record would have), reflected as `data-slideshow`/`data-hover-preview`/`data-fullscreen`/`data-download`/`data-require-auth` attributes on the root element. This is passthrough only — actual behavioral enforcement (auto-advance, hover reveal, fullscreen gating) is explicitly US-5's job, not bundled here.
   - `src/app/(frontend)/dev/gallery-demo/page.tsx` (new) — internal demo/test-harness route, `robots: noindex`, not linked from anywhere. Instantiates the same `GalleryEngine` twice with local mock data (not fetched from Payload, not the out-of-scope Portfoli …
+  AC-4.5 done: Pushed to `feature/US-4-AC-4.5`. Stayed on the feature branch throughout; did not touch `main` or `scrum-master/`.
+  
+  ## Implementation Summary — US-4 AC-4.5
+  
+  **AC:** The engine's layout, spacing, typography, and gradient-overlay treatment visually match `public/photobuddy` (verified via a manual visual QA checklist), and template images are used as placeholder content in the rendered contexts.
+  
+  **Finding:** The previous dev agent left uncommitted partial work on the branch (the component/demo-page parity changes), but the two artefacts the AC explicitly requires were missing: the **manual visual QA checklist** (referenced by the demo-page header but never created) and **AC-4.5 unit tests**. Also, `public/photobuddy/` — which the demo route now sources its placeholder images from — was **untracked**, so in a fresh CI checkout the images would 404 and the deliverable wouldn't function. I completed those, verified every header-comment parity claim against the real template CSS, and committed.
+  
+  **Files committed (`e2aeb80`):**
+  - **`public/photobuddy/`** (new, 53 files, 1.1M) — the canonical design template per CLAUDE.md, committed so the demo route's `/photobuddy/img/...` placeholders r …
 
 **Tester Status:** approved
 **Tester Notes:**
