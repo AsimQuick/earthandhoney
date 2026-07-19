@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 2/6 stories | 13/28 ACs
-**Last Updated:** 2026-07-19T08:00:55+00:00
+**Progress:** 2/6 stories | 14/28 ACs
+**Last Updated:** 2026-07-19T08:17:07+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -173,7 +173,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-3.3:** The photographer can upload images to a gallery, reorder them, remove them, and select a cover image entirely through the Payload admin UI without developer assistance.
   - Dev: done
-- [ ] **AC-3.4:** Gallery 'settings' capture a display-mode configuration (e.g. slideshow, hover-preview, fullscreen, download, authentication toggles) so one gallery object can drive multiple display experiences.
+- [x] **AC-3.4:** Gallery 'settings' capture a display-mode configuration (e.g. slideshow, hover-preview, fullscreen, download, authentication toggles) so one gallery object can drive multiple display experiences.
+  - Dev: done
 - [ ] **AC-3.5:** Galleries are readable via Payload's API/local API so the gallery viewer components can consume them.
 
 **Dependencies:** US-1, US-2
@@ -211,6 +212,13 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Neither `Galleries` nor `Media` declares custom `access` rules, so any authenticated admin user (the photographer) gets full create/update rights with no developer/deploy step required.
   
   I verified these defaults directly against the installed `payload`/`@payloadcms/ui` source (`RelationshipField admin.allowCreate = true`, `ArrayField admin.isSortable = true`) rather than assuming behavior. This matches the sprint's established …
+  AC-3.4 done: ## Implementation Summary — US-3 AC-3.4
+  
+  **Finding:** AC-3.1 had established `settings` as a bare `json` placeholder field, explicitly deferring its display-mode shape to this AC. Real implementation was required.
+  
+  **Files changed (commit `6f9dda9`):**
+  - `src/collections/Galleries.ts` — replaced the `json` settings field with a `group` field of five independent `checkbox` toggles: `slideshow` (default `false`), `hoverPreview` (default `true`), `fullscreen` (default `true`), `download` (default `false`), `requireAuth` (default `false`) — matching the exact toggles named in AC-3.4's text and PRD §5.6's documented display modes (Hero, Portfolio, Client Delivery). Using independent booleans (not a fixed mode enum) lets one Galleries object represent any combination, e.g. Hero (`slideshow` on, rest off) vs. Client Delivery (`fullscreen`+`download`+`requireAuth` on). Extended the file's front-matter header with a `related-ac: 3.4` entry.
+  - `src/__tests__/us3-ac3.4-gallery-settings.test.ts` (new, 14 tests) — verifies: `settings` is a `group` (not an enum); each of the five toggles exists as a `checkbox` with the documented default and isn't hidden/read-only; exactly those five toggles exi …
 
 **Tester Status:** approved
 **Tester Notes:**
