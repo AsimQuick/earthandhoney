@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 2/6 stories | 10/28 ACs
-**Last Updated:** 2026-07-19T07:37:24+00:00
+**Progress:** 2/6 stories | 11/28 ACs
+**Last Updated:** 2026-07-19T07:45:23+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -164,10 +164,11 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 ---
 
 ### US-3: Gallery data model: reusable Galleries collection in Payload
-**Status:** draft | **Priority:** high
+**Status:** in-progress | **Priority:** high
 
 #### Acceptance Criteria
-- [ ] **AC-3.1:** A Payload 'Galleries' collection exists as an independent, reusable object with fields: id, title, description, ordered images[] (relations to Media), cover image, and settings.
+- [x] **AC-3.1:** A Payload 'Galleries' collection exists as an independent, reusable object with fields: id, title, description, ordered images[] (relations to Media), cover image, and settings.
+  - Dev: done
 - [ ] **AC-3.2:** No CMS collection or code path other than Media and Galleries manages, uploads, or displays images — e.g. no per-page/per-post image-upload field or standalone image list duplicates what the Media + Galleries model already provides.
 - [ ] **AC-3.3:** The photographer can upload images to a gallery, reorder them, remove them, and select a cover image entirely through the Payload admin UI without developer assistance.
 - [ ] **AC-3.4:** Gallery 'settings' capture a display-mode configuration (e.g. slideshow, hover-preview, fullscreen, download, authentication toggles) so one gallery object can drive multiple display experiences.
@@ -176,6 +177,17 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 **Dependencies:** US-1, US-2
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-3.1 done: Pushed successfully to `feature/US-3-AC-3.1`.
+  
+  ## Implementation Summary — US-3 AC-3.1
+  
+  **Finding:** No Galleries collection existed yet — US-3 dev_status was `not-started`, confirmed by checking `src/collections/` (only `Media.ts` and `Users.ts` existed). Real implementation was required.
+  
+  **Files changed (commit `dedda58`):**
+  - `src/collections/Galleries.ts` (new) — Payload collection, slug `galleries`, `useAsTitle: 'title'`. Fields: `title` (required text), `description` (textarea), `images` (array field, each row an `image` relationship to `media` — array chosen over a plain `hasMany` relationship so row order is authoritative and the admin UI gets native drag-to-reorder for free, setting up cleanly for AC-3.3), `coverImage` (single relationship to `media`), `settings` (json — intentionally minimal placeholder; its display-mode shape is AC-3.4's job, not bundled here). No hand-declared `id` field — Payload auto-generates it for every collection.
+  - `src/payload.config.ts` — imported and registered `Galleries` in the `collections` array alongside `Users`/`Media`, added an `updated-by`/`related-story`/`related-ac` entry to the header.
+  - `src/__tests__/us3-ac3.1-galleries-collectio …
 
 **Tester Status:** approved
 **Tester Notes:**
