@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 5/6 stories | 25/28 ACs
-**Last Updated:** 2026-07-19T11:54:06+00:00
+**Progress:** 5/6 stories | 26/28 ACs
+**Last Updated:** 2026-07-19T12:30:32+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -393,7 +393,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 #### Acceptance Criteria
 - [x] **AC-6.1:** A gallery never loads its full set of images upfront — only visible images and required thumbnails are loaded initially; remaining images load lazily/progressively.
   - Dev: done
-- [ ] **AC-6.2:** Gallery-bearing routes use static generation with incremental regeneration (ISR), proven this sprint against an internal demo/test-harness route — not linked from public navigation, and not backed by the out-of-scope Portfolio/Homepage CMS collections — rendering a gallery. Real public pages are out of scope this sprint and will re-verify the identical ISR wiring in the sprint that builds them.
+- [x] **AC-6.2:** Gallery-bearing routes use static generation with incremental regeneration (ISR), proven this sprint against an internal demo/test-harness route — not linked from public navigation, and not backed by the out-of-scope Portfolio/Homepage CMS collections — rendering a gallery. Real public pages are out of scope this sprint and will re-verify the identical ISR wiring in the sprint that builds them.
+  - Dev: done
 - [ ] **AC-6.3:** Updating a gallery in Payload triggers on-demand revalidation/regeneration of the affected gallery-bearing route(s), demonstrated this sprint against an internal demo/test-harness route — not linked from public navigation, and not backed by out-of-scope CMS collections (real public pages deferred; the same revalidation hook re-verifies against them in the sprint that builds them).
 - [ ] **AC-6.4:** Images below the fold use loading='lazy' and responsive sizes/srcset so only in-viewport images are requested on initial load, reducing initial page payload on a mobile connection (verified via network waterfall / Lighthouse mobile performance check).
 
@@ -411,6 +412,18 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   
   **Files changed (commit `b34eed5`):**
   - `src/components/gallery/useProgressiveThumbnails.ts` (new) — hook that windows how many thumbnails `ThumbnailStr …
+  AC-6.2 done: Pushed to `feature/US-6-AC-6.2` (commit `017ac2b`). All gates verified. Here's the implementation summary for the record.
+  
+  ---
+  
+  ## Implementation Summary — US-6 AC-6.2
+  
+  **AC:** "Gallery-bearing routes use static generation with incremental regeneration (ISR), proven this sprint against an internal demo/test-harness route — not linked from public navigation, and not backed by the out-of-scope Portfolio/Homepage CMS collections — rendering a gallery."
+  
+  **Finding:** The previous dev agent left coherent uncommitted work: the ISR route + a payload-import-free mapper + mapper unit tests. What was missing was a test proving the AC's *core* claim — the route's ISR/static-generation wiring — plus the internal-route guards (noindex, not-linked, not-out-of-scope). I completed the test coverage, closed a mapper branch gap, verified the route renders end-to-end, and committed.
+  
+  **Files changed (commit `017ac2b`, 3 files, +409):**
+  - `src/app/(frontend)/dev/gallery-isr-demo/page.tsx` (new) — internal demo route. `export const revalidate = 60` (the ISR segment config), fetches the in-scope `galleries` collection (US-3) via Payload's Local API with **no request-scoped input** (so Next statically pr …
 
 **Tester Status:** approved
 **Tester Notes:**
