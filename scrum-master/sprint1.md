@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 0/6 stories | 2/28 ACs
-**Last Updated:** 2026-07-19T06:05:15+00:00
+**Progress:** 0/6 stories | 3/28 ACs
+**Last Updated:** 2026-07-19T06:37:48+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -29,7 +29,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-1.2:** PostgreSQL runs as a service in docker-compose.yml; Payload connects to it via the Docker network hostname 'db' (not localhost) and runs its initial schema migration successfully.
   - Dev: done
-- [ ] **AC-1.3:** The web app and database start together via `docker compose up -d`; no database or service is installed on the host machine.
+- [x] **AC-1.3:** The web app and database start together via `docker compose up -d`; no database or service is installed on the host machine.
+  - Dev: done
 - [ ] **AC-1.4:** All required config (database URL, Payload secret, R2 credentials) is read from environment variables and documented in .env.example with placeholder values.
 - [ ] **AC-1.5:** Every new code file includes the project metadata front-matter header comment.
 
@@ -49,17 +50,17 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   
   **Files changed (committed `3268b97`):**
   - `src/__tests__/us1-ac1.2-postgres-migration.test.ts` (new) — 8 tests: compose `db` service shape (image/healthcheck/named volume), Payload reads `DATABASE_URL`, env template resolves to hostname `db` and rejects `localhost`/`127.0.0.1`, web service doesn't override to localhost, plus a live test that (inside the compose network) boots the real Next/Payload entrypoint and asserts a Payload-backed route returns non-500 — proving the initial schema migration ran. Live portion self-skips on a bare host where `db` doesn't …
+  AC-1.3 fixed: ## Summary
+  
+  **Root cause:** `.env.example` never defined `PAYLOAD_SECRET`, only a developer's local, uncommitted `.env` had one. Payload boots with an empty secret and fails with `500 "missing secret key"` on every request. This bug was invisible before AC-1.3 because the AC-1.2 live-migration test skips its real check (`dns.lookup('db')` fails) unless `db` is actually started as a dependency — and before AC-1.3, `web` had no `depends_on: db`. AC-1.3 correctly added `depends_on: db (condition: service_healthy)`, which for the first time let that test's `db` lookup succeed and actually exercise the live boot path — surfacing the latent misconfiguration in CI's clean checkout.
+  
+  **How I found it:** cloned `HEAD` into a scratch directory to exactly match CI's `actions/checkout@v4` (no stray local `.env`, no `public/photobuddy/`), ran `cp .env.example .env` + `docker compose down -v` for a genuinely fresh Postgres volume, then ran the CI steps. Lint/typecheck passed but the test suite failed on AC-1.2's live check with a 500. Booting `next dev` manually and inspecting server logs showed `Error: missing secret key. A secret key is needed to secure Payload.`
+  
+  **Fix:** added `PAYLOAD_SECRE …
 
 **Tester Status:** approved
 **Tester Notes:**
-  AC-1.1 diagnosis: ## Diagnosis: CI/pipeline configuration bug (not a code bug, not a requirements issue)
-  
-  **Root cause:** `docker-compose.yml`'s `web` service declares `env_file: .env` (docker-compose.yml:12-13). `.env` is correctly gitignored (`.gitignore:6`) since it holds secrets/local config, and a `.env.example` template exists and is committed. Locally, the developer has their own `.env` copied from the template, so everything works. But `.github/workflows/ci.yml` checks out a clean repo and never materializes a `.env` file before invoking any `docker compose` command — so `docker compose run --rm web ...` fails immediately at the "Lint" step (and would fail identically at every later step) with `env file ... not found`.
-  
-  **Is it a code bug or requirements issue?**
-  - Not a requirements issue — AC-1.4 ("config is read from environment variables and documented in `.env.example`") is satisfied; the template exists and is correct.
-  - Not an application code bug — ESLint/TSC/tests were never reached; the failure is entirely in the CI workflow's setup steps, before any app code executes.
-  - It's a **CI pipeline configuration bug**: `ci.yml` is missing a step to create `.env` (e.g. from `.env.example`) …
+  AC-1.3 diagnosis: (no summary reported)
 
 ---
 
