@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 5/6 stories | 27/28 ACs
-**Last Updated:** 2026-07-19T13:28:36+00:00
+**Progress:** 6/6 stories | 28/28 ACs
+**Last Updated:** 2026-07-19T13:44:56+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -388,7 +388,7 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 ---
 
 ### US-6: Gallery performance: progressive/lazy loading, partial load, and static generation with ISR
-**Status:** in-progress | **Priority:** high
+**Status:** done | **Priority:** high
 
 #### Acceptance Criteria
 - [x] **AC-6.1:** A gallery never loads its full set of images upfront — only visible images and required thumbnails are loaded initially; remaining images load lazily/progressively.
@@ -397,7 +397,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-6.3:** Updating a gallery in Payload triggers on-demand revalidation/regeneration of the affected gallery-bearing route(s), demonstrated this sprint against an internal demo/test-harness route — not linked from public navigation, and not backed by out-of-scope CMS collections (real public pages deferred; the same revalidation hook re-verifies against them in the sprint that builds them).
   - Dev: done
-- [ ] **AC-6.4:** Images below the fold use loading='lazy' and responsive sizes/srcset so only in-viewport images are requested on initial load, reducing initial page payload on a mobile connection (verified via network waterfall / Lighthouse mobile performance check).
+- [x] **AC-6.4:** Images below the fold use loading='lazy' and responsive sizes/srcset so only in-viewport images are requested on initial load, reducing initial page payload on a mobile connection (verified via network waterfall / Lighthouse mobile performance check).
+  - Dev: done
 
 **Dependencies:** US-4
 
@@ -432,6 +433,16 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   Fix: extracted a single shared fixture identity and auth helper (`src/test-support/liveApiAuth.ts`, deliberately outside `__tests__` since Jest's `testMatch` would otherwise treat it as its own empty test suite) and pointed both live test files at it. Now whichever file wins `first-register` creates the exact user the other's fallback login expects — the race has no losing side.
   
   Verified in Docker: ran both live tests together against a fresh Postgres volume (both passed), ran the full suite (`tsc --noEmit`, `eslint`, full `jest`), and confirmed the two flaky-under-parallel-load timeouts (`us1-ac1.2`, `us6-ac6.3`) are the pre-existing, already-docu …
+  AC-6.4 done: Pushed to `feature/US-6-AC-6.4` (commit `444e01e`).
+  
+  ## Implementation Summary — US-6 AC-6.4
+  
+  **AC:** "Images below the fold use loading='lazy' and responsive sizes/srcset so only in-viewport images are requested on initial load, reducing initial page payload on a mobile connection (verified via network waterfall / Lighthouse mobile performance check)."
+  
+  **Finding:** `next/image` already lazy-loads by default (confirmed by reading `next/dist/shared/lib/get-img-props.js`), and AC-4.3 already wired responsive `sizes`/srcset from the Sharp variants. But nothing distinguished an above-the-fold instance from a below-the-fold one — every `MainImageDisplay` silently inherited the implicit lazy default, including a hero gallery's LCP candidate. Next.js itself warns against exactly this ("Please add the `loading=\"eager\"` property if this image is above the fold"), and a real Lighthouse mobile run would flag it. Real implementation was needed to make the above/below-fold split explicit and intentional, not incidental.
+  
+  **Files changed (commit `444e01e`):**
+  - `src/components/gallery/MainImageDisplay.tsx` — added an optional `priority` prop; renders explicit `loading="lazy"` by default, or p …
 
 **Tester Status:** approved
 **Tester Notes:**
