@@ -11,6 +11,9 @@
  * updated-by: dev-team
  * related-story: US-4
  * related-ac: 4.3
+ * updated-by: dev-team
+ * related-story: US-4
+ * related-ac: 4.4
  * ---
  */
 
@@ -25,4 +28,18 @@ export interface GalleryImage {
   mediumUrl?: string
   /** Sharp-generated 2048px variant. */
   largeUrl?: string
+}
+
+/**
+ * Mirrors the `settings` group on the Payload Galleries collection (see
+ * src/collections/Galleries.ts) — the display-mode toggles that let one
+ * Gallery Engine instance drive a hero, portfolio, blog, or client-delivery
+ * experience without a separate component tree per context.
+ */
+export interface GallerySettings {
+  slideshow: boolean
+  hoverPreview: boolean
+  fullscreen: boolean
+  download: boolean
+  requireAuth: boolean
 }
