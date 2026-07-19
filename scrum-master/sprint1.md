@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 2/6 stories | 14/28 ACs
-**Last Updated:** 2026-07-19T08:17:07+00:00
+**Progress:** 3/6 stories | 15/28 ACs
+**Last Updated:** 2026-07-19T08:42:02+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -164,7 +164,7 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 ---
 
 ### US-3: Gallery data model: reusable Galleries collection in Payload
-**Status:** in-progress | **Priority:** high
+**Status:** done | **Priority:** high
 
 #### Acceptance Criteria
 - [x] **AC-3.1:** A Payload 'Galleries' collection exists as an independent, reusable object with fields: id, title, description, ordered images[] (relations to Media), cover image, and settings.
@@ -175,7 +175,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-3.4:** Gallery 'settings' capture a display-mode configuration (e.g. slideshow, hover-preview, fullscreen, download, authentication toggles) so one gallery object can drive multiple display experiences.
   - Dev: done
-- [ ] **AC-3.5:** Galleries are readable via Payload's API/local API so the gallery viewer components can consume them.
+- [x] **AC-3.5:** Galleries are readable via Payload's API/local API so the gallery viewer components can consume them.
+  - Dev: done
 
 **Dependencies:** US-1, US-2
 
@@ -219,6 +220,21 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   **Files changed (commit `6f9dda9`):**
   - `src/collections/Galleries.ts` — replaced the `json` settings field with a `group` field of five independent `checkbox` toggles: `slideshow` (default `false`), `hoverPreview` (default `true`), `fullscreen` (default `true`), `download` (default `false`), `requireAuth` (default `false`) — matching the exact toggles named in AC-3.4's text and PRD §5.6's documented display modes (Hero, Portfolio, Client Delivery). Using independent booleans (not a fixed mode enum) lets one Galleries object represent any combination, e.g. Hero (`slideshow` on, rest off) vs. Client Delivery (`fullscreen`+`download`+`requireAuth` on). Extended the file's front-matter header with a `related-ac: 3.4` entry.
   - `src/__tests__/us3-ac3.4-gallery-settings.test.ts` (new, 14 tests) — verifies: `settings` is a `group` (not an enum); each of the five toggles exists as a `checkbox` with the documented default and isn't hidden/read-only; exactly those five toggles exi …
+  AC-3.5 done: Pushed to `feature/US-3-AC-3.5`. Done.
+  
+  ## Implementation Summary — US-3 AC-3.5
+  
+  **AC:** "Galleries are readable via Payload's API/local API so the gallery viewer components can consume them."
+  
+  **Finding:** No production code change was needed. The read path already exists from earlier work:
+  - Generic REST catch-all `src/app/(payload)/api/[...slug]/route.ts` and GraphQL `.../api/graphql/route.ts` build their handlers from the shared `@payload-config` (US-1), so every registered collection — including Galleries — is served with no per-collection route.
+  - `Galleries` is registered in `src/payload.config.ts`'s `collections` array (AC-3.1).
+  - Galleries declares no custom `access`/`endpoints`/`graphQL` overrides, so Payload's default access applies (`read` requires an authenticated user), and the Local API's `find` defaults `overrideAccess: true` — the mechanism server-rendered gallery viewer components (US-4/US-5) will use.
+  
+  This matches the sprint's established verification-only pattern (AC-1.2, 2.3, 2.5, 3.2, 3.3): the wiring exists but had no dedicated test, so this AC delivers that test.
+  
+  **Files changed (commit `c4560be`):**
+  - `src/__tests__/us3-ac3.5-galleries-api-read.test.ts` ( …
 
 **Tester Status:** approved
 **Tester Notes:**
