@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "jest"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "^3.86.0",
