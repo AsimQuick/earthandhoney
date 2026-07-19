@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 1/6 stories | 7/28 ACs
-**Last Updated:** 2026-07-19T07:09:30+00:00
+**Progress:** 1/6 stories | 8/28 ACs
+**Last Updated:** 2026-07-19T07:22:48+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -93,7 +93,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-2.2:** On upload, a Sharp pipeline generates three derivative sizes — thumbnail, medium, large — plus retains the original, and all four variants are persisted to R2.
   - Dev: done
-- [ ] **AC-2.3:** Each Media record exposes the URLs/keys for original, thumbnail, medium and large variants so consumers can request the correct size.
+- [x] **AC-2.3:** Each Media record exposes the URLs/keys for original, thumbnail, medium and large variants so consumers can request the correct size.
+  - Dev: done
 - [ ] **AC-2.4:** Alt text is a required field on Media to support accessibility and SEO.
 - [ ] **AC-2.5:** R2 credentials and bucket configuration are read from environment variables; a local/dev R2-compatible target may be used but no service is installed on the host.
 
@@ -122,6 +123,13 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - `src/payload.config.ts` — imports `sharp` and passes it into `buildConfig({ sharp, ... })`. This is required: Payload's `createImageSizes` internally checks `if (!imageSizes || !sharp) return`, so without wiring the dependency in, `imageSizes` would be silently ignored.
   - `package.json` / `package-lock.json` — added `sharp@^0.34.5` as a direct dependency (previously only a transitive optional dep of `next`, unsafe to import directly from our own code).
   - `src/__tests__/us2-ac2.2-sharp-pipeline.test.ts` (new, 15 tests) — verifies: Media declares exactly the three sizes in ascending width order with enlargement-safety; `payload.conf …
+  AC-2.3 done: ## Implementation Summary — US-2 AC-2.3
+  
+  **Finding:** AC-2.3's deliverable is already produced by Payload's core upload feature combined with the `imageSizes`/`s3Storage` wiring from AC-2.1 and AC-2.2 — no production code change was needed. Verified by reading `node_modules/payload/dist/uploads/getBaseFields.js` and `node_modules/@payloadcms/plugin-cloud-storage/dist/fields/getFields.js`: once a collection declares `upload.imageSizes`, Payload auto-injects a top-level `url`/`filename` (original) and a `sizes` group with `sizes.<name>.url`/`filename` per configured size, and the S3 storage adapter overrides those `url` fields' `afterRead`/`beforeChange` hooks to generate real R2 object URLs instead of local paths. This mechanism was present but had zero test coverage, so this branch adds the missing verification (same pattern as AC-1.2, which added verification-only for already-wired infra).
+  
+  **Files changed (commit `3e62c0a`):**
+  - `src/__tests__/us2-ac2.3-media-variant-urls.test.ts` (new, 8 tests):
+    - Config-level checks: `Media.upload.imageSizes` still names exactly `thumbnail`/`medium`/`large`; `Media.fields` doesn't declare a custom `url`/`filename`/`sizes`/`thumbnailURL` field …
 
 **Tester Status:** approved
 **Tester Notes:**
