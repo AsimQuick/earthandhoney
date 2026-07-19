@@ -43,14 +43,13 @@ import fs from 'fs'
 import path from 'path'
 
 import { getGalleryBearingPaths, ISR_DEMO_GALLERY_PATH, ISR_DEMO_GALLERY_TITLE } from '@/lib/galleryRevalidation'
+import { getLiveApiAuthToken } from '@/test-support/liveApiAuth'
 
 const root = process.cwd()
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8')
 
 const GALLERIES_COLLECTION_PATH = 'src/collections/Galleries.ts'
 const LIVE_TEST_PORT = 4283
-const FIXTURE_EMAIL = 'ac6.3-fixture@earthandhoney.test'
-const FIXTURE_PASSWORD = 'ac6.3-Fixture-Password!23'
 
 async function waitForServer(url: string, timeoutMs: number): Promise<Response> {
   const deadline = Date.now() + timeoutMs
@@ -79,28 +78,6 @@ function killServer(child: ChildProcessWithoutNullStreams): Promise<void> {
     }, 10000)
     forceKillTimer.unref()
   })
-}
-
-/** Obtain a JWT for the fixture user, registering it as the first user if none exists yet. */
-async function getAuthToken(base: string): Promise<string> {
-  const registerRes = await fetch(`${base}/api/users/first-register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: FIXTURE_EMAIL, password: FIXTURE_PASSWORD }),
-  })
-  if (registerRes.status < 300) {
-    const body = await registerRes.json()
-    return body.token as string
-  }
-
-  const loginRes = await fetch(`${base}/api/users/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: FIXTURE_EMAIL, password: FIXTURE_PASSWORD }),
-  })
-  expect(loginRes.status).toBeLessThan(300)
-  const body = await loginRes.json()
-  return body.token as string
 }
 
 describe('AC-6.3: getGalleryBearingPaths maps a gallery title to the route(s) it renders', () => {
@@ -202,7 +179,7 @@ describe('AC-6.3: updating the demo gallery through the real API round-trips thr
       try {
         await waitForServer(`${base}/api/users`, 60000)
 
-        const token = await getAuthToken(base)
+        const token = await getLiveApiAuthToken(base)
         const authHeaders = {
           'Content-Type': 'application/json',
           Authorization: `JWT ${token}`,
