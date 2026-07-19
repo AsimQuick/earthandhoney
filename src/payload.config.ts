@@ -12,6 +12,9 @@
  * updated-by: dev-team
  * related-story: US-2
  * related-ac: 2.2
+ * updated-by: dev-team
+ * related-story: US-3
+ * related-ac: 3.1
  * ---
  */
 import { postgresAdapter } from '@payloadcms/db-postgres'
@@ -22,6 +25,7 @@ import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
+import { Galleries } from './collections/Galleries'
 import { Media } from './collections/Media'
 import { Users } from './collections/Users'
 
@@ -35,7 +39,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname, 'app', '(payload)', 'admin'),
     },
   },
-  collections: [Users, Media],
+  collections: [Users, Media, Galleries],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   // Required for Media's `upload.imageSizes` (thumbnail/medium/large) to run —
