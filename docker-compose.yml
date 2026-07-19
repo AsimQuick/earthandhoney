@@ -16,6 +16,13 @@ services:
       - /app/.next
     env_file:
       - .env
+    environment:
+      # Overrides the generic-scaffold PORT=8000 in .env so the Next.js dev
+      # server binds to the port already exposed above (3000:3000).
+      PORT: "3000"
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:16-alpine
