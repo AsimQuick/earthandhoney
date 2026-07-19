@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 3/6 stories | 16/28 ACs
-**Last Updated:** 2026-07-19T08:54:30+00:00
+**Progress:** 3/6 stories | 17/28 ACs
+**Last Updated:** 2026-07-19T09:06:16+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -248,7 +248,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 #### Acceptance Criteria
 - [x] **AC-4.1:** A single reusable Gallery Engine component set renders any gallery: Gallery Container, Main Image Display, Thumbnail Preview strip, and Navigation Controls (next/previous).
   - Dev: done
-- [ ] **AC-4.2:** Every gallery display includes a subtle black CSS gradient overlay implemented purely in CSS (no image processing), applied consistently across displays.
+- [x] **AC-4.2:** Every gallery display includes a subtle black CSS gradient overlay implemented purely in CSS (no image processing), applied consistently across displays.
+  - Dev: done
 - [ ] **AC-4.3:** Images render via Next.js Image with responsive srcset drawn from the thumbnail/medium/large variants, choosing an appropriate size per viewport.
 - [ ] **AC-4.4:** The same engine is instantiated in at least two distinct display-mode contexts (e.g. a hero-mode instance and a portfolio-mode instance) on internal demo/test-harness routes — not linked from public navigation, and not backed by the out-of-scope Portfolio/Homepage CMS collections — and not the public marketing pages, which remain out of scope this sprint — driven purely by gallery settings, demonstrating reuse with no duplicated image systems. The real public pages will reuse this same engine unmodified in the later sprint that builds them.
 - [ ] **AC-4.5:** The engine's layout, spacing, typography, and gradient-overlay treatment visually match the public/photobuddy template when compared side-by-side (verified via manual visual QA checklist against the template), and template images are used as placeholder content in the rendered contexts.
@@ -270,6 +271,16 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - `src/components/gallery/NavigationControls.tsx` — presentational next/previous buttons, calls `onNext`/`onPrevious`.
   - `src/components/gallery/GalleryEngine.tsx` — the container (`'use client'`, owns `currentIndex` state via `useState`), composes the three pieces above around one shared state; next/previous wrap around at the boundaries; degrades gracefully (no crash) for an empty `images` array.
   - `s …
+  AC-4.2 done: Pushed to `feature/US-4-AC-4.2`.
+  
+  ## Implementation Summary — US-4 AC-4.2
+  
+  **Finding:** AC-4.2 was `not-started` on main — no gradient overlay existed anywhere in the Gallery Engine (`MainImageDisplay` rendered a bare `<img>`).
+  
+  **Files changed (commit `0dfe856`):**
+  - `src/components/gallery/GradientOverlay.tsx` (new) — presentational component rendering a decorative, `aria-hidden`, `pointer-events-none` `<div>` with an inline `linear-gradient` (transparent → `rgba(0,0,0,0.49)`) as its `backgroundImage`. Pure CSS, no background-image asset, no Sharp/image-processing involvement. Gradient stops mirror the subtlety of the `public/photobuddy` template's own hero-slider overlay (transparent through 70%, rising to ~0.49 black by 100%) for later AC-4.5 visual-parity.
+  - `src/components/gallery/MainImageDisplay.tsx` (modified) — now composes `<GradientOverlay />` stacked over the `<img>` inside its existing `relative` wrapper. Because every `GalleryEngine` instantiation (hero, portfolio, or any future display mode) renders through this same shared component, the overlay is applied consistently everywhere by construction — no per-context wiring needed. Header's `related-ac` bumped to 4.2.
+  - …
 
 **Tester Status:** approved
 **Tester Notes:**
