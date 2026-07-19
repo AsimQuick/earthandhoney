@@ -1,3 +1,13 @@
+/**
+ * ---
+ * file: eslint.config.mjs
+ * project: earthandhoney
+ * purpose: ESLint flat config — Next.js core-web-vitals and TypeScript rules, with generated/vendor paths ignored
+ * created-by: dev-team
+ * related-story: US-1
+ * related-ac: 1.5
+ * ---
+ */
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";

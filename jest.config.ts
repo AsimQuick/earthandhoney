@@ -1,3 +1,13 @@
+/**
+ * ---
+ * file: jest.config.ts
+ * project: earthandhoney
+ * purpose: Jest configuration — wires Next.js's SWC-based test transform, jsdom environment, and the '@/*' module alias
+ * created-by: dev-team
+ * related-story: US-1
+ * related-ac: 1.5
+ * ---
+ */
 import type { Config } from 'jest'
 import nextJest from 'next/jest.js'
 
