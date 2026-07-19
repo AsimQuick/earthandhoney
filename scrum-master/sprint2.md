@@ -1,8 +1,8 @@
 # Sprint 2
 
 **Phase:** planning
-**Progress:** 0/7 stories | 3/31 ACs
-**Last Updated:** 2026-07-19T21:50:24+00:00
+**Progress:** 1/7 stories | 4/31 ACs
+**Last Updated:** 2026-07-19T21:59:35+00:00
 
 ## Sprint Goal
 Ship the public, lead-generating photography website on top of the Gallery Engine delivered in sprint-1. Port the photobuddy design system into the app shell; add the content-driving CMS collections (Homepage, Portfolio, Blog, Testimonials, Packages, FAQ) the photographer manages without a developer; render all public marketing pages (Home, Galleries, Blog, and About with Packages/Testimonials/FAQ sections) with static generation + ISR powered by the existing Gallery Engine; and deliver lead conversion (contact form + WhatsApp capture) writing to a Leads collection with Resend email notification. Close sprint-1's carried-over deploy/CI/flake follow-ups first.
@@ -24,7 +24,7 @@ Ship the public, lead-generating photography website on top of the Gallery Engin
 ## User Stories
 
 ### US-7: Sprint-1 carry-over: deploy pipeline, clean-checkout CI smoke, and live-boot flake stabilization
-**Status:** in-progress | **Priority:** high
+**Status:** done | **Priority:** high
 
 #### Acceptance Criteria
 - [x] **AC-7.1:** A valid `.github/workflows/deploy.yml` exists (triggered on push to `main` and via `workflow_dispatch`) so a sprint-close deploy no longer returns HTTP 404 for the missing workflow; the workflow parses cleanly and builds the app inside Docker per the CLAUDE.md Docker rules.
@@ -33,7 +33,8 @@ Ship the public, lead-generating photography website on top of the Gallery Engin
   - Dev: done
 - [x] **AC-7.3:** The AC-1.2 live-boot test is stabilized so it no longer false-fails in the full local Docker suite (live/server-spawning suites are isolated from parallel jest, e.g. `--runInBand`, or given an adaptive timeout); verified by 5 consecutive full local-suite runs with zero false failures and by the test remaining green on CI runners.
   - Dev: done
-- [ ] **AC-7.4:** `.env.example` is authoritative for every variable required by sprint-2 (adds `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL`, `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_SITE_URL`) with placeholder values only and no real secrets committed.
+- [x] **AC-7.4:** `.env.example` is authoritative for every variable required by sprint-2 (adds `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL`, `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_SITE_URL`) with placeholder values only and no real secrets committed.
+  - Dev: done
 
 **Dev Team Status:** not-started
 **Dev Team Notes:**
@@ -70,6 +71,15 @@ Ship the public, lead-generating photography website on top of the Gallery Engin
   **Files changed:**
   - `package.json` — added `--runInBand` to the `test` script.
   - `src/__tests__/us7-ac7.3-live-boot-isolation.test.ts` (new, 12 tests) — verifies the `test` script runs jest serially and as a single invocation (so CI-appended flags apply suite-w …
+  AC-7.4 done: Pushed successfully to `feature/US-7-AC-7.4`.
+  
+  ## Implementation Summary
+  
+  **AC-7.4**: `.env.example` now documents all four sprint-2 variables (`RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL`, `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_SITE_URL`) with placeholder-only values; no real secrets committed.
+  
+  **Files changed:**
+  - `.env.example` — added a "Lead notifications (Resend)" section (`RESEND_API_KEY=change-me-in-production`, `LEAD_NOTIFICATION_EMAIL=change-me-in-production@example.com`), a WhatsApp section (`NEXT_PUBLIC_WHATSAPP_NUMBER=15550000000` — digits-only international format per `scrum-master/po-requests.md`, using the reserved-fictional `555` exchange), and `NEXT_PUBLIC_SITE_URL=http://localhost:3000` (a working local/dev default, not a secret, consistent with how `DATABASE_URL`/`REDIS_URL` are already handled in this file).
+  - `src/__tests__/us7-ac7.4-env-example-sprint2-vars.test.ts` (new, 12 tests) — verifies: all four vars are documented with non-empty values; `RESEND_API_KEY` doesn't match a real Resend key prefix (`re_...`) and is clearly marked `change-me-in-production`; `LEAD_NOTIFICATION_EMAIL` is email-shaped and marked as a placeholder; `NEXT_PUBLIC_WHATSAPP_NUMB …
 
 **Tester Status:** approved
 **Tester Notes:**
