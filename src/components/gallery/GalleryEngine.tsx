@@ -21,7 +21,12 @@
  *          instances differ only by the settings object passed in (AC-5.4).
  *          `settings.requireAuth` has no enforcement yet (stubbed this
  *          sprint per AC-5.4) but is still exposed via `data-require-auth`
- *          for downstream wiring.
+ *          for downstream wiring. Accepts an optional `priority` passthrough
+ *          (AC-6.4) for the one above-the-fold instance per page (e.g. a
+ *          hero gallery) so its main image loads eagerly; every other
+ *          instance defaults to MainImageDisplay's explicit
+ *          `loading="lazy"`, so a page stacking multiple galleries never
+ *          requests more than the single in-viewport main image upfront.
  * created-by: dev-team
  * related-story: US-4
  * related-ac: 4.1
@@ -43,6 +48,9 @@
  * updated-by: dev-team
  * related-story: US-5
  * related-ac: 5.4
+ * updated-by: dev-team
+ * related-story: US-6
+ * related-ac: 6.4
  * ---
  */
 'use client'
@@ -81,9 +89,16 @@ export interface GalleryEngineProps {
   initialIndex?: number
   /** Display-mode configuration — the only thing that should differ between a hero-mode and a portfolio-mode instance of this same engine. */
   settings?: GallerySettings
+  /** Marks this instance's main image as the page's above-the-fold LCP candidate (AC-6.4) — pass on at most one instance per page (e.g. a hero gallery at the top). Every other instance should leave this unset so its main image stays on the explicit lazy path. */
+  priority?: boolean
 }
 
-export function GalleryEngine({ images, initialIndex = 0, settings = DEFAULT_SETTINGS }: GalleryEngineProps) {
+export function GalleryEngine({
+  images,
+  initialIndex = 0,
+  settings = DEFAULT_SETTINGS,
+  priority = false,
+}: GalleryEngineProps) {
   const startIndex = images.length
     ? Math.min(Math.max(initialIndex, 0), images.length - 1)
     : 0
@@ -121,6 +136,7 @@ export function GalleryEngine({ images, initialIndex = 0, settings = DEFAULT_SET
         <MainImageDisplay
           image={images[currentIndex]}
           onOpenFullscreen={settings.fullscreen ? () => openFullscreen(currentIndex) : undefined}
+          priority={priority}
         />
         <NavigationControls onPrevious={goToPrevious} onNext={goToNext} />
         {settings.download && <DownloadControl image={images[currentIndex]} />}
