@@ -6,11 +6,15 @@
  * created-by: dev-team
  * related-story: US-1
  * related-ac: 1.1
+ * updated-by: dev-team
+ * related-story: US-8
+ * related-ac: 8.1
  * ---
  */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { PublicShell } from "@/components/layout/PublicShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,7 +41,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full">
+        <PublicShell>{children}</PublicShell>
+      </body>
     </html>
   );
 }
