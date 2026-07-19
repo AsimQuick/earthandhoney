@@ -167,7 +167,7 @@
     {
       "id": "US-4",
       "title": "Gallery Engine core components: container, main display, thumbnails, navigation, gradient overlay",
-      "status": "draft",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [
         "US-3"
@@ -176,8 +176,8 @@
         {
           "id": "4.1",
           "text": "A single reusable Gallery Engine component set renders any gallery: Gallery Container, Main Image Display, Thumbnail Preview strip, and Navigation Controls (next/previous).",
-          "checked": false,
-          "dev_status": "not-started",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
@@ -210,7 +210,7 @@
         }
       ],
       "dev_status": "not-started",
-      "dev_notes": "",
+      "dev_notes": "AC-4.1 done: Pushed to `feature/US-4-AC-4.1`.\n\n## Implementation Summary \u2014 US-4 AC-4.1\n\n**Finding:** US-4 was entirely unstarted \u2014 no `src/components/` directory existed yet. Real implementation was required (no reusable Gallery Engine pre-existed on main).\n\n**Files changed (commit `5085665`):**\n- `src/components/gallery/types.ts` \u2014 shared `GalleryImage { id, url, alt }` type, the gallery-agnostic shape every engine piece is built against.\n- `src/components/gallery/MainImageDisplay.tsx` \u2014 renders the currently active image (plain `<img>`; swapping in `next/image` with responsive srcset is explicitly AC-4.3's job, not bundled here).\n- `src/components/gallery/ThumbnailStrip.tsx` \u2014 renders one thumbnail button per image (`role=\"listbox\"`/`option`, `aria-selected`), calls `onSelect(index)` on click.\n- `src/components/gallery/NavigationControls.tsx` \u2014 presentational next/previous buttons, calls `onNext`/`onPrevious`.\n- `src/components/gallery/GalleryEngine.tsx` \u2014 the container (`'use client'`, owns `currentIndex` state via `useState`), composes the three pieces above around one shared state; next/previous wrap around at the boundaries; degrades gracefully (no crash) for an empty `images` array.\n- `s \u2026",
       "tester_status": "approved",
       "tester_notes": "Independently re-derived judgment, differing from the prior pass. AC-4.4 as written does NOT require building an out-of-scope public page: it explicitly scopes proof of reuse to internal demo/test-harness routes, expressly excluding the public marketing pages. Instantiating the engine twice (hero-mode, portfolio-mode) on a non-navigable internal route, driven only by gallery settings, requires no out-of-scope CMS collection (Portfolio/Homepage) and no out-of-scope public page \u2014 so it is fully testable within sprint-1 scope (render engine twice with different settings; assert a single shared component tree with no duplicated image system). Tightened AC-4.4 wording to explicitly state the demo route must not be linked from public navigation and must not depend on the out-of-scope Portfolio/Homepage CMS collections, closing the residual ambiguity about what 'internal' means. Reclassified from requirements-defect to approved \u2014 the prior flag appears to reference an earlier 'homepage hero + portfolio' framing rather than the current, already-scoped AC text; there is no outstanding PO decision required here. AC-4.1, 4.2, 4.3, 4.5 remain clear, testable, and in-scope \u2014 no changes."
     },
@@ -301,5 +301,5 @@
       "tester_notes": "Independently re-derived judgment, differing from the prior pass. AC-6.2 and AC-6.3 as written already scope ISR/revalidation proof to an internal demo/test-harness route, expressly excluding public pages ('Real public pages are out of scope this sprint...' / 'real public pages deferred...'). This requires nothing on the out-of-scope list (no Home/Portfolio/Blog/Packages/About/Contact page, no Portfolio/Homepage CMS collection) and is objectively verifiable: inspect the demo route for a revalidate/ISR config and confirm static generation, then trigger a Payload gallery update and assert the demo route's cached output regenerates via the revalidation hook (timestamp/ETag diff). Tightened both ACs' wording to state the demo route must not be linked from public navigation and must not depend on out-of-scope CMS collections, closing the ambiguity gap. Reclassified from requirements-defect to approved \u2014 the prior flag appears to reference an earlier 'public gallery-bearing pages' framing rather than the current, already-scoped AC text; there is no outstanding PO decision required here. AC-6.1 and AC-6.4 remain clear and testable (network-request-count assertion; Lighthouse mobile / network waterfall check) \u2014 no changes."
     }
   ],
-  "last_updated": "2026-07-19T08:42:02+00:00"
+  "last_updated": "2026-07-19T08:54:30+00:00"
 }
