@@ -9,6 +9,9 @@
  * created-by: dev-team
  * related-story: US-2
  * related-ac: 2.1
+ * updated-by: dev-team
+ * related-story: US-2
+ * related-ac: 2.2
  * ---
  */
 import type { CollectionConfig } from 'payload'
@@ -18,7 +21,31 @@ export const Media: CollectionConfig = {
   admin: {
     useAsTitle: 'alt',
   },
-  upload: true,
+  upload: {
+    // On upload, Payload's Sharp pipeline (wired via `sharp` in payload.config.ts)
+    // derives these three sizes from the original; the original itself is always
+    // retained. The S3 storage adapter (see payload.config.ts) then persists the
+    // original plus every generated size to Cloudflare R2.
+    imageSizes: [
+      {
+        name: 'thumbnail',
+        width: 400,
+        height: 400,
+        fit: 'cover',
+        withoutEnlargement: true,
+      },
+      {
+        name: 'medium',
+        width: 1200,
+        withoutEnlargement: true,
+      },
+      {
+        name: 'large',
+        width: 2048,
+        withoutEnlargement: true,
+      },
+    ],
+  },
   fields: [
     {
       name: 'alt',
