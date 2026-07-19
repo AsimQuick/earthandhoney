@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 1/6 stories | 5/28 ACs
-**Last Updated:** 2026-07-19T06:50:21+00:00
+**Progress:** 1/6 stories | 6/28 ACs
+**Last Updated:** 2026-07-19T07:01:21+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -86,10 +86,11 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 ---
 
 ### US-2: Media system: Sharp image pipeline with Cloudflare R2 storage
-**Status:** draft | **Priority:** high
+**Status:** in-progress | **Priority:** high
 
 #### Acceptance Criteria
-- [ ] **AC-2.1:** A Payload 'Media' collection exists storing original file reference, alt text, and metadata; relationships/metadata live in Payload while binary files live in Cloudflare R2 (not in Postgres or the local filesystem in production).
+- [x] **AC-2.1:** A Payload 'Media' collection exists storing original file reference, alt text, and metadata; relationships/metadata live in Payload while binary files live in Cloudflare R2 (not in Postgres or the local filesystem in production).
+  - Dev: done
 - [ ] **AC-2.2:** On upload, a Sharp pipeline generates three derivative sizes — thumbnail, medium, large — plus retains the original, and all four variants are persisted to R2.
 - [ ] **AC-2.3:** Each Media record exposes the URLs/keys for original, thumbnail, medium and large variants so consumers can request the correct size.
 - [ ] **AC-2.4:** Alt text is a required field on Media to support accessibility and SEO.
@@ -98,6 +99,17 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 **Dependencies:** US-1
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-2.1 done: Pushed to `feature/US-2-AC-2.1` (commit `d679207`).
+  
+  ## Implementation Summary — US-2 AC-2.1
+  
+  **Finding:** No Media collection existed yet — US-1 only established Users/Postgres/R2 env-var documentation. AC-2.1 required real implementation.
+  
+  **Files changed:**
+  - `src/collections/Media.ts` (new) — Payload upload collection, slug `media`, `useAsTitle: 'alt'`, one `alt` text field (not required — required-ness is AC-2.4's job). `upload: true` makes Payload auto-capture filename/mimeType/filesize/width/height metadata alongside the file reference.
+  - `src/payload.config.ts` — registered `Media` in `collections`, added the `@payloadcms/storage-s3` plugin (`s3Storage`) scoped to the `media` collection, configured against R2's S3-compatible endpoint using `process.env.R2_BUCKET/R2_ENDPOINT/R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY` (already documented in `.env.example` from AC-1.4), `region: 'auto'`, `forcePathStyle: true`. The plugin defaults `disableLocalStorage: true`, so binaries never touch Postgres or the local filesystem.
+  - `package.json` / `package-lock.json` — added `@payloadcms/storage-s3@^3.86.0` (exact version match to installed `payload@3.86.0`; pulls in `@aws-sdk/client-s3` trans …
 
 **Tester Status:** approved
 **Tester Notes:**
