@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 0/6 stories | 0/28 ACs
-**Last Updated:** —
+**Progress:** 0/6 stories | 1/28 ACs
+**Last Updated:** 2026-07-19T05:41:23+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -22,20 +22,30 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 ## User Stories
 
 ### US-1: Project foundation: Payload CMS + PostgreSQL running in Docker
-**Status:** draft | **Priority:** high
+**Status:** in-progress | **Priority:** high
 
 #### Acceptance Criteria
-- [ ] **AC-1.1:** Payload CMS is integrated into the Next.js App Router project and its admin panel is reachable at /admin when the stack is running.
+- [x] **AC-1.1:** Payload CMS is integrated into the Next.js App Router project and its admin panel is reachable at /admin when the stack is running.
+  - Dev: done
 - [ ] **AC-1.2:** PostgreSQL runs as a service in docker-compose.yml; Payload connects to it via the Docker network hostname 'db' (not localhost) and runs its initial schema migration successfully.
 - [ ] **AC-1.3:** The web app and database start together via `docker compose up -d`; no database or service is installed on the host machine.
 - [ ] **AC-1.4:** All required config (database URL, Payload secret, R2 credentials) is read from environment variables and documented in .env.example with placeholder values.
 - [ ] **AC-1.5:** Every new code file includes the project metadata front-matter header comment.
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-1.1 fixed: Fixed and pushed. Root cause: `.github/workflows/ci.yml` never created a `.env` file before `docker compose` commands ran, so every step failed with "env file not found" on a clean CI checkout. Added a `Prepare env file` step (`cp .env.example .env`) before the "Build containers" step. `.env.example` already comments out empty-value secrets, so Pattern 6 doesn't apply here. Left the unrelated pre-existing `docker-compose.yml` change (PORT override) untouched, as it wasn't part of this CI failure. Commit `c135762` pushed to `feature/US-1-AC-1.1`.
 
 **Tester Status:** approved
 **Tester Notes:**
-  Independently reviewed: all 5 ACs are objectively verifiable via automated checks (HTTP check on /admin, docker-compose service inspection, migration success logs, .env.example diff against required keys, header-comment lint/grep across new files). No vague language, no ambiguity about 'done,' and no scope conflict — foundation setup is explicitly this sprint's goal. No edits needed.
+  AC-1.1 diagnosis: ## Diagnosis: CI/pipeline configuration bug (not a code bug, not a requirements issue)
+  
+  **Root cause:** `docker-compose.yml`'s `web` service declares `env_file: .env` (docker-compose.yml:12-13). `.env` is correctly gitignored (`.gitignore:6`) since it holds secrets/local config, and a `.env.example` template exists and is committed. Locally, the developer has their own `.env` copied from the template, so everything works. But `.github/workflows/ci.yml` checks out a clean repo and never materializes a `.env` file before invoking any `docker compose` command — so `docker compose run --rm web ...` fails immediately at the "Lint" step (and would fail identically at every later step) with `env file ... not found`.
+  
+  **Is it a code bug or requirements issue?**
+  - Not a requirements issue — AC-1.4 ("config is read from environment variables and documented in `.env.example`") is satisfied; the template exists and is correct.
+  - Not an application code bug — ESLint/TSC/tests were never reached; the failure is entirely in the CI workflow's setup steps, before any app code executes.
+  - It's a **CI pipeline configuration bug**: `ci.yml` is missing a step to create `.env` (e.g. from `.env.example`) …
 
 ---
 
