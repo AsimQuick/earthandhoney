@@ -9,7 +9,12 @@
  *          The opacity/underline treatment on hover and on the active
  *          thumbnail mirrors public/photobuddy's recurring accent-underline
  *          motif (e.g. `.title_holder h2 span:after`) and its `.5s ease`
- *          transition timing used throughout the template (AC-4.5).
+ *          transition timing used throughout the template (AC-4.5). Only
+ *          mounts a windowed batch of thumbnails at a time (plus whichever
+ *          is active) via useProgressiveThumbnails, so a large gallery never
+ *          loads its full thumbnail set upfront (AC-6.1) — the rest reveal
+ *          progressively as a sentinel element at the end of the strip
+ *          scrolls into view.
  * created-by: dev-team
  * related-story: US-4
  * related-ac: 4.1
@@ -19,11 +24,15 @@
  * updated-by: dev-team
  * related-story: US-4
  * related-ac: 4.5
+ * updated-by: dev-team
+ * related-story: US-6
+ * related-ac: 6.1
  * ---
  */
 import Image from 'next/image'
 
 import { createGalleryImageLoader } from './galleryImageLoader'
+import { useProgressiveThumbnails } from './useProgressiveThumbnails'
 import type { GalleryImage } from './types'
 
 const THUMBNAIL_DISPLAY_SIZE = 64
@@ -35,6 +44,12 @@ export interface ThumbnailStripProps {
 }
 
 export function ThumbnailStrip({ images, activeIndex, onSelect }: ThumbnailStripProps) {
+  const { visibleCount, sentinelRef } = useProgressiveThumbnails({
+    totalCount: images.length,
+    activeIndex,
+  })
+  const visibleImages = images.slice(0, visibleCount)
+
   return (
     <div
       data-testid="thumbnail-strip"
@@ -42,7 +57,7 @@ export function ThumbnailStrip({ images, activeIndex, onSelect }: ThumbnailStrip
       role="listbox"
       aria-label="Gallery thumbnails"
     >
-      {images.map((image, index) => {
+      {visibleImages.map((image, index) => {
         const isActive = index === activeIndex
         return (
           <button
@@ -67,6 +82,14 @@ export function ThumbnailStrip({ images, activeIndex, onSelect }: ThumbnailStrip
           </button>
         )
       })}
+      {visibleCount < images.length && (
+        <div
+          ref={sentinelRef}
+          data-testid="thumbnail-strip-sentinel"
+          aria-hidden="true"
+          className="w-px shrink-0"
+        />
+      )}
     </div>
   )
 }
