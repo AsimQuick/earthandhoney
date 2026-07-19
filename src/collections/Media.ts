@@ -12,6 +12,9 @@
  * updated-by: dev-team
  * related-story: US-2
  * related-ac: 2.2
+ * updated-by: dev-team
+ * related-story: US-2
+ * related-ac: 2.4
  * ---
  */
 import type { CollectionConfig } from 'payload'
@@ -50,6 +53,9 @@ export const Media: CollectionConfig = {
     {
       name: 'alt',
       type: 'text',
+      // Required so every Media record carries accessibility/SEO alt text —
+      // Payload rejects create/update requests missing it (AC-2.4).
+      required: true,
     },
   ],
 }
