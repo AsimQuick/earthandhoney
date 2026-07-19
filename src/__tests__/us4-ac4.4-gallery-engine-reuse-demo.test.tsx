@@ -109,10 +109,10 @@ describe('AC-4.4: the internal demo route instantiates the same engine in two di
     const heroSection = within(screen.getByTestId('hero-mode-demo'))
     const portfolioSection = within(screen.getByTestId('portfolio-mode-demo'))
 
-    expect(heroSection.getAllByAltText('Hero demo image one').length).toBeGreaterThan(0)
-    expect(portfolioSection.getAllByAltText('Portfolio demo image one').length).toBeGreaterThan(0)
-    expect(portfolioSection.queryByAltText('Hero demo image one')).not.toBeInTheDocument()
-    expect(heroSection.queryByAltText('Portfolio demo image one')).not.toBeInTheDocument()
+    expect(heroSection.getAllByAltText('Photography Emotion').length).toBeGreaterThan(0)
+    expect(portfolioSection.getAllByAltText('Photography Emotion — image 1').length).toBeGreaterThan(0)
+    expect(portfolioSection.queryByAltText('Photography Emotion')).not.toBeInTheDocument()
+    expect(heroSection.queryByAltText('Photography Emotion — image 1')).not.toBeInTheDocument()
   })
 
   it('both instances still get the shared gradient overlay treatment (AC-4.2), proving one shared component tree, not a duplicated image system', () => {

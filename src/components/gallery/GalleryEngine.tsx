@@ -6,23 +6,37 @@
  *          renders any gallery (homepage hero, portfolio, blog, client
  *          delivery) by composing Main Image Display, Thumbnail Preview
  *          strip, and Navigation Controls around one shared "current image"
- *          state. No separate image system per context.
+ *          state. No separate image system per context. Loads the same
+ *          'Rubik' typeface public/photobuddy declares
+ *          (`body { font-family:'Rubik', Arial, Helvetica, sans-serif; }`)
+ *          and applies its base body type scale (14px / line-height 1.5 /
+ *          0.5px letter-spacing) so every engine instance's typography
+ *          matches the template (AC-4.5).
  * created-by: dev-team
  * related-story: US-4
  * related-ac: 4.1
  * updated-by: dev-team
  * related-story: US-4
  * related-ac: 4.4
+ * updated-by: dev-team
+ * related-story: US-4
+ * related-ac: 4.5
  * ---
  */
 'use client'
 
 import { useState } from 'react'
+import { Rubik } from 'next/font/google'
 
 import { MainImageDisplay } from './MainImageDisplay'
 import { NavigationControls } from './NavigationControls'
 import { ThumbnailStrip } from './ThumbnailStrip'
 import type { GalleryImage, GallerySettings } from './types'
+
+// Mirrors public/photobuddy/index.html's Google Fonts <link> ("Rubik:300,300i,
+// 400,400i,500,500i,700,700i,900,900i") — only the weights the template's own
+// CSS actually uses (400 for body/headings) are loaded here.
+const rubik = Rubik({ subsets: ['latin'], weight: ['400'] })
 
 // Mirrors the defaultValue of each toggle on the Payload Galleries
 // `settings` group (see src/collections/Galleries.ts) so an engine instance
@@ -51,7 +65,7 @@ export function GalleryEngine({ images, initialIndex = 0, settings = DEFAULT_SET
 
   if (images.length === 0) {
     return (
-      <div data-testid="gallery-engine" className="gallery-engine">
+      <div data-testid="gallery-engine" className={`gallery-engine ${rubik.className} text-[14px] leading-[1.5] tracking-[0.5px]`}>
         <p role="status">No images to display.</p>
       </div>
     )
@@ -63,7 +77,7 @@ export function GalleryEngine({ images, initialIndex = 0, settings = DEFAULT_SET
   return (
     <div
       data-testid="gallery-engine"
-      className="gallery-engine flex flex-col gap-4"
+      className={`gallery-engine ${rubik.className} flex flex-col gap-6 text-[14px] leading-[1.5] tracking-[0.5px]`}
       data-slideshow={settings.slideshow}
       data-hover-preview={settings.hoverPreview}
       data-fullscreen={settings.fullscreen}
