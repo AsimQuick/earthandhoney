@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 2/6 stories | 11/28 ACs
-**Last Updated:** 2026-07-19T07:45:23+00:00
+**Progress:** 2/6 stories | 12/28 ACs
+**Last Updated:** 2026-07-19T07:53:14+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -169,7 +169,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 #### Acceptance Criteria
 - [x] **AC-3.1:** A Payload 'Galleries' collection exists as an independent, reusable object with fields: id, title, description, ordered images[] (relations to Media), cover image, and settings.
   - Dev: done
-- [ ] **AC-3.2:** No CMS collection or code path other than Media and Galleries manages, uploads, or displays images — e.g. no per-page/per-post image-upload field or standalone image list duplicates what the Media + Galleries model already provides.
+- [x] **AC-3.2:** No CMS collection or code path other than Media and Galleries manages, uploads, or displays images — e.g. no per-page/per-post image-upload field or standalone image list duplicates what the Media + Galleries model already provides.
+  - Dev: done
 - [ ] **AC-3.3:** The photographer can upload images to a gallery, reorder them, remove them, and select a cover image entirely through the Payload admin UI without developer assistance.
 - [ ] **AC-3.4:** Gallery 'settings' capture a display-mode configuration (e.g. slideshow, hover-preview, fullscreen, download, authentication toggles) so one gallery object can drive multiple display experiences.
 - [ ] **AC-3.5:** Galleries are readable via Payload's API/local API so the gallery viewer components can consume them.
@@ -188,6 +189,17 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - `src/collections/Galleries.ts` (new) — Payload collection, slug `galleries`, `useAsTitle: 'title'`. Fields: `title` (required text), `description` (textarea), `images` (array field, each row an `image` relationship to `media` — array chosen over a plain `hasMany` relationship so row order is authoritative and the admin UI gets native drag-to-reorder for free, setting up cleanly for AC-3.3), `coverImage` (single relationship to `media`), `settings` (json — intentionally minimal placeholder; its display-mode shape is AC-3.4's job, not bundled here). No hand-declared `id` field — Payload auto-generates it for every collection.
   - `src/payload.config.ts` — imported and registered `Galleries` in the `collections` array alongside `Users`/`Media`, added an `updated-by`/`related-story`/`related-ac` entry to the header.
   - `src/__tests__/us3-ac3.1-galleries-collectio …
+  AC-3.2 done: Pushed to `feature/US-3-AC-3.2`.
+  
+  ## Implementation Summary — US-3 AC-3.2
+  
+  **Finding:** No production code change was needed — codebase audit confirmed only three collections exist (`Users`, `Media`, `Galleries`); only `Media` declares `upload` capability; only `Galleries` declares a standalone array of Media relations; the `s3Storage` plugin in `payload.config.ts` scopes storage to `media` alone; every `route.ts` under `src/app` is a thin re-export of `@payloadcms/next/routes` handlers (no custom multipart/upload handling); and no image-upload libraries (multer, formidable, busboy, cloudinary, uploadthing, imgix) are dependencies. This matches the sprint's established pattern (AC-1.2, AC-2.3, AC-2.5): production wiring already satisfies the AC, but it had no dedicated verification test, so this branch adds one.
+  
+  **Files changed (commit `82e5349`):**
+  - `src/__tests__/us3-ac3.2-single-image-system.test.ts` (new, 12 tests) — codebase-audit suite:
+    - Trip-wire: `src/collections/` contains exactly `Galleries.ts`, `Media.ts`, `Users.ts` (forces explicit re-audit if a new collection is ever added).
+    - `payload.config.ts` registers only those three collections.
+    - Only `Media` has an ` …
 
 **Tester Status:** approved
 **Tester Notes:**
