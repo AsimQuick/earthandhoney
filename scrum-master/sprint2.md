@@ -1,8 +1,8 @@
 # Sprint 2
 
 **Phase:** planning
-**Progress:** 0/7 stories | 0/31 ACs
-**Last Updated:** 2026-07-19
+**Progress:** 0/7 stories | 1/31 ACs
+**Last Updated:** 2026-07-19T16:57:28+00:00
 
 ## Sprint Goal
 Ship the public, lead-generating photography website on top of the Gallery Engine delivered in sprint-1. Port the photobuddy design system into the app shell; add the content-driving CMS collections (Homepage, Portfolio, Blog, Testimonials, Packages, FAQ) the photographer manages without a developer; render all public marketing pages (Home, Galleries, Blog, and About with Packages/Testimonials/FAQ sections) with static generation + ISR powered by the existing Gallery Engine; and deliver lead conversion (contact form + WhatsApp capture) writing to a Leads collection with Resend email notification. Close sprint-1's carried-over deploy/CI/flake follow-ups first.
@@ -24,15 +24,30 @@ Ship the public, lead-generating photography website on top of the Gallery Engin
 ## User Stories
 
 ### US-7: Sprint-1 carry-over: deploy pipeline, clean-checkout CI smoke, and live-boot flake stabilization
-**Status:** draft | **Priority:** high
+**Status:** in-progress | **Priority:** high
 
 #### Acceptance Criteria
-- [ ] **AC-7.1:** A valid `.github/workflows/deploy.yml` exists (triggered on push to `main` and via `workflow_dispatch`) so a sprint-close deploy no longer returns HTTP 404 for the missing workflow; the workflow parses cleanly and builds the app inside Docker per the CLAUDE.md Docker rules.
+- [x] **AC-7.1:** A valid `.github/workflows/deploy.yml` exists (triggered on push to `main` and via `workflow_dispatch`) so a sprint-close deploy no longer returns HTTP 404 for the missing workflow; the workflow parses cleanly and builds the app inside Docker per the CLAUDE.md Docker rules.
+  - Dev: done
 - [ ] **AC-7.2:** CI includes a clean-checkout smoke path (fresh `actions/checkout` -> `cp .env.example .env` -> `docker compose up` that boots `web`+`db`), so latent config gaps (like the sprint-1 `PAYLOAD_SECRET` bug) surface immediately rather than several ACs later.
 - [ ] **AC-7.3:** The AC-1.2 live-boot test is stabilized so it no longer false-fails in the full local Docker suite (live/server-spawning suites are isolated from parallel jest, e.g. `--runInBand`, or given an adaptive timeout); verified by 5 consecutive full local-suite runs with zero false failures and by the test remaining green on CI runners.
 - [ ] **AC-7.4:** `.env.example` is authoritative for every variable required by sprint-2 (adds `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL`, `NEXT_PUBLIC_WHATSAPP_NUMBER`, `NEXT_PUBLIC_SITE_URL`) with placeholder values only and no real secrets committed.
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-7.1 done: Pushed successfully to `feature/US-7-AC-7.1`.
+  
+  ## Implementation Summary
+  
+  **AC-7.1**: A valid `.github/workflows/deploy.yml` exists, triggered on push to `main` and via `workflow_dispatch`; parses cleanly and builds the app inside Docker.
+  
+  **Files changed:**
+  - `.github/workflows/deploy.yml` (new) — Deploy workflow with structured metadata header. Triggers: `push` to `main` (with `paths-ignore: scrum-master/**`, matching `ci.yml`'s convention) and `workflow_dispatch`. Single `build` job: checkout → `cp .env.example .env` → `docker compose build` → `docker compose down -v` teardown. No host installs, consistent with CLAUDE.md Docker rules.
+  - `src/__tests__/us7-ac7.1-deploy-workflow.test.ts` (new) — 9 unit tests verifying: file exists, parses as valid YAML, has jobs, triggers on push-to-main, triggers via `workflow_dispatch`, contains a Docker build step, checks out the repo first, doesn't install services on the host runner, and doesn't reference `localhost` instead of Docker network hostnames.
+  
+  **Test results:**
+  - New test file: 9/9 passing.
+  - Full suite run in-band (`--runInBand`, needed to avoid the documented AC-1.2 live-boot parallelism flake — see MEMORY.md `ac1.2-live-boot-tes …
 
 **Tester Status:** approved
 **Tester Notes:**
