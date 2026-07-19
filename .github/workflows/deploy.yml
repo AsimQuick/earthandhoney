@@ -1,0 +1,35 @@
+# ---
+# file: .github/workflows/deploy.yml
+# stack: nextjs
+# purpose: GitHub Actions deploy — builds the app inside Docker on push to
+#          main or via manual dispatch, so sprint-close deploy has a workflow
+#          to trigger
+# created-by: dev-team
+# related-story: US-7
+# related-ac: 7.1
+# ---
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'scrum-master/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare env file
+        run: cp .env.example .env
+
+      - name: Build the app inside Docker
+        run: docker compose build
+
+      - name: Teardown
+        if: always()
+        run: docker compose down -v
