@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 3/6 stories | 17/28 ACs
-**Last Updated:** 2026-07-19T09:06:16+00:00
+**Progress:** 3/6 stories | 18/28 ACs
+**Last Updated:** 2026-07-19T09:24:39+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -250,7 +250,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-4.2:** Every gallery display includes a subtle black CSS gradient overlay implemented purely in CSS (no image processing), applied consistently across displays.
   - Dev: done
-- [ ] **AC-4.3:** Images render via Next.js Image with responsive srcset drawn from the thumbnail/medium/large variants, choosing an appropriate size per viewport.
+- [x] **AC-4.3:** Images render via Next.js Image with responsive srcset drawn from the thumbnail/medium/large variants, choosing an appropriate size per viewport.
+  - Dev: done
 - [ ] **AC-4.4:** The same engine is instantiated in at least two distinct display-mode contexts (e.g. a hero-mode instance and a portfolio-mode instance) on internal demo/test-harness routes — not linked from public navigation, and not backed by the out-of-scope Portfolio/Homepage CMS collections — and not the public marketing pages, which remain out of scope this sprint — driven purely by gallery settings, demonstrating reuse with no duplicated image systems. The real public pages will reuse this same engine unmodified in the later sprint that builds them.
 - [ ] **AC-4.5:** The engine's layout, spacing, typography, and gradient-overlay treatment visually match the public/photobuddy template when compared side-by-side (verified via manual visual QA checklist against the template), and template images are used as placeholder content in the rendered contexts.
 
@@ -281,6 +282,15 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - `src/components/gallery/GradientOverlay.tsx` (new) — presentational component rendering a decorative, `aria-hidden`, `pointer-events-none` `<div>` with an inline `linear-gradient` (transparent → `rgba(0,0,0,0.49)`) as its `backgroundImage`. Pure CSS, no background-image asset, no Sharp/image-processing involvement. Gradient stops mirror the subtlety of the `public/photobuddy` template's own hero-slider overlay (transparent through 70%, rising to ~0.49 black by 100%) for later AC-4.5 visual-parity.
   - `src/components/gallery/MainImageDisplay.tsx` (modified) — now composes `<GradientOverlay />` stacked over the `<img>` inside its existing `relative` wrapper. Because every `GalleryEngine` instantiation (hero, portfolio, or any future display mode) renders through this same shared component, the overlay is applied consistently everywhere by construction — no per-context wiring needed. Header's `related-ac` bumped to 4.2.
   - …
+  AC-4.3 done: ## Implementation Summary — US-4 AC-4.3
+  
+  **Finding:** AC-4.1/4.2 explicitly deferred this work — both `MainImageDisplay.tsx` and `ThumbnailStrip.tsx` used plain `<img>` tags with an eslint-disable comment reading "responsive next/image srcset wiring is AC-4.3's job." Real implementation was required.
+  
+  **Files changed (commit `12404e4`, pushed to `feature/US-4-AC-4.3`):**
+  - `src/components/gallery/types.ts` — extended `GalleryImage` with optional `thumbnailUrl`/`mediumUrl`/`largeUrl` fields (mirroring the Sharp variants Payload's `Media` collection already generates), keeping `url` as the original-file fallback.
+  - `src/components/gallery/galleryImageLoader.ts` (new) — `resolveGalleryImageSrc(image, width)` picks thumbnail (≤400px) / medium (≤1200px) / large (>1200px), falling back up the chain and ultimately to `url` when a variant is missing. `createGalleryImageLoader(image)` wraps it as a `next/image` custom `loader` bound to one image.
+  - `src/components/gallery/MainImageDisplay.tsx` — now renders via `next/image` with `fill sizes="100vw"` and the custom loader, still stacked under `GradientOverlay` (AC-4.2 untouched).
+  - `src/components/gallery/ThumbnailStrip.tsx` — renders via `n …
 
 **Tester Status:** approved
 **Tester Notes:**
