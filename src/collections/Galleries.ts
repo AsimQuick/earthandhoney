@@ -14,14 +14,41 @@
  * updated-by: dev-team
  * related-story: US-3
  * related-ac: 3.4
+ * updated-by: dev-team
+ * related-story: US-6
+ * related-ac: 6.3
  * ---
  */
 import type { CollectionConfig } from 'payload'
+
+import { getGalleryBearingPaths } from '@/lib/galleryRevalidation'
 
 export const Galleries: CollectionConfig = {
   slug: 'galleries',
   admin: {
     useAsTitle: 'title',
+  },
+  hooks: {
+    // On-demand revalidation (AC-6.3): when a gallery that backs an in-scope
+    // gallery-bearing route is updated, regenerate that route immediately
+    // instead of waiting for its `revalidate` (ISR) timer to elapse. Runs
+    // inside the Route Handler request that processes the update (REST/
+    // GraphQL API, which is what the admin UI itself calls), so `next/cache`'s
+    // request-scoped store is present. `next/cache` is imported dynamically,
+    // only once a gallery backing an in-scope route actually changes — a
+    // top-level import would drag in Next's server-streaming internals
+    // (which assume Node's `TextEncoder`/`TextDecoder` globals) into every
+    // jsdom-environment test that merely inspects this collection's fields.
+    afterChange: [
+      async ({ doc }) => {
+        const paths = getGalleryBearingPaths(doc?.title)
+        if (paths.length === 0) return
+        const { revalidatePath } = await import('next/cache')
+        for (const routePath of paths) {
+          revalidatePath(routePath)
+        }
+      },
+    ],
   },
   fields: [
     {
