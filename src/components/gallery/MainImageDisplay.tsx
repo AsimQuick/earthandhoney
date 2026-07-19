@@ -15,7 +15,15 @@
  *          into and clip a cover-cropped photo against (AC-4.5). When
  *          `onOpenFullscreen` is supplied, the image is wrapped in a button
  *          so clicking or tapping it — or activating it via keyboard —
- *          opens the PhotoSwipe fullscreen viewer (AC-5.1).
+ *          opens the PhotoSwipe fullscreen viewer (AC-5.1). Every instance
+ *          explicitly renders `loading="lazy"` unless the caller passes
+ *          `priority` (AC-6.4) — next/image already lazy-loads by default,
+ *          but leaving it implicit would mean an above-the-fold instance
+ *          (e.g. a hero gallery) silently lazy-loads its own LCP candidate
+ *          too, which next/image itself warns against. `priority` is the
+ *          explicit opt-out for that one above-the-fold instance per page;
+ *          every other instance stays on the explicit lazy path, so only
+ *          in-viewport images are requested on initial load.
  * created-by: dev-team
  * related-story: US-4
  * related-ac: 4.2
@@ -28,6 +36,9 @@
  * updated-by: dev-team
  * related-story: US-5
  * related-ac: 5.1
+ * updated-by: dev-team
+ * related-story: US-6
+ * related-ac: 6.4
  * ---
  */
 import Image from 'next/image'
@@ -40,9 +51,11 @@ export interface MainImageDisplayProps {
   image: GalleryImage
   /** Opens the fullscreen PhotoSwipe viewer on this image (US-5, AC-5.1). Omitted, the image renders without a click/tap trigger. */
   onOpenFullscreen?: () => void
+  /** Marks this image as the page's above-the-fold LCP candidate (e.g. the first gallery instance on a page) so it loads eagerly instead of lazily (AC-6.4). Leave unset for any instance rendered below the fold. */
+  priority?: boolean
 }
 
-export function MainImageDisplay({ image, onOpenFullscreen }: MainImageDisplayProps) {
+export function MainImageDisplay({ image, onOpenFullscreen, priority = false }: MainImageDisplayProps) {
   const content = (
     <>
       <Image
@@ -52,6 +65,7 @@ export function MainImageDisplay({ image, onOpenFullscreen }: MainImageDisplayPr
         sizes="100vw"
         loader={createGalleryImageLoader(image)}
         className="object-cover"
+        {...(priority ? { priority: true } : { loading: 'lazy' as const })}
       />
       <GradientOverlay />
     </>

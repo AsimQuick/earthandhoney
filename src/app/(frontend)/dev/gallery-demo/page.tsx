@@ -17,13 +17,23 @@
  *          the template's gallery.html, wrapped in a max-width container
  *          matching photobuddy's own `.container` (max-width: 1130px), for
  *          side-by-side manual visual QA against the template (AC-4.5). See
- *          docs/qa/us4-ac4.5-visual-qa-checklist.md.
+ *          docs/qa/us4-ac4.5-visual-qa-checklist.md. Also doubles as the
+ *          AC-6.4 harness: the hero section is the only above-the-fold
+ *          content on this route, so its GalleryEngine is the sole instance
+ *          passed `priority`; the portfolio section below it is left on the
+ *          default lazy path. A network waterfall / mobile Lighthouse run
+ *          against this route should show the hero's main image requested
+ *          immediately and the portfolio section's main/thumbnail images
+ *          deferred until scrolled near.
  * created-by: dev-team
  * related-story: US-4
  * related-ac: 4.4
  * updated-by: dev-team
  * related-story: US-4
  * related-ac: 4.5
+ * updated-by: dev-team
+ * related-story: US-6
+ * related-ac: 6.4
  * ---
  */
 import type { Metadata } from 'next'
@@ -88,7 +98,7 @@ export default function GalleryEngineDemoPage() {
         <h2 id="hero-demo-heading" className="px-8 pb-4 text-2xl font-normal tracking-[3px] uppercase">
           Hero mode
         </h2>
-        <GalleryEngine images={heroImages} settings={heroSettings} />
+        <GalleryEngine images={heroImages} settings={heroSettings} priority />
       </section>
 
       <section aria-labelledby="portfolio-demo-heading" data-testid="portfolio-mode-demo" className="mx-auto w-full max-w-[1130px] px-10">

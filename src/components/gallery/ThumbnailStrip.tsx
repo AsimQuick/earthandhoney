@@ -14,7 +14,11 @@
  *          is active) via useProgressiveThumbnails, so a large gallery never
  *          loads its full thumbnail set upfront (AC-6.1) — the rest reveal
  *          progressively as a sentinel element at the end of the strip
- *          scrolls into view.
+ *          scrolls into view. Every mounted thumbnail explicitly renders
+ *          `loading="lazy"` (AC-6.4) — thumbnails are always secondary,
+ *          below-the-fold/deferred content relative to the main display and
+ *          are never an above-the-fold LCP candidate, so unlike
+ *          MainImageDisplay there's no priority opt-out here.
  * created-by: dev-team
  * related-story: US-4
  * related-ac: 4.1
@@ -27,6 +31,9 @@
  * updated-by: dev-team
  * related-story: US-6
  * related-ac: 6.1
+ * updated-by: dev-team
+ * related-story: US-6
+ * related-ac: 6.4
  * ---
  */
 import Image from 'next/image'
@@ -77,6 +84,7 @@ export function ThumbnailStrip({ images, activeIndex, onSelect }: ThumbnailStrip
               width={THUMBNAIL_DISPLAY_SIZE}
               height={THUMBNAIL_DISPLAY_SIZE}
               loader={createGalleryImageLoader(image)}
+              loading="lazy"
               className="h-16 w-16 object-cover"
             />
           </button>
