@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 1/6 stories | 9/28 ACs
-**Last Updated:** 2026-07-19T07:29:58+00:00
+**Progress:** 2/6 stories | 10/28 ACs
+**Last Updated:** 2026-07-19T07:37:24+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -86,7 +86,7 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 ---
 
 ### US-2: Media system: Sharp image pipeline with Cloudflare R2 storage
-**Status:** in-progress | **Priority:** high
+**Status:** done | **Priority:** high
 
 #### Acceptance Criteria
 - [x] **AC-2.1:** A Payload 'Media' collection exists storing original file reference, alt text, and metadata; relationships/metadata live in Payload while binary files live in Cloudflare R2 (not in Postgres or the local filesystem in production).
@@ -97,7 +97,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-2.4:** Alt text is a required field on Media to support accessibility and SEO.
   - Dev: done
-- [ ] **AC-2.5:** R2 credentials and bucket configuration are read from environment variables; a local/dev R2-compatible target may be used but no service is installed on the host.
+- [x] **AC-2.5:** R2 credentials and bucket configuration are read from environment variables; a local/dev R2-compatible target may be used but no service is installed on the host.
+  - Dev: done
 
 **Dependencies:** US-1
 
@@ -146,6 +147,15 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Coverage (CI's exact threshold command): 100% stmts/branch/funcs/lines — well above the 80% gate.
   - `eslint` and `tsc --noEmit`: clean.
   - Excluded an unrelated `tsconfig.json` reformat that Next's tooling auto-generated as a side effect of running dev/test — reverted before co …
+  AC-2.5 done: Pushed to `feature/US-2-AC-2.5`.
+  
+  ## Implementation Summary — US-2 AC-2.5
+  
+  **Finding:** The production wiring this AC requires already existed from prior ACs — `src/payload.config.ts` (AC-2.1) reads `R2_BUCKET`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` from `process.env` inside the `s3Storage` plugin config (with `forcePathStyle: true`, which is what makes swapping in a local/dev S3-compatible target viable), and `.env.example` (AC-1.4) documents all 5 R2 vars including `R2_ACCOUNT_ID` as change-me placeholders. No R2-compatible service (MinIO, LocalStack, etc.) is installed anywhere — `Dockerfile` is a plain Next.js container and `docker-compose.yml` only defines `web`/`db`. No production code change was needed, but per this sprint's established pattern (AC-1.2, AC-2.3), a dedicated AC-specific verification test was still missing, so this branch adds it.
+  
+  **Files changed (commit `a9a73eb`):**
+  - `src/__tests__/us2-ac2.5-r2-env-config.test.ts` (new, 18 tests):
+    - Asserts the storage adapter's `bucket`/`endpoint`/`accessKeyId`/`secretAccessKey` are each sourced from the corresponding `process.env.R2_*` var (not hardcoded), uses `forcePathStyle: true`, and never hard …
 
 **Tester Status:** approved
 **Tester Notes:**
