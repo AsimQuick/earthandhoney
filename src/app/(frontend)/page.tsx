@@ -1,3 +1,13 @@
+/**
+ * ---
+ * file: src/app/(frontend)/page.tsx
+ * project: earthandhoney
+ * purpose: Public homepage placeholder within the (frontend) route group
+ * created-by: dev-team
+ * related-story: US-1
+ * related-ac: 1.1
+ * ---
+ */
 import Image from "next/image";
 
 export default function Home() {
