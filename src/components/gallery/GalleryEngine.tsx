@@ -15,7 +15,13 @@
  *          (`body { font-family:'Rubik', Arial, Helvetica, sans-serif; }`)
  *          and applies its base body type scale (14px / line-height 1.5 /
  *          0.5px letter-spacing) so every engine instance's typography
- *          matches the template (AC-4.5).
+ *          matches the template (AC-4.5). Every other display-mode toggle
+ *          (`settings.fullscreen`, `settings.slideshow`, `settings.download`)
+ *          is enforced here too, so hero/portfolio/client-delivery
+ *          instances differ only by the settings object passed in (AC-5.4).
+ *          `settings.requireAuth` has no enforcement yet (stubbed this
+ *          sprint per AC-5.4) but is still exposed via `data-require-auth`
+ *          for downstream wiring.
  * created-by: dev-team
  * related-story: US-4
  * related-ac: 4.1
@@ -34,6 +40,9 @@
  * updated-by: dev-team
  * related-story: US-5
  * related-ac: 5.3
+ * updated-by: dev-team
+ * related-story: US-5
+ * related-ac: 5.4
  * ---
  */
 'use client'
@@ -41,10 +50,12 @@
 import { useState } from 'react'
 import { Rubik } from 'next/font/google'
 
+import { DownloadControl } from './DownloadControl'
 import { MainImageDisplay } from './MainImageDisplay'
 import { NavigationControls } from './NavigationControls'
 import { ThumbnailDrawer } from './ThumbnailDrawer'
 import { useFullscreenViewer } from './useFullscreenViewer'
+import { useSlideshow } from './useSlideshow'
 import { useSwipeNavigation } from './useSwipeNavigation'
 import type { GalleryImage, GallerySettings } from './types'
 
@@ -83,6 +94,7 @@ export function GalleryEngine({ images, initialIndex = 0, settings = DEFAULT_SET
   const goToPrevious = () => setCurrentIndex((index) => (index - 1 + images.length) % images.length)
   const goToNext = () => setCurrentIndex((index) => (index + 1) % images.length)
   const swipeHandlers = useSwipeNavigation({ onSwipeLeft: goToNext, onSwipeRight: goToPrevious })
+  useSlideshow({ enabled: settings.slideshow, imageCount: images.length, onAdvance: goToNext })
 
   if (images.length === 0) {
     return (
@@ -106,8 +118,12 @@ export function GalleryEngine({ images, initialIndex = 0, settings = DEFAULT_SET
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative touch-pan-y" {...swipeHandlers}>
-        <MainImageDisplay image={images[currentIndex]} onOpenFullscreen={() => openFullscreen(currentIndex)} />
+        <MainImageDisplay
+          image={images[currentIndex]}
+          onOpenFullscreen={settings.fullscreen ? () => openFullscreen(currentIndex) : undefined}
+        />
         <NavigationControls onPrevious={goToPrevious} onNext={goToNext} />
+        {settings.download && <DownloadControl image={images[currentIndex]} />}
       </div>
       <ThumbnailDrawer
         images={images}
