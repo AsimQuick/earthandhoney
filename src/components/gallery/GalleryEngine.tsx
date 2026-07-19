@@ -6,8 +6,12 @@
  *          renders any gallery (homepage hero, portfolio, blog, client
  *          delivery) by composing Main Image Display, Thumbnail Preview
  *          strip, and Navigation Controls around one shared "current image"
- *          state. No separate image system per context. Loads the same
- *          'Rubik' typeface public/photobuddy declares
+ *          state. No separate image system per context. Tracks pointer
+ *          hover over the whole gallery so ThumbnailDrawer can reveal its
+ *          strip on desktop hover per `settings.hoverPreview` (AC-5.3, PRD
+ *          5.7) without disturbing the independent mobile tap-drawer state
+ *          from AC-5.2. Loads the same 'Rubik' typeface public/photobuddy
+ *          declares
  *          (`body { font-family:'Rubik', Arial, Helvetica, sans-serif; }`)
  *          and applies its base body type scale (14px / line-height 1.5 /
  *          0.5px letter-spacing) so every engine instance's typography
@@ -27,6 +31,9 @@
  * updated-by: dev-team
  * related-story: US-5
  * related-ac: 5.2
+ * updated-by: dev-team
+ * related-story: US-5
+ * related-ac: 5.3
  * ---
  */
 'use client'
@@ -71,6 +78,7 @@ export function GalleryEngine({ images, initialIndex = 0, settings = DEFAULT_SET
     : 0
   const [currentIndex, setCurrentIndex] = useState(startIndex)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
   const openFullscreen = useFullscreenViewer(images)
   const goToPrevious = () => setCurrentIndex((index) => (index - 1 + images.length) % images.length)
   const goToNext = () => setCurrentIndex((index) => (index + 1) % images.length)
@@ -93,6 +101,9 @@ export function GalleryEngine({ images, initialIndex = 0, settings = DEFAULT_SET
       data-fullscreen={settings.fullscreen}
       data-download={settings.download}
       data-require-auth={settings.requireAuth}
+      data-hovered={isHovered}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative touch-pan-y" {...swipeHandlers}>
         <MainImageDisplay image={images[currentIndex]} onOpenFullscreen={() => openFullscreen(currentIndex)} />
@@ -104,6 +115,8 @@ export function GalleryEngine({ images, initialIndex = 0, settings = DEFAULT_SET
         onSelect={setCurrentIndex}
         isOpen={isDrawerOpen}
         onToggle={() => setIsDrawerOpen((open) => !open)}
+        hoverPreview={settings.hoverPreview}
+        isHovered={isHovered}
       />
     </div>
   )
