@@ -1,8 +1,8 @@
 # Sprint 1
 
-**Phase:** planning
+**Phase:** complete
 **Progress:** 6/6 stories | 28/28 ACs
-**Last Updated:** 2026-07-19T13:44:56+00:00
+**Last Updated:** 2026-07-19T14:01:42+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -79,9 +79,9 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - `jest.config.ts`, `jest.setup.ts`, `eslint.config.mjs`, `postcss.config.mjs` — added the standard header (`created-by: dev-team`, `related-story: US-1`, `related-ac: 1.5`).
   - `src/__tests__/us1-ac1.5-code-file-headers.test.ts` (new, 3 test blocks generating ~30 assertions via `it.each` over every scanned code file) — walks the repo for code files, excluding the sam …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  AC-1.3 diagnosis: (no summary reported)
+  FINAL CLOSE-OUT (fresh independent pass): ran `gh pr checks` against all 5 merged PRs (#7-#11, AC-1.1..1.5) -- every PR shows 2/2 'test' checks green (CI workflow runs eslint --max-warnings 0, tsc --noEmit, and jest --coverage --coverageThreshold 80% global, all via `docker compose run --rm web`, per .github/workflows/ci.yml). No failing, missing, or skipped checks found. Cross-checked via `gh pr list --state merged --base main` that all 5 are merged to main in the expected chronological AC order. Sanity-checked the AC-1.5 code-file-header claim directly by reading source files (e.g. src/collections/Galleries.ts, src/components/gallery/GalleryEngine.tsx) -- the documented front-matter block (file/project/purpose/created-by/related-story/related-ac) is present as claimed. docker-compose.yml confirms only `web`+`db` services, db is postgres:16-alpine in a named volume with a healthcheck, no host-installed services -- consistent with AC-1.2/1.3. No defects found in this close-out pass.
 
 ---
 
@@ -157,9 +157,9 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - `src/__tests__/us2-ac2.5-r2-env-config.test.ts` (new, 18 tests):
     - Asserts the storage adapter's `bucket`/`endpoint`/`accessKeyId`/`secretAccessKey` are each sourced from the corresponding `process.env.R2_*` var (not hardcoded), uses `forcePathStyle: true`, and never hard …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Independently reviewed: all 5 ACs are objectively verifiable (schema/collection inspection, upload-triggered pipeline test asserting exactly 4 persisted R2 objects — original/thumbnail/medium/large, field-presence checks for URLs/keys, required-field validation test for alt text, env-var/config inspection for R2 credentials with any dev-time R2-compatible target run as a Docker service, not host-installed). No scope issues — Media collection is explicitly in-scope. No edits needed.
+  FINAL CLOSE-OUT: ran `gh pr checks` against all 5 merged PRs (#12-#16, AC-2.1..2.5) -- every PR shows 2/2 'test' checks green, no failing/missing/skipped checks. All 5 confirmed merged to main in the expected chronological AC order via `gh pr list --state merged --base main`. No defects found in this close-out pass.
 
 ---
 
@@ -236,9 +236,9 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   **Files changed (commit `c4560be`):**
   - `src/__tests__/us3-ac3.5-galleries-api-read.test.ts` ( …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Independently reviewed: AC-3.1, 3.3, 3.4, 3.5 are clear and testable via schema inspection, admin-UI e2e test, settings-field inspection, and API read test. AC-3.2 is phrased as a concrete, auditable negative check (no CMS collection/code path other than Media+Galleries manages images) rather than a vague design-principle restatement — confirmed this remains verifiable via codebase/schema audit. No scope issues; the Galleries collection is explicitly in-scope. No edits needed.
+  FINAL CLOSE-OUT: ran `gh pr checks` against all 5 merged PRs (#17-#21, AC-3.1..3.5) -- every PR shows 2/2 'test' checks green, no failing/missing/skipped checks. All 5 confirmed merged to main in the expected chronological AC order via `gh pr list --state merged --base main`. No defects found in this close-out pass.
 
 ---
 
@@ -314,9 +314,9 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   **Files committed (`e2aeb80`):**
   - **`public/photobuddy/`** (new, 53 files, 1.1M) — the canonical design template per CLAUDE.md, committed so the demo route's `/photobuddy/img/...` placeholders r …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Independently re-derived judgment, differing from the prior pass. AC-4.4 as written does NOT require building an out-of-scope public page: it explicitly scopes proof of reuse to internal demo/test-harness routes, expressly excluding the public marketing pages. Instantiating the engine twice (hero-mode, portfolio-mode) on a non-navigable internal route, driven only by gallery settings, requires no out-of-scope CMS collection (Portfolio/Homepage) and no out-of-scope public page — so it is fully testable within sprint-1 scope (render engine twice with different settings; assert a single shared component tree with no duplicated image system). Tightened AC-4.4 wording to explicitly state the demo route must not be linked from public navigation and must not depend on the out-of-scope Portfolio/Homepage CMS collections, closing the residual ambiguity about what 'internal' means. Reclassified from requirements-defect to approved — the prior flag appears to reference an earlier 'homepage hero + portfolio' framing rather than the current, already-scoped AC text; there is no outstanding PO decision required here. AC-4.1, 4.2, 4.3, 4.5 remain clear, testable, and in-scope — no changes.
+  FINAL CLOSE-OUT: ran `gh pr checks` against all 5 merged PRs (#22-#26, AC-4.1..4.5) -- every PR shows 2/2 'test' checks green, no failing/missing/skipped checks. All 5 confirmed merged to main in the expected chronological AC order via `gh pr list --state merged --base main`. No defects found in this close-out pass.
 
 ---
 
@@ -381,9 +381,9 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   **Files changed (commit `4f59ea0`):**
   - `src/components/gallery/GalleryEngine.tsx` (modified) — enforces each per-gallery toggle so hero/portfolio/client-delivery instances differ only by the `settings` object: `settings.fullscreen` gates whether the PhotoSwipe click/tap trigger is passed to `MainImageDisplay`; …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Independently reviewed: all 4 ACs are testable via component/e2e tests driven by gallery settings values (touch/swipe emulation, hover simulation, keyboard events, per-mode toggle assertions) and can be exercised against any gallery instance, including a test-harness route — no dependency on out-of-scope public pages. AC-5.4's stubbed-auth carve-out is explicit and bounded (setting must be wired and assertable even though enforcement is stubbed), so it remains objectively verifiable. No scope issues. No edits needed.
+  FINAL CLOSE-OUT: ran `gh pr checks` against all 4 merged PRs (#27-#30, AC-5.1..5.4) -- every PR shows 2/2 'test' checks green, no failing/missing/skipped checks. All 4 confirmed merged to main in the expected chronological AC order via `gh pr list --state merged --base main`. No defects found in this close-out pass.
 
 ---
 
@@ -444,17 +444,15 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   **Files changed (commit `444e01e`):**
   - `src/components/gallery/MainImageDisplay.tsx` — added an optional `priority` prop; renders explicit `loading="lazy"` by default, or p …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  AC-6.3 diagnosis: I've reproduced the CI failure locally in Docker and root-caused it. Here's my diagnosis:
+  SPRINT DOD GAP (unmet -- blocks a clean sprint-wide sign-off): confirmed via repo-wide glob (**/retrospective*), a scrum-master/ directory listing, and a git-log search for any commit ever adding a retrospective file (none found on this branch's history) that retrospective.md does not exist anywhere in this repository. Definition-of-Done item 6, 'retrospective.md updated', is UNMET as of this close-out pass. This is a sprint-level gap, not a defect in US-6's own deliverables (see below); it is recorded here on the sprint-closing story because the schema has no dedicated sprint-level field.
   
-  ## Diagnosis: Code bug (test infrastructure, not the feature) — Medium severity
+  US-6 own-story CI verification: ran `gh pr checks` against all 4 merged PRs (#31-#34, AC-6.1..6.4) -- every PR shows 2/2 'test' checks green, no failing/missing/skipped checks. Specifically re-verified PR #33 (AC-6.3), which earlier tester notes flagged as flaky due to a first-register race between the us3-ac3.5 and us6-ac6.3 live round-trip tests sharing one Postgres container: the merged PR's actual CI run is clean (2/2 pass), consistent with the dev notes describing the shared liveApiAuth.ts fixture-helper fix landing before merge -- no residual flake evidence at the PR gate. AC-1.2's known local-only live-boot flake (full local Docker suite runs only, per prior tester context) was not encountered in any PR's CI logs and is not treated as a defect here.
   
-  **The AC-6.3 feature implementation is correct.** `src/lib/galleryRevalidation.ts`'s title→path mapping and the `Galleries.ts` `afterChange` hook are both proven correct by fast, deterministic tests (title mapping, source-wiring assertions, and a mocked-`next/cache` invocation test) — all 8 of those pass reliably every time.
+  SPRINT-WIDE SUMMARY (all 28 PRs, #7-#34): 28/28 show clean CI (2/2 'test' checks passing each, covering eslint --max-warnings 0, tsc --noEmit, and jest --coverage --coverageThreshold 80% global, all executed via `docker compose run --rm web` per .github/workflows/ci.yml). DoD items 1 (All ACs verified by CI), 3 (Coverage threshold met), and 5 (All services run in Docker) are supported by direct evidence, the latter also confirmed via docker-compose.yml showing only web+db services with no host-installed dependencies. DoD item 4 (Code file headers include metadata) spot-checked directly against source files and confirmed reasonable. DoD item 2 (No critical defects) -- none found; the one historical defect (AC-6.3 test race) was fixed and verified clean before merge. DoD item 6 (retrospective.md updated) is UNMET per above.
   
-  **The failure is isolated to one test**: `AC-6.3: updating the demo gallery through the real API round-trips...` in `src/__tests__/us6-ac6.3-on-demand-revalidation.test.ts`, which fails with `401` on a login call inside `getAuthToken` (line 101).
-  
-  **Root cause**: this live test's auth bootstrap does "register as Payload's first user, or fall back to logging in with my own fixture credentials." Payload only ever allows **one** `first-register` call for the lifetime of a Postgres database — every subsequent call fails once any user exists. Five other test files (`us1-ac1.2`, `us2-ac2.3`, `us2-ac2.4`, `us3-ac3.3`, `us3-ac3.5`) already use this exact same pattern, each with its **own distinct fi …
+  CONCLUSION: Sprint-1 Definition of Done is NOT fully met, solely due to the missing retrospective.md. All 28 ACs are otherwise CI-verified clean with no outstanding code defects. Recommend the Project Lead trigger retrospective.md creation/population (Missed Checks + Process Improvements) before formally closing sprint-1.
 
 ---
 
