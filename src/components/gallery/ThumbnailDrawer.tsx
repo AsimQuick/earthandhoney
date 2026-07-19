@@ -2,17 +2,24 @@
  * ---
  * file: src/components/gallery/ThumbnailDrawer.tsx
  * project: earthandhoney
- * purpose: Mobile thumbnail drawer (AC-5.2, PRD 5.7) — on a touch device
- *          there is no hover, so the thumbnail strip starts collapsed and a
- *          tap on the drawer toggle reveals it, mirroring the desktop
- *          hover-to-reveal experience AC-5.3 adds for pointer devices. Wraps
- *          the existing ThumbnailStrip unchanged; only visibility is
- *          collapsed below the `sm` breakpoint — at `sm` and up the strip
- *          stays shown exactly as it already does (AC-4.1), so this AC only
- *          changes mobile behavior.
+ * purpose: Thumbnail reveal wrapper for both device classes (PRD 5.7). On a
+ *          touch device there is no hover, so below the `sm` breakpoint the
+ *          strip starts collapsed and a tap on the drawer toggle reveals it
+ *          (AC-5.2). At `sm` and up the toggle hides and the strip instead
+ *          starts collapsed and reveals on pointer hover over the gallery,
+ *          gated by `hoverPreview` — the same per-gallery setting Payload's
+ *          Galleries collection exposes (src/collections/Galleries.ts) —
+ *          so a hover-preview-disabled gallery (e.g. the hero mode, PRD 5.6)
+ *          never reveals the strip on desktop (AC-5.3). The two reveal
+ *          mechanisms are independent state (`isOpen` vs `isHovered`) so
+ *          neither breakpoint's behavior leaks into the other. Wraps the
+ *          existing ThumbnailStrip unchanged.
  * created-by: dev-team
  * related-story: US-5
  * related-ac: 5.2
+ * updated-by: dev-team
+ * related-story: US-5
+ * related-ac: 5.3
  * ---
  */
 import { ThumbnailStrip } from './ThumbnailStrip'
@@ -26,9 +33,23 @@ export interface ThumbnailDrawerProps {
   onSelect: (index: number) => void
   isOpen: boolean
   onToggle: () => void
+  /** Per-gallery `settings.hoverPreview` toggle (AC-5.3) — desktop hover only reveals the strip when this is true. */
+  hoverPreview: boolean
+  /** Whether the pointer is currently over the gallery (GalleryEngine's mouseenter/mouseleave). */
+  isHovered: boolean
 }
 
-export function ThumbnailDrawer({ images, activeIndex, onSelect, isOpen, onToggle }: ThumbnailDrawerProps) {
+export function ThumbnailDrawer({
+  images,
+  activeIndex,
+  onSelect,
+  isOpen,
+  onToggle,
+  hoverPreview,
+  isHovered,
+}: ThumbnailDrawerProps) {
+  const revealOnHover = hoverPreview && isHovered
+
   return (
     <div className="thumbnail-drawer">
       <button
@@ -45,9 +66,10 @@ export function ThumbnailDrawer({ images, activeIndex, onSelect, isOpen, onToggl
         id={PANEL_ID}
         data-testid="thumbnail-drawer"
         data-open={isOpen}
-        className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out sm:!max-h-none sm:!opacity-100 ${
+        data-hover-visible={revealOnHover}
+        className={`overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${
           isOpen ? 'max-h-24' : 'max-h-0 opacity-0 max-sm:pointer-events-none'
-        }`}
+        } ${revealOnHover ? 'sm:!max-h-24 sm:!opacity-100' : 'sm:!max-h-0 sm:!opacity-0 sm:!pointer-events-none'}`}
       >
         <ThumbnailStrip images={images} activeIndex={activeIndex} onSelect={onSelect} />
       </div>
