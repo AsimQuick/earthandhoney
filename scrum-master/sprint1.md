@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 5/6 stories | 26/28 ACs
-**Last Updated:** 2026-07-19T12:30:32+00:00
+**Progress:** 5/6 stories | 27/28 ACs
+**Last Updated:** 2026-07-19T13:28:36+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -395,7 +395,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-6.2:** Gallery-bearing routes use static generation with incremental regeneration (ISR), proven this sprint against an internal demo/test-harness route — not linked from public navigation, and not backed by the out-of-scope Portfolio/Homepage CMS collections — rendering a gallery. Real public pages are out of scope this sprint and will re-verify the identical ISR wiring in the sprint that builds them.
   - Dev: done
-- [ ] **AC-6.3:** Updating a gallery in Payload triggers on-demand revalidation/regeneration of the affected gallery-bearing route(s), demonstrated this sprint against an internal demo/test-harness route — not linked from public navigation, and not backed by out-of-scope CMS collections (real public pages deferred; the same revalidation hook re-verifies against them in the sprint that builds them).
+- [x] **AC-6.3:** Updating a gallery in Payload triggers on-demand revalidation/regeneration of the affected gallery-bearing route(s), demonstrated this sprint against an internal demo/test-harness route — not linked from public navigation, and not backed by out-of-scope CMS collections (real public pages deferred; the same revalidation hook re-verifies against them in the sprint that builds them).
+  - Dev: done
 - [ ] **AC-6.4:** Images below the fold use loading='lazy' and responsive sizes/srcset so only in-viewport images are requested on initial load, reducing initial page payload on a mobile connection (verified via network waterfall / Lighthouse mobile performance check).
 
 **Dependencies:** US-4
@@ -424,10 +425,25 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   
   **Files changed (commit `017ac2b`, 3 files, +409):**
   - `src/app/(frontend)/dev/gallery-isr-demo/page.tsx` (new) — internal demo route. `export const revalidate = 60` (the ISR segment config), fetches the in-scope `galleries` collection (US-3) via Payload's Local API with **no request-scoped input** (so Next statically pr …
+  AC-6.3 fixed: Pushed to `feature/US-6-AC-6.3`.
+  
+  **Summary:** The AC-6.3 feature code was fine — the CI failure was a pre-existing test-design race the Tester correctly identified. `us3-ac3.5` and `us6-ac6.3`'s live round-trip tests each registered their own distinct fixture user against the same shared Postgres `db` container. Payload only allows one `first-register` call per database lifetime, so whichever file's live test ran first won that slot; the other file's fallback login then 401'd trying to log in as a user that was never actually created.
+  
+  Fix: extracted a single shared fixture identity and auth helper (`src/test-support/liveApiAuth.ts`, deliberately outside `__tests__` since Jest's `testMatch` would otherwise treat it as its own empty test suite) and pointed both live test files at it. Now whichever file wins `first-register` creates the exact user the other's fallback login expects — the race has no losing side.
+  
+  Verified in Docker: ran both live tests together against a fresh Postgres volume (both passed), ran the full suite (`tsc --noEmit`, `eslint`, full `jest`), and confirmed the two flaky-under-parallel-load timeouts (`us1-ac1.2`, `us6-ac6.3`) are the pre-existing, already-docu …
 
 **Tester Status:** approved
 **Tester Notes:**
-  Independently re-derived judgment, differing from the prior pass. AC-6.2 and AC-6.3 as written already scope ISR/revalidation proof to an internal demo/test-harness route, expressly excluding public pages ('Real public pages are out of scope this sprint...' / 'real public pages deferred...'). This requires nothing on the out-of-scope list (no Home/Portfolio/Blog/Packages/About/Contact page, no Portfolio/Homepage CMS collection) and is objectively verifiable: inspect the demo route for a revalidate/ISR config and confirm static generation, then trigger a Payload gallery update and assert the demo route's cached output regenerates via the revalidation hook (timestamp/ETag diff). Tightened both ACs' wording to state the demo route must not be linked from public navigation and must not depend on out-of-scope CMS collections, closing the ambiguity gap. Reclassified from requirements-defect to approved — the prior flag appears to reference an earlier 'public gallery-bearing pages' framing rather than the current, already-scoped AC text; there is no outstanding PO decision required here. AC-6.1 and AC-6.4 remain clear and testable (network-request-count assertion; Lighthouse mobile / network waterfall check) — no changes.
+  AC-6.3 diagnosis: I've reproduced the CI failure locally in Docker and root-caused it. Here's my diagnosis:
+  
+  ## Diagnosis: Code bug (test infrastructure, not the feature) — Medium severity
+  
+  **The AC-6.3 feature implementation is correct.** `src/lib/galleryRevalidation.ts`'s title→path mapping and the `Galleries.ts` `afterChange` hook are both proven correct by fast, deterministic tests (title mapping, source-wiring assertions, and a mocked-`next/cache` invocation test) — all 8 of those pass reliably every time.
+  
+  **The failure is isolated to one test**: `AC-6.3: updating the demo gallery through the real API round-trips...` in `src/__tests__/us6-ac6.3-on-demand-revalidation.test.ts`, which fails with `401` on a login call inside `getAuthToken` (line 101).
+  
+  **Root cause**: this live test's auth bootstrap does "register as Payload's first user, or fall back to logging in with my own fixture credentials." Payload only ever allows **one** `first-register` call for the lifetime of a Postgres database — every subsequent call fails once any user exists. Five other test files (`us1-ac1.2`, `us2-ac2.3`, `us2-ac2.4`, `us3-ac3.3`, `us3-ac3.5`) already use this exact same pattern, each with its **own distinct fi …
 
 ---
 
