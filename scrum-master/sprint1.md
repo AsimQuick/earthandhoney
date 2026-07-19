@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 5/6 stories | 24/28 ACs
-**Last Updated:** 2026-07-19T11:35:47+00:00
+**Progress:** 5/6 stories | 25/28 ACs
+**Last Updated:** 2026-07-19T11:54:06+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -388,10 +388,11 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 ---
 
 ### US-6: Gallery performance: progressive/lazy loading, partial load, and static generation with ISR
-**Status:** draft | **Priority:** high
+**Status:** in-progress | **Priority:** high
 
 #### Acceptance Criteria
-- [ ] **AC-6.1:** A gallery never loads its full set of images upfront — only visible images and required thumbnails are loaded initially; remaining images load lazily/progressively.
+- [x] **AC-6.1:** A gallery never loads its full set of images upfront — only visible images and required thumbnails are loaded initially; remaining images load lazily/progressively.
+  - Dev: done
 - [ ] **AC-6.2:** Gallery-bearing routes use static generation with incremental regeneration (ISR), proven this sprint against an internal demo/test-harness route — not linked from public navigation, and not backed by the out-of-scope Portfolio/Homepage CMS collections — rendering a gallery. Real public pages are out of scope this sprint and will re-verify the identical ISR wiring in the sprint that builds them.
 - [ ] **AC-6.3:** Updating a gallery in Payload triggers on-demand revalidation/regeneration of the affected gallery-bearing route(s), demonstrated this sprint against an internal demo/test-harness route — not linked from public navigation, and not backed by out-of-scope CMS collections (real public pages deferred; the same revalidation hook re-verifies against them in the sprint that builds them).
 - [ ] **AC-6.4:** Images below the fold use loading='lazy' and responsive sizes/srcset so only in-viewport images are requested on initial load, reducing initial page payload on a mobile connection (verified via network waterfall / Lighthouse mobile performance check).
@@ -399,6 +400,17 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 **Dependencies:** US-4
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-6.1 done: Pushed to `feature/US-6-AC-6.1` (commit `b34eed5`).
+  
+  ## Implementation Summary — US-6 AC-6.1
+  
+  **AC:** "A gallery never loads its full set of images upfront — only visible images and required thumbnails are loaded initially; remaining images load lazily/progressively." (PRD §6 "Initial Load")
+  
+  **Finding:** Partially satisfied already — `MainImageDisplay` only ever renders the single currently-active image (never the full array), and `next/image` defaults every image to `loading="lazy"`. But `ThumbnailStrip` unconditionally mapped over the **entire** `images` array into the DOM on mount. For a large gallery this mounts hundreds of `<img>` elements upfront; worse, when the mobile drawer / desktop hover strip is collapsed (`max-h-0 overflow-hidden`, AC-5.2/5.3), those hidden thumbnails still occupy a real layout position, so native browser lazy-loading heuristics could still fetch them immediately — silently defeating the "only required thumbnails load initially" requirement. This gap needed real implementation, not just verification.
+  
+  **Files changed (commit `b34eed5`):**
+  - `src/components/gallery/useProgressiveThumbnails.ts` (new) — hook that windows how many thumbnails `ThumbnailStr …
 
 **Tester Status:** approved
 **Tester Notes:**
