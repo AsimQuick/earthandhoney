@@ -217,7 +217,7 @@
     {
       "id": "US-5",
       "title": "Mobile-first interaction: PhotoSwipe fullscreen viewer, thumbnail drawer, swipe & keyboard navigation",
-      "status": "draft",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [
         "US-4"
@@ -226,8 +226,8 @@
         {
           "id": "5.1",
           "text": "Clicking/tapping any gallery image opens a fullscreen viewer powered by PhotoSwipe supporting next, previous, close, swipe, and keyboard navigation.",
-          "checked": false,
-          "dev_status": "not-started",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
@@ -253,7 +253,7 @@
         }
       ],
       "dev_status": "not-started",
-      "dev_notes": "",
+      "dev_notes": "AC-5.1 done: Pushed to `feature/US-5-AC-5.1`. All CI gates verified locally against a freshly-rebuilt image.\n\n## Implementation Summary \u2014 US-5 AC-5.1\n\n**AC:** \"Clicking/tapping any gallery image opens a fullscreen viewer powered by PhotoSwipe supporting next, previous, close, swipe, and keyboard navigation.\"\n\n**Finding:** The previous dev agent left substantial, coherent uncommitted work on the branch. I audited it end-to-end, found it correct and complete, fixed the one thing blocking a faithful test run (a stale Docker image), verified all gates, and committed.\n\n**Files changed (commit `39f9718`, pushed to `feature/US-5-AC-5.1`):**\n- `src/components/gallery/useFullscreenViewer.ts` (new) \u2014 React hook that creates one `PhotoSwipeLightbox` per gallery from an in-memory `dataSource` (no DOM scanning; images already in React state), exposes an imperative `open(index)`, lazy-loads the PhotoSwipe core via `pswpModule`, and destroys the instance on unmount. Next/prev/close/swipe/keyboard are PhotoSwipe defaults \u2014 none disabled.\n- `src/components/gallery/MainImageDisplay.tsx` \u2014 renders an accessible `<button>` trigger (keyboard-activatable, `aria-label`) **only** when `onOpenFullscreen` is supplied; o \u2026",
       "tester_status": "approved",
       "tester_notes": "Independently reviewed: all 4 ACs are testable via component/e2e tests driven by gallery settings values (touch/swipe emulation, hover simulation, keyboard events, per-mode toggle assertions) and can be exercised against any gallery instance, including a test-harness route \u2014 no dependency on out-of-scope public pages. AC-5.4's stubbed-auth carve-out is explicit and bounded (setting must be wired and assertable even though enforcement is stubbed), so it remains objectively verifiable. No scope issues. No edits needed."
     },
@@ -301,5 +301,5 @@
       "tester_notes": "Independently re-derived judgment, differing from the prior pass. AC-6.2 and AC-6.3 as written already scope ISR/revalidation proof to an internal demo/test-harness route, expressly excluding public pages ('Real public pages are out of scope this sprint...' / 'real public pages deferred...'). This requires nothing on the out-of-scope list (no Home/Portfolio/Blog/Packages/About/Contact page, no Portfolio/Homepage CMS collection) and is objectively verifiable: inspect the demo route for a revalidate/ISR config and confirm static generation, then trigger a Payload gallery update and assert the demo route's cached output regenerates via the revalidation hook (timestamp/ETag diff). Tightened both ACs' wording to state the demo route must not be linked from public navigation and must not depend on out-of-scope CMS collections, closing the ambiguity gap. Reclassified from requirements-defect to approved \u2014 the prior flag appears to reference an earlier 'public gallery-bearing pages' framing rather than the current, already-scoped AC text; there is no outstanding PO decision required here. AC-6.1 and AC-6.4 remain clear and testable (network-request-count assertion; Lighthouse mobile / network waterfall check) \u2014 no changes."
     }
   ],
-  "last_updated": "2026-07-19T10:11:07+00:00"
+  "last_updated": "2026-07-19T10:36:09+00:00"
 }

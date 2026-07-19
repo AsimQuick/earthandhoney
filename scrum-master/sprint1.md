@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 4/6 stories | 20/28 ACs
-**Last Updated:** 2026-07-19T10:11:07+00:00
+**Progress:** 4/6 stories | 21/28 ACs
+**Last Updated:** 2026-07-19T10:36:09+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -321,10 +321,11 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 ---
 
 ### US-5: Mobile-first interaction: PhotoSwipe fullscreen viewer, thumbnail drawer, swipe & keyboard navigation
-**Status:** draft | **Priority:** high
+**Status:** in-progress | **Priority:** high
 
 #### Acceptance Criteria
-- [ ] **AC-5.1:** Clicking/tapping any gallery image opens a fullscreen viewer powered by PhotoSwipe supporting next, previous, close, swipe, and keyboard navigation.
+- [x] **AC-5.1:** Clicking/tapping any gallery image opens a fullscreen viewer powered by PhotoSwipe supporting next, previous, close, swipe, and keyboard navigation.
+  - Dev: done
 - [ ] **AC-5.2:** The gallery is designed mobile-first: touch navigation and swipe gestures work, and tapping a gallery opens a thumbnail drawer (mobile has no hover).
 - [ ] **AC-5.3:** On desktop, hovering a gallery reveals a thumbnail preview strip for previewing images (hover-preview honored per gallery settings).
 - [ ] **AC-5.4:** Display-mode settings are respected: e.g. hero disables fullscreen/hover and enables slideshow; portfolio enables hover + fullscreen; client-delivery enables download + fullscreen + required auth (auth enforcement may be stubbed this sprint but the setting is wired).
@@ -332,6 +333,18 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 **Dependencies:** US-4
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-5.1 done: Pushed to `feature/US-5-AC-5.1`. All CI gates verified locally against a freshly-rebuilt image.
+  
+  ## Implementation Summary — US-5 AC-5.1
+  
+  **AC:** "Clicking/tapping any gallery image opens a fullscreen viewer powered by PhotoSwipe supporting next, previous, close, swipe, and keyboard navigation."
+  
+  **Finding:** The previous dev agent left substantial, coherent uncommitted work on the branch. I audited it end-to-end, found it correct and complete, fixed the one thing blocking a faithful test run (a stale Docker image), verified all gates, and committed.
+  
+  **Files changed (commit `39f9718`, pushed to `feature/US-5-AC-5.1`):**
+  - `src/components/gallery/useFullscreenViewer.ts` (new) — React hook that creates one `PhotoSwipeLightbox` per gallery from an in-memory `dataSource` (no DOM scanning; images already in React state), exposes an imperative `open(index)`, lazy-loads the PhotoSwipe core via `pswpModule`, and destroys the instance on unmount. Next/prev/close/swipe/keyboard are PhotoSwipe defaults — none disabled.
+  - `src/components/gallery/MainImageDisplay.tsx` — renders an accessible `<button>` trigger (keyboard-activatable, `aria-label`) **only** when `onOpenFullscreen` is supplied; o …
 
 **Tester Status:** approved
 **Tester Notes:**
