@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 4/6 stories | 22/28 ACs
-**Last Updated:** 2026-07-19T10:56:25+00:00
+**Progress:** 4/6 stories | 23/28 ACs
+**Last Updated:** 2026-07-19T11:10:50+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -328,7 +328,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-5.2:** The gallery is designed mobile-first: touch navigation and swipe gestures work, and tapping a gallery opens a thumbnail drawer (mobile has no hover).
   - Dev: done
-- [ ] **AC-5.3:** On desktop, hovering a gallery reveals a thumbnail preview strip for previewing images (hover-preview honored per gallery settings).
+- [x] **AC-5.3:** On desktop, hovering a gallery reveals a thumbnail preview strip for previewing images (hover-preview honored per gallery settings).
+  - Dev: done
 - [ ] **AC-5.4:** Display-mode settings are respected: e.g. hero disables fullscreen/hover and enables slideshow; portfolio enables hover + fullscreen; client-delivery enables download + fullscreen + required auth (auth enforcement may be stubbed this sprint but the setting is wired).
 
 **Dependencies:** US-4
@@ -357,6 +358,17 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   **Files changed (commit `247e8ae`):**
   - `src/components/gallery/useSwipeNavigation.ts` (new) — touch handlers (`onTouchStart`/`onTouchEnd`) that detect a horizontal swipe past a 50px threshold and call `onSwipeLeft`/`onSwipeRight`; ignores gestures that are mostly vertical so normal page scrolling isn't hijacked.
   - `src/components/gallery/ThumbnailDrawer.tsx` (new) — wraps the existing, unmodified `ThumbnailStrip` with a tap toggle ( …
+  AC-5.3 done: Pushed successfully to `feature/US-5-AC-5.3`.
+  
+  ## Implementation Summary — US-5 AC-5.3
+  
+  **AC:** "On desktop, hovering a gallery reveals a thumbnail preview strip for previewing images (hover-preview honored per gallery settings)."
+  
+  **Finding:** No hover-reveal behavior existed. The `GallerySettings.hoverPreview` field already existed (wired since AC-3.4, surfaced as `data-hover-preview` on the gallery container since earlier US-4/5 work), but nothing consumed it — the `ThumbnailDrawer` unconditionally force-showed the strip at the `sm` breakpoint and up (`sm:!max-h-none sm:!opacity-100`), regardless of hover state or the setting.
+  
+  **Files changed (commit `49057de`):**
+  - `src/components/gallery/GalleryEngine.tsx` — added `isHovered` state tracked via `onMouseEnter`/`onMouseLeave` on the top-level gallery container (exposed as `data-hovered` for debugging), and passes `hoverPreview`/`isHovered` down to `ThumbnailDrawer`.
+  - `src/components/gallery/ThumbnailDrawer.tsx` — computes `revealOnHover = hoverPreview && isHovered`; the desktop (`sm:`) override classes are now conditional on this instead of hardcoded always-visible, and a new `data-hover-visible` attribute exposes the reveal st …
 
 **Tester Status:** approved
 **Tester Notes:**
