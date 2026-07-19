@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 4/6 stories | 23/28 ACs
-**Last Updated:** 2026-07-19T11:10:50+00:00
+**Progress:** 5/6 stories | 24/28 ACs
+**Last Updated:** 2026-07-19T11:35:47+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -321,7 +321,7 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
 ---
 
 ### US-5: Mobile-first interaction: PhotoSwipe fullscreen viewer, thumbnail drawer, swipe & keyboard navigation
-**Status:** in-progress | **Priority:** high
+**Status:** done | **Priority:** high
 
 #### Acceptance Criteria
 - [x] **AC-5.1:** Clicking/tapping any gallery image opens a fullscreen viewer powered by PhotoSwipe supporting next, previous, close, swipe, and keyboard navigation.
@@ -330,7 +330,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-5.3:** On desktop, hovering a gallery reveals a thumbnail preview strip for previewing images (hover-preview honored per gallery settings).
   - Dev: done
-- [ ] **AC-5.4:** Display-mode settings are respected: e.g. hero disables fullscreen/hover and enables slideshow; portfolio enables hover + fullscreen; client-delivery enables download + fullscreen + required auth (auth enforcement may be stubbed this sprint but the setting is wired).
+- [x] **AC-5.4:** Display-mode settings are respected: e.g. hero disables fullscreen/hover and enables slideshow; portfolio enables hover + fullscreen; client-delivery enables download + fullscreen + required auth (auth enforcement may be stubbed this sprint but the setting is wired).
+  - Dev: done
 
 **Dependencies:** US-4
 
@@ -369,6 +370,16 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   **Files changed (commit `49057de`):**
   - `src/components/gallery/GalleryEngine.tsx` — added `isHovered` state tracked via `onMouseEnter`/`onMouseLeave` on the top-level gallery container (exposed as `data-hovered` for debugging), and passes `hoverPreview`/`isHovered` down to `ThumbnailDrawer`.
   - `src/components/gallery/ThumbnailDrawer.tsx` — computes `revealOnHover = hoverPreview && isHovered`; the desktop (`sm:`) override classes are now conditional on this instead of hardcoded always-visible, and a new `data-hover-visible` attribute exposes the reveal st …
+  AC-5.4 done: AC-5.4 is complete, committed, and pushed to `feature/US-5-AC-5.4`.
+  
+  ## Implementation Summary — US-5 AC-5.4
+  
+  **AC:** "Display-mode settings are respected: e.g. hero disables fullscreen/hover and enables slideshow; portfolio enables hover + fullscreen; client-delivery enables download + fullscreen + required auth (auth enforcement may be stubbed this sprint but the setting is wired)."
+  
+  **Finding:** The previous dev agent left coherent, uncommitted work on the branch that fully implements this AC. I audited it end-to-end, reverted an unrelated Next.js-auto-generated `tsconfig.json` reformat (same side effect prior ACs noted and excluded), verified all gates, and committed. The `GallerySettings` toggles were already *wired* to `data-*` attributes since AC-4.4, but nothing *enforced* `slideshow`/`fullscreen`/`download` behaviorally — that enforcement is this AC's deliverable.
+  
+  **Files changed (commit `4f59ea0`):**
+  - `src/components/gallery/GalleryEngine.tsx` (modified) — enforces each per-gallery toggle so hero/portfolio/client-delivery instances differ only by the `settings` object: `settings.fullscreen` gates whether the PhotoSwipe click/tap trigger is passed to `MainImageDisplay`; …
 
 **Tester Status:** approved
 **Tester Notes:**
