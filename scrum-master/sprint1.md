@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 2/6 stories | 12/28 ACs
-**Last Updated:** 2026-07-19T07:53:14+00:00
+**Progress:** 2/6 stories | 13/28 ACs
+**Last Updated:** 2026-07-19T08:00:55+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -171,7 +171,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-3.2:** No CMS collection or code path other than Media and Galleries manages, uploads, or displays images — e.g. no per-page/per-post image-upload field or standalone image list duplicates what the Media + Galleries model already provides.
   - Dev: done
-- [ ] **AC-3.3:** The photographer can upload images to a gallery, reorder them, remove them, and select a cover image entirely through the Payload admin UI without developer assistance.
+- [x] **AC-3.3:** The photographer can upload images to a gallery, reorder them, remove them, and select a cover image entirely through the Payload admin UI without developer assistance.
+  - Dev: done
 - [ ] **AC-3.4:** Gallery 'settings' capture a display-mode configuration (e.g. slideshow, hover-preview, fullscreen, download, authentication toggles) so one gallery object can drive multiple display experiences.
 - [ ] **AC-3.5:** Galleries are readable via Payload's API/local API so the gallery viewer components can consume them.
 
@@ -200,6 +201,16 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
     - Trip-wire: `src/collections/` contains exactly `Galleries.ts`, `Media.ts`, `Users.ts` (forces explicit re-audit if a new collection is ever added).
     - `payload.config.ts` registers only those three collections.
     - Only `Media` has an ` …
+  AC-3.3 done: Pushed to `feature/US-3-AC-3.3`.
+  
+  ## Implementation Summary — US-3 AC-3.3
+  
+  **Finding:** No production code change was needed. The Galleries collection built in AC-3.1 already fully satisfies this AC via Payload's default admin-UI behavior:
+  - `images` is an `array` field — Payload defaults array rows to `isSortable: true` (drag-to-reorder) and always renders a remove control per row unless `readOnly`, neither of which Galleries sets.
+  - Each row's `image` field, and the top-level `coverImage` field, are `relationship` fields targeting `media` — Payload's relationship field defaults `admin.allowCreate: true`, which renders an inline "Create New" drawer with Media's upload dropzone, letting the photographer upload a brand-new image without leaving the gallery.
+  - Neither `Galleries` nor `Media` declares custom `access` rules, so any authenticated admin user (the photographer) gets full create/update rights with no developer/deploy step required.
+  
+  I verified these defaults directly against the installed `payload`/`@payloadcms/ui` source (`RelationshipField admin.allowCreate = true`, `ArrayField admin.isSortable = true`) rather than assuming behavior. This matches the sprint's established …
 
 **Tester Status:** approved
 **Tester Notes:**
