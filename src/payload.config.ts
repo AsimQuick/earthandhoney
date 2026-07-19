@@ -9,6 +9,9 @@
  * updated-by: dev-team
  * related-story: US-2
  * related-ac: 2.1
+ * updated-by: dev-team
+ * related-story: US-2
+ * related-ac: 2.2
  * ---
  */
 import { postgresAdapter } from '@payloadcms/db-postgres'
@@ -16,6 +19,7 @@ import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { s3Storage } from '@payloadcms/storage-s3'
 import path from 'path'
 import { buildConfig } from 'payload'
+import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
 import { Media } from './collections/Media'
@@ -34,6 +38,9 @@ export default buildConfig({
   collections: [Users, Media],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
+  // Required for Media's `upload.imageSizes` (thumbnail/medium/large) to run —
+  // without it, Payload silently skips derivative-size generation on upload.
+  sharp,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
