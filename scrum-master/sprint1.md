@@ -1,8 +1,8 @@
 # Sprint 1
 
 **Phase:** planning
-**Progress:** 3/6 stories | 18/28 ACs
-**Last Updated:** 2026-07-19T09:24:39+00:00
+**Progress:** 3/6 stories | 19/28 ACs
+**Last Updated:** 2026-07-19T09:43:53+00:00
 
 ## Sprint Goal
 Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all in Docker) and deliver the core Gallery Engine IP — the reusable gallery data model, Sharp image pipeline, and mobile-first gallery viewer components (container, main display, thumbnail preview, PhotoSwipe fullscreen, mobile drawer, gradient overlay) with instant performance — before any public website pages are built.
@@ -252,7 +252,8 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - Dev: done
 - [x] **AC-4.3:** Images render via Next.js Image with responsive srcset drawn from the thumbnail/medium/large variants, choosing an appropriate size per viewport.
   - Dev: done
-- [ ] **AC-4.4:** The same engine is instantiated in at least two distinct display-mode contexts (e.g. a hero-mode instance and a portfolio-mode instance) on internal demo/test-harness routes — not linked from public navigation, and not backed by the out-of-scope Portfolio/Homepage CMS collections — and not the public marketing pages, which remain out of scope this sprint — driven purely by gallery settings, demonstrating reuse with no duplicated image systems. The real public pages will reuse this same engine unmodified in the later sprint that builds them.
+- [x] **AC-4.4:** The same engine is instantiated in at least two distinct display-mode contexts (e.g. a hero-mode instance and a portfolio-mode instance) on internal demo/test-harness routes — not linked from public navigation, and not backed by the out-of-scope Portfolio/Homepage CMS collections — and not the public marketing pages, which remain out of scope this sprint — driven purely by gallery settings, demonstrating reuse with no duplicated image systems. The real public pages will reuse this same engine unmodified in the later sprint that builds them.
+  - Dev: done
 - [ ] **AC-4.5:** The engine's layout, spacing, typography, and gradient-overlay treatment visually match the public/photobuddy template when compared side-by-side (verified via manual visual QA checklist against the template), and template images are used as placeholder content in the rendered contexts.
 
 **Dependencies:** US-3
@@ -291,6 +292,16 @@ Establish the project foundation (Payload CMS + PostgreSQL + Cloudflare R2, all 
   - `src/components/gallery/galleryImageLoader.ts` (new) — `resolveGalleryImageSrc(image, width)` picks thumbnail (≤400px) / medium (≤1200px) / large (>1200px), falling back up the chain and ultimately to `url` when a variant is missing. `createGalleryImageLoader(image)` wraps it as a `next/image` custom `loader` bound to one image.
   - `src/components/gallery/MainImageDisplay.tsx` — now renders via `next/image` with `fill sizes="100vw"` and the custom loader, still stacked under `GradientOverlay` (AC-4.2 untouched).
   - `src/components/gallery/ThumbnailStrip.tsx` — renders via `n …
+  AC-4.4 done: Pushed successfully to `feature/US-4-AC-4.4` (commit `8a8bf8d`).
+  
+  ## Implementation Summary — US-4 AC-4.4
+  
+  **Finding:** No production code change existed for this AC — `GalleryEngine` had no `settings` prop, and no demo/test-harness route existed. Real implementation was required.
+  
+  **Files changed:**
+  - `src/components/gallery/types.ts` — added `GallerySettings` interface mirroring the Payload `Galleries.settings` group (`slideshow`/`hoverPreview`/`fullscreen`/`download`/`requireAuth`).
+  - `src/components/gallery/GalleryEngine.tsx` — added an optional `settings` prop (defaulting to the same values a freshly-created Payload gallery record would have), reflected as `data-slideshow`/`data-hover-preview`/`data-fullscreen`/`data-download`/`data-require-auth` attributes on the root element. This is passthrough only — actual behavioral enforcement (auto-advance, hover reveal, fullscreen gating) is explicitly US-5's job, not bundled here.
+  - `src/app/(frontend)/dev/gallery-demo/page.tsx` (new) — internal demo/test-harness route, `robots: noindex`, not linked from anywhere. Instantiates the same `GalleryEngine` twice with local mock data (not fetched from Payload, not the out-of-scope Portfoli …
 
 **Tester Status:** approved
 **Tester Notes:**
