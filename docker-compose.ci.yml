@@ -1,0 +1,15 @@
+# ---
+# file: docker-compose.ci.yml
+# stack: nextjs
+# purpose: CI-only override. Points the `web` service at the image that
+#          build-push-action pre-builds with the GitHub Actions layer cache, so
+#          CI reuses cached layers instead of rebuilding from scratch every run.
+#          Applied ONLY in CI via COMPOSE_FILE=docker-compose.yml:docker-compose.ci.yml.
+#          Local and VPS builds never load this file, so they are unaffected.
+#          Fail-safe: if the pre-built image is ever missing, compose falls back
+#          to `build: .` (uncached) and CI still passes.
+# created-by: project-lead
+# ---
+services:
+  web:
+    image: app-under-test:ci
