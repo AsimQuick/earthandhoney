@@ -12,7 +12,7 @@ purpose: AC-14.1 — inventory every feature delivered in sprint-1 (US-1..US-6)
          behind by retired US-12/US-13, each marked removed or retained.
 created-by: dev-team
 related-story: US-14
-related-ac: 14.1, 14.2
+related-ac: 14.1, 14.2, 14.3
 ---
 -->
 
@@ -136,3 +136,31 @@ configuration with no consuming feature:
 these three under the "sprint-2 vars" comment, is **not** orphaned: it is
 a general site-metadata value (canonical links, OG tags, sitemap) with no
 US-12/US-13 dependency, and is unaffected by this pivot.
+
+## Duplicate-feature risk map (AC-14.3)
+
+The PicPeak fork brings its own upload path, media store, gallery data
+model, and (as a self-hosted gallery-delivery app) its own auth and email
+sending. Running those side-by-side with what `earthandhoney` already
+owns would mean two systems doing the same job. This section names each
+duplicate-feature risk and assigns it a single authoritative owner,
+consistent with the per-concern ownership already fixed by CLAUDE.md's
+**Technology Stack** section (Storage: Cloudflare R2; CMS: Payload CMS;
+Auth: Better Auth; Email: Resend) plus the gallery-data ownership shift
+onto PicPeak that AC-14.1/AC-14.2 of this same audit already established.
+
+| # | Duplicate-feature risk | Current codebase side | PicPeak side | CLAUDE.md-designated owner | Single authoritative owner | Reason |
+|---|---|---|---|---|---|---|
+| R1  | Two upload paths | Payload-owned R2 upload path (`src/payload.config.ts` `s3Storage`, see Superseded artifacts row 3) | PicPeak's own ingest/upload path into its media store | Storage: Cloudflare R2 (bucket only — CLAUDE.md does not name an upload-path owner) | **PicPeak** | Rows 6/10/superseded-artifacts already establish PicPeak as the gallery media owner; a second upload path writing to the same class of assets is the exact duplicate this AC flags, so Payload's upload path stays dormant and is never invoked once PicPeak is live. |
+| R2  | Two media stores | Payload `Media` collection + Sharp derivative pipeline (rows 6–9, superseded-artifacts rows 1–2) | PicPeak's media/derivative store | Image processing: Sharp pipeline generating thumbnail/medium/large from originals stored in R2 (CLAUDE.md Product Pillar 2) — superseded for gallery images by the pivot itself | **PicPeak** | CLAUDE.md's Sharp/R2 pillar describes the pre-pivot design; AC-14.1/14.2 already reclassified the Payload Media/Sharp path as Replaced by PicPeak / Left dormant. Keeping both live would mean two authoritative sources for the same derivative URLs. |
+| R3  | Two galleries | Payload `Galleries` collection (row 11, superseded-artifacts row 1) | PicPeak's gallery data model | CMS: Payload CMS (collections list includes Galleries) — reassigned by the pivot | **PicPeak** | The pivot's core premise (per CLAUDE.md's Product Vision: "one reusable engine powers... No separate image systems") is a single gallery data owner; AC-14.1 already classifies the Payload `Galleries` collection as Replaced by PicPeak, so PicPeak is that single owner going forward. |
+| R4  | Two auth systems | Auth: Better Auth (CLAUDE.md Technology Stack) — governs photographer/admin login and the business dashboard | PicPeak ships its own built-in auth/access-control (e.g. gallery password/session protection) | **Auth: Better Auth** | **Better Auth**, for all photographer/admin/dashboard identity | CLAUDE.md's Technology Stack fixes Better Auth as the single auth owner for the business platform; nothing in AC-14.1/14.2 reassigns identity/auth away from it. PicPeak's built-in auth is scoped to gallery-viewer access (e.g. a client-facing gallery password) and must not be used for photographer/admin login, so the two systems serve different audiences rather than genuinely competing — but any overlap (e.g. PicPeak admin accounts) defaults to Better Auth as authoritative. |
+| R5  | Two email senders | Email: Resend (CLAUDE.md Technology Stack) | PicPeak ships its own outbound email (e.g. gallery-ready/delivery notifications) | **Email: Resend** | **Resend** | CLAUDE.md's Technology Stack fixes Resend as the single email-sending owner; PicPeak's built-in mailer is disabled/not configured, and any PicPeak event that needs to notify a client or the photographer is wired to trigger a Resend send rather than letting PicPeak dispatch its own email, so there is exactly one email sender in production. |
+
+Risks 1–3 resolve to **PicPeak** because CLAUDE.md's stack entries for
+storage/CMS describe the pre-pivot design and are the exact concerns
+AC-14.1/AC-14.2 already reassign to PicPeak. Risks 4–5 resolve to the
+**existing CLAUDE.md owner** (Better Auth, Resend) because the pivot
+never reassigns identity or outbound email — PicPeak's built-in
+equivalents for those two concerns must stay unused so no concern ever
+has two live owners at once.
