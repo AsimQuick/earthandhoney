@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 0/7 stories | 0/48 ACs
-**Last Updated:** 2026-07-30T23:55:00+00:00
+**Last Updated:** 2026-07-30T22:01:41+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -33,10 +33,11 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 ## User Stories
 
 ### US-14: Pivot audit: keep / replace / retire map for the existing codebase
-**Status:** draft | **Priority:** critical
+**Status:** in-progress | **Priority:** critical
 
 #### Acceptance Criteria
 - [ ] **AC-14.1:** `PIVOT_AUDIT.md` exists at the repo root and inventories every feature currently implemented in this repository, stating for each one whether it is Kept, Replaced by PicPeak, Repurposed as a Frontstage layer, or Retired — with a one-line reason per entry. Every item delivered in sprint-1 (US-1…US-6) and sprint-2 (US-7…US-9) appears exactly once.
+  - Dev: implemented
 - [ ] **AC-14.2:** The audit explicitly names which existing artifacts are superseded by the PicPeak fork — the Payload Galleries collection, the Payload-owned Sharp derivative pipeline, the Payload-owned R2 upload path, and the in-repo gallery viewer components — and records, for each, whether it is deleted now, left dormant, or kept as a Frontstage renderer that reads from PicPeak. The audit must also list orphaned configuration left behind by retired stories — including the `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL` and `NEXT_PUBLIC_WHATSAPP_NUMBER` entries in `.env.example`, which belong to retired US-12 and US-13 — and state for each whether it is removed or retained, so no orphaned environment variables survive the pivot unexplained.
 - [ ] **AC-14.3:** The audit lists every duplicate-feature risk between the current codebase and PicPeak (two upload paths, two media stores, two galleries, two auth systems, two email senders) and names the single authoritative owner for each, consistent with the ownership table in `CLAUDE.md`.
 - [ ] **AC-14.4:** A dependency and licence audit is included: every third-party dependency that will be newly introduced or dropped by the pivot is listed with its licence, and any copyleft or commercially restrictive licence is flagged for Product Owner decision.
@@ -44,6 +45,14 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-14.6:** The audit ends with an explicit keep/replace/retire recommendation and an open-questions list. Anything the audit cannot resolve without human input is added to `scrum-master/po-requests.md` rather than being decided silently.
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-14.1 implemented (local checks green): Committed on `feature/US-14` (not pushed, per instructions).
+  
+  **Implementation summary:**
+  - `PIVOT_AUDIT.md` (new, repo root): inventories all 40 acceptance criteria delivered across sprint-1 (US-1…US-6) and sprint-2 (US-7…US-9), each in its own table row, classified as Kept / Replaced by PicPeak / Repurposed as a Frontstage layer / Retired with a one-line reason. Includes a note flagging that US-9 AC-9.1/AC-9.2 code (`a800bd8`, `1d5aa13`) is not present in this branch's working tree due to the known main/story-branch git desync, even though it's still inventoried as a delivered item.
+  - `src/__tests__/us14-ac14.1-pivot-audit.test.ts` (new): derives the authoritative AC list dynamically from `scrum-master/sprint1.json` and `scrum-master/sprint2.json` (US-7..US-9 only), then asserts the file exists, every item appears exactly once, every row carries one of the four valid classifications, and every row has a non-empty reason. 85 assertions, all passing.
+  - Full suite: 37 test suites / 667 tests, all passing. No dependency changes, no `package-lock.json` update needed. No coverage threshold is configured in this repo.
+  - Left `tsconfig.json`'s pre-existing uncommitted modification untouc …
 
 **Tester Status:** approved
 **Tester Notes:**
