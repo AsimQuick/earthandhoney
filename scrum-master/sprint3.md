@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 0/7 stories | 0/48 ACs
-**Last Updated:** 2026-07-30T22:08:35+00:00
+**Last Updated:** 2026-07-30T22:16:41+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -41,6 +41,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-14.2:** The audit explicitly names which existing artifacts are superseded by the PicPeak fork — the Payload Galleries collection, the Payload-owned Sharp derivative pipeline, the Payload-owned R2 upload path, and the in-repo gallery viewer components — and records, for each, whether it is deleted now, left dormant, or kept as a Frontstage renderer that reads from PicPeak. The audit must also list orphaned configuration left behind by retired stories — including the `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL` and `NEXT_PUBLIC_WHATSAPP_NUMBER` entries in `.env.example`, which belong to retired US-12 and US-13 — and state for each whether it is removed or retained, so no orphaned environment variables survive the pivot unexplained.
   - Dev: implemented
 - [ ] **AC-14.3:** The audit lists every duplicate-feature risk between the current codebase and PicPeak (two upload paths, two media stores, two galleries, two auth systems, two email senders) and names the single authoritative owner for each, consistent with the ownership table in `CLAUDE.md`.
+  - Dev: implemented
 - [ ] **AC-14.4:** A dependency and licence audit is included: every third-party dependency that will be newly introduced or dropped by the pivot is listed with its licence, and any copyleft or commercially restrictive licence is flagged for Product Owner decision.
 - [ ] **AC-14.5:** A migration-risk section lists the data that exists today (Payload media records, galleries, users, uploaded R2 objects), states whether each must be migrated, discarded, or left in place, and names the risk of getting it wrong.
 - [ ] **AC-14.6:** The audit ends with an explicit keep/replace/retire recommendation and an open-questions list. Anything the audit cannot resolve without human input is added to `scrum-master/po-requests.md` rather than being decided silently.
@@ -61,6 +62,10 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `src/__tests__/us14-ac14.2-superseded-artifacts.test.ts` (new) — 16 tests verifying both tables exist, every required artifact/var is named, dispositions are restricted to the allowed vocabulary, cited file paths actually exist in the repo, and Retained/Removed dispositions match reality in `.env.example`.
   
   **Key decisions:** The three orphaned env vars are marked **Retained**, not removed — deleting them now would break the already-accepted `us7-ac7.4-env-example-sprint2-vars.test.ts` lock-in test from US-7, so actual removal is deferred to a follow-on pivot-ex …
+  AC-14.3 implemented (local checks green): **Summary — AC-14.3 implemented:**
+  
+  - **`PIVOT_AUDIT.md`**: added a new `## Duplicate-feature risk map (AC-14.3)` section with a 5-row table (`R1`–`R5`) covering the five named duplicate-feature risks (two upload paths, two media stores, two galleries, two auth systems, two email senders). Each row names the current-codebase side, the PicPeak side, the CLAUDE.md-designated owner, the single authoritative owner, and a reason. Gallery/media/upload risks resolve to **PicPeak** (consistent with this audit's own AC-14.1/14.2 classifications); auth/email risks resolve to the pre-existing CLAUDE.md Technology Stack owners (**Better Auth**, **Resend**), since the pivot never reassigns those concerns. Front-matter `related-ac` updated to include `14.3`. Used `R1`–`R5` row labels (not plain numbers) to avoid colliding with the AC-14.1 test's document-wide `| \d+ |` row scan.
+  - **`src/__tests__/us14-ac14.3-duplicate-ownership.test.ts`** (new, 8 tests): asserts all five risks are named exactly once, each has exactly one table row, each row names an owner from the allowed set, gallery/media/upload risks own to PicPeak, auth/email risks own to Better Auth/Resend, and the named owners actually ap …
 
 **Tester Status:** approved
 **Tester Notes:**
