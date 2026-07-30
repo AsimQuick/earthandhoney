@@ -20,9 +20,12 @@
     "Every decision record names the option chosen, the options rejected, and the reason",
     "Anything needing human input is in po-requests.md, not silently decided",
     "Existing CI stays green (lint, types, tests, coverage threshold)",
-    "retrospective.md updated incrementally during the sprint, not at close"
+    "retrospective.md updated incrementally during the sprint, not at close",
+    "No critical or major defect remains open against any story in this sprint",
+    "Coverage threshold met — the existing CI coverage gate is not lowered to pass",
+    "Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)"
   ],
-  "last_updated": "2026-07-30T00:00:00+00:00",
+  "last_updated": "2026-07-30T21:30:00+00:00",
   "stories": [
     {
       "id": "US-14",
@@ -267,6 +270,13 @@
           "checked": false,
           "dev_status": "not-started",
           "tester_status": "not-started"
+        },
+        {
+          "id": "17.10",
+          "text": "PicPeak's native contract-signing capability is verified against the actual pinned commit, not assumed from documentation or memory: typed name capture, a consent checkbox, a drawn signature, signer IP address and timestamp, a frozen snapshot of the signed contract contents, a SHA-256 integrity hash, and an audit page baked into the delivered PDF. For each element, the evidence (file/line, or a reproduced signing flow) is recorded in `PIVOT_AUDIT.md`. If any element is missing or works differently than assumed in `CLAUDE.md`/PRD §29, this is written up honestly and raised in `scrum-master/po-requests.md` as reopening the contract-signing decision — no silent workaround, and no quiet fallback to an external e-sign vendor or manual upload.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
         }
       ],
       "dev_status": "not-started",
@@ -435,7 +445,7 @@
         },
         {
           "id": "20.7",
-          "text": "The report states plainly that this payment path exists so the studio can charge its photography clients, that it is not subscription billing for a future software product, and that the choice between initiating payment through the billing system's own gateway or through this ported direct flow is still an open decision the Product Owner must settle before any payment code is written.",
+          "text": "The report states plainly that this payment path exists so the studio can charge its photography clients and is not subscription billing for a future software product, and it records the settled payment architecture rather than reopening it: the ported direct flow initiates payment, the ledger's own payment gateway stays disconnected, and the verified webhook reconciles the payment into the ledger and advances the project milestone. It states that exactly one webhook endpoint exists and that it lives in the fork backend where invoice status lives, that a browser redirect is never proof of payment, and that because the reference project is a different language the port crosses a language boundary and must be recorded in `FORK_CHANGELOG.md` as a deliberate deviation.",
           "checked": false,
           "dev_status": "not-started",
           "tester_status": "not-started"
@@ -443,6 +453,13 @@
         {
           "id": "20.8",
           "text": "`.env.example` is updated with the placeholder Stripe variable names in the convention taken from the reference project, each with a comment explaining what it is and which mode it must match.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "20.9",
+          "text": "The report records the boundary of what \"port faithfully\" does and does not cover: the reference project is a one-shot checkout flow containing no saved payment method, no off-session charge, and no retry or dunning logic, so none of that is inherited. It states that V1 ships a payment schedule whose installments are each paid manually against a real ledger invoice, that automatic recurring card charges are deferred to V1.1 and must then be built on that same schedule, and that a subscription product must never be used because it would place an authoritative billing schedule outside the ledger.",
           "checked": false,
           "dev_status": "not-started",
           "tester_status": "not-started"
@@ -457,5 +474,5 @@
   ],
   "available_configuration": "Verified 2026-07-30 in the local uncommitted .env: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_ENDPOINT, SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SENDER_EMAIL, EMAIL_USE_SSL, DATABASE_URL, REDIS_URL are all present and populated. US-16 and US-17 are not blocked on storage or email credentials. This does NOT satisfy AC-16.4 (every variable must still be documented in .env.example with a placeholder and a comment) or AC-19.4 (the credentials still need a least-privilege and lifecycle audit). Still blocking: VPS access. Still outstanding before production email: SPF, DKIM, and DMARC records.",
   "last_updated_by": "product-owner",
-  "po_sprint_notes": "Sprint-3 scope is unchanged by the 2026-07-30 finance revision — no story here touches finance. US-18's AC-18.1 references the ownership table in CLAUDE.md by reference, so it automatically inherits The Ledger Rule rows and the display-only-cache language; no AC edit was needed. AC-14.2 was extended to catch orphaned configuration left by retired sprint-2 stories.\n\nPREREQUISITE: project-state.json still points at sprint-2 / US-9 / AC-9.3 with status 'error'. It is owned by the Project Lead and must be advanced to sprint-3 before this sprint can start. sprint3.json and sprint3.md are also still untracked in git and must be committed."
+  "po_sprint_notes": "Sprint-3 scope is unchanged by the 2026-07-30 finance revision — no story here touches finance. US-18's AC-18.1 references the ownership table in CLAUDE.md by reference, so it automatically inherits The Ledger Rule rows and the display-only-cache language; no AC edit was needed. AC-14.2 was extended to catch orphaned configuration left by retired sprint-2 stories.\n\nPIPELINE RECOVERY CLOSED (2026-07-30). Both blockers are resolved: the pivot and finance documentation, sprint3.json and sprint3.md are committed (9624a07), and project-state.json has been advanced by the Project Lead to sprint-3 / planning with status active and no current task. Nothing blocks the start of this sprint.\n\nPLAN REVISION (2026-07-30, final planning pass). US-20 was the only story left carrying pre-revision language and has been corrected: AC-20.7 previously told the Dev Team that the payment-initiation choice was still an open decision, which contradicted the settled architecture in PRD §26.3 — it now records the settled position (ported direct flow initiates, ledger gateway disconnected, exactly one webhook endpoint in the fork backend, a browser redirect is never proof of payment, language-boundary port recorded in FORK_CHANGELOG.md). A new AC-20.9 fixes the matching scope gap: the reference project is a one-shot checkout with no saved-card, off-session, or retry logic, so 'port faithfully' does not silently pull that in — V1 is a manual-pay installment schedule and auto-charge is V1.1 built on the same schedule, never a subscription product. Sprint is now 7 stories / 47 acceptance criteria. Definition of done carries the three standing project conventions (no open critical/major defects, coverage threshold not lowered, structured metadata headers on all code files).\n\nSTILL OUTSTANDING, not blocking this sprint's start: VPS access (po-requests item 2) is needed before US-16 can be called production-like on the real target; Stripe credentials (item 5) are not needed until the finance phase; and open decisions 7, 8 and 9 (contract provider, design-token lock-down, token starting point) need human confirmation before sprint-4 planning closes.\n\nCONTRACT-SIGNING DECISION (2026-07-30). po-requests.md item 7 is resolved, conditionally: V1 uses PicPeak's own native contract-signing capability (typed name, consent checkbox, drawn signature, IP/timestamp, frozen snapshot, SHA-256 hash, audit page in the delivered PDF), hardened with one-time signing links, mandatory email verification, dual-party PDF delivery, and immutable R2 storage. No external e-sign vendor and no manual-upload fallback are carried into V1. This is conditional on verification: new AC-17.10 requires US-17 to confirm the capability actually exists at the pinned commit before any Project Room story depends on it, and to reopen the decision honestly in po-requests.md if it does not. Sprint is now 7 stories / 48 acceptance criteria."
 }

@@ -37,9 +37,11 @@ tech-stack:
 
 > **RECOVERY NOTE — 2026-07-30.** This file, `PRD.md`, `po-requests.md`, and `retrospective.md` were
 > reverted to their pre-pivot committed state by an uncommitted-working-tree loss during orchestrator
-> branch switching, and have been restored by the Product Owner. **The pivot and finance-revision
-> documentation must be committed** — until it is, any branch switch can destroy it again. See the
-> "Pipeline recovery" section below.
+> branch switching, and have been restored by the Product Owner. **Resolved:** the pivot and
+> finance-revision documentation, together with `sprint3.json` and `sprint3.md`, is committed as of
+> `9624a07`, so a branch switch can no longer destroy it. `project-state.json` has since been advanced
+> to sprint-3 / planning by the Project Lead, closing the last recovery item — see the "Pipeline
+> recovery" section below.
 
 ## Current Sprint: sprint-3 (planning)
 
@@ -60,7 +62,29 @@ Full plan: `scrum-master/sprint3.md` · machine-readable: `scrum-master/sprint3.
 | US-19 | Decide the media-reuse model; audit the existing R2 setup | high | US-17 | [#55](https://github.com/AsimQuick/earthandhoney/issues/55) |
 | US-20 | Extract the proven Stripe key-pairing and environment convention | high | — | [#56](https://github.com/AsimQuick/earthandhoney/issues/56) |
 
-7 stories / 46 acceptance criteria. US-20 has no dependencies and can run in parallel from day one.
+7 stories / 48 acceptance criteria. US-20 has no dependencies and can run in parallel from day one.
+US-14 → US-15 → US-16 → US-17 is a strict chain; US-18 and US-19 both fan out from US-17 and can run
+in parallel with each other. Issues #50–#56 are open. All stories are `draft` and all 48 ACs are
+unstarted — the sprint is ready for requirements validation.
+
+**Final planning pass — 2026-07-30.** US-20 was the one story still carrying pre-revision language.
+AC-20.7 told the Dev Team that the payment-initiation choice was *still an open decision*, which
+directly contradicted the settled architecture (PRD §26.3, `po-requests.md` item 6). It now records
+the settled position instead: the ported direct flow initiates payment, the ledger gateway stays
+disconnected, exactly one webhook endpoint exists and lives in the fork backend, a browser redirect
+is never proof of payment, and the language-boundary port is recorded in `FORK_CHANGELOG.md`. A new
+**AC-20.9** closes the matching scope gap — the reference project is a one-shot checkout with no
+saved-card, off-session, or retry logic, so "port faithfully" must not silently pull that in. V1 is a
+manual-pay installment schedule; auto-charge is V1.1 on the same schedule, never a subscription
+product. This is the same class of failure as the stalled pipeline: a direction change that had
+reached the markdown but not the file an agent is actually handed.
+
+**Definition of done** (`sprint3.json`): evidence-not-assertion on every AC; upstream claims verified
+against the pinned code rather than documentation; no shipped upstream migration modified; everything
+in Docker; no committed secrets and `.env.example` authoritative; every decision record naming the
+rejected options; human-input items in `po-requests.md`; CI green; no open critical or major defect;
+coverage threshold met without lowering the gate; structured metadata headers on every code file;
+`retrospective.md` updated incrementally.
 
 ---
 
@@ -79,15 +103,18 @@ the same refusal on US-10, then US-11, US-12, and US-13.
 in place with a `[RETIRED — DO NOT IMPLEMENT]` prefix on the AC text itself, and US-10 through US-13
 retired with recorded reasons. Nothing was deleted (retrospective action item #10).
 
-**Still required before development resumes:**
-1. **Commit the pivot and finance documentation.** It has already been destroyed once by a branch
-   switch. Until committed, it is one `git checkout` from being lost again.
-2. **`project-state.json` needs Project Lead attention.** It is owned exclusively by the Project Lead
-   and no agent may modify it. It currently reads `current_sprint: sprint-2`,
-   `current_phase: development`, `current_task: US-9 / AC-9.3`, `status: error`. It must be advanced
-   to sprint-3 / planning, or it will re-dispatch retired sprint-2 work.
-3. **`sprint3.json` and `sprint3.md` are untracked.** They must be added to version control or the
-   orchestrator has no sprint-3 to advance to.
+**Recovery is closed. Nothing blocks the start of sprint 3.**
+1. ~~Commit the pivot and finance documentation.~~ **DONE** — committed in `9624a07`.
+2. ~~`project-state.json` needs Project Lead attention.~~ **DONE** — advanced by the Project Lead to
+   `status: active`, `current_sprint: sprint-3`, `current_phase: planning`, `current_task: null`,
+   with sprint-2 recorded as closed. It can no longer re-dispatch retired sprint-2 work.
+3. ~~`sprint3.json` and `sprint3.md` are untracked.~~ **DONE** — both are tracked as of `9624a07`,
+   so the orchestrator has a sprint-3 to advance to.
+
+**Carried into the sprint as a standing check, not a blocker:** VPS access (`po-requests.md` item 2)
+is still outstanding, so US-16 can be proven in production-*like* Docker but not yet against the real
+deployment target. Open decisions 7, 8 and 9 — contract provider, design-token lock-down, and the
+token starting point — need human confirmation before sprint-4 planning can close.
 
 ---
 
@@ -247,7 +274,7 @@ source of truth. Terms marked **[retired]** must not appear in any new document.
 |--------|-------|------|---------|
 | Sprint 1 | complete | Foundation + build our own Gallery Engine (US-1…US-6) | Delivered 6/6 stories, 28/28 ACs. **Largely superseded by the pivot** — see US-14. |
 | Sprint 2 | complete (closed early) | Public lead-generating website on the Gallery Engine (US-7…US-13) | US-7, US-8 and US-9 delivered (AC-9.3 retired); **US-10…US-13 retired**. `sprint2.json` closed 2026-07-30. |
-| Sprint 3 | planning | Pivot: freeze, audit, fork, prove the foundation, settle boundaries (US-14…US-20) | In planning. **Unaffected by the 2026-07-30 finance revision** — no sprint-3 story touches finance. |
+| Sprint 3 | planning | Pivot: freeze, audit, fork, prove the foundation, settle boundaries (US-14…US-20) | Planned and ready for requirements validation: 7 stories / 48 ACs, issues #50–#56 open, pipeline recovery closed. No sprint-3 story touches finance; US-20 documents the Stripe convention only. |
 
 ---
 

@@ -1,52 +1,11 @@
----
-sprint: sprint-3
-phase: planning
-created: 2026-07-30
-last-updated: 2026-07-30
-last-updated-by: product-owner
-goal: "Pivot: freeze and audit the existing codebase, fork the Backstage at a pinned commit, prove it delivers the real photography flow, and settle the ownership, API-boundary, media-reuse, and Stripe-convention decisions the next sprint depends on."
-story-count: 7
-stories-done: 0
-ac-count: 46
----
-
-# Sprint 3 — Pivot: Freeze, Audit, and Prove the Foundation
+# Sprint 3
 
 **Phase:** planning
-**Progress:** 0/7 stories | 0/46 ACs
-**Last Updated:** 2026-07-30
-
-> **This is the first sprint of the new product direction.** See `scrum-master/PRD.md`.
-> The previous direction is archived at `scrum-master/PRD-archive.md` — historical only, do not build from it.
-> Sprint 2 was closed early; see `scrum-master/sprint2.md`.
+**Progress:** 0/7 stories | 0/48 ACs
+**Last Updated:** 2026-07-30T21:30:00+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
-
-## Why this scope
-The pivot reverses the single most load-bearing assumption of sprints 1 and 2: that we build and own the gallery engine. We now fork a proven Backstage and own the Frontstage, branding, and workflow layers on top of it. Building any new feature before that reversal is audited and proven would mean building on an unverified foundation — and would risk quietly recreating the duplicate systems the new PRD forbids.
-
-The new PRD is explicit that agents must not send themselves straight into implementation, and that eight named decisions may not be made by preference. Sprint 3 therefore delivers **certainty, not pages**: an honest inventory of what survives, a licence-clean pinned fork, hard evidence that the fork does the real photography job on our own database and storage, and the four boundary decisions the next sprint depends on. The Stripe convention story runs in parallel because it has no dependencies and it closes a known, already-experienced failure mode.
-
-**Shippable outcome:** a running, Dockerised, PostgreSQL-backed Backstage on the studio's own R2 bucket, in which a real project, client, and gallery flow works end to end — plus an approved pivot map that every later sprint is planned against.
-
-## Configuration already available (verified 2026-07-30)
-
-The local uncommitted `.env` already contains populated values for the Cloudflare R2 set
-(`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT`), the full
-SMTP set (`SMTP_SERVER`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SENDER_EMAIL`,
-`EMAIL_USE_SSL`), plus `DATABASE_URL` and `REDIS_URL`. US-16 and US-17 are therefore **not** blocked
-on storage or email credentials.
-
-Two things this does **not** mean:
-- It does not satisfy AC-16.4. Sprint 1 lost time twice to configuration that existed only in an
-  uncommitted local `.env`. Every variable must be documented in `.env.example` with a placeholder
-  and a comment, and deployed values must live in repository secrets whose names match one-to-one.
-- It does not satisfy AC-19.4. A working credential is not an audited credential — least privilege,
-  lifecycle rules, public/private strategy, and browser upload restrictions still have to be checked.
-
-Still blocking: VPS access (`po-requests.md` item 2). Still outstanding before production email:
-SPF, DKIM, and DMARC records for the sending domain.
 
 ## Reference Documents
 - `scrum-master/PRD.md`
@@ -67,43 +26,31 @@ SPF, DKIM, and DMARC records for the sending domain.
 - [ ] Anything needing human input is in po-requests.md, not silently decided
 - [ ] Existing CI stays green (lint, types, tests, coverage threshold)
 - [ ] retrospective.md updated incrementally during the sprint, not at close
-
-## Explicitly out of scope for sprint 3 (backlog — see `scrum-master/scrum-master.md`)
-- Any new public page, story, or navigation change
-- The design-token lock-down (**proposed as the first story of sprint 4** — pending human confirmation)
-- Project cockpit, Project Room, phases and milestones
-- Invoice Ninja integration and any payment code (the Stripe *convention* is extracted here; no payment flow is built)
-- Contract / e-sign work — the provider is still an open decision
-- The R2 delivery-path benchmark and the alt-text suggestion model
-- Anything in the V1 non-goals list in the PRD, and everything belonging to V2
+- [ ] No critical or major defect remains open against any story in this sprint
+- [ ] Coverage threshold met — the existing CI coverage gate is not lowered to pass
+- [ ] Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)
 
 ## User Stories
 
 ### US-14: Pivot audit: keep / replace / retire map for the existing codebase
-**Status:** draft | **Priority:** critical | **Issue:** [#50](https://github.com/AsimQuick/earthandhoney/issues/50)
+**Status:** draft | **Priority:** critical
 
 #### Acceptance Criteria
 - [ ] **AC-14.1:** `PIVOT_AUDIT.md` exists at the repo root and inventories every feature currently implemented in this repository, stating for each one whether it is Kept, Replaced by PicPeak, Repurposed as a Frontstage layer, or Retired — with a one-line reason per entry. Every item delivered in sprint-1 (US-1…US-6) and sprint-2 (US-7…US-9) appears exactly once.
-- [ ] **AC-14.2:** The audit explicitly names which existing artifacts are superseded by the PicPeak fork — the Payload Galleries collection, the Payload-owned Sharp derivative pipeline, the Payload-owned R2 upload path, and the in-repo gallery viewer components — and records, for each, whether it is deleted now, left dormant, or kept as a Frontstage renderer that reads from PicPeak.
+- [ ] **AC-14.2:** The audit explicitly names which existing artifacts are superseded by the PicPeak fork — the Payload Galleries collection, the Payload-owned Sharp derivative pipeline, the Payload-owned R2 upload path, and the in-repo gallery viewer components — and records, for each, whether it is deleted now, left dormant, or kept as a Frontstage renderer that reads from PicPeak. The audit must also list orphaned configuration left behind by retired stories — including the `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL` and `NEXT_PUBLIC_WHATSAPP_NUMBER` entries in `.env.example`, which belong to retired US-12 and US-13 — and state for each whether it is removed or retained, so no orphaned environment variables survive the pivot unexplained.
 - [ ] **AC-14.3:** The audit lists every duplicate-feature risk between the current codebase and PicPeak (two upload paths, two media stores, two galleries, two auth systems, two email senders) and names the single authoritative owner for each, consistent with the ownership table in `CLAUDE.md`.
 - [ ] **AC-14.4:** A dependency and licence audit is included: every third-party dependency that will be newly introduced or dropped by the pivot is listed with its licence, and any copyleft or commercially restrictive licence is flagged for Product Owner decision.
 - [ ] **AC-14.5:** A migration-risk section lists the data that exists today (Payload media records, galleries, users, uploaded R2 objects), states whether each must be migrated, discarded, or left in place, and names the risk of getting it wrong.
 - [ ] **AC-14.6:** The audit ends with an explicit keep/replace/retire recommendation and an open-questions list. Anything the audit cannot resolve without human input is added to `scrum-master/po-requests.md` rather than being decided silently.
 
-**Dependencies:** none
-
 **Dev Team Status:** not-started
-**Dev Team Notes:**
-_empty — Dev Team fills this in_
 
 **Tester Status:** not-started
-**Tester Notes:**
-_empty — Tester fills this in_
 
 ---
 
 ### US-15: Verify PicPeak upstream and create the pinned fork with licence compliance
-**Status:** draft | **Priority:** critical | **Issue:** [#51](https://github.com/AsimQuick/earthandhoney/issues/51)
+**Status:** draft | **Priority:** critical
 
 #### Acceptance Criteria
 - [ ] **AC-15.1:** The PicPeak upstream repository is verified to actually exist and to be obtainable, and its licence is confirmed by reading the licence file in the repository rather than trusting documentation. If the licence is not MIT as the PRD assumes, work stops and the Product Owner is notified through `scrum-master/po-requests.md`.
@@ -116,17 +63,13 @@ _empty — Tester fills this in_
 **Dependencies:** US-14
 
 **Dev Team Status:** not-started
-**Dev Team Notes:**
-_empty — Dev Team fills this in_
 
 **Tester Status:** not-started
-**Tester Notes:**
-_empty — Tester fills this in_
 
 ---
 
 ### US-16: Boot the forked Backstage in a production-like Docker environment on PostgreSQL and existing R2 credentials
-**Status:** draft | **Priority:** critical | **Issue:** [#52](https://github.com/AsimQuick/earthandhoney/issues/52)
+**Status:** draft | **Priority:** critical
 
 #### Acceptance Criteria
 - [ ] **AC-16.1:** The forked Backstage, its database, and any worker or cache component it requires all run as services defined in `docker-compose.yml`. Nothing is installed on the host machine, and services address each other by Docker network hostname rather than localhost.
@@ -139,17 +82,13 @@ _empty — Tester fills this in_
 **Dependencies:** US-15
 
 **Dev Team Status:** not-started
-**Dev Team Notes:**
-_empty — Dev Team fills this in_
 
 **Tester Status:** not-started
-**Tester Notes:**
-_empty — Tester fills this in_
 
 ---
 
 ### US-17: Prove the forked Backstage delivers the real photography flow before we build on it
-**Status:** draft | **Priority:** critical | **Issue:** [#53](https://github.com/AsimQuick/earthandhoney/issues/53)
+**Status:** draft | **Priority:** critical
 
 #### Acceptance Criteria
 - [ ] **AC-17.1:** A Project, a Client, and a Gallery can be created in the running Backstage, and the Gallery is correctly associated with the Project and the Client.
@@ -161,21 +100,18 @@ _empty — Tester fills this in_
 - [ ] **AC-17.7:** At least one Backstage webhook fires and is received by a listener that logs the payload, proving the outbound integration path we will later use to refresh Frontstage content.
 - [ ] **AC-17.8:** The bundled gallery style templates render unmodified, and a copy of each original template file is preserved so future Earth & Honey variants can be diffed against the untouched baseline. `PICPEAK_PORT_LEDGER.md` records every template copied and where it is used.
 - [ ] **AC-17.9:** Findings are recorded honestly: anything that does not work as the PRD assumed is written up in `PIVOT_AUDIT.md` and raised to the Product Owner rather than quietly patched.
+- [ ] **AC-17.10:** PicPeak's native contract-signing capability is verified against the actual pinned commit, not assumed from documentation or memory: typed name capture, a consent checkbox, a drawn signature, signer IP address and timestamp, a frozen snapshot of the signed contract contents, a SHA-256 integrity hash, and an audit page baked into the delivered PDF. For each element, the evidence (file/line, or a reproduced signing flow) is recorded in `PIVOT_AUDIT.md`. If any element is missing or works differently than assumed, this is written up honestly and raised in `scrum-master/po-requests.md` as reopening the contract-signing decision — no silent workaround, and no quiet fallback to an external e-sign vendor or manual upload.
 
 **Dependencies:** US-16
 
 **Dev Team Status:** not-started
-**Dev Team Notes:**
-_empty — Dev Team fills this in_
 
 **Tester Status:** not-started
-**Tester Notes:**
-_empty — Tester fills this in_
 
 ---
 
 ### US-18: Document system ownership and the Frontstage-to-Backstage boundary
-**Status:** draft | **Priority:** high | **Issue:** [#54](https://github.com/AsimQuick/earthandhoney/issues/54)
+**Status:** draft | **Priority:** high
 
 #### Acceptance Criteria
 - [ ] **AC-18.1:** `SYSTEM_OWNERSHIP.md` exists and, for every domain in the ownership table in `CLAUDE.md`, names the single authoritative system, what the other systems may cache for display only, and what they are forbidden to write.
@@ -188,17 +124,13 @@ _empty — Tester fills this in_
 **Dependencies:** US-17
 
 **Dev Team Status:** not-started
-**Dev Team Notes:**
-_empty — Dev Team fills this in_
 
 **Tester Status:** not-started
-**Tester Notes:**
-_empty — Tester fills this in_
 
 ---
 
 ### US-19: Decide and record the media-reuse model, and audit the existing R2 setup
-**Status:** draft | **Priority:** high | **Issue:** [#55](https://github.com/AsimQuick/earthandhoney/issues/55)
+**Status:** draft | **Priority:** high
 
 #### Acceptance Criteria
 - [ ] **AC-19.1:** `MEDIA_REUSE_ADR.md` states, on evidence from the running fork, how tightly an image is currently bound to a single gallery, and whether one stored original can already be referenced by more than one gallery.
@@ -210,17 +142,13 @@ _empty — Tester fills this in_
 **Dependencies:** US-17
 
 **Dev Team Status:** not-started
-**Dev Team Notes:**
-_empty — Dev Team fills this in_
 
 **Tester Status:** not-started
-**Tester Notes:**
-_empty — Tester fills this in_
 
 ---
 
 ### US-20: Extract the proven Stripe key-pairing and environment convention from the reference project
-**Status:** draft | **Priority:** high | **Issue:** [#56](https://github.com/AsimQuick/earthandhoney/issues/56)
+**Status:** draft | **Priority:** high
 
 #### Acceptance Criteria
 - [ ] **AC-20.1:** The Stripe implementation in the reference project at `/Users/asim/NoIcloud/techno` is read directly — its payment routes, its server and client split, its templates, its environment example, and its deployment workflow — and `STRIPE_PORT_REPORT.md` lists every file inspected.
@@ -229,33 +157,34 @@ _empty — Tester fills this in_
 - [ ] **AC-20.4:** A start-up validation is specified that refuses to start, or fails loudly with an actionable message, when the loaded Stripe values are not all from the same mode or when any required value is missing. The specification says what is checked, when it runs, and what the operator sees.
 - [ ] **AC-20.5:** The report records the reference project's secret-handling shape and confirms it will be mirrored here: local values in an uncommitted environment file, deployed values in repository secrets whose names match the environment variable names exactly, and the deployment step writing the environment file on the server. No secret value appears in the report or in any committed file.
 - [ ] **AC-20.6:** The report records which behaviours will be preserved when the payment flow is actually built — server-side payment creation, the route layout, webhook signature verification, repeat-event protection, success and cancel handling, and the rule that the authoritative amount is fetched from Stripe rather than trusted from the browser — and which behaviours are deliberately not carried over, with reasons. It is explicit that the reference project is a different language and framework, so faithful means matching logic and required-field structure, not copying lines.
-- [ ] **AC-20.7:** The report states plainly that this payment path exists so the studio can charge its photography clients, that it is not subscription billing for a future software product, and that the choice between initiating payment through the billing system's own gateway or through this ported direct flow is still an open decision the Product Owner must settle before any payment code is written.
+- [ ] **AC-20.7:** The report states plainly that this payment path exists so the studio can charge its photography clients and is not subscription billing for a future software product, and it records the settled payment architecture rather than reopening it: the ported direct flow initiates payment, the ledger's own payment gateway stays disconnected, and the verified webhook reconciles the payment into the ledger and advances the project milestone. It states that exactly one webhook endpoint exists and that it lives in the fork backend where invoice status lives, that a browser redirect is never proof of payment, and that because the reference project is a different language the port crosses a language boundary and must be recorded in `FORK_CHANGELOG.md` as a deliberate deviation.
 - [ ] **AC-20.8:** `.env.example` is updated with the placeholder Stripe variable names in the convention taken from the reference project, each with a comment explaining what it is and which mode it must match.
-
-**Dependencies:** none
+- [ ] **AC-20.9:** The report records the boundary of what "port faithfully" does and does not cover: the reference project is a one-shot checkout flow containing no saved payment method, no off-session charge, and no retry or dunning logic, so none of that is inherited. It states that V1 ships a payment schedule whose installments are each paid manually against a real ledger invoice, that automatic recurring card charges are deferred to V1.1 and must then be built on that same schedule, and that a subscription product must never be used because it would place an authoritative billing schedule outside the ledger.
 
 **Dev Team Status:** not-started
-**Dev Team Notes:**
-_empty — Dev Team fills this in_
 
 **Tester Status:** not-started
-**Tester Notes:**
-_empty — Tester fills this in_
+
+---
 
 ---
 
 ## Sprint Review
 
-### Dev Team Sprint Status: not-started
-### Dev Team Sprint Notes:
-_empty — Dev Team fills this in_
+### Dev Team Sprint Notes
+_Pending_
 
-### Tester Sprint Status: not-started
-### Tester Sprint Notes:
-_empty — Tester fills this in_
+### Tester Sprint Notes
+_Pending_
 
-### PO Sprint Review Notes:
-_empty — PO fills this in after sprint completion_
+### PO Sprint Review Notes
+Sprint-3 scope is unchanged by the 2026-07-30 finance revision — no story here touches finance. US-18's AC-18.1 references the ownership table in CLAUDE.md by reference, so it automatically inherits The Ledger Rule rows and the display-only-cache language; no AC edit was needed. AC-14.2 was extended to catch orphaned configuration left by retired sprint-2 stories.
+
+PIPELINE RECOVERY CLOSED (2026-07-30). Both blockers are resolved: the pivot and finance documentation, sprint3.json and sprint3.md are committed (9624a07), and project-state.json has been advanced by the Project Lead to sprint-3 / planning with status active and no current task. Nothing blocks the start of this sprint.
+
+PLAN REVISION (2026-07-30, final planning pass). US-20 was the only story left carrying pre-revision language and has been corrected: AC-20.7 previously told the Dev Team that the payment-initiation choice was still an open decision, which contradicted the settled architecture in PRD §26.3 — it now records the settled position (ported direct flow initiates, ledger gateway disconnected, exactly one webhook endpoint in the fork backend, a browser redirect is never proof of payment, language-boundary port recorded in FORK_CHANGELOG.md). A new AC-20.9 fixes the matching scope gap: the reference project is a one-shot checkout with no saved-card, off-session, or retry logic, so 'port faithfully' does not silently pull that in — V1 is a manual-pay installment schedule and auto-charge is V1.1 built on the same schedule, never a subscription product. Sprint is now 7 stories / 48 acceptance criteria (AC-17.10 added: verify PicPeak's native contract-signing capability). Definition of done carries the three standing project conventions (no open critical/major defects, coverage threshold not lowered, structured metadata headers on all code files).
+
+STILL OUTSTANDING, not blocking this sprint's start: VPS access (po-requests item 2) is needed before US-16 can be called production-like on the real target; Stripe credentials (item 5) are not needed until the finance phase; and open decisions 7, 8 and 9 (contract provider, design-token lock-down, token starting point) need human confirmation before sprint-4 planning closes.
 
 ---
-_Human-readable view of `scrum-master/sprint3.json`._
+_Auto-generated from `sprint3.json` — do not edit directly._

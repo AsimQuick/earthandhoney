@@ -108,7 +108,7 @@ Ninja visible to a client or duplicates a record we already own.
 | Payment-gated gallery unlock | PicPeak, triggered by verified Stripe webhook + ledger reconciliation |
 | Client-facing portal | Project Room only — never Invoice Ninja's portal |
 | All client and photographer email, financial included | PicPeak/Backstage email queue (see the pragmatic-default note above) |
-| Contract signature | Chosen e-sign provider, or approved manual upload flow |
+| Contract signature | PicPeak's own native signing capability (Project Room), hardened per the Contracts entry below — pending US-15/US-17 verification |
 | Originals, derivatives, documents, ZIPs | Cloudflare R2 |
 
 ## Technology Stack
@@ -123,7 +123,7 @@ Ninja visible to a client or duplicates a record we already own.
 - **Email:** SMTP via the PicPeak email queue as the default owner of all client-facing mail (Resend is retired)
 - **Ledger:** Invoice Ninja, **headless** — API only, portal disabled, gateway disconnected. Runs in **our** `docker-compose.yml` on **our** VPS.
 - **Payments:** Stripe, ported from `/Users/asim/NoIcloud/techno` (see below). One payment path: the ported direct flow, reconciled into the ledger.
-- **Contracts:** open decision — e-sign provider TBD; V1 may ship manual signed-PDF upload with audit entry (Adobe Sign is no longer locked in)
+- **Contracts:** PicPeak's own native contract-signing capability is the V1 mechanism — typed name, consent checkbox, drawn signature, IP address, timestamp, a frozen snapshot of the signed contract contents, a SHA-256 integrity hash, and an audit page baked into the delivered PDF. Hardened with: one-time signing links, mandatory email verification before a signature is accepted, the signed PDF emailed to both parties, immutable/versioned storage in R2, and no editing of contract contents after signature. No external e-sign vendor (Adobe Sign, DocuSign, Dropbox Sign, SignWell) and no manual-PDF-upload fallback are carried into V1. **This entire mechanism is unverified against the actual pinned fork** — US-15/US-17 must confirm it really exists at the pinned commit before any Project Room work depends on it; if it does not, this decision reopens (see `po-requests.md` item 7). Contract wording should still get a one-time review by an Ontario lawyer; electronic signatures are generally recognized under Ontario/Canadian law but this is not legal advice.
 - **Alt text:** self-hosted caption suggestion (Florence-2 is the first candidate, must be benchmarked) + human approval
 - **Deployment:** dedicated VPS, Docker Compose, one reverse proxy (Caddy or Nginx). **No Kubernetes.**
 
@@ -177,13 +177,15 @@ These require a documented spike and Product Owner sign-off (PRD §5):
 2. The Payload ↔ PicPeak API boundary
 3. Whether PicPeak media can be reused across galleries without duplicating originals
 4. The R2 delivery path (backend streaming / presigned / CDN / Worker / hybrid)
-5. The V1 contract-signing provider or manual fallback
-6. VPS capacity for real image batch sizes
-7. Any use of Invoice Ninja beyond the approved ownership rows, and any decision to let Invoice Ninja send a given email type
+5. VPS capacity for real image batch sizes
+6. Any use of Invoice Ninja beyond the approved ownership rows, and any decision to let Invoice Ninja send a given email type
 
-_Two former entries are now settled: how Stripe is initiated (**the ported direct flow, reconciled
-into the ledger** — Invoice Ninja's gateway stays disconnected) and where Invoice Ninja runs (**our
-VPS, our `docker-compose.yml`**)._
+_Three former entries are now settled: how Stripe is initiated (**the ported direct flow, reconciled
+into the ledger** — Invoice Ninja's gateway stays disconnected), where Invoice Ninja runs (**our
+VPS, our `docker-compose.yml`**), and the V1 contract-signing mechanism (**PicPeak's own native
+signing capability — see "Contracts" in the Technology Stack below — conditional on US-15/US-17
+verifying it actually exists at the pinned commit; no external e-sign vendor and no manual-PDF-upload
+fallback are carried into V1**)._
 
 ## Project Conventions
 - Commit format: `[US-X] Description of change`

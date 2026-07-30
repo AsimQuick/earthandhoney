@@ -152,14 +152,14 @@ The Product Owner must resolve these through short technical spikes before depen
 2. The exact API boundary between Payload/Next.js and the PicPeak fork.
 3. Whether PicPeak media records can be reused across multiple galleries without duplicating original binaries.
 4. The optimal public and private R2 delivery path: backend streaming, presigned R2 URLs, Cloudflare Worker/CDN access, or a hybrid.
-5. The V1 contract-signing provider or manual fallback.
-6. The VPS capacity required for image processing at Earth & Honey's expected batch sizes.
-7. Any use of Invoice Ninja beyond the ownership rows in §10, and any decision to let Invoice Ninja send a given email type rather than the Backstage email queue.
+5. The VPS capacity required for image processing at Earth & Honey's expected batch sizes.
+6. Any use of Invoice Ninja beyond the ownership rows in §10, and any decision to let Invoice Ninja send a given email type rather than the Backstage email queue.
 
-Two decisions previously listed here are now **settled** (2026-07-30):
+Three decisions previously listed here are now **settled** (2026-07-30):
 
 - *How Stripe payment is initiated* — **the ported direct Stripe flow**, reconciled into the ledger. Invoice Ninja's own payment gateway stays disconnected, so there is exactly one payment path.
 - *Where Invoice Ninja runs* — **the project's own VPS, in the project's own `docker-compose.yml`.**
+- *The V1 contract-signing mechanism* — **PicPeak's own native signing capability**, hardened per §29, with no external e-sign vendor and no manual-upload fallback. This one is settled **conditionally**: US-15/US-17 must still verify the capability actually exists at the pinned commit before Project Room work depends on it (see §29 and `po-requests.md` item 7).
 
 No agent should silently choose one of these based only on preference.
 
@@ -359,7 +359,7 @@ Dedicated VPS + Docker Compose + reverse proxy
 | Actual card charge | Stripe | One payment path only, ported from `techno`. |
 | Payment-gated gallery unlock | PicPeak | Verified Stripe webhook + ledger reconciliation. |
 | Client-facing portal | Project Room only | Never Invoice Ninja's portal. |
-| Contract signature | Chosen e-sign provider or approved manual flow | Status linked to Project. |
+| Contract signature | PicPeak's own native signing capability | Status linked to Project; pending US-15/US-17 verification (§29). |
 | Project/gallery operational emails | PicPeak/Backstage email system | Templates editable. |
 | Financial emails and reminders | PicPeak/Backstage email system by default | May flex to the ledger where clearly simpler — PO sign-off, recorded in `SYSTEM_OWNERSHIP.md`. Exactly one system owns each email type. |
 | Original and derivative files | R2 | Access controlled by purpose. |
@@ -1372,7 +1372,7 @@ The photographer receives far more control over emails than over website layout.
 | Project/date/venue communication | Backstage/PicPeak email system | Manual or scheduled |
 | Booking packet and quote | Backstage/PicPeak email system | Review and click Send |
 | Quote reminder | Backstage/PicPeak email system | Optional automatic |
-| Contract/signature reminder | E-sign provider, or Backstage under the manual flow | Configurable |
+| Contract/signature reminder | Backstage/PicPeak email system | Configurable |
 | Deposit/final/installment/add-on invoice | Backstage/PicPeak email system | Initial send deliberate |
 | Payment reminders | Backstage/PicPeak email system | Automatic after enabling |
 | Receipt | Backstage/PicPeak email system | Automatic; PDF comes from the ledger |
@@ -1412,17 +1412,31 @@ Automations stop when their milestone is complete.
 
 # 29. Contracts and PDFs
 
-V1 contract requirements:
+**Settled 2026-07-30, conditional on verification.** V1 uses PicPeak's own native contract-signing
+capability inside the Project Room — not an external e-sign vendor, and not a manual-PDF-upload
+fallback. This is the "fork, don't rebuild" principle applied to contracts the same way it already
+applies to galleries: if the fork already does this, we use it, and we do not stand up a second
+signing system beside it. It remains **conditional**: US-15/US-17 must verify against the actual
+pinned commit that this capability genuinely exists before any Project Room story depends on it. If
+it does not exist as assumed, this decision reopens — do not silently substitute a workaround.
 
-- chosen external e-sign provider or approved manual upload flow;
-- Project-linked document status;
-- sent/signed state;
-- provider ID where applicable;
-- final signed PDF stored in the Project documents area/R2;
-- visible to photographer and client;
-- manual mark-signed fallback with audit entry.
+V1 contract requirements, assuming verification passes:
 
-Do not build a legal signature engine from scratch.
+- typed name, consent checkbox, and drawn signature captured at signing time;
+- signer IP address and timestamp recorded;
+- the contract contents are frozen (a snapshot) at the moment of signature — no editing after signing;
+- a SHA-256 integrity hash of the signed contract, and an audit page describing the signing event, included in the delivered PDF;
+- **hardening required beyond whatever PicPeak ships by default:** one-time signing links (not a reusable/guessable URL), mandatory email verification of the signer before a signature is accepted, the signed PDF emailed to both the photographer and the client, immutable/versioned storage of the signed document in R2, and a visible signer/contract-version/timestamp audit history in the Project Room;
+- Project-linked document status (sent/signed), visible to photographer and client;
+- final signed PDF stored in the Project documents area/R2.
+
+No external e-sign vendor (Adobe Sign, DocuSign, Dropbox Sign, SignWell) and no manual mark-signed
+upload fallback are carried into V1 — see `po-requests.md` item 7 for the research behind this and
+the fallback path if verification fails. Contract wording should still get a one-time review by an
+Ontario lawyer; this PRD is not legal advice.
+
+Do not build a legal signature engine from scratch — this section describes hardening an existing
+capability, not building one.
 
 PDF requirements:
 
@@ -1516,7 +1530,7 @@ Tune worker concurrency to the actual VPS rather than assuming defaults.
 - client-safe Project Room authorization;
 - hashed passwords and tokens;
 - least-privilege R2 credentials;
-- verified PicPeak, Invoice Ninja, Stripe, and e-sign webhooks;
+- verified PicPeak (including its native contract-signing events), Invoice Ninja, and Stripe webhooks;
 - rate limits on login, forms, magic links, and downloads;
 - secrets only in protected runtime/CI configuration;
 - SPF, DKIM, and DMARC before production email;
@@ -1673,7 +1687,7 @@ Exit criterion: verified payment changes Project and gallery access exactly once
 
 - implement email ownership matrix;
 - template editor and Project overrides;
-- contract/e-sign integration;
+- contract-signing hardening on top of PicPeak's native capability (one-time links, email verification, dual-party PDF delivery, immutable R2 storage);
 - gallery-ready, expiry, and review flows;
 - retention/archive/purge workflow.
 
