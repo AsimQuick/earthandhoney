@@ -15,6 +15,9 @@
  * updated-by: dev-team
  * related-story: US-3
  * related-ac: 3.1
+ * updated-by: dev-team
+ * related-story: US-9
+ * related-ac: 9.1
  * ---
  */
 import { postgresAdapter } from '@payloadcms/db-postgres'
@@ -28,6 +31,7 @@ import { fileURLToPath } from 'url'
 import { Galleries } from './collections/Galleries'
 import { Media } from './collections/Media'
 import { Users } from './collections/Users'
+import { Homepage } from './globals/Homepage'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -40,6 +44,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Galleries],
+  globals: [Homepage],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   // Required for Media's `upload.imageSizes` (thumbnail/medium/large) to run —
