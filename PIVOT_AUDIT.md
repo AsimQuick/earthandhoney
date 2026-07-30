@@ -12,7 +12,7 @@ purpose: AC-14.1 — inventory every feature delivered in sprint-1 (US-1..US-6)
          behind by retired US-12/US-13, each marked removed or retained.
 created-by: dev-team
 related-story: US-14
-related-ac: 14.1, 14.2, 14.3
+related-ac: 14.1, 14.2, 14.3, 14.4
 ---
 -->
 
@@ -164,3 +164,51 @@ AC-14.1/AC-14.2 already reassign to PicPeak. Risks 4–5 resolve to the
 never reassigns identity or outbound email — PicPeak's built-in
 equivalents for those two concerns must stay unused so no concern ever
 has two live owners at once.
+
+## Dependency and licence audit (AC-14.4)
+
+This section covers `package.json` third-party dependencies plus the one
+non-npm dependency the pivot introduces: the PicPeak fork itself. Licences
+below were read directly from each package's own `node_modules/<pkg>/package.json`
+(or, for PicPeak, are pending direct verification — see the flag below),
+not assumed from documentation.
+
+### Dropped by the pivot
+
+These are direct runtime dependencies of `earthandhoney`'s existing,
+pre-pivot code paths that AC-14.2 already classified as **Left dormant**.
+None are removed from `package.json` by this audit itself — removal is
+deferred to the follow-on pivot-execution story that also removes the
+lock-in tests exercising them (see AC-14.2) — but each is a dependency the
+pivot's end state no longer needs, since PicPeak takes over the concern it
+served.
+
+| Dependency | Licence | Superseded artifact it serves | Copyleft/restrictive? |
+|---|---|---|---|
+| `sharp` (`^0.34.5`) | Apache-2.0 | Payload-owned Sharp derivative pipeline (`src/payload.config.ts`, `src/collections/Media.ts`) | No — permissive, no PO flag needed. |
+| `@payloadcms/storage-s3` (`^3.86.0`) | MIT | Payload-owned R2 upload path (`src/payload.config.ts` `s3Storage`) | No — permissive, no PO flag needed. |
+
+`graphql` (MIT), `@payloadcms/db-postgres` (MIT), `@payloadcms/next` (MIT),
+and `@payloadcms/richtext-lexical` (MIT) remain in use for Payload's
+continuing, non-gallery responsibilities (see the Kept rows in the
+Sprint 1/2 inventory above) and are therefore **not** dropped by the pivot.
+
+### Newly introduced by the pivot
+
+| Dependency | Licence | Notes | Copyleft/restrictive? |
+|---|---|---|---|
+| PicPeak Backstage fork (per `US-15`, vendored into the repo at a pinned commit, not an npm package) | **Unconfirmed** — the PRD assumes MIT, but `US-15` AC-15.1 requires this to be read directly from PicPeak's own upstream licence file before the fork is created; it has not yet been read as of this audit. | Becomes the single owner of gallery data, uploads, and media derivatives (see the Duplicate-feature risk map above). Its own transitive dependency tree is out of scope until the fork exists — that tree gets its own audit once `US-15` pins a commit. | **FLAGGED for Product Owner decision.** If the upstream licence turns out to be copyleft (e.g. GPL/AGPL) or otherwise commercially restrictive rather than the PRD's assumed MIT, `US-15` AC-15.1 already requires work to stop and the Product Owner to be notified via `scrum-master/po-requests.md` before any fork is created — this audit does not pre-empt that gate, it records that the gate exists and why. |
+
+No other new npm dependency is anticipated: the Frontstage-to-Backstage API
+boundary (`US-18`) is expected to use standard `fetch`, already available
+without a new package, and `photoswipe` (MIT) — the current in-repo
+gallery viewer's fullscreen library — is **kept as a Frontstage renderer**
+(see Superseded artifacts, row 4) rather than replaced, so it is neither
+newly introduced nor dropped.
+
+### Current runtime dependencies with no pivot impact
+
+For completeness, the remaining current runtime dependencies (`next`
+16.2.10, `payload` `^3.86.0`, `react` 19.2.4, `react-dom` 19.2.4,
+`photoswipe` `^5.4.4`) are all **MIT**-licensed and are Kept per the
+Sprint 1/2 inventory above — no licence flag applies to any of them.
