@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/7 stories | 8/31 ACs
-**Last Updated:** 2026-07-30T06:57:06+00:00
+**Last Updated:** 2026-07-30T07:04:10+00:00
 
 ## Sprint Goal
 Ship the public, lead-generating photography website on top of the Gallery Engine delivered in sprint-1. Port the photobuddy design system into the app shell; add the content-driving CMS collections (Homepage, Portfolio, Blog, Testimonials, Packages, FAQ) the photographer manages without a developer; render all public marketing pages (Home, Galleries, Blog, and About with Packages/Testimonials/FAQ sections) with static generation + ISR powered by the existing Gallery Engine; and deliver lead conversion (contact form + WhatsApp capture) writing to a Leads collection with Resend email notification. Close sprint-1's carried-over deploy/CI/flake follow-ups first.
@@ -168,6 +168,7 @@ Ship the public, lead-generating photography website on top of the Gallery Engin
 - [ ] **AC-9.1:** A Homepage global/singleton lets the photographer manage the hero gallery (relationship -> galleries), headline/intro text, a primary CTA (label + link), and an ordered, reorderable array/blocks-type field for content sections (exact block types are a Dev Team technical decision, since `public/photobuddy/index.html` has no homepage sections beyond the hero gallery grid to derive them from) — no code change is needed to update homepage content, and reordering the array changes the rendered order.
   - Dev: implemented
 - [ ] **AC-9.2:** A Portfolio collection models portfolio entries that each reference one or more Galleries (title, slug, category, cover, ordered galleries) so portfolio pages are gallery-driven and reuse the Gallery Engine, with no separate image system.
+  - Dev: implemented
 - [ ] **AC-9.3:** Testimonials, Packages, and FAQ collections exist with the fields their pages need (Testimonial: quote, author, role; Package: name, price, description, features[]; FAQ: question, answer, order) and are all editable in the Payload admin.
 - [ ] **AC-9.4:** All new collections/globals are registered in `payload.config.ts`, carry required fields and an admin `useAsTitle`, and include the metadata front-matter header per project conventions.
 
@@ -182,6 +183,15 @@ Ship the public, lead-generating photography website on top of the Gallery Engin
   - `src/__tests__/us9-ac9.1-homepage-global.test.ts` — 11 tests covering: singleton semantics, hero gallery relationship shape, headline/intro fields, CTA group fields, blocks-type contentSections with reorderability semantics, both block configs, and config registration. All 11 pass.
   
   No package-lock changes (no new deps). Did not touch `scrum-master/`.
+  AC-9.2 implemented (local checks green): Committed on `feature/US-9`, not pushed (per instructions).
+  
+  **Summary:**
+  - `src/collections/Portfolio.ts` (new) — Payload collection with `title` (required text), `slug` (required, unique text), `category` (required text), `cover` (required relationship → Media), `galleries` (array, minRows 1, ordered relationship → Galleries). `useAsTitle: 'title'`. Metadata header included.
+  - `src/payload.config.ts` — imports and registers `Portfolio` under `collections`.
+  - `src/__tests__/us9-ac9.2-portfolio-collection.test.ts` (new) — 8 tests covering field shapes, required/unique flags, relationship targets, and config registration. All pass.
+  - Updated three pre-existing scope trip-wire tests (US-3 AC-3.2, US-4 AC-4.4, US-6 AC-6.2) that asserted `src/collections/` had no Portfolio file — now audit Portfolio as legitimately in-scope (it only relates to Media/Galleries, no separate image system).
+  
+  Full suite: 607/607 tests pass, 38/38 suites, coverage 98.12%. No dependency changes, so no `package-lock.json` update needed.
 
 **Tester Status:** approved
 **Tester Notes:**
