@@ -58,15 +58,17 @@ function findArrayFieldsOfMediaRelations(fields: Field[]): ArrayField[] {
 
 describe('AC-3.2: no CMS collection or code path other than Media and Galleries manages, uploads, or displays images', () => {
   describe('no undeclared collection exists that could shadow Media/Galleries with its own image system', () => {
-    it('src/collections/ contains exactly the audited collection files (Galleries, Media, Users)', () => {
+    it('src/collections/ contains exactly the audited collection files (Galleries, Media, Portfolio, Users)', () => {
       // Trip-wire: adding a new collection file here must force an explicit
       // re-audit of this test (and this AC) rather than silently slipping a
-      // duplicate image system past it.
+      // duplicate image system past it. Portfolio (US-9 AC-9.2) is audited:
+      // it only references Media (cover) and Galleries (ordered galleries)
+      // relationships, so it does not introduce a second image system.
       const files = fs.readdirSync(path.join(root, COLLECTIONS_DIR)).sort()
-      expect(files).toEqual(['Galleries.ts', 'Media.ts', 'Users.ts'])
+      expect(files).toEqual(['Galleries.ts', 'Media.ts', 'Portfolio.ts', 'Users.ts'])
     })
 
-    it('payload.config.ts registers only Users, Media, and Galleries as collections', () => {
+    it('payload.config.ts registers only Users, Media, Galleries, and Portfolio as collections', () => {
       const src = read(PAYLOAD_CONFIG)
       const collectionsLine = src.match(/collections:\s*\[([^\]]*)\]/)?.[1]
       expect(collectionsLine).toBeDefined()
@@ -74,7 +76,7 @@ describe('AC-3.2: no CMS collection or code path other than Media and Galleries 
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean)
-      expect(registered.sort()).toEqual(['Galleries', 'Media', 'Users'])
+      expect(registered.sort()).toEqual(['Galleries', 'Media', 'Portfolio', 'Users'])
     })
   })
 

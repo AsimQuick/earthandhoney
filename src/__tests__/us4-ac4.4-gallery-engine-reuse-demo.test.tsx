@@ -156,9 +156,9 @@ describe('AC-4.4: the demo route is internal — not backed by out-of-scope CMS 
     expect(src).not.toMatch(/relationTo:\s*['"](portfolio|homepage)['"]/)
   })
 
-  it('src/collections/ still contains only the in-scope Galleries, Media, and Users collections (trip-wire against adding Portfolio/Homepage this sprint)', () => {
+  it('src/collections/ contains only the audited Galleries, Media, Portfolio, and Users collections (trip-wire against adding further collections unaudited)', () => {
     const files = fs.readdirSync(path.join(root, 'src/collections')).sort()
-    expect(files).toEqual(['Galleries.ts', 'Media.ts', 'Users.ts'])
+    expect(files).toEqual(['Galleries.ts', 'Media.ts', 'Portfolio.ts', 'Users.ts'])
   })
 })
 

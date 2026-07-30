@@ -94,15 +94,15 @@ describe('AC-6.2: the ISR route renders a real gallery from the in-scope Galleri
   })
 })
 
-describe('AC-6.2: the ISR route is internal — not backed by the out-of-scope Portfolio/Homepage CMS collections', () => {
+describe('AC-6.2: the ISR route is internal — not backed by the Portfolio collection or a Homepage global', () => {
   it('does not import or query a Portfolio or Homepage collection', () => {
     expect(ISR_SRC).not.toMatch(/from ['"].*collections\/(Portfolio|Homepage)['"]/)
     expect(ISR_SRC).not.toMatch(/collection:\s*['"](portfolio|homepage)['"]/i)
   })
 
-  it('src/collections/ still contains only the in-scope Galleries, Media, and Users collections (trip-wire against adding Portfolio/Homepage this sprint)', () => {
+  it('src/collections/ contains only the audited Galleries, Media, Portfolio, and Users collections (trip-wire against adding further collections unaudited)', () => {
     const files = fs.readdirSync(path.join(root, 'src/collections')).sort()
-    expect(files).toEqual(['Galleries.ts', 'Media.ts', 'Users.ts'])
+    expect(files).toEqual(['Galleries.ts', 'Media.ts', 'Portfolio.ts', 'Users.ts'])
   })
 })
 
