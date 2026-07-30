@@ -25,55 +25,55 @@
     "Coverage threshold met \u2014 the existing CI coverage gate is not lowered to pass",
     "Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)"
   ],
-  "last_updated": "2026-07-30T22:34:48+00:00",
+  "last_updated": "2026-07-30T22:39:46+00:00",
   "stories": [
     {
       "id": "US-14",
       "title": "Pivot audit: keep / replace / retire map for the existing codebase",
-      "status": "in-progress",
+      "status": "done",
       "priority": "critical",
       "dependencies": [],
       "acceptance_criteria": [
         {
           "id": "14.1",
           "text": "`PIVOT_AUDIT.md` exists at the repo root and inventories every feature currently implemented in this repository, stating for each one whether it is Kept, Replaced by PicPeak, Repurposed as a Frontstage layer, or Retired \u2014 with a one-line reason per entry. Every item delivered in sprint-1 (US-1\u2026US-6) and sprint-2 (US-7\u2026US-9) appears exactly once.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "14.2",
           "text": "The audit explicitly names which existing artifacts are superseded by the PicPeak fork \u2014 the Payload Galleries collection, the Payload-owned Sharp derivative pipeline, the Payload-owned R2 upload path, and the in-repo gallery viewer components \u2014 and records, for each, whether it is deleted now, left dormant, or kept as a Frontstage renderer that reads from PicPeak. The audit must also list orphaned configuration left behind by retired stories \u2014 including the `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL` and `NEXT_PUBLIC_WHATSAPP_NUMBER` entries in `.env.example`, which belong to retired US-12 and US-13 \u2014 and state for each whether it is removed or retained, so no orphaned environment variables survive the pivot unexplained.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "14.3",
           "text": "The audit lists every duplicate-feature risk between the current codebase and PicPeak (two upload paths, two media stores, two galleries, two auth systems, two email senders) and names the single authoritative owner for each, consistent with the ownership table in `CLAUDE.md`.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "14.4",
           "text": "A dependency and licence audit is included: every third-party dependency that will be newly introduced or dropped by the pivot is listed with its licence, and any copyleft or commercially restrictive licence is flagged for Product Owner decision.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "14.5",
           "text": "A migration-risk section lists the data that exists today (Payload media records, galleries, users, uploaded R2 objects), states whether each must be migrated, discarded, or left in place, and names the risk of getting it wrong.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "14.6",
           "text": "The audit ends with an explicit keep/replace/retire recommendation and an open-questions list. Anything the audit cannot resolve without human input is added to `scrum-master/po-requests.md` rather than being decided silently.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         }
       ],
