@@ -12,7 +12,11 @@ purpose: AC-14.1 — inventory every feature delivered in sprint-1 (US-1..US-6)
          behind by retired US-12/US-13, each marked removed or retained.
 created-by: dev-team
 related-story: US-14
-related-ac: 14.1, 14.2, 14.3, 14.4
+         AC-14.5 — list the data that exists today (Payload media
+         records, galleries, users, uploaded R2 objects), state whether
+         each must be migrated, discarded, or left in place, and name
+         the risk of getting it wrong.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5
 ---
 -->
 
@@ -212,3 +216,25 @@ For completeness, the remaining current runtime dependencies (`next`
 16.2.10, `payload` `^3.86.0`, `react` 19.2.4, `react-dom` 19.2.4,
 `photoswipe` `^5.4.4`) are all **MIT**-licensed and are Kept per the
 Sprint 1/2 inventory above — no licence flag applies to any of them.
+
+## Migration-risk section (AC-14.5)
+
+This section covers the data that exists today in the running system —
+as opposed to the code/config artifacts already covered by AC-14.2 — and
+states, per category, whether it must be **migrated** into PicPeak,
+**discarded**, or **left in place**, plus the risk of getting that call
+wrong.
+
+| Data category | Where it lives today | Disposition | Risk of getting it wrong |
+|---|---|---|---|
+| Payload media records (`media` collection: filename, alt text, mime/size, `imageSizes` variant refs) | Postgres, via the `media` collection (`src/collections/Media.ts`) | **Migrate** — any record with a real uploaded file must have its binary and alt text re-created as a PicPeak media entry before the Payload `media` collection is retired; do not discard, since alt text is a Product Pillar 4/accessibility requirement PicPeak must also carry. | If discarded instead of migrated: existing gallery images become unreachable (dead `original`/`thumbnail`/`medium`/`large` URLs) and alt text is lost, regressing accessibility/SEO with no way to recover the text without re-keying it by hand. |
+| Galleries (`galleries` collection: title, description, `images[]`, cover, `settings`) | Postgres, via the `galleries` collection (`src/collections/Galleries.ts`) | **Migrate** — each gallery's structure (title/description/cover/settings/image order) must be re-created in PicPeak so the Frontstage renderer (Superseded artifacts, row 4) has something to read; the `images[]` relation must resolve to the migrated media records above, in the same order. | If migrated without preserving image order or `settings` (display mode: slideshow/hover/fullscreen/download/auth), the Frontstage renderer will render the wrong layout or expose a gallery that should have been access-gated, a data-integrity and possible confidentiality regression, not just a cosmetic one. |
+| Users (`users` collection — Payload's own `auth: true` login, distinct from Better Auth) | Postgres, via the `users` collection (`src/collections/Users.ts`) | **Left in place** — this collection is Payload's own admin-login mechanism, not a duplicate of the PicPeak/Better Auth concern (Duplicate-feature risk map, R4); it continues to gate `/admin` regardless of the pivot and has no PicPeak equivalent to migrate into. | If mistakenly discarded (e.g. bulk-cleared as "legacy" during pivot execution): every photographer/admin account is locked out of `/admin` with no self-service recovery path, an availability incident for the one person who operates the CMS. |
+| Uploaded R2 objects (original + `thumbnail`/`medium`/`large` binaries in the R2 bucket referenced by the `media` collection) | Cloudflare R2, via the Payload-owned upload path (`src/payload.config.ts` `s3Storage`, see Superseded artifacts, row 3) | **Migrate** — the binaries themselves (not just the Payload metadata rows) must be copied into PicPeak's own media store as part of the same migration step as the media records above, since PicPeak owns storage going forward (Duplicate-feature risk map, R1/R2); once PicPeak's copies are confirmed reachable, the R2 objects may be discarded to avoid paying for storage no system reads from. | If the metadata row is migrated but the binary is not copied first: the migrated media record points at a URL PicPeak never populated, producing broken images across every gallery that referenced it — and if the original R2 object is deleted before that copy is verified, the source image is unrecoverable. |
+
+No production client galleries exist as of this audit — the current
+Media/Galleries/Users data is limited to what sprint-1/2's own tests and
+demo/test-harness routes (rows 4, 19 in the Sprint 1 inventory) created.
+The dispositions above nonetheless apply to whatever real data is present
+by the time a pivot-execution story runs, since this audit is written
+ahead of that execution, not ahead of first real client use.
