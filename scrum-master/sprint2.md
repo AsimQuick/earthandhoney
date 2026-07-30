@@ -1,3 +1,14 @@
+> **CLOSED EARLY — 2026-07-30. DO NOT IMPLEMENT FROM THIS FILE.**
+>
+> This sprint was closed by the product pivot. **US-10, US-11, US-12 and US-13 are retired and must
+> never be built**, and **AC-9.3 (Testimonials / Packages / FAQ collections) is retired** — those
+> three collections are out of product scope entirely. Delivered: US-7, US-8, and US-9 (AC-9.1,
+> AC-9.2, AC-9.4).
+>
+> This rendered file may still show the pre-pivot plan below. The authoritative machine-readable
+> state is `scrum-master/sprint2.json`; the current direction is `scrum-master/PRD.md` and
+> `CLAUDE.md`; the active sprint is `scrum-master/sprint3.json`.
+
 # Sprint 2
 
 **Phase:** planning

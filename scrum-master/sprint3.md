@@ -1,0 +1,261 @@
+---
+sprint: sprint-3
+phase: planning
+created: 2026-07-30
+last-updated: 2026-07-30
+last-updated-by: product-owner
+goal: "Pivot: freeze and audit the existing codebase, fork the Backstage at a pinned commit, prove it delivers the real photography flow, and settle the ownership, API-boundary, media-reuse, and Stripe-convention decisions the next sprint depends on."
+story-count: 7
+stories-done: 0
+ac-count: 46
+---
+
+# Sprint 3 — Pivot: Freeze, Audit, and Prove the Foundation
+
+**Phase:** planning
+**Progress:** 0/7 stories | 0/46 ACs
+**Last Updated:** 2026-07-30
+
+> **This is the first sprint of the new product direction.** See `scrum-master/PRD.md`.
+> The previous direction is archived at `scrum-master/PRD-archive.md` — historical only, do not build from it.
+> Sprint 2 was closed early; see `scrum-master/sprint2.md`.
+
+## Sprint Goal
+De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
+
+## Why this scope
+The pivot reverses the single most load-bearing assumption of sprints 1 and 2: that we build and own the gallery engine. We now fork a proven Backstage and own the Frontstage, branding, and workflow layers on top of it. Building any new feature before that reversal is audited and proven would mean building on an unverified foundation — and would risk quietly recreating the duplicate systems the new PRD forbids.
+
+The new PRD is explicit that agents must not send themselves straight into implementation, and that eight named decisions may not be made by preference. Sprint 3 therefore delivers **certainty, not pages**: an honest inventory of what survives, a licence-clean pinned fork, hard evidence that the fork does the real photography job on our own database and storage, and the four boundary decisions the next sprint depends on. The Stripe convention story runs in parallel because it has no dependencies and it closes a known, already-experienced failure mode.
+
+**Shippable outcome:** a running, Dockerised, PostgreSQL-backed Backstage on the studio's own R2 bucket, in which a real project, client, and gallery flow works end to end — plus an approved pivot map that every later sprint is planned against.
+
+## Configuration already available (verified 2026-07-30)
+
+The local uncommitted `.env` already contains populated values for the Cloudflare R2 set
+(`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT`), the full
+SMTP set (`SMTP_SERVER`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SENDER_EMAIL`,
+`EMAIL_USE_SSL`), plus `DATABASE_URL` and `REDIS_URL`. US-16 and US-17 are therefore **not** blocked
+on storage or email credentials.
+
+Two things this does **not** mean:
+- It does not satisfy AC-16.4. Sprint 1 lost time twice to configuration that existed only in an
+  uncommitted local `.env`. Every variable must be documented in `.env.example` with a placeholder
+  and a comment, and deployed values must live in repository secrets whose names match one-to-one.
+- It does not satisfy AC-19.4. A working credential is not an audited credential — least privilege,
+  lifecycle rules, public/private strategy, and browser upload restrictions still have to be checked.
+
+Still blocking: VPS access (`po-requests.md` item 2). Still outstanding before production email:
+SPF, DKIM, and DMARC records for the sending domain.
+
+## Reference Documents
+- `scrum-master/PRD.md`
+- `CLAUDE.md`
+- `scrum-master/scrum-master.md`
+- `scrum-master/retrospective.md`
+- `scrum-master/po-requests.md`
+- `scrum-master/PRD-archive.md (historical only — do not build from it)`
+- `/Users/asim/NoIcloud/techno (Stripe reference implementation)`
+
+## Definition of Done
+- [ ] Every acceptance criterion is closed with recorded evidence, not assertion — a command output, a screenshot, a measured number, or a named file and line
+- [ ] Every claim about the forked upstream is verified against the actual pinned code, never against documentation alone
+- [ ] No already-shipped upstream migration has been modified
+- [ ] All services run in Docker; nothing installed on the host
+- [ ] No secret value is committed anywhere; .env.example stays authoritative for every required variable
+- [ ] Every decision record names the option chosen, the options rejected, and the reason
+- [ ] Anything needing human input is in po-requests.md, not silently decided
+- [ ] Existing CI stays green (lint, types, tests, coverage threshold)
+- [ ] retrospective.md updated incrementally during the sprint, not at close
+
+## Explicitly out of scope for sprint 3 (backlog — see `scrum-master/scrum-master.md`)
+- Any new public page, story, or navigation change
+- The design-token lock-down (**proposed as the first story of sprint 4** — pending human confirmation)
+- Project cockpit, Project Room, phases and milestones
+- Invoice Ninja integration and any payment code (the Stripe *convention* is extracted here; no payment flow is built)
+- Contract / e-sign work — the provider is still an open decision
+- The R2 delivery-path benchmark and the alt-text suggestion model
+- Anything in the V1 non-goals list in the PRD, and everything belonging to V2
+
+## User Stories
+
+### US-14: Pivot audit: keep / replace / retire map for the existing codebase
+**Status:** draft | **Priority:** critical | **Issue:** [#50](https://github.com/AsimQuick/earthandhoney/issues/50)
+
+#### Acceptance Criteria
+- [ ] **AC-14.1:** `PIVOT_AUDIT.md` exists at the repo root and inventories every feature currently implemented in this repository, stating for each one whether it is Kept, Replaced by PicPeak, Repurposed as a Frontstage layer, or Retired — with a one-line reason per entry. Every item delivered in sprint-1 (US-1…US-6) and sprint-2 (US-7…US-9) appears exactly once.
+- [ ] **AC-14.2:** The audit explicitly names which existing artifacts are superseded by the PicPeak fork — the Payload Galleries collection, the Payload-owned Sharp derivative pipeline, the Payload-owned R2 upload path, and the in-repo gallery viewer components — and records, for each, whether it is deleted now, left dormant, or kept as a Frontstage renderer that reads from PicPeak.
+- [ ] **AC-14.3:** The audit lists every duplicate-feature risk between the current codebase and PicPeak (two upload paths, two media stores, two galleries, two auth systems, two email senders) and names the single authoritative owner for each, consistent with the ownership table in `CLAUDE.md`.
+- [ ] **AC-14.4:** A dependency and licence audit is included: every third-party dependency that will be newly introduced or dropped by the pivot is listed with its licence, and any copyleft or commercially restrictive licence is flagged for Product Owner decision.
+- [ ] **AC-14.5:** A migration-risk section lists the data that exists today (Payload media records, galleries, users, uploaded R2 objects), states whether each must be migrated, discarded, or left in place, and names the risk of getting it wrong.
+- [ ] **AC-14.6:** The audit ends with an explicit keep/replace/retire recommendation and an open-questions list. Anything the audit cannot resolve without human input is added to `scrum-master/po-requests.md` rather than being decided silently.
+
+**Dependencies:** none
+
+**Dev Team Status:** not-started
+**Dev Team Notes:**
+_empty — Dev Team fills this in_
+
+**Tester Status:** not-started
+**Tester Notes:**
+_empty — Tester fills this in_
+
+---
+
+### US-15: Verify PicPeak upstream and create the pinned fork with licence compliance
+**Status:** draft | **Priority:** critical | **Issue:** [#51](https://github.com/AsimQuick/earthandhoney/issues/51)
+
+#### Acceptance Criteria
+- [ ] **AC-15.1:** The PicPeak upstream repository is verified to actually exist and to be obtainable, and its licence is confirmed by reading the licence file in the repository rather than trusting documentation. If the licence is not MIT as the PRD assumes, work stops and the Product Owner is notified through `scrum-master/po-requests.md`.
+- [ ] **AC-15.2:** A specific upstream commit is identified that contains all four capabilities the pivot depends on — Projects grouping above galleries, customer accounts, webhooks, and S3-compatible storage — and the evidence for each capability at that commit is recorded. If no single commit provides all four, the gap is documented as a blocking finding.
+- [ ] **AC-15.3:** `PICPEAK_UPSTREAM.md` exists and records the upstream URL, the exact pinned commit hash, the branch or tag it came from, the date pinned, and the process for evaluating a future upstream update. It states that production must never track a floating upstream branch.
+- [ ] **AC-15.4:** `THIRD_PARTY_NOTICES.md` exists and reproduces the upstream licence text and copyright notice in full, alongside notices for any other code copied into this repository.
+- [ ] **AC-15.5:** `FORK_CHANGELOG.md` and `UPSTREAM_SYNC.md` exist. The changelog is initialised with the pinned baseline and is the place every deliberate deviation from upstream gets recorded. The sync document states the merge or rebase policy and names the files most likely to conflict on a future update.
+- [ ] **AC-15.6:** The forked code is present in this project in a clearly separated location, and no already-shipped upstream database migration has been modified — verifiable by comparing the fork's migration files against the pinned upstream.
+
+**Dependencies:** US-14
+
+**Dev Team Status:** not-started
+**Dev Team Notes:**
+_empty — Dev Team fills this in_
+
+**Tester Status:** not-started
+**Tester Notes:**
+_empty — Tester fills this in_
+
+---
+
+### US-16: Boot the forked Backstage in a production-like Docker environment on PostgreSQL and existing R2 credentials
+**Status:** draft | **Priority:** critical | **Issue:** [#52](https://github.com/AsimQuick/earthandhoney/issues/52)
+
+#### Acceptance Criteria
+- [ ] **AC-16.1:** The forked Backstage, its database, and any worker or cache component it requires all run as services defined in `docker-compose.yml`. Nothing is installed on the host machine, and services address each other by Docker network hostname rather than localhost.
+- [ ] **AC-16.2:** The Backstage runs on PostgreSQL — not on any development-only database the upstream may default to — and its migrations complete cleanly against an empty database.
+- [ ] **AC-16.3:** The Backstage is configured to use the project's existing Cloudflare R2 bucket through its S3-compatible storage settings. No new parallel bucket is created. If the existing R2 credentials cannot be obtained, the story is blocked and recorded in `scrum-master/po-requests.md` rather than worked around with a substitute store.
+- [ ] **AC-16.4:** `.env.example` documents every environment variable the Backstage needs, with safe placeholder values and a comment for each explaining what it is and where the real value comes from. No real secret is committed.
+- [ ] **AC-16.5:** A documented, repeatable start-up procedure exists that takes a clean checkout to a running Backstage with an administrator able to sign in, and it is exercised end to end at least once with the result recorded.
+- [ ] **AC-16.6:** Both database paths are proven: a fresh install on an empty database, and an upgrade install that applies our new migrations on top of an already-migrated upstream database. Both results are recorded.
+
+**Dependencies:** US-15
+
+**Dev Team Status:** not-started
+**Dev Team Notes:**
+_empty — Dev Team fills this in_
+
+**Tester Status:** not-started
+**Tester Notes:**
+_empty — Tester fills this in_
+
+---
+
+### US-17: Prove the forked Backstage delivers the real photography flow before we build on it
+**Status:** draft | **Priority:** critical | **Issue:** [#53](https://github.com/AsimQuick/earthandhoney/issues/53)
+
+#### Acceptance Criteria
+- [ ] **AC-17.1:** A Project, a Client, and a Gallery can be created in the running Backstage, and the Gallery is correctly associated with the Project and the Client.
+- [ ] **AC-17.2:** A batch of real images can be uploaded and processed. Every uploaded original is stored in R2 exactly once, the expected derivative sizes are produced, and stored image records include width, height, aspect ratio, format, file size, and processing state.
+- [ ] **AC-17.3:** Gallery protection works as delivered by upstream: a password-protected gallery refuses access without the password, and grants it with the password.
+- [ ] **AC-17.4:** The expiry mechanism works: a gallery past its expiry no longer grants client access, and the state change is visible to the photographer.
+- [ ] **AC-17.5:** A client can view the gallery through its client-facing route and download images where the gallery's download policy permits, including any archive download the upstream provides.
+- [ ] **AC-17.6:** At least one operational gallery email is sent through the Backstage email system to a capture inbox or mail catcher, and its queued/sent state is visible.
+- [ ] **AC-17.7:** At least one Backstage webhook fires and is received by a listener that logs the payload, proving the outbound integration path we will later use to refresh Frontstage content.
+- [ ] **AC-17.8:** The bundled gallery style templates render unmodified, and a copy of each original template file is preserved so future Earth & Honey variants can be diffed against the untouched baseline. `PICPEAK_PORT_LEDGER.md` records every template copied and where it is used.
+- [ ] **AC-17.9:** Findings are recorded honestly: anything that does not work as the PRD assumed is written up in `PIVOT_AUDIT.md` and raised to the Product Owner rather than quietly patched.
+
+**Dependencies:** US-16
+
+**Dev Team Status:** not-started
+**Dev Team Notes:**
+_empty — Dev Team fills this in_
+
+**Tester Status:** not-started
+**Tester Notes:**
+_empty — Tester fills this in_
+
+---
+
+### US-18: Document system ownership and the Frontstage-to-Backstage boundary
+**Status:** draft | **Priority:** high | **Issue:** [#54](https://github.com/AsimQuick/earthandhoney/issues/54)
+
+#### Acceptance Criteria
+- [ ] **AC-18.1:** `SYSTEM_OWNERSHIP.md` exists and, for every domain in the ownership table in `CLAUDE.md`, names the single authoritative system, what the other systems may cache for display only, and what they are forbidden to write.
+- [ ] **AC-18.2:** `PAYLOAD_PICPEAK_API_CONTRACT.md` exists and specifies the boundary between the Frontstage application and the Backstage: which direction each call travels, what each call is for, how it authenticates, what identifiers cross the boundary, what happens on failure or timeout, and what the Frontstage is allowed to cache and for how long.
+- [ ] **AC-18.3:** The contract states that the Frontstage never reads the Backstage database directly and that no cross-database join exists anywhere in application code. Cross-system relationships are expressed as stored external identifiers.
+- [ ] **AC-18.4:** The contract covers the three flows the next sprint depends on: a Frontstage page displaying a public gallery by referencing its Backstage gallery identifier, a Frontstage inquiry being converted into a Backstage client and project, and a Backstage change triggering a Frontstage content refresh.
+- [ ] **AC-18.5:** The document records which Backstage surfaces are to be disabled because they duplicate our chosen architecture — its public landing-page content management, its native quote/invoice/accounting screens, and any page-building capability — and how each will be disabled or hidden.
+- [ ] **AC-18.6:** A user-facing terminology mapping is recorded so internal names and the language the photographer sees never drift apart: the internal event concept is called Gallery, the customer account is called Client, the admin area is Backstage, and the customer portal is the Project Room.
+
+**Dependencies:** US-17
+
+**Dev Team Status:** not-started
+**Dev Team Notes:**
+_empty — Dev Team fills this in_
+
+**Tester Status:** not-started
+**Tester Notes:**
+_empty — Tester fills this in_
+
+---
+
+### US-19: Decide and record the media-reuse model, and audit the existing R2 setup
+**Status:** draft | **Priority:** high | **Issue:** [#55](https://github.com/AsimQuick/earthandhoney/issues/55)
+
+#### Acceptance Criteria
+- [ ] **AC-19.1:** `MEDIA_REUSE_ADR.md` states, on evidence from the running fork, how tightly an image is currently bound to a single gallery, and whether one stored original can already be referenced by more than one gallery.
+- [ ] **AC-19.2:** The decision record chooses exactly one path forward — keep the upstream binding for V1 with a safe promotion workflow, introduce a reusable media-asset and gallery-item layer through new migrations, or an equivalent low-risk model — and states the reasons, the risks, and what would have to be true to revisit the decision.
+- [ ] **AC-19.3:** The chosen model guarantees that no original binary is stored twice, that per-gallery ordering and metadata overrides remain possible, that selected client images can be promoted into a public portfolio gallery deliberately, and that promoting one image can never expose the rest of a private gallery.
+- [ ] **AC-19.4:** `R2_STORAGE_AND_DELIVERY_ADR.md` records the audit of the existing R2 setup: which bucket is in use, whether its permissions are least-privilege, whether browser upload access is correctly restricted, what lifecycle rules exist, and which paths are public versus private.
+- [ ] **AC-19.5:** `R2_STORAGE_AND_DELIVERY_ADR.md` opens with the delivery-path decision explicitly marked UNDECIDED and lists the candidate paths to be benchmarked in the next sprint — serving through the Backstage, direct time-limited links, public delivery through a content-network domain, an edge authorisation layer, and a hybrid — together with the measurements that will decide it and the performance targets the decision is accountable to (no image-caused layout shift, mobile-first performance near ninety on representative public pages, largest-contentful-paint around two and a half seconds or better on a realistic mobile profile, and public pages never requesting full-resolution originals unnecessarily). No agent may choose a path by preference before that benchmark exists.
+
+**Dependencies:** US-17
+
+**Dev Team Status:** not-started
+**Dev Team Notes:**
+_empty — Dev Team fills this in_
+
+**Tester Status:** not-started
+**Tester Notes:**
+_empty — Tester fills this in_
+
+---
+
+### US-20: Extract the proven Stripe key-pairing and environment convention from the reference project
+**Status:** draft | **Priority:** high | **Issue:** [#56](https://github.com/AsimQuick/earthandhoney/issues/56)
+
+#### Acceptance Criteria
+- [ ] **AC-20.1:** The Stripe implementation in the reference project at `/Users/asim/NoIcloud/techno` is read directly — its payment routes, its server and client split, its templates, its environment example, and its deployment workflow — and `STRIPE_PORT_REPORT.md` lists every file inspected.
+- [ ] **AC-20.2:** The report records the reference project's environment-variable convention exactly as found: flat names with no test or live suffix, a secret key, a publishable key, and one identifier per priced item, with the operating mode determined solely by which coherent set of values is loaded.
+- [ ] **AC-20.3:** The report states the key-pairing rule in unambiguous terms — the secret key, the publishable key, and every priced-item identifier must all belong to the same Stripe mode — and explains why a mismatched pair fails, since this is the specific mistake made previously on this project.
+- [ ] **AC-20.4:** A start-up validation is specified that refuses to start, or fails loudly with an actionable message, when the loaded Stripe values are not all from the same mode or when any required value is missing. The specification says what is checked, when it runs, and what the operator sees.
+- [ ] **AC-20.5:** The report records the reference project's secret-handling shape and confirms it will be mirrored here: local values in an uncommitted environment file, deployed values in repository secrets whose names match the environment variable names exactly, and the deployment step writing the environment file on the server. No secret value appears in the report or in any committed file.
+- [ ] **AC-20.6:** The report records which behaviours will be preserved when the payment flow is actually built — server-side payment creation, the route layout, webhook signature verification, repeat-event protection, success and cancel handling, and the rule that the authoritative amount is fetched from Stripe rather than trusted from the browser — and which behaviours are deliberately not carried over, with reasons. It is explicit that the reference project is a different language and framework, so faithful means matching logic and required-field structure, not copying lines.
+- [ ] **AC-20.7:** The report states plainly that this payment path exists so the studio can charge its photography clients, that it is not subscription billing for a future software product, and that the choice between initiating payment through the billing system's own gateway or through this ported direct flow is still an open decision the Product Owner must settle before any payment code is written.
+- [ ] **AC-20.8:** `.env.example` is updated with the placeholder Stripe variable names in the convention taken from the reference project, each with a comment explaining what it is and which mode it must match.
+
+**Dependencies:** none
+
+**Dev Team Status:** not-started
+**Dev Team Notes:**
+_empty — Dev Team fills this in_
+
+**Tester Status:** not-started
+**Tester Notes:**
+_empty — Tester fills this in_
+
+---
+
+## Sprint Review
+
+### Dev Team Sprint Status: not-started
+### Dev Team Sprint Notes:
+_empty — Dev Team fills this in_
+
+### Tester Sprint Status: not-started
+### Tester Sprint Notes:
+_empty — Tester fills this in_
+
+### PO Sprint Review Notes:
+_empty — PO fills this in after sprint completion_
+
+---
+_Human-readable view of `scrum-master/sprint3.json`._
