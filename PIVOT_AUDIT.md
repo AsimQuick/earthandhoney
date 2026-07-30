@@ -6,9 +6,13 @@ purpose: AC-14.1 — inventory every feature delivered in sprint-1 (US-1..US-6)
          and sprint-2 (US-7..US-9), each appearing exactly once, classified
          as Kept / Replaced by PicPeak / Repurposed as a Frontstage layer /
          Retired, with a one-line reason.
+         AC-14.2 — name the concrete artifacts superseded by the PicPeak
+         fork and their disposition (deleted now / left dormant / kept as
+         a Frontstage renderer), and list orphaned .env.example config left
+         behind by retired US-12/US-13, each marked removed or retained.
 created-by: dev-team
 related-story: US-14
-related-ac: 14.1
+related-ac: 14.1, 14.2
 ---
 -->
 
@@ -89,3 +93,46 @@ main/story-branch git desync` commit). They are still inventoried here
 because they were delivered per the sprint-2 tracker; their absence from
 the current working tree is a restoration concern for the Project Lead,
 not a reclassification.
+
+## Superseded artifacts (AC-14.2)
+
+This section names the concrete, on-disk artifacts superseded by the
+PicPeak fork and records their disposition. Three dispositions are
+possible:
+
+- **Deleted now** — removed from the repository as part of executing this
+  audit.
+- **Left dormant** — code remains in the repository, unused by the
+  PicPeak-backed read path, pending a dedicated pivot-execution story to
+  remove it (removing it here would require also rewriting the still-active
+  tests that lock in its current behavior, which is out of this audit AC's
+  scope).
+- **Kept as a Frontstage renderer** — the code survives unchanged in
+  location, but is rewired to read from PicPeak instead of owning the data.
+
+| Artifact | Location | Disposition | Reason |
+|---|---|---|---|
+| Payload `Galleries` collection | `src/collections/Galleries.ts` | Left dormant | PicPeak becomes the gallery data owner (see row 11); the collection definition and its `us3-ac3.1-galleries-collection.test.ts` lock-in test stay in place until a follow-on pivot-execution story removes them together. |
+| Payload-owned Sharp derivative pipeline | `src/collections/Media.ts` (inline `imageSizes`/`resize` config), backed by Payload's built-in Sharp resizing | Left dormant | PicPeak generates its own thumbnail/medium/large derivatives (see row 7); the inline config and its `us2-ac2.2-sharp-pipeline.test.ts` / `us2-ac2.3-media-variant-urls.test.ts` lock-in tests stay in place until removed together in a follow-on story. |
+| Payload-owned R2 upload path | `src/payload.config.ts` (`@payloadcms/storage-s3` / `s3Storage` config), `.env.example` R2 vars | Left dormant | Upload-path ownership moves to PicPeak (see rows 6, 10); the S3-compatible adapter wiring, R2 env vars, and `us2-ac2.5-r2-env-config.test.ts` / `us1-ac1.4-env-config.test.ts` lock-in tests stay in place until removed together in a follow-on story. |
+| In-repo gallery viewer components | `src/components/gallery/` (`GalleryEngine.tsx`, `MainImageDisplay.tsx`, `ThumbnailStrip.tsx`, `ThumbnailDrawer.tsx`, `NavigationControls.tsx`, `GradientOverlay.tsx`, `DownloadControl.tsx`, `useFullscreenViewer.ts` (PhotoSwipe), `useSwipeNavigation.ts`, `useSlideshow.ts`, `useProgressiveThumbnails.ts`, `galleryImageLoader.ts`, `payloadGalleryMapper.ts`, `types.ts`) | Kept as a Frontstage renderer | Storage-agnostic rendering/interaction UI (see rows 16–26); rewired to consume PicPeak-sourced image lists/metadata in place of `payloadGalleryMapper.ts`'s current Payload source, with no change to the components themselves. |
+
+## Orphaned configuration (AC-14.2)
+
+`US-12` (lead-generation contact form) and `US-13` (WhatsApp lead-capture)
+are retired by the pivot — both are still `status: draft` /
+`dev_status: not-started` in `scrum-master/sprint2.json`, meaning no
+application code was ever built against them. The three env vars
+`.env.example` documents on their behalf are therefore orphaned
+configuration with no consuming feature:
+
+| Variable | Origin | Consuming code found? | Disposition | Reason |
+|---|---|---|---|---|
+| `RESEND_API_KEY` | US-12 AC-12.5 (lead-notification email) | None in `src/` — only referenced by the `us7-ac7.4-env-example-sprint2-vars.test.ts` lock-in test | Retained | US-12 is retired unbuilt, so nothing consumes this var; it is retained rather than removed because deleting it now would break the still-active AC-7.4 test that asserts its presence, and rewriting that test is a change to a previously accepted AC's deliverable, out of this audit AC's scope. Removal is deferred to a follow-on pivot-execution story that updates AC-7.4's test alongside the var. |
+| `LEAD_NOTIFICATION_EMAIL` | US-12 AC-12.5 (lead-notification email) | None in `src/` — only referenced by the `us7-ac7.4-env-example-sprint2-vars.test.ts` lock-in test | Retained | Same reasoning as `RESEND_API_KEY` — orphaned by US-12's retirement, retained to avoid breaking AC-7.4's lock-in test; removal deferred to a follow-on pivot-execution story. |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | US-13 AC-13.3 (`wa.me` deep-link hand-off) | None in `src/` — only referenced by the `us7-ac7.4-env-example-sprint2-vars.test.ts` lock-in test | Retained | Same reasoning — orphaned by US-13's retirement, retained to avoid breaking AC-7.4's lock-in test; removal deferred to a follow-on pivot-execution story. |
+
+`NEXT_PUBLIC_SITE_URL`, the fourth var `.env.example` groups alongside
+these three under the "sprint-2 vars" comment, is **not** orphaned: it is
+a general site-metadata value (canonical links, OG tags, sitemap) with no
+US-12/US-13 dependency, and is unaffected by this pivot.
