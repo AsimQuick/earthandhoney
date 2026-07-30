@@ -16,7 +16,11 @@ related-story: US-14
          records, galleries, users, uploaded R2 objects), state whether
          each must be migrated, discarded, or left in place, and name
          the risk of getting it wrong.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5
+         AC-14.6 — end the audit with an explicit keep/replace/retire
+         recommendation and an open-questions list; anything the audit
+         cannot resolve without human input is routed to
+         `scrum-master/po-requests.md` rather than decided silently.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6
 ---
 -->
 
@@ -238,3 +242,70 @@ demo/test-harness routes (rows 4, 19 in the Sprint 1 inventory) created.
 The dispositions above nonetheless apply to whatever real data is present
 by the time a pivot-execution story runs, since this audit is written
 ahead of that execution, not ahead of first real client use.
+
+## Recommendation and open questions (AC-14.6)
+
+### Explicit keep/replace/retire recommendation
+
+This is a consolidation of the per-item classifications already made in
+AC-14.1 through AC-14.5 above — it decides nothing new, it states plainly
+what those sections already established, category by category.
+
+| Category | Recommendation | Basis |
+|---|---|---|
+| Gallery data ownership (Payload `Galleries` collection, Sharp derivative pipeline, R2 upload path) | **Replace** — PicPeak becomes the sole owner | Superseded artifacts (AC-14.2), rows 1–3; Duplicate-feature risk map (AC-14.3), R1–R3 |
+| In-repo gallery viewer components (`src/components/gallery/`) | **Repurpose as a Frontstage layer** — kept unchanged in location, rewired to read from PicPeak | Superseded artifacts (AC-14.2), row 4 |
+| Identity/admin login (Better Auth), outbound email (Resend), Payload `users` collection | **Keep** — no PicPeak dependency | Duplicate-feature risk map (AC-14.3), R4–R5; Migration-risk section (AC-14.5), Users row |
+| Payload CMS for non-gallery content (Testimonials, Packages, FAQ, business collections), Docker/CI/deploy infrastructure, site chrome and styling | **Keep** — orthogonal to the gallery-ownership pivot | Sprint 1/2 inventory (AC-14.1), all rows classified Kept |
+| US-12 (lead-generation contact form), US-13 (WhatsApp lead-capture), and their orphaned `.env.example` entries | **Retire** (both stories); their env vars are **retained for now, removal deferred** to the follow-on pivot-execution story that also updates the AC-7.4 lock-in test | Sprint 1/2 inventory (AC-14.1); Orphaned configuration (AC-14.2) |
+| Third-party dependencies dropped by the pivot (`sharp`, `@payloadcms/storage-s3`) | **Retire** from active use now, **removal from `package.json` deferred** to the same follow-on pivot-execution story, alongside their lock-in tests | Dependency and licence audit (AC-14.4), Dropped-by-the-pivot table |
+| Data at rest today (Payload media records, galleries, R2 objects) | **Migrate** into PicPeak before the Payload collections are retired | Migration-risk section (AC-14.5) |
+
+No category above is left unclassified: every row in the Sprint 1/2
+inventory (AC-14.1) resolves to Kept, Replaced, Repurposed, or Retired,
+and this table groups those resolutions rather than reopening any of them.
+
+### Open questions
+
+These are the questions this audit surfaced but cannot answer from the
+repository alone — each requires a Product Owner or other human decision
+before the pivot-execution work that depends on it can proceed. None of
+them block AC-14.1–14.5 as already written; per AC-14.6, none is decided
+silently here.
+
+1. **PicPeak fork licence.** The Dependency and licence audit (AC-14.4)
+   already flags that the PicPeak upstream licence is unconfirmed (the
+   PRD assumes MIT, but `US-15` AC-15.1 requires it to be read directly
+   before the fork is created). This audit does not resolve that flag —
+   it is carried forward as open pending `US-15`.
+2. **Timing of the follow-on pivot-execution story.** AC-14.2 and AC-14.4
+   both defer concrete deletions (dormant code, orphaned env vars, dropped
+   dependencies, and their lock-in tests) to "a follow-on pivot-execution
+   story" that does not yet exist in `scrum-master/sprint3.json`. Should
+   the Product Owner schedule that story now, and does it depend on
+   `US-15`/`US-16`/`US-18` landing first?
+3. **Long-term status of the Payload `users` collection.** The Migration-
+   risk section (AC-14.5) leaves it in place because it is Payload's own
+   `/admin` login, distinct from Better Auth (Duplicate-feature risk map,
+   R4). Is that intentionally permanent (two identity systems, scoped to
+   two different audiences forever), or should a future story unify
+   photographer/admin login under Better Auth alone?
+4. **Confirmation that no real client data exists in production.** This
+   audit states, based on what the current sprint-1/2 tests and demo
+   routes created, that no production client galleries exist as of this
+   audit (Migration-risk section). That is an inference from the
+   codebase, not a check of a live production database — the Product
+   Owner should confirm it directly before a pivot-execution story treats
+   the migration-risk table's dispositions as low-stakes.
+5. **Production PicPeak target environment.** The Migration-risk section
+   assumes migrated data lands in "PicPeak's own media store," but the
+   deploy target and production Postgres/R2 endpoints for the pivoted
+   system are still an open item from sprint-2 planning (see
+   `scrum-master/po-requests.md`, item 1) and were never resolved. The
+   pivot's migration step cannot run until that target exists.
+
+Per AC-14.6, items 1–5 above are to be added to
+`scrum-master/po-requests.md` so they are tracked as explicit Product
+Owner decisions rather than left implicit in this audit; `po-requests.md`
+is owned outside this AC's scope, so this document records the questions
+and their routing rather than editing that file directly.

@@ -51,7 +51,11 @@ describe('AC-14.5: PIVOT_AUDIT.md includes a migration-risk section', () => {
   })
 
   const audit = read('PIVOT_AUDIT.md')
-  const section = extractSection(audit, '## Migration-risk section (AC-14.5)', '')
+  const section = extractSection(
+    audit,
+    '## Migration-risk section (AC-14.5)',
+    '## Recommendation and open questions (AC-14.6)',
+  )
   const rows = tableRows(section)
 
   it('lists every data category named by the AC exactly once', () => {
