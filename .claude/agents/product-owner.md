@@ -78,7 +78,17 @@ When writing ACs for the current sprint, consider what the next sprint will buil
 
 - When you need something from the human (API keys, credentials, external access, business judgment), create or update `scrum-master/po-requests.md`.
 - Format each request clearly: what is needed, why, and which story/sprint it blocks.
-- The orchestrator will detect this file and pause for human input.
+- **The very first line of the file must be a status verdict** — this is what the orchestrator
+  actually reads to decide whether to pause, not any wording later in the file:
+  - `STATUS: BLOCKING` — the **current sprint** cannot safely proceed without a human decision.
+  - `STATUS: CLEAR` — nothing currently blocks, even if the file still contains history, resolved
+    items, or explicitly non-blocking notes (e.g. "credentials confirmed but not yet
+    security-audited" is CLEAR if it doesn't stop this sprint, not BLOCKING).
+- Get this right **every time you touch the file** — including when you're only archiving an old
+  request or logging something for the record. The orchestrator trusts this single line, not the
+  presence of any particular word elsewhere in the document. Getting it wrong either stalls the
+  pipeline for nothing or lets it run past something that genuinely needed a human.
+- The orchestrator pauses for human input only when it reads `STATUS: BLOCKING` on that first line.
 
 ### Change Control
 

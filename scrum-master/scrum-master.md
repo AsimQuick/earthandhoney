@@ -92,6 +92,17 @@ manual-pay installment schedule; auto-charge is V1.1 on the same schedule, never
 product. This is the same class of failure as the stalled pipeline: a direction change that had
 reached the markdown but not the file an agent is actually handed.
 
+**Planning validation pass — 2026-07-30.** `sprint3.json` was re-validated against the required
+schema and against the tracker before handing the sprint to requirements validation. All checks pass
+and **no change was needed**: schema complete (every story carries `status`, `priority`,
+`dependencies`, `dev_status`/`dev_notes`, `tester_status`/`tester_notes`; every AC carries
+`checked`, `dev_status`, `tester_status`); AC numbering matches its story throughout (US-17 → 17.1…
+17.10); all 48 ACs are `checked:false` and unstarted; all 7 stories are `draft`; the dependency graph
+is acyclic with US-14 and US-20 as the two roots. Issues #50–#56 are open, and spot-checks confirm
+the two drifts closed above stayed closed — #53 still carries AC-17.10, and #50 still carries the
+extended twelve-line definition of done. **No `*_SPEC.md` feature-specification documents exist in
+`scrum-master/`**, so there is no operator-committed scope outside `sprint3.json` and the PRD.
+
 **Definition of done** (`sprint3.json`): evidence-not-assertion on every AC; upstream claims verified
 against the pinned code rather than documentation; no shipped upstream migration modified; everything
 in Docker; no committed secrets and `.env.example` authoritative; every decision record naming the

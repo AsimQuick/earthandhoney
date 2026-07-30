@@ -1,3 +1,5 @@
+STATUS: CLEAR
+
 # Product Owner — Requests to the Human
 
 _Rewritten 2026-07-30 for the pivot (see `scrum-master/PRD.md`). Sprint-2's requests are superseded
