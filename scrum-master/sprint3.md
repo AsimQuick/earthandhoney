@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 0/7 stories | 0/48 ACs
-**Last Updated:** 2026-07-30T22:24:51+00:00
+**Last Updated:** 2026-07-30T22:34:48+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -47,6 +47,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-14.5:** A migration-risk section lists the data that exists today (Payload media records, galleries, users, uploaded R2 objects), states whether each must be migrated, discarded, or left in place, and names the risk of getting it wrong.
   - Dev: implemented
 - [ ] **AC-14.6:** The audit ends with an explicit keep/replace/retire recommendation and an open-questions list. Anything the audit cannot resolve without human input is added to `scrum-master/po-requests.md` rather than being decided silently.
+  - Dev: implemented
 
 **Dev Team Status:** not-started
 **Dev Team Notes:**
@@ -83,6 +84,11 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `PIVOT_AUDIT.md`: added `## Migration-risk section (AC-14.5)` with a table covering the four data categories the AC names — Payload media records, galleries, users, and uploaded R2 objects — each with today's storage location, a migrate/discard/left-in-place disposition, and the concrete risk of getting that disposition wrong. Cross-references the existing Superseded artifacts (AC-14.2) and Duplicate-feature risk map (AC-14.3) sections rather than restating them.
   - `src/__tests__/us14-ac14.5-migration-risk.test.ts` (new): 7 tests verifying each category appears exactly once, has the expected disposition, states a substantive risk, names a concrete storage location, and that media/galleries/R2 objects aren't recommended for outright discard.
   - Full suite: 41 suites / 718 tests passing, no dependency changes so no `package-lock.json` update needed.
+  AC-14.6 implemented (local checks green): **Summary of AC-14.6 implementation:**
+  
+  - `PIVOT_AUDIT.md`: added final `## Recommendation and open questions (AC-14.6)` section — an explicit keep/replace/retire recommendation table (consolidating AC-14.1–14.5's classifications by category, each row citing its basis) plus a 5-item numbered open-questions list (PicPeak licence, follow-on pivot-execution story timing, long-term status of Payload's `users` collection, confirmation no real production client data exists, and the still-unresolved production deploy target from `po-requests.md` item 1). Updated the file's front-matter to mention AC-14.6.
+  - `src/__tests__/us14-ac14.6-recommendation-open-questions.test.ts` (new, 7 tests): asserts the section is the document's final section, the recommendation table covers Replace/Keep/Retire verdicts with a cited basis per row, at least 3 numbered open questions exist, and the section references `scrum-master/po-requests.md` for routing rather than deciding silently.
+  - `src/__tests__/us14-ac14.5-migration-risk.test.ts`: bounded its section-extraction end heading to the new AC-14.6 heading (previously read to end-of-file, which broke once AC-14.6's table added new "Migrate"/"Galleries" rows …
 
 **Tester Status:** approved
 **Tester Notes:**
