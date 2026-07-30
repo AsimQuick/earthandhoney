@@ -16,7 +16,7 @@
     "All services run in Docker",
     "retrospective.md updated"
   ],
-  "last_updated": "2026-07-19T23:11:17+00:00",
+  "last_updated": "2026-07-30T06:57:06+00:00",
   "stories": [
     {
       "id": "US-7",
@@ -105,7 +105,7 @@
     {
       "id": "US-9",
       "title": "Content CMS collections: Homepage, Portfolio, Testimonials, Packages, FAQ",
-      "status": "draft",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [
         "US-8"
@@ -115,7 +115,7 @@
           "id": "9.1",
           "text": "A Homepage global/singleton lets the photographer manage the hero gallery (relationship -> galleries), headline/intro text, a primary CTA (label + link), and an ordered, reorderable array/blocks-type field for content sections (exact block types are a Dev Team technical decision, since `public/photobuddy/index.html` has no homepage sections beyond the hero gallery grid to derive them from) \u2014 no code change is needed to update homepage content, and reordering the array changes the rendered order.",
           "checked": false,
-          "dev_status": "not-started",
+          "dev_status": "implemented",
           "tester_status": "approved"
         },
         {
@@ -141,7 +141,7 @@
         }
       ],
       "dev_status": "not-started",
-      "dev_notes": "",
+      "dev_notes": "AC-9.1 implemented (local checks green): **Summary:** AC-9.1 implemented and committed (`a800bd8`).\n\n- `src/globals/Homepage.ts` \u2014 new Payload global/singleton `homepage`: required `heroGallery` relationship \u2192 `galleries`, `headline` (text)/`intro` (textarea), `cta` group (`label`/`link`), and a `contentSections` **blocks**-type field (not plain array) with two block types (`TextSectionBlock`, `GallerySectionBlock`) \u2014 blocks give native drag-reorder in the admin UI and row order drives render order, satisfying \"no code change to update content, reordering changes rendered order.\"\n- `src/payload.config.ts` \u2014 imports and registers `Homepage` under `globals` (not `collections`).\n- `src/__tests__/us9-ac9.1-homepage-global.test.ts` \u2014 11 tests covering: singleton semantics, hero gallery relationship shape, headline/intro fields, CTA group fields, blocks-type contentSections with reorderability semantics, both block configs, and config registration. All 11 pass.\n\nNo package-lock changes (no new deps). Did not touch `scrum-master/`.",
       "tester_status": "approved",
       "tester_notes": "PLAN REVIEW: approved 2026-07-19 (planning-phase draft review; implementation not yet tested). Independently re-verified, not copied. Read public/photobuddy/index.html in full (205 lines): after the vertical menu/header, the only content is the flexslider hero gallery and an empty <footer> -- confirms 9.1's claim that the template has no homepage sections beyond the hero grid, so leaving exact content-section block types to Dev Team judgment is the right call, not a cop-out. Cross-checked 9.2/9.3's field lists against PRD.md section 7 (Payload CMS Scope): Portfolio, Testimonials, Packages, and FAQ are named as collections there but the PRD gives no field-level spec for Testimonials/Packages/FAQ (unlike Blog, which gets an explicit field list) -- so the Dev-team-reasonable field lists in 9.3 don't contradict the PRD and are fully testable against the Payload config either way. 9.4's text already reflects the earlier fix (dropped an inapplicable devrag-reindex clause, kept registration/useAsTitle/header requirements) and is accurate: mcp__devrag__reindex_document re-indexes /scrum-master/ markdown, not Payload source, so that clause could never be satisfied by a code artifact. No further changes needed. No scope issues."
     },

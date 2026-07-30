@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/7 stories | 8/31 ACs
-**Last Updated:** 2026-07-19T23:11:17+00:00
+**Last Updated:** 2026-07-30T06:57:06+00:00
 
 ## Sprint Goal
 Ship the public, lead-generating photography website on top of the Gallery Engine delivered in sprint-1. Port the photobuddy design system into the app shell; add the content-driving CMS collections (Homepage, Portfolio, Blog, Testimonials, Packages, FAQ) the photographer manages without a developer; render all public marketing pages (Home, Galleries, Blog, and About with Packages/Testimonials/FAQ sections) with static generation + ISR powered by the existing Gallery Engine; and deliver lead conversion (contact form + WhatsApp capture) writing to a Leads collection with Resend email notification. Close sprint-1's carried-over deploy/CI/flake follow-ups first.
@@ -162,10 +162,11 @@ Ship the public, lead-generating photography website on top of the Gallery Engin
 ---
 
 ### US-9: Content CMS collections: Homepage, Portfolio, Testimonials, Packages, FAQ
-**Status:** draft | **Priority:** high
+**Status:** in-progress | **Priority:** high
 
 #### Acceptance Criteria
 - [ ] **AC-9.1:** A Homepage global/singleton lets the photographer manage the hero gallery (relationship -> galleries), headline/intro text, a primary CTA (label + link), and an ordered, reorderable array/blocks-type field for content sections (exact block types are a Dev Team technical decision, since `public/photobuddy/index.html` has no homepage sections beyond the hero gallery grid to derive them from) — no code change is needed to update homepage content, and reordering the array changes the rendered order.
+  - Dev: implemented
 - [ ] **AC-9.2:** A Portfolio collection models portfolio entries that each reference one or more Galleries (title, slug, category, cover, ordered galleries) so portfolio pages are gallery-driven and reuse the Gallery Engine, with no separate image system.
 - [ ] **AC-9.3:** Testimonials, Packages, and FAQ collections exist with the fields their pages need (Testimonial: quote, author, role; Package: name, price, description, features[]; FAQ: question, answer, order) and are all editable in the Payload admin.
 - [ ] **AC-9.4:** All new collections/globals are registered in `payload.config.ts`, carry required fields and an admin `useAsTitle`, and include the metadata front-matter header per project conventions.
@@ -173,6 +174,14 @@ Ship the public, lead-generating photography website on top of the Gallery Engin
 **Dependencies:** US-8
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-9.1 implemented (local checks green): **Summary:** AC-9.1 implemented and committed (`a800bd8`).
+  
+  - `src/globals/Homepage.ts` — new Payload global/singleton `homepage`: required `heroGallery` relationship → `galleries`, `headline` (text)/`intro` (textarea), `cta` group (`label`/`link`), and a `contentSections` **blocks**-type field (not plain array) with two block types (`TextSectionBlock`, `GallerySectionBlock`) — blocks give native drag-reorder in the admin UI and row order drives render order, satisfying "no code change to update content, reordering changes rendered order."
+  - `src/payload.config.ts` — imports and registers `Homepage` under `globals` (not `collections`).
+  - `src/__tests__/us9-ac9.1-homepage-global.test.ts` — 11 tests covering: singleton semantics, hero gallery relationship shape, headline/intro fields, CTA group fields, blocks-type contentSections with reorderability semantics, both block configs, and config registration. All 11 pass.
+  
+  No package-lock changes (no new deps). Did not touch `scrum-master/`.
 
 **Tester Status:** approved
 **Tester Notes:**
