@@ -26,18 +26,19 @@ will need. **Two caveats carried into sprint 3, not new requests:**
 
 ## ACTION REQUIRED — pipeline recovery (2026-07-30)
 
-The pipeline stalled today and I have cleaned up the backlog, but **two items need action outside my
-authority before development can safely resume.** Details of the incident are in
+The pipeline stalled today and I have cleaned up the backlog, but **one item still needs action outside my
+authority before development can safely resume — item B.** Details of the incident are in
 `scrum-master/retrospective.md`.
 
 | # | What is needed | Why | Who |
 |---|---|---|---|
-| A | **Commit the pivot and finance documentation.** `PRD.md`, `scrum-master.md`, `po-requests.md`, `retrospective.md`, `CLAUDE.md`, plus the untracked `sprint3.json`, `sprint3.md` and `PRD-archive.md`. | This documentation was **already destroyed once today** — the orchestrator's branch switching discarded every uncommitted tracked change, reverting `PRD.md` to the retired Gallery-Engine version while `CLAUDE.md` described the new one. I restored it, but it is one `git checkout` from being lost again. I have not committed it myself because you have not asked me to. | You (or tell me to commit) |
-| B | **`project-state.json` must be advanced by the Project Lead.** It currently reads `current_sprint: sprint-2`, `current_phase: development`, `current_task: US-9 / AC-9.3`, `status: error`. | That file is owned exclusively by the Project Lead and no agent may modify it. Until it moves to sprint-3, it will keep re-dispatching retired sprint-2 work. `sprint2.json` is now closed and every retired story is marked, so the Dev Team will refuse anything from it — correctly. | Project Lead |
+| A | ~~**Commit the pivot and finance documentation.**~~ **RESOLVED 2026-07-30** — committed in `9624a07`, together with the previously untracked `sprint3.json`, `sprint3.md` and `PRD-archive.md`. The pivot documentation can no longer be destroyed by a branch switch. | It had already been destroyed once that day: the orchestrator's branch switching discarded every uncommitted tracked change, reverting `PRD.md` to the retired Gallery-Engine version while `CLAUDE.md` described the new one. | — |
+| B | ~~**`project-state.json` must be advanced by the Project Lead.**~~ **RESOLVED 2026-07-30** — the human directed the state advance: `status: active`, `current_sprint: sprint-3`, `current_phase: planning`, `current_task: null`. sprint-2 recorded as closed (US-7/8/9 done, AC-9.3 retired in place; US-10–US-13 retired), sprint-3 stories loaded into the summary. | That file is owned exclusively by the Project Lead and no agent may modify it unprompted. Until it moved to sprint-3, it would keep re-dispatching retired sprint-2 work. `sprint2.json` is now closed and every retired story is marked, so the Dev Team would have refused anything from it — correctly. | Human, at Project Lead's request |
 
-**Nothing else blocks resumption.** The backlog is now internally consistent: `sprint2.json` is
-closed with US-10…US-13 and AC-9.3 retired in place, and `sprint3.json` is coherent with the
-post-pivot direction and needs no finance-related change.
+**Nothing blocks resumption.** The backlog is internally consistent: `sprint2.json` is
+closed with US-10…US-13 and AC-9.3 retired in place, `sprint3.json` is coherent with the
+post-pivot direction and needs no finance-related change, and `project-state.json` now points at
+sprint-3 / planning.
 
 ---
 
