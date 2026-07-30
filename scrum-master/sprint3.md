@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 0/7 stories | 0/48 ACs
-**Last Updated:** 2026-07-30T23:15:00+00:00
+**Last Updated:** 2026-07-30T23:55:00+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -45,7 +45,9 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  Requirements validated for testability. All 6 ACs bind to a concrete, checkable artifact (PIVOT_AUDIT.md sections) with enumerable pass/fail conditions (every sprint-1/2 item appears exactly once, orphaned env vars named and dispositioned, duplicate-feature risks mapped to the CLAUDE.md ownership table, licence flags recorded, migration risk stated per data category, open questions routed to po-requests.md). No vague or unmeasurable wording found. Approved as written.
 
 ---
 
@@ -64,7 +66,9 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  Requirements validated for testability. Each AC has an explicit verification method (read the licence file directly, compare fork migrations against pinned upstream, record commit/hash/date in named files) rather than relying on assertion. AC-15.1's stop condition (non-MIT licence -> po-requests.md) and AC-15.2's blocking-finding condition are both binary and checkable. Approved as written.
 
 ---
 
@@ -77,13 +81,17 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-16.3:** The Backstage is configured to use the project's existing Cloudflare R2 bucket through its S3-compatible storage settings. No new parallel bucket is created. If the existing R2 credentials cannot be obtained, the story is blocked and recorded in `scrum-master/po-requests.md` rather than worked around with a substitute store.
 - [ ] **AC-16.4:** `.env.example` documents every environment variable the Backstage needs, with safe placeholder values and a comment for each explaining what it is and where the real value comes from. No real secret is committed.
 - [ ] **AC-16.5:** A documented, repeatable start-up procedure exists that takes a clean checkout to a running Backstage with an administrator able to sign in, and it is exercised end to end at least once with the result recorded.
-- [ ] **AC-16.6:** Both database paths are proven: a fresh install on an empty database, and an upgrade install that applies our new migrations on top of an already-migrated upstream database. Both results are recorded.
+- [ ] **AC-16.6:** The migration path is proven safe as far as it can be at this point in the sprint. Two runs are executed and their command output recorded: (a) a fresh install applies the pinned upstream migrations cleanly to an empty database, and (b) the same migration command re-run against that now-already-migrated database completes as a no-op — no error, no re-application, no data loss — with the migration-state table (or the upstream's equivalent record) shown before and after to prove the runner is idempotent and safe against an existing install. Proving an upgrade that applies *our own* extension migrations on top of an already-migrated upstream database is explicitly out of scope for this story: under Fork Discipline no such migration exists yet, and inventing a throwaway one would prove nothing real. That proof is deferred to the sprint that introduces the first extension migration, and `UPSTREAM_SYNC.md` records the deferral so it is not lost.
 
 **Dependencies:** US-15
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  AC-16.1 through 16.5 are testable as written (Docker-only services, Postgres-not-dev-db, existing R2 bucket reuse or documented block, .env.example completeness, an exercised and recorded start-up procedure) and are approved.
+  
+  RE-REVIEW (2026-07-30): AC-16.6 was previously returned as a requirements-defect because it required proving an upgrade that applies 'our own' extension migrations on top of an already-migrated upstream database, and no such migration exists yet in the sprint. The PO resolved this by rewording the AC (option b) rather than padding scope with a throwaway migration or deferring the whole criterion: it now requires only (a) a fresh install applying the pinned upstream migrations cleanly to an empty database, and (b) a re-run of that same command against the now-migrated database completing as a verified no-op, both with recorded command output and before/after migration-state evidence. It explicitly scopes out proving our own extension-migration upgrade path, naming Fork Discipline as the reason no such migration exists yet, and requires the deferral to be recorded in `UPSTREAM_SYNC.md` so it is not lost. This is now fully testable: two concrete, reproducible runs with an enumerable pass/fail condition (no error, no re-application, no data loss) and a named artifact (UPSTREAM_SYNC.md) for the deferral record. Approved as reworded.
 
 ---
 
@@ -106,7 +114,9 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  Requirements validated for testability. All 10 ACs specify a concrete, reproducible action and an observable result (create/associate records, upload and check derivative/metadata fields, password gate on/off, expiry state change visible, client download via client route, queued/sent email state, logged webhook payload, template-diff preservation, honest write-up routed to PIVOT_AUDIT.md/po-requests.md). AC-17.10 in particular requires file/line or reproduced-flow evidence per signing element and an explicit reopen-the-decision path if any element is missing -- this is the strongest AC in the sprint and needs no changes. Approved as written.
 
 ---
 
@@ -119,13 +129,15 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-18.3:** The contract states that the Frontstage never reads the Backstage database directly and that no cross-database join exists anywhere in application code. Cross-system relationships are expressed as stored external identifiers.
 - [ ] **AC-18.4:** The contract covers the three flows the next sprint depends on: a Frontstage page displaying a public gallery by referencing its Backstage gallery identifier, a Frontstage inquiry being converted into a Backstage client and project, and a Backstage change triggering a Frontstage content refresh.
 - [ ] **AC-18.5:** The document records which Backstage surfaces are to be disabled because they duplicate our chosen architecture — its public landing-page content management, its native quote/invoice/accounting screens, and any page-building capability — and how each will be disabled or hidden.
-- [ ] **AC-18.6:** A user-facing terminology mapping is recorded so internal names and the language the photographer sees never drift apart: the internal event concept is called Gallery, the customer account is called Client, the admin area is Backstage, and the customer portal is the Project Room.
+- [ ] **AC-18.6:** A user-facing terminology mapping is recorded so internal names and the language the photographer sees never drift apart: the object PicPeak's own internal schema/UI calls an "Event" (its media-collection object) is presented to users as Gallery -- this is distinct from, and must not be confused with, this project's own controlled-vocabulary Event (a single dated occasion inside a Project, e.g. ceremony or reception) -- the customer account is called Client, the admin area is Backstage, and the customer portal is the Project Room.
 
 **Dependencies:** US-17
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  Requirements validated for testability; all ACs bind to checkable document content. One minor wording defect was found and fixed directly (not a scope issue): AC-18.6 originally read 'the internal event concept is called Gallery,' which collides with this project's own controlled-vocabulary term 'Event' (scrum-master.md, a dated occasion inside a Project) -- an implementer reading the AC in isolation could not tell whether it meant PicPeak's internal object or our own Event concept. Reworded to explicitly name PicPeak's internal 'Event' object as the thing being relabelled, and to call out that it is not our own Event term. No scope change; approved as amended.
 
 ---
 
@@ -143,7 +155,9 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  Requirements validated for testability. AC-19.1/19.4 are evidence-gathering ACs against the running fork (binding, checkable) and AC-19.2/19.3 require selecting exactly one path with stated reasons/risks/revisit-conditions -- testable via document inspection. AC-19.5 correctly scopes this sprint's deliverable as an explicitly UNDECIDED delivery-path record with named candidates and measurement criteria, not a premature decision -- this is testable (does the doc open with UNDECIDED and list the five candidates and the four targets) and does not overreach sprint-3 scope. Approved as written.
 
 ---
 
@@ -163,7 +177,9 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  Requirements validated for testability. All 9 ACs are report-content requirements with a specific, enumerable checklist per AC (files inspected, exact env-var convention, key-pairing rule, start-up validation spec, secret-handling shape, preserved vs dropped behaviours, settled architecture restated rather than reopened, .env.example placeholders, and the explicit boundary of what 'port faithfully' excludes). AC-20.7's restatement of the settled payment architecture and AC-20.9's exclusion boundary are both testable as document-content checks, not implementation claims -- correctly scoped to a report-only story. Approved as written.
 
 ---
 
@@ -187,6 +203,8 @@ PLAN REVISION (2026-07-30, final planning pass). US-20 was the only story left c
 STILL OUTSTANDING, not blocking this sprint's start: VPS access (po-requests item 2) is needed before US-16 can be called production-like on the real target; Stripe credentials (item 5) are not needed until the finance phase; and open decisions 7, 8 and 9 (contract provider, design-token lock-down, token starting point) need human confirmation before sprint-4 planning closes.
 
 CONTRACT-SIGNING DECISION (2026-07-30). po-requests.md item 7 is resolved, conditionally: V1 uses PicPeak's own native contract-signing capability (typed name, consent checkbox, drawn signature, IP/timestamp, frozen snapshot, SHA-256 hash, audit page in the delivered PDF), hardened with one-time signing links, mandatory email verification, dual-party PDF delivery, and immutable R2 storage. No external e-sign vendor and no manual-upload fallback are carried into V1. This is conditional on verification: new AC-17.10 requires US-17 to confirm the capability actually exists at the pinned commit before any Project Room story depends on it, and to reopen the decision honestly in po-requests.md if it does not. Sprint is now 7 stories / 48 acceptance criteria.
+
+REQUIREMENTS-DEFECT RESOLUTION — AC-16.6 (2026-07-30). The Tester correctly returned AC-16.6 as unexecutable: it required proving an upgrade install that applies "our new migrations" on top of an already-migrated upstream database, but no story in sprint-3 or earlier creates any extension migration, so the artifact under test does not exist. Of the Tester's three options I chose (b), reworded rather than deferred or padded. Option (a) — scoping a no-op migration purely to exercise the mechanism — was rejected because a throwaway migration proves the runner tolerates an empty change, not that our real extension migrations apply safely; it would buy false confidence and leave a meaningless file in the fork's migration history, which Fork Discipline makes expensive to remove later. Option (c), deferring the whole criterion, was rejected because it would leave US-16 with no upgrade-path evidence at all, and the genuinely valuable half of the proof — that the migration runner is idempotent and safe to re-run against an existing install — is executable today and is exactly what protects us on every future upstream sync. AC-16.6 now requires both runs (fresh-to-empty, then re-run against already-migrated) with command output and before/after migration-state evidence, and explicitly names the extension-migration upgrade proof as deferred to the sprint that introduces the first real one, with the deferral recorded in UPSTREAM_SYNC.md so it cannot be lost. No po-requests.md entry was opened: this is a sequencing and scope judgment inside the Product Owner's authority, not a question needing human input, and adding it there would dilute a file reserved for genuine blockers. Sprint remains 7 stories / 48 acceptance criteria — this pass reworded one criterion and added none. AC-16.6 and US-16 remain flagged requirements-defect pending the Tester's own re-review; tester fields were not touched.
 
 TRACKER RECONCILIATION (2026-07-30). Issues #50-#56 were regenerated from this file so the tracker cannot disagree with the plan. Issue #53 (US-17) was missing AC-17.10 altogether — the criterion that verifies PicPeak's native contract-signing capability at the pinned commit, and the sole condition the contract-signing decision rests on; an agent working from the issue alone would have closed US-17 without testing that assumption. Issues #50-#55 also carried the pre-extension nine-line definition of done, missing the three standing project conventions. Issue #37 (US-9) was closed, having been left open although sprint2.json records US-9 as done with AC-9.3 retired in place. No acceptance criterion text changed in this pass; the plan is unchanged and the tracker now matches it.
 
