@@ -67,6 +67,19 @@ US-14 → US-15 → US-16 → US-17 is a strict chain; US-18 and US-19 both fan 
 in parallel with each other. Issues #50–#56 are open. All stories are `draft` and all 48 ACs are
 unstarted — the sprint is ready for requirements validation.
 
+**Tracker reconciliation — 2026-07-30.** Issues #50–#56 were regenerated directly from `sprint3.json`
+so the tracker cannot disagree with the plan. Two drifts were found and closed. First, **issue #53
+(US-17) was missing AC-17.10 entirely** — the acceptance criterion that verifies PicPeak's native
+contract-signing capability actually exists at the pinned commit. That AC is the sole condition on
+which the contract-signing decision rests (`po-requests.md` item 7, PRD §29), so an agent working
+from the issue alone would have closed US-17 without ever testing the assumption the decision
+depends on. Second, **#50–#55 carried the pre-extension nine-line definition of done**, missing the
+three standing project conventions (no open critical/major defect, coverage gate not lowered,
+structured metadata headers on every code file). Separately, **issue #37 (US-9) was closed** — it had
+been left open although `sprint2.json` records US-9 as done with AC-9.3 retired in place. This is
+reminder #15 in a second form: a direction change is not applied until *every* artifact an agent may
+be handed reflects it, and the GitHub issue is one of those artifacts.
+
 **Final planning pass — 2026-07-30.** US-20 was the one story still carrying pre-revision language.
 AC-20.7 told the Dev Team that the payment-initiation choice was *still an open decision*, which
 directly contradicted the settled architecture (PRD §26.3, `po-requests.md` item 6). It now records
@@ -274,7 +287,7 @@ source of truth. Terms marked **[retired]** must not appear in any new document.
 |--------|-------|------|---------|
 | Sprint 1 | complete | Foundation + build our own Gallery Engine (US-1…US-6) | Delivered 6/6 stories, 28/28 ACs. **Largely superseded by the pivot** — see US-14. |
 | Sprint 2 | complete (closed early) | Public lead-generating website on the Gallery Engine (US-7…US-13) | US-7, US-8 and US-9 delivered (AC-9.3 retired); **US-10…US-13 retired**. `sprint2.json` closed 2026-07-30. |
-| Sprint 3 | planning | Pivot: freeze, audit, fork, prove the foundation, settle boundaries (US-14…US-20) | Planned and ready for requirements validation: 7 stories / 48 ACs, issues #50–#56 open, pipeline recovery closed. No sprint-3 story touches finance; US-20 documents the Stripe convention only. |
+| Sprint 3 | planning | Pivot: freeze, audit, fork, prove the foundation, settle boundaries (US-14…US-20) | Planned and ready for requirements validation: 7 stories / 48 ACs, issues #50–#56 open and reconciled against `sprint3.json`, pipeline recovery closed. No sprint-3 story touches finance; US-20 documents the Stripe convention only. |
 
 ---
 
