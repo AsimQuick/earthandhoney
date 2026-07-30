@@ -1,0 +1,91 @@
+<!--
+---
+file: PIVOT_AUDIT.md
+project: earthandhoney
+purpose: AC-14.1 — inventory every feature delivered in sprint-1 (US-1..US-6)
+         and sprint-2 (US-7..US-9), each appearing exactly once, classified
+         as Kept / Replaced by PicPeak / Repurposed as a Frontstage layer /
+         Retired, with a one-line reason.
+created-by: dev-team
+related-story: US-14
+related-ac: 14.1
+---
+-->
+
+# Pivot Audit
+
+This document inventories every feature delivered in sprint-1 (US-1…US-6) and
+sprint-2 (US-7…US-9) of `earthandhoney`, ahead of the PicPeak pivot. Each item
+below appears **exactly once** and is classified as one of:
+
+- **Kept** — stays as-is, no PicPeak dependency.
+- **Replaced by PicPeak** — superseded outright by the PicPeak fork.
+- **Repurposed as a Frontstage layer** — the code/UI survives, but is
+  rewired to read from PicPeak instead of owning the data itself.
+- **Retired** — removed, no longer needed under the pivot.
+
+This AC (14.1) covers inventory + classification only. Superseded-artifact
+detail, duplicate-ownership mapping, licence/dependency audit, migration
+risk, and the final recommendation are out of scope here and are addressed
+by AC-14.2 through AC-14.6 of this same story.
+
+## Sprint 1 (US-1…US-6)
+
+| # | AC | Feature | Classification | Reason |
+|---|----|---------|-----------------|--------|
+| 1 | US-1 AC-1.1 | Payload CMS integrated into Next.js App Router, admin at `/admin` | Kept | Payload remains the CMS for business/content collections independent of gallery storage. |
+| 2 | US-1 AC-1.2 | PostgreSQL in Docker, Payload connects via `db` hostname, runs migrations | Kept | Postgres continues to back Payload's non-gallery content and business data. |
+| 3 | US-1 AC-1.3 | `docker compose up -d` boots web + db together, nothing installed on host | Kept | Docker-only service convention is unrelated to the gallery/PicPeak decision. |
+| 4 | US-1 AC-1.4 | DB URL, Payload secret, R2 credentials documented in `.env.example` | Repurposed as a Frontstage layer | Payload secret/DB vars stay; R2 credential purpose shifts from owning uploads to (at most) Frontstage read access once PicPeak owns storage. |
+| 5 | US-1 AC-1.5 | Project metadata front-matter header convention | Kept | A repo-wide authoring convention, orthogonal to the pivot. |
+| 6 | US-2 AC-2.1 | Payload `Media` collection (metadata in Payload, binaries in R2) | Replaced by PicPeak | PicPeak owns media records and storage for gallery images going forward. |
+| 7 | US-2 AC-2.2 | Sharp pipeline generating thumbnail/medium/large + original to R2 | Replaced by PicPeak | PicPeak generates its own derivative sizes; a second, parallel derivative pipeline is a duplicate-feature risk. |
+| 8 | US-2 AC-2.3 | Media record exposes original/thumbnail/medium/large URLs | Replaced by PicPeak | Variant URL resolution moves to PicPeak's own media API. |
+| 9 | US-2 AC-2.4 | Alt text required on Media for accessibility/SEO | Replaced by PicPeak | Alt-text ownership follows the media record, which PicPeak now owns. |
+| 10 | US-2 AC-2.5 | R2 credentials/bucket read from env, no host-installed service | Replaced by PicPeak | Upload-path ownership (and its credentials) moves to PicPeak; Frontstage no longer writes to R2 directly. |
+| 11 | US-3 AC-3.1 | Payload `Galleries` collection (title, description, images[], cover, settings) | Replaced by PicPeak | PicPeak becomes the single gallery data owner, per the pivot's core premise. |
+| 12 | US-3 AC-3.2 | No image system besides Media + Galleries manages images | Replaced by PicPeak | The "single owner" invariant now points at PicPeak instead of Payload. |
+| 13 | US-3 AC-3.3 | Photographer manages gallery images entirely via Payload admin | Replaced by PicPeak | Gallery authoring moves to PicPeak's own admin/UI. |
+| 14 | US-3 AC-3.4 | Gallery `settings` drive display mode (slideshow/hover/fullscreen/download/auth) | Repurposed as a Frontstage layer | Display-mode intent is still needed to drive the Gallery Engine UI; it is re-sourced from PicPeak's gallery metadata instead of Payload's. |
+| 15 | US-3 AC-3.5 | Galleries readable via Payload API/local API | Replaced by PicPeak | Read path moves to PicPeak's API; Payload no longer serves gallery data. |
+| 16 | US-4 AC-4.1 | Gallery Engine: Container, Main Image Display, Thumbnail Preview, Navigation Controls | Repurposed as a Frontstage layer | Rendering components are storage-agnostic and are kept as the Frontstage renderer, fed by PicPeak data instead of Payload. |
+| 17 | US-4 AC-4.2 | Subtle black CSS gradient overlay on every gallery display | Repurposed as a Frontstage layer | Pure-CSS presentation concern, reused unchanged in the Frontstage renderer. |
+| 18 | US-4 AC-4.3 | `next/image` responsive srcset from thumbnail/medium/large variants | Repurposed as a Frontstage layer | Responsive-image wiring is kept but re-pointed at PicPeak-provided variant URLs. |
+| 19 | US-4 AC-4.4 | Engine instantiated in 2+ demo/test-harness display-mode contexts | Repurposed as a Frontstage layer | Demo routes continue to prove engine reuse, now against PicPeak-backed data. |
+| 20 | US-4 AC-4.5 | Engine visually matches `public/photobuddy` template | Kept | A visual-parity requirement independent of which system owns gallery data. |
+| 21 | US-5 AC-5.1 | Fullscreen PhotoSwipe viewer (next/prev/close/swipe/keyboard) | Repurposed as a Frontstage layer | Viewer UI is storage-agnostic and is kept as-is, fed by PicPeak-sourced image lists. |
+| 22 | US-5 AC-5.2 | Mobile-first touch nav, swipe, tap-to-open thumbnail drawer | Repurposed as a Frontstage layer | Same rationale as AC-5.1 — presentation layer, not a data owner. |
+| 23 | US-5 AC-5.3 | Desktop hover reveals thumbnail preview strip | Repurposed as a Frontstage layer | Same rationale — presentation only. |
+| 24 | US-5 AC-5.4 | Display-mode settings honored (hero/portfolio/client-delivery variants) | Repurposed as a Frontstage layer | Mode-driven behavior is kept; the mode/settings source shifts to PicPeak. |
+| 25 | US-6 AC-6.1 | Gallery never loads full image set upfront; lazy/progressive load | Repurposed as a Frontstage layer | Progressive-loading strategy is reused verbatim against PicPeak-served image lists. |
+| 26 | US-6 AC-6.2 | Gallery-bearing routes use static generation + ISR (demo route) | Repurposed as a Frontstage layer | ISR rendering strategy is kept; the revalidation trigger source becomes PicPeak instead of Payload. |
+| 27 | US-6 AC-6.3 | Payload gallery update triggers on-demand revalidation (demo route) | Replaced by PicPeak | The specific "Payload update triggers revalidation" webhook path is superseded — PicPeak becomes the change source, requiring a new trigger integration rather than reuse of this one. |
+| 28 | US-6 AC-6.4 | Below-the-fold images use `loading='lazy'` + responsive `sizes`/srcset | Repurposed as a Frontstage layer | Lazy-loading markup is storage-agnostic and carries over unchanged. |
+
+## Sprint 2 (US-7…US-9)
+
+| # | AC | Feature | Classification | Reason |
+|---|----|---------|-----------------|--------|
+| 29 | US-7 AC-7.1 | `.github/workflows/deploy.yml` (push-to-main + `workflow_dispatch`) | Kept | Deploy pipeline is infrastructure, independent of the gallery-ownership decision. |
+| 30 | US-7 AC-7.2 | CI clean-checkout smoke path (`docker compose up` boots web+db) | Kept | CI smoke-testing convention is unaffected by which system owns gallery data. |
+| 31 | US-7 AC-7.3 | AC-1.2 live-boot test stabilized (`--runInBand`) | Kept | Test-infra stability fix, unrelated to the pivot. |
+| 32 | US-7 AC-7.4 | `.env.example` authoritative for sprint-2 vars (Resend, WhatsApp, site URL) | Kept | These vars belong to lead-generation (US-12/US-13), out of this AC's sprint-1/2 scope but not gallery-related; documented here as the env-file mechanism itself, which is Kept. |
+| 33 | US-8 AC-8.1 | `(frontend)` shared public layout: vertical menu, nav, social icons, footer | Kept | Site chrome/navigation shell is independent of gallery data ownership. |
+| 34 | US-8 AC-8.2 | Photobuddy global styling + Rubik webfont ported (Tailwind tokens) | Kept | Design-system tokens apply site-wide, not just to galleries. |
+| 35 | US-8 AC-8.3 | Mobile menu trigger toggles vertical menu drawer | Kept | Navigation-only client component, no gallery/data dependency. |
+| 36 | US-8 AC-8.4 | Real `<head>`/metadata (title, description, favicon), no create-next-app placeholders | Kept | Site metadata is unrelated to the gallery-ownership pivot. |
+| 37 | US-9 AC-9.1 | Homepage global: hero gallery relation, headline/intro, CTA, reorderable sections | Repurposed as a Frontstage layer | Non-gallery fields (headline, CTA, sections) stay Payload-owned; the hero-gallery relationship is re-pointed at a PicPeak gallery reference instead of Payload's `Galleries` collection. |
+| 38 | US-9 AC-9.2 | Portfolio collection: title/slug/category/cover + ordered Galleries relation | Repurposed as a Frontstage layer | Same rationale as AC-9.1 — portfolio metadata stays in Payload, but the gallery reference moves to PicPeak. |
+| 39 | US-9 AC-9.3 | Testimonials, Packages, FAQ collections (quote/author, name/price/features, question/answer) | Kept | No gallery/media relationship; purely business content unaffected by the pivot. |
+| 40 | US-9 AC-9.4 | New collections/globals registered in `payload.config.ts` with `useAsTitle` + header convention | Kept | Registration/convention requirement applies regardless of which system owns gallery data. |
+
+## Note on repository state at time of audit
+
+AC-9.1 and AC-9.2 (rows 37–38) were implemented in commits `a800bd8` and
+`1d5aa13`, but as of this audit those commits are not present on this
+story's branch lineage — a known git desync between `main` and story
+branches (see the `[PLANNING] sprint-3 — restore sprint files lost to a
+main/story-branch git desync` commit). They are still inventoried here
+because they were delivered per the sprint-2 tracker; their absence from
+the current working tree is a restoration concern for the Project Lead,
+not a reclassification.
