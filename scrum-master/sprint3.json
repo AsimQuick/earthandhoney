@@ -25,7 +25,7 @@
     "Coverage threshold met \u2014 the existing CI coverage gate is not lowered to pass",
     "Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)"
   ],
-  "last_updated": "2026-07-31T00:00:00+00:00",
+  "last_updated": "2026-07-31T19:36:25+00:00",
   "stories": [
     {
       "id": "US-14",
@@ -202,7 +202,7 @@
     {
       "id": "US-17",
       "title": "Prove the forked Backstage delivers the real photography flow before we build on it",
-      "status": "draft",
+      "status": "in-progress",
       "priority": "critical",
       "dependencies": [
         "US-16"
@@ -212,7 +212,7 @@
           "id": "17.1.1",
           "text": "A Client record can be created in the running Backstage through the interface upstream provides (admin UI or API), and it persists: after a container restart the same Client is still retrievable with the values it was created with. The exact creation route used (screen or endpoint) and the resulting database row are recorded in `PIVOT_AUDIT.md`.",
           "checked": false,
-          "dev_status": "not-started",
+          "dev_status": "implemented",
           "tester_status": "approved"
         },
         {
@@ -294,7 +294,7 @@
         }
       ],
       "dev_status": "not-started",
-      "dev_notes": "",
+      "dev_notes": "AC-17.1.1 implemented (local checks green): Committed on `feature/US-17` (not pushed).\n\n## Implementation summary \u2014 AC-17.1.1\n\n**Status:** Implemented (partial work existed; completed, verified, and one regression fixed).\n\n**Files changed (2):**\n\n1. **`PIVOT_AUDIT.md`** \u2014 new `## AC-17.1.1 \u2014 Client creation and persistence` section recording:\n   - **Which record is the \"Client\":** `customer_accounts` (from upstream migration `090_add_customer_accounts.js`), explicitly distinguished from `admin_users` (photographer/staff login).\n   - **Creation route used:** `POST /api/admin/customers` \u2014 handler `vendor/picpeak/backend/src/routes/adminCustomers.js:232`, mounted at `vendor/picpeak/backend/server.js:687`, guarded by `adminAuth` + `requirePermission('customers.create')`, creating the row via `customerAccountsService.createDirect`. Admin session obtained through the real `/api/auth/admin/login` front door; session value redacted in the recorded command.\n   - **Resulting database row:** `customer_accounts` id 3 read directly with `psql`, plus the 201 create response.\n   - **Persistence:** `backstage-backend` restarted, waited to `healthy`, then the same row re-read through both the admin API and `psql` \u2014 identical id, field values \u2026",
       "tester_status": "approved",
       "tester_notes": "Requirements validated for testability. All 10 ACs specify a concrete, reproducible action and an observable result (create/associate records, upload and check derivative/metadata fields, password gate on/off, expiry state change visible, client download via client route, queued/sent email state, logged webhook payload, template-diff preservation, honest write-up routed to PIVOT_AUDIT.md/po-requests.md). AC-17.10 in particular requires file/line or reproduced-flow evidence per signing element and an explicit reopen-the-decision path if any element is missing -- this is the strongest AC in the sprint and needs no changes. Approved as written.",
       "issue": "https://github.com/AsimQuick/earthandhoney/issues/53"
