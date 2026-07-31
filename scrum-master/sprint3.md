@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 1/7 stories | 6/48 ACs
-**Last Updated:** 2026-07-31T07:34:56+00:00
+**Last Updated:** 2026-07-31T07:41:28+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -109,6 +109,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-15.4:** `THIRD_PARTY_NOTICES.md` exists and reproduces the upstream licence text and copyright notice in full, alongside notices for any other code copied into this repository.
   - Dev: implemented
 - [ ] **AC-15.5:** `FORK_CHANGELOG.md` and `UPSTREAM_SYNC.md` exist. The changelog is initialised with the pinned baseline and is the place every deliberate deviation from upstream gets recorded. The sync document states the merge or rebase policy and names the files most likely to conflict on a future update.
+  - Dev: implemented
 - [ ] **AC-15.6:** The forked code is present in this project in a clearly separated location, and no already-shipped upstream database migration has been modified — verifiable by comparing the fork's migration files against the pinned upstream.
 
 **Dependencies:** US-14
@@ -145,6 +146,16 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `src/__tests__/us15-ac15.4-third-party-notices.test.ts` (new, 14 tests) — verifies the file exists, reproduces the PicPeak licence text verbatim, cites the pinned commit, includes a notice per bundled library, and that every quoted copyright line actually appears in the source file it credits (not fabricated).
   
   Full suite: 46 t …
+  AC-15.5 implemented (local checks green): AC-15.5 implemented and committed on `feature/US-15`.
+  
+  **Summary:**
+  - `FORK_CHANGELOG.md` — new file. Initialised with a `baseline` entry recording the pinned commit (`eb263137b98935754155824de2a03848121304b6`), documents the entry shape (`baseline`/`deviation`, dated, files-touched required for deviations), and states it's the place every deliberate deviation from upstream gets recorded.
+  - `UPSTREAM_SYNC.md` — new file. States the sync policy is **merge, not rebase** (with rationale: preserves commit-hash references in `FORK_CHANGELOG.md`/`PICPEAK_UPSTREAM.md`, avoids replaying migration edits), and names files most likely to conflict on a future update (storage backend, webhooks, migrations, `package.json`, `.env.example`).
+  - `src/lib/forkChangelog.ts` — `validateChangelogEntry`: pure logic requiring `deviation` entries to name touched files.
+  - `src/lib/upstreamSync.ts` — `validateSyncPolicy`: pure logic requiring a valid strategy, ≥1 conflict-prone file, and a rationale.
+  - `src/__tests__/us15-ac15.5-fork-changelog-upstream-sync.test.ts` — 19 tests covering both decision-logic functions and doc content assertions.
+  
+  Full suite: 822/822 tests pass, `tsc --noEmit` clean, coverage 98 …
 
 **Tester Status:** approved
 **Tester Notes:**
