@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/7 stories | 18/50 ACs
-**Last Updated:** 2026-07-31T19:36:25+00:00
+**Last Updated:** 2026-07-31T19:48:37+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -282,6 +282,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-17.1.1:** A Client record can be created in the running Backstage through the interface upstream provides (admin UI or API), and it persists: after a container restart the same Client is still retrievable with the values it was created with. The exact creation route used (screen or endpoint) and the resulting database row are recorded in `PIVOT_AUDIT.md`.
   - Dev: implemented
 - [ ] **AC-17.1.2:** A Project record can be created in the running Backstage and linked to the Client created in AC-17.1.1. Reading the Project back shows the Client it belongs to, and the link is stored as a real foreign-key relationship in PostgreSQL, not a free-text field. If upstream models Projects and Clients differently than the PRD assumes, that is written up in `PIVOT_AUDIT.md` rather than worked around.
+  - Dev: implemented
 - [ ] **AC-17.1.3:** A Gallery can be created inside the Project from AC-17.1.2, and its association resolves in both directions: opening the Project lists the Gallery, and opening the Gallery identifies both its Project and the owning Client from AC-17.1.1. The query or screen used to prove each direction is recorded in `PIVOT_AUDIT.md`.
 - [ ] **AC-17.2:** A batch of real images can be uploaded and processed. Every uploaded original is stored in R2 exactly once, the expected derivative sizes are produced, and stored image records include width, height, aspect ratio, format, file size, and processing state.
 - [ ] **AC-17.3:** Gallery protection works as delivered by upstream: a password-protected gallery refuses access without the password, and grants it with the password.
@@ -310,6 +311,17 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
      - **Creation route used:** `POST /api/admin/customers` — handler `vendor/picpeak/backend/src/routes/adminCustomers.js:232`, mounted at `vendor/picpeak/backend/server.js:687`, guarded by `adminAuth` + `requirePermission('customers.create')`, creating the row via `customerAccountsService.createDirect`. Admin session obtained through the real `/api/auth/admin/login` front door; session value redacted in the recorded command.
      - **Resulting database row:** `customer_accounts` id 3 read directly with `psql`, plus the 201 create response.
      - **Persistence:** `backstage-backend` restarted, waited to `healthy`, then the same row re-read through both the admin API and `psql` — identical id, field values …
+  AC-17.1.2 implemented (local checks green): Committed on `feature/US-17` as `eaa3cbe`. Not pushed, still on the story branch.
+  
+  ## Implementation summary — US-17 AC-17.1.2
+  
+  **Status:** implemented (partial work from the previous agent was present, verified, corrected, and completed).
+  
+  **Files changed (2):**
+  
+  - **`PIVOT_AUDIT.md`** — new `## AC-17.1.2 — Project creation and Client linkage` section, plus `17.1.2` added to the front-matter `related-ac` list and purpose block. Records:
+    - The Project↔Client link **is** a real Postgres FK — `projects_customer_account_id_foreign FOREIGN KEY (customer_account_id) REFERENCES customer_accounts(id) ON DELETE SET NULL`, created by upstream migration `117_add_projects.js`; `projectService.getProjectById` joins `customer_accounts` and `transformProject` exposes `customerAccountId`/`customerEmail`. The PRD's assumption holds here.
+    - **An upstream defect, written up rather than worked around** (as this AC explicitly requires): `POST /api/admin/projects`, `PUT /api/admin/projects/:id`, and `POST /api/admin/projects/:id/events` are all gated on `requirePermission('events.manage')` (`adminProjects.js:32,54,74`), but **no migration in the pinned fork ever inserts a permission named `events.m …
 
 **Tester Status:** approved
 **Tester Notes:**
