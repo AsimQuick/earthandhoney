@@ -60,7 +60,14 @@ related-story: US-14
          password (or with the wrong one) and grants it once the correct
          password is supplied, exercised live against the running
          Backstage rather than read out of the source alone.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3
+         AC-17.4.1.1.1.1.1.1 — define and run an expiry-related code search
+         against the pinned commit: state the pinned commit and the search
+         terms (expir, expires_at, expiry, ttl, valid_until, lifetime), and
+         record the exact, re-runnable grep commands across the fork's
+         backend source and migration directories, plus each command's
+         matching-line count. No names extracted, nothing classified —
+         code-level only, no live Backstage required.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1
 ---
 -->
 
@@ -1328,6 +1335,127 @@ Backstage, not inferred from reading the vendored source alone, and the
 whole sequence was run a second time with identical results to show it
 reproduces. Nothing in upstream's password gate had to be modified,
 patched, or worked around to make this AC pass.
+
+## AC-17.4.1.1.1.1.1.1 — expiry search: terms, commands, and hit counts
+
+`US-17` AC-17.4.1.1.1.1.1.1 requires a re-runnable search for expiry-related
+code across the pinned PicPeak fork, with the exact commands and their hit
+counts recorded so the volume of output the next two criteria work from is
+fixed and checkable. This criterion does not extract names or classify
+anything found — that is deferred to the criteria that follow. It is a
+code-level finding: no live Backstage instance was started or used.
+
+### Pinned commit searched
+
+`vendor/picpeak/` is held at the same pin recorded in `PICPEAK_UPSTREAM.md`
+and `vendor/README.md`:
+
+```
+Upstream: https://github.com/PicPeak/picpeak
+Pinned commit: eb263137b98935754155824de2a03848121304b6
+```
+
+The upstream `.git` history is deliberately not vendored (per
+`vendor/README.md`), so "against the pinned commit" means the working tree
+at `vendor/picpeak/` as committed in this repository. Confirmed clean before
+running any search below — no local modification to the searched
+directories that would make the results diverge from the pin:
+
+```
+$ git status --porcelain -- vendor/picpeak/backend/src vendor/picpeak/backend/migrations
+(no output — clean)
+```
+
+### Search terms
+
+The minimum set this AC requires, plus no further term — the six below are
+sufficient to size the next two criteria's input without widening scope
+beyond what the AC asks for:
+
+`expir`, `expires_at`, `expiry`, `ttl`, `valid_until`, `lifetime`
+
+### Directories searched and file-type filter
+
+- **Backend source directory**: `vendor/picpeak/backend/src`
+- **Migration directory**: `vendor/picpeak/backend/migrations`
+- **File-type filter**: `*.js` — the only source-code extension present in
+  either directory (confirmed by `find vendor/picpeak/backend/src -type f`
+  and `find vendor/picpeak/backend/migrations -type f`, each returning only
+  `.js` files plus incidental `.md` docs, which the filter excludes).
+
+### Exact commands and recorded hit counts
+
+Each command below is `grep -rIn --include="*.js" -i -- "<term>" <src-dir>
+<migrations-dir>`, run from the repository root, with `wc -l` giving the
+matching-line count. `-r` recurses, `-I` skips binary files, `-n` prints
+line numbers (irrelevant to the count itself, kept so the command matches
+what the next criterion will actually run when it reads the matched lines),
+`-i` is case-insensitive (so `Expiry`, `EXPIRES_AT`, etc. are not missed),
+and `--` stops option parsing so a term is never misread as a flag.
+
+```
+$ grep -rIn --include="*.js" -i -- "expir" vendor/picpeak/backend/src vendor/picpeak/backend/migrations | wc -l
+697
+
+$ grep -rIn --include="*.js" -i -- "expires_at" vendor/picpeak/backend/src vendor/picpeak/backend/migrations | wc -l
+238
+
+$ grep -rIn --include="*.js" -i -- "expiry" vendor/picpeak/backend/src vendor/picpeak/backend/migrations | wc -l
+87
+
+$ grep -rIn --include="*.js" -i -- "ttl" vendor/picpeak/backend/src vendor/picpeak/backend/migrations | wc -l
+81
+
+$ grep -rIn --include="*.js" -i -- "valid_until" vendor/picpeak/backend/src vendor/picpeak/backend/migrations | wc -l
+47
+
+$ grep -rIn --include="*.js" -i -- "lifetime" vendor/picpeak/backend/src vendor/picpeak/backend/migrations | wc -l
+1
+```
+
+For readers who want the source/migration split, the same six commands
+scoped to one directory at a time give:
+
+| Term | `backend/src` hits | `backend/migrations` hits | Combined (above) |
+|---|---|---|---|
+| `expir` | 439 | 258 | 697 |
+| `expires_at` | 144 | 94 | 238 |
+| `expiry` | 38 | 49 | 87 |
+| `ttl` | 79 | 2 | 81 |
+| `valid_until` | 45 | 2 | 47 |
+| `lifetime` | 1 | 0 | 1 |
+
+(Each split figure is the same command with a single directory argument in
+place of both, e.g. `grep -rIn --include="*.js" -i -- "expir"
+vendor/picpeak/backend/src | wc -l` → `439`.)
+
+### A known property of substring matching, recorded for the reader, not classified
+
+`expir` matches every inflection of "expire" (`expires`, `expired`,
+`expiring`, `expiration`, `expiry`) by design, which is why its count
+subsumes the more specific terms. `ttl`, being a bare three-letter
+substring, also matches inside unrelated words that happen to contain the
+sequence `ttl` — for example `settled`, `settleReject`, and `throttling` in
+`backend/src`, and `settled`/`throttle` in `backend/migrations` (spot-checked
+directly: `grep -rIn --include="*.js" -i -- "ttl"
+vendor/picpeak/backend/src | head` surfaces `CACHE_TTL` alongside
+`safeExec.js`'s `settled`/`settleReject`/`settleResolve`). This is stated
+here as a property of the search method — not a classification of any
+individual hit — because the next criterion reads these same commands'
+output and needs to know its raw count is not pre-filtered for that noise.
+
+### Verdict
+
+AC-17.4.1.1.1.1.1.1 is satisfied: the pinned commit
+(`eb263137b98935754155824de2a03848121304b6`) is stated, the six required
+search terms are listed with no term added beyond them, the exact
+`grep -rIn --include="*.js" -i -- "<term>" vendor/picpeak/backend/src
+vendor/picpeak/backend/migrations` command for each is recorded verbatim
+against the searched directories and file-type filter, and each command's
+matching-line count is recorded (697, 238, 87, 81, 47, 1). No name is
+extracted and nothing found is classified here — that is deferred to the
+criteria that follow, which now have a fixed, checkable volume of output to
+work from.
 
 ## Recommendation and open questions (AC-14.6)
 
