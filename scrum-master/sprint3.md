@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/7 stories | 12/48 ACs
-**Last Updated:** 2026-07-31T08:42:58+00:00
+**Last Updated:** 2026-07-31T08:50:49+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -186,6 +186,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-16.4:** `.env.example` documents every environment variable the Backstage needs, with safe placeholder values and a comment for each explaining what it is and where the real value comes from. No real secret is committed.
   - Dev: implemented
 - [ ] **AC-16.5:** A documented, repeatable start-up procedure exists that takes a clean checkout to a running Backstage with an administrator able to sign in, and it is exercised end to end at least once with the result recorded.
+  - Dev: implemented
 - [ ] **AC-16.6:** The migration path is proven safe as far as it can be at this point in the sprint. Two runs are executed and their command output recorded: (a) a fresh install applies the pinned upstream migrations cleanly to an empty database, and (b) the same migration command re-run against that now-already-migrated database completes as a no-op — no error, no re-application, no data loss — with the migration-state table (or the upstream's equivalent record) shown before and after to prove the runner is idempotent and safe against an existing install. Proving an upgrade that applies *our own* extension migrations on top of an already-migrated upstream database is explicitly out of scope for this story: under Fork Discipline no such migration exists yet, and inventing a throwaway one would prove nothing real. That proof is deferred to the sprint that introduces the first extension migration, and `UPSTREAM_SYNC.md` records the deferral so it is not lost.
 
 **Dependencies:** US-15
@@ -225,6 +226,13 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `.env.example` — added a new "Backstage" section documenting every env var referenced by the `backstage-db`, `backstage-backend`, and `backstage-frontend` services in `docker-compose.yml`: `NODE_ENV`, `BACKSTAGE_DB_NAME`, `BACKSTAGE_DB_USER`, `BACKSTAGE_DB_PASSWORD`, `BACKSTAGE_JWT_SECRET`, `BACKSTAGE_ADMIN_USERNAME`, `BACKSTAGE_ADMIN_EMAIL`, `BACKSTAGE_ADMIN_PASSWORD`, `BACKSTAGE_API_URL` — each with a safe placeholder value and an explanatory comment (what it is, where the real value comes from). R2_* vars were already documented (reused from US-2) and untouched.
   - `src/__tests__/us16-ac16.4-env-example-backstage-vars.test.ts` (new, 20 tests) — parses `docker-compose.yml` to extract every `BACKSTAGE_*` var actually referenced, asserts each has a non-empty placeholder in `.env.example` with no gaps, checks `NODE_ENV` is documented, verifies explanatory comments exist, checks placeholders don't look like real credentials, and confirms `.env` stays gitignored.
   - Full suite: 52 test files, 911 tests, all passing. No dependency changes — no `package-lock.json` update needed.
+  AC-16.5 implemented (local checks green): Implemented AC-16.5 for US-16.
+  
+  **Summary:**
+  - `BACKSTAGE_STARTUP.md` (new): a documented, repeatable start-up procedure — clean checkout → `cp .env.example .env` → `docker compose --profile backstage up -d --build backstage-db backstage-backend backstage-frontend` → wait for `backstage-backend` healthy → sign in as admin via the nginx frontend on port 3100. Includes a "Recorded run" section with verbatim output from actually executing it end to end today (`down -v` first to guarantee a clean state): 96 migrations applied, health check → `healthy`, `admin_users` had exactly one seeded row, and `POST http://localhost:3100/api/auth/admin/login` with the unmodified `.env.example` defaults returned `200 OK` with a `Set-Cookie: admin_token=...` session cookie. Explicit `Result: **PASS**`.
+  - `src/__tests__/us16-ac16.5-backstage-startup-runbook.test.ts` (new, 12 tests, all passing): pins the runbook's required steps and the recorded evidence (migration summary, health status, 200 response with cookie, PASS verdict) so the proof can't silently rot out of the doc.
+  
+  Full suite: 53 test suites / 925 tests passing, coverage 98.46% statements. No dependency changes. Docker services torn down af …
 
 **Tester Status:** approved
 **Tester Notes:**
