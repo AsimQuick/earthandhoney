@@ -73,7 +73,6 @@ describe('AC-16.6: the migration path is proven safe with recorded command outpu
 
     it('shows the migration-state table before and after the re-run', () => {
       expect(doc).toMatch(/Migration-state table immediately after the first re-run/)
-      const idx = doc.lastIndexOf('count \\| min \\| max')
       // exact literal table header appears twice — once for run (a), once for run (b)
       expect((doc.match(/count \| min \| max/g) || []).length).toBeGreaterThanOrEqual(2)
     })
