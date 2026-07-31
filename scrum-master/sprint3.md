@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 1/7 stories | 6/48 ACs
-**Last Updated:** 2026-07-31T07:19:50+00:00
+**Last Updated:** 2026-07-31T07:25:54+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -103,6 +103,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-15.1:** The PicPeak upstream repository is verified to actually exist and to be obtainable, and its licence is confirmed by reading the licence file in the repository rather than trusting documentation. If the licence is not MIT as the PRD assumes, work stops and the Product Owner is notified through `scrum-master/po-requests.md`.
   - Dev: implemented
 - [ ] **AC-15.2:** A specific upstream commit is identified that contains all four capabilities the pivot depends on — Projects grouping above galleries, customer accounts, webhooks, and S3-compatible storage — and the evidence for each capability at that commit is recorded. If no single commit provides all four, the gap is documented as a blocking finding.
+  - Dev: implemented
 - [ ] **AC-15.3:** `PICPEAK_UPSTREAM.md` exists and records the upstream URL, the exact pinned commit hash, the branch or tag it came from, the date pinned, and the process for evaluating a future upstream update. It states that production must never track a floating upstream branch.
 - [ ] **AC-15.4:** `THIRD_PARTY_NOTICES.md` exists and reproduces the upstream licence text and copyright notice in full, alongside notices for any other code copied into this repository.
 - [ ] **AC-15.5:** `FORK_CHANGELOG.md` and `UPSTREAM_SYNC.md` exist. The changelog is initialised with the pinned baseline and is the place every deliberate deviation from upstream gets recorded. The sync document states the merge or rebase policy and names the files most likely to conflict on a future update.
@@ -120,6 +121,13 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `PICPEAK_LICENCE_VERIFICATION.md` (new) — durable evidence record: upstream URL, obtainability proof, full quoted LICENSE text, MIT conclusion, stop-condition status.
   - `src/lib/licenceVerification.ts` (new) — `classifyLicenceText()`, pure MIT-vs-not classification logic encoding the stop-condition decision, reusable/testable independent of network access.
   - `src/__tests__/us15-ac15.1-picpeak-licence-verification.test.ts` (new) — 13 tests covering: classification of the actual PicPeak licence text as MIT; classification of GPL-3.0/Apache-2.0/dual-licence-mention/empty text as non-MIT (stop-condition trigger, including the `po-requests.md` ro …
+  AC-15.2 implemented (local checks green): AC-15.2 implemented and committed on `feature/US-15` (commit `0dbf12e`).
+  
+  **Summary:**
+  - Researched the real upstream PicPeak repo (`github.com/PicPeak/picpeak`) via GitHub API (`gh api`) to find the introducing commit for each of the four required capabilities, then verified all four are present together at a single commit and that it's an ancestor of `main`.
+  - **PICPEAK_CAPABILITY_AUDIT.md** — records evidence per capability (Projects grouping → `eb263137b98935754155824de2a03848121304b6`, 2026-06-06; customer accounts → `087ef459`, 2026-05-10; webhooks → `c488f481`, 2026-04-28; S3-compatible storage → `1b717ce5`, 2026-04-28), confirms all four files coexist at `eb263137...` with blob SHAs, confirms it's an ancestor of `main` via the compare API, and states the blocking-finding condition is **not** triggered since a single commit provides all four.
+  - **src/lib/capabilityAudit.ts** — `auditCapabilities()`, pure logic that takes capability evidence records and returns `allPresent`/`blockingFinding` (the reusable decision logic behind the AC's blocking-finding requirement).
+  - **src/__tests__/us15-ac15.2-picpeak-capability-audit.test.ts** — 9 tests covering the audit logic (all-presen …
 
 **Tester Status:** approved
 **Tester Notes:**
