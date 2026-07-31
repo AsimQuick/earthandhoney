@@ -55,7 +55,12 @@ related-story: US-14
          aspect ratio, format, file size, processing state), recording
          honestly where the schema does not carry a field this AC expects
          as its own column.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2
+         AC-17.3 — prove gallery password protection works as delivered by
+         upstream: a password-protected Gallery refuses access without the
+         password (or with the wrong one) and grants it once the correct
+         password is supplied, exercised live against the running
+         Backstage rather than read out of the source alone.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3
 ---
 -->
 
@@ -1160,6 +1165,169 @@ implemented, and were proven to work when explicitly triggered, but are
 lazy — and aspect ratio is not a stored column, only a derivable value from
 the two that are. Both are written up here and raised in
 `scrum-master/po-requests.md` per AC-17.9, not silently decided.
+
+## AC-17.3 — gallery password protection
+
+`US-17` AC-17.3 requires proof that gallery protection works as upstream
+delivers it: a password-protected Gallery refuses access without the
+password, and grants it with the password. Exercised live against the
+running Backstage (`docker compose --profile backstage`, per
+`BACKSTAGE_STARTUP.md`), reusing the AC-17.1.3.1 Gallery (`events.id = 3`,
+slug `wedding-ac-17-1-3-1-verification-gallery-2026-09-01`), which was
+created with `require_password: true` and `password: "Verify-Pass-123"` —
+no new Gallery was created for this AC.
+
+### Publishing the Gallery so the public route is reachable
+
+The AC-17.1.3.1 Gallery was created as a draft (`is_draft: true`), and the
+client-facing gallery middleware (`verifyGalleryAccess`,
+`vendor/picpeak/backend/src/middleware/gallery.js:20`) excludes drafts
+from public access (`is_draft: formatBoolean(false)` in its non-admin-
+preview query branch,
+`vendor/picpeak/backend/src/middleware/gallery.js:40`). It was published
+through the real admin
+route, `POST /api/admin/events/:id/publish`
+(`vendor/picpeak/backend/src/routes/adminEvents.js:1049`), rather than by
+flipping the column directly in Postgres:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X POST http://localhost:3100/api/admin/events/3/publish
+
+HTTP/1.1 200 OK
+{"message":"Event published successfully","is_draft":false}
+```
+
+### The routes exercised
+
+- **Password verification**: `POST /api/auth/gallery/verify`
+  (`vendor/picpeak/backend/src/routes/auth.js:184`), mounted at
+  `vendor/picpeak/backend/server.js:631`
+  (`app.use('/api/auth', authRoutes)`). It looks up the event by `slug`,
+  and when `require_password` is true, compares the supplied `password`
+  against `event.password_hash` with `bcrypt.compare`
+  (`vendor/picpeak/backend/src/routes/auth.js:231`). reCAPTCHA is checked
+  first, but `verifyRecaptcha` (`vendor/picpeak/backend/src/services/recaptcha.js:24`)
+  returns `true` unconditionally whenever the `security_enable_recaptcha`
+  app setting is off — its default in this stack (unset), confirmed by
+  the verify calls below succeeding with no `recaptchaToken` supplied.
+- **Gated content**: `GET /api/gallery/:slug/photos`
+  (`vendor/picpeak/backend/src/routes/gallery.js:216`), mounted at
+  `vendor/picpeak/backend/server.js:635`
+  (`app.use('/api/gallery', galleryRoutes)`), guarded by the
+  `verifyGalleryAccess` middleware cited above. With no token, and the
+  Gallery requiring one, it falls through to
+  `vendor/picpeak/backend/src/middleware/gallery.js:62`
+  (`return res.status(401).json({ error: 'No token provided' })`) without
+  ever looking at a password.
+
+### Refused without the password
+
+```
+$ curl -s -i http://localhost:3100/api/gallery/wedding-ac-17-1-3-1-verification-gallery-2026-09-01/photos
+
+HTTP/1.1 401 Unauthorized
+{"error":"No token provided"}
+```
+
+### Refused with the wrong password
+
+```
+$ curl -s -i -X POST http://localhost:3100/api/auth/gallery/verify \
+    -H "Content-Type: application/json" \
+    -d '{"slug":"wedding-ac-17-1-3-1-verification-gallery-2026-09-01","password":"totally-wrong"}'
+
+HTTP/1.1 401 Unauthorized
+{"error":"Invalid gallery or password"}
+```
+
+Read straight out of `backstage-db` rather than trusted on the HTTP
+response alone, the wrong-password attempts were logged as failures
+against this Gallery, not silently dropped:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select event_id, action, ip_address, timestamp from access_logs where event_id = 3 order by timestamp;"
+
+ event_id |    action     |  ip_address  |           timestamp
+----------+---------------+--------------+-------------------------------
+        3 | login_fail    | 192.168.65.1 | 2026-07-31 20:57:32.215929+00
+        3 | login_fail    | 192.168.65.1 | 2026-07-31 20:57:36.432331+00
+        3 | login_success | 192.168.65.1 | 2026-07-31 20:57:36.755822+00
+        3 | view          | 192.168.65.1 | 2026-07-31 20:57:40.454018+00
+        3 | login_fail    | 192.168.65.1 | 2026-07-31 21:01:08.903074+00
+        3 | login_fail    | 192.168.65.1 | 2026-07-31 21:01:09.22512+00
+        3 | login_success | 192.168.65.1 | 2026-07-31 21:01:09.546363+00
+        3 | view          | 192.168.65.1 | 2026-07-31 21:01:09.574542+00
+        3 | view          | 192.168.65.1 | 2026-07-31 21:01:09.605455+00
+(9 rows)
+```
+
+Every `login_fail` row is a wrong-password call and every `login_success`
+row is a correct-password call, so the table is the whole AC read back out
+of Postgres. There are more rows than a single pass produces because the
+refuse/grant sequence was run twice against this Gallery: once at
+`20:57` and again at `21:01`, when the recorded run was re-executed
+verbatim to confirm it reproduces rather than describing a one-off. The
+second pass returned byte-identical status codes and bodies to the first,
+and the photos route returned the same three photo ids (`3, 2, 1`).
+
+None of the repeated failures tripped the account lockout that
+`checkAccountLockout` gates on in
+`vendor/picpeak/backend/src/routes/auth.js:211` — the correct-password
+attempt following each pair of failures still succeeded, so the refusals
+recorded here are genuine password refusals and not a lockout masquerading
+as one.
+
+### Granted with the correct password
+
+```
+$ curl -s -i -c <gallery-cookie-jar> -X POST http://localhost:3100/api/auth/gallery/verify \
+    -H "Content-Type: application/json" \
+    -d '{"slug":"wedding-ac-17-1-3-1-verification-gallery-2026-09-01","password":"Verify-Pass-123"}'
+
+HTTP/1.1 200 OK
+Set-Cookie: gallery_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; Max-Age=86400; Path=/; HttpOnly; SameSite=Lax
+Set-Cookie: gallery_token_wedding-ac-17-1-3-1-verification-gallery-2026-09-01=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; Max-Age=86400; Path=/; HttpOnly; SameSite=Lax
+
+{"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...","event":{"id":3,"event_name":"AC-17.1.3.1 Verification Gallery","event_type":"wedding","event_date":"2026-09-01T00:00:00.000Z","welcome_message":"","color_theme":null,"expires_at":"2026-10-01T00:00:00.000Z","allow_user_uploads":false,"upload_category_id":null,"require_password":true,"photo_cap":null}}
+```
+
+The issued token is a JWT signed with `issuer: 'picpeak-auth'`
+(`vendor/picpeak/backend/src/routes/auth.js:261-270`) carrying
+`eventId: 3`, and is set both as a generic `gallery_token` cookie and a
+per-slug `gallery_token_<slug>` cookie
+(`setGalleryAuthCookies`, `vendor/picpeak/backend/src/utils/tokenUtils.js:130`,
+cookie name from `vendor/picpeak/backend/src/utils/tokenUtils.js:2`).
+
+The same cookie jar then grants access to the previously-refused route:
+
+```
+$ curl -s -i -b <gallery-cookie-jar> http://localhost:3100/api/gallery/wedding-ac-17-1-3-1-verification-gallery-2026-09-01/photos
+
+HTTP/1.1 200 OK
+{"event":{"id":3,"event_name":"AC-17.1.3.1 Verification Gallery", ... },"categories":[],"photos":[{"id":3, ... },{"id":2, ... },{"id":1, ... }]}
+```
+
+`getGalleryTokenFromRequest`
+(`vendor/picpeak/backend/src/utils/tokenUtils.js:176`) is what reads the
+`gallery_token` cookie back out of the request inside `verifyGalleryAccess`
+(line 193-194), and the three photos returned are the AC-17.2 batch upload
+— no new photos were uploaded for this AC.
+
+### Verdict
+
+AC-17.3 is satisfied: the AC-17.1.3.1 password-protected Gallery refuses
+`GET /api/gallery/:slug/photos` with no token at all (`401`, "No token
+provided"), refuses `POST /api/auth/gallery/verify` with the wrong
+password (`401`, "Invalid gallery or password", and the failure is
+recorded in `access_logs`), and grants access — both a JWT from the verify
+call and, using that token, the previously-refused photos route returning
+`200` with the Gallery's real photo list — once the correct password is
+supplied. All three behaviours were exercised live against the running
+Backstage, not inferred from reading the vendored source alone, and the
+whole sequence was run a second time with identical results to show it
+reproduces. Nothing in upstream's password gate had to be modified,
+patched, or worked around to make this AC pass.
 
 ## Recommendation and open questions (AC-14.6)
 
