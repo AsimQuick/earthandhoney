@@ -20,7 +20,11 @@ related-story: US-14
          recommendation and an open-questions list; anything the audit
          cannot resolve without human input is routed to
          `scrum-master/po-requests.md` rather than decided silently.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6
+         AC-17.1.1 — prove a Client record can be created in the running
+         Backstage through the route upstream provides, and that it
+         persists across a container restart; record the creation route
+         and the resulting `customer_accounts` database row.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1
 ---
 -->
 
@@ -242,6 +246,103 @@ demo/test-harness routes (rows 4, 19 in the Sprint 1 inventory) created.
 The dispositions above nonetheless apply to whatever real data is present
 by the time a pivot-execution story runs, since this audit is written
 ahead of that execution, not ahead of first real client use.
+
+## AC-17.1.1 — Client creation and persistence
+
+`US-17` AC-17.1.1 requires proof that a Client record can be created in
+the running Backstage through the interface upstream provides, and that
+it survives a container restart. This section records the creation route
+used and the resulting database row.
+
+### What upstream calls a "Client"
+
+The PicPeak fork has no table literally named `client`. The record that
+plays that role is `customer_accounts` — the recurring-login "customer"
+tier added in upstream migration `090_add_customer_accounts.js` (a
+distinct concept from `admin_users`, which is photographer/staff login).
+A `customer_accounts` row carries the person/company identity fields
+(`email`, `first_name`, `last_name`, `company_name`, billing address,
+etc.) that a "Client" record is expected to hold, and later CRM tables
+(quotes, invoices, contracts — migration `107_crm_consolidated.js`)
+reference it as the billed party. This is the record this AC treats as
+the Client.
+
+### Creation route used
+
+`POST /api/admin/customers` (`vendor/picpeak/backend/src/routes/adminCustomers.js:232`,
+mounted at `vendor/picpeak/backend/server.js:687`), admin-authenticated
+(`adminAuth`) and gated by the `customers.create` RBAC permission. This
+is the same route the admin UI's "add customer" screen calls; it creates
+the `customer_accounts` row directly (`customerAccountsService.createDirect`)
+rather than going through the invite-acceptance flow, which is the
+correct route for "a Client record can be created," not "a Client
+logged in for the first time."
+
+Exercised against the running Backstage (`docker compose --profile
+backstage`, per `BACKSTAGE_STARTUP.md`) on 2026-07-31, authenticated as
+the seeded administrator through the real front door
+(`http://localhost:3100/api/auth/admin/login`), then:
+
+```
+$ curl -s -i -X POST http://localhost:3100/api/admin/customers \
+    -H "Content-Type: application/json" \
+    -H "Cookie: admin_token=<seeded-admin-session>" \
+    -d '{"email":"ac17-1-1-client@example.com","prefill":{"first_name":"Ada","last_name":"Testclient","company_name":"AC-17.1.1 Verification"}}'
+
+HTTP/1.1 201 Created
+...
+{"customer":{"id":3,"email":"ac17-1-1-client@example.com","firstName":"Ada","lastName":"Testclient","companyName":"AC-17.1.1 Verification", ...}}
+```
+
+### Resulting database row
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select id, email, first_name, last_name, company_name, is_active, created_at, updated_at from customer_accounts where id = 3;"
+
+ id |            email            | first_name | last_name  |      company_name      | is_active |         created_at         |         updated_at
+----+-----------------------------+------------+------------+------------------------+-----------+----------------------------+----------------------------
+  3 | ac17-1-1-client@example.com | Ada        | Testclient | AC-17.1.1 Verification | t         | 2026-07-31 19:24:44.844+00 | 2026-07-31 19:24:44.844+00
+(1 row)
+```
+
+### Persistence across a container restart
+
+The `backstage-backend` container (application process, not the
+database) was restarted, waited for its healthcheck to report `healthy`
+again, then the same customer was re-read through both the admin API and
+a direct database query:
+
+```
+$ docker compose --profile backstage restart backstage-backend
+$ docker inspect --format='{{.State.Health.Status}}' earthandhoney-backstage-backend-1
+healthy
+
+$ curl -s -i http://localhost:3100/api/admin/customers/3 -H "Cookie: admin_token=<seeded-admin-session>"
+HTTP/1.1 200 OK
+{"customer":{"id":3,"email":"ac17-1-1-client@example.com","firstName":"Ada","lastName":"Testclient","companyName":"AC-17.1.1 Verification", ...}}
+
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select id, email, first_name, last_name, company_name, is_active, created_at, updated_at from customer_accounts where id = 3;"
+ id |            email            | first_name | last_name  |      company_name      | is_active |         created_at         |         updated_at
+----+-----------------------------+------------+------------+------------------------+-----------+----------------------------+----------------------------
+  3 | ac17-1-1-client@example.com | Ada        | Testclient | AC-17.1.1 Verification | t         | 2026-07-31 19:24:44.844+00 | 2026-07-31 19:24:44.844+00
+(1 row)
+```
+
+Same `id`, same field values, same `created_at`/`updated_at` before and
+after the restart — `backstage-db` is a separate, independently-running
+Postgres container with its own named volume
+(`backstage_pgdata`, per `BACKSTAGE_STARTUP.md`'s teardown note), so a
+`backstage-backend` restart never touches its storage; the row's
+survival confirms the fork persists Client data through the application
+container's own lifecycle, not just within a single request/process.
+
+AC-17.1.1 is satisfied: a Client (`customer_accounts`) record was
+created through the admin-facing route upstream provides, and the same
+record — same primary key, same field values — was retrievable through
+both the API and the database after a `backstage-backend` container
+restart.
 
 ## Recommendation and open questions (AC-14.6)
 
