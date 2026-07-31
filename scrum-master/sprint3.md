@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/7 stories | 18/52 ACs
-**Last Updated:** 2026-07-31T20:10:05+00:00
+**Last Updated:** 2026-07-31T20:17:53+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -286,6 +286,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-17.1.3.1:** A Gallery record can be created inside the Project from AC-17.1.2 through the interface upstream provides (admin UI or API), and it persists: reading the Gallery back returns it with the values it was created with. The exact creation route used (screen or endpoint), the resulting database row, and the column that carries the Project association are recorded in `PIVOT_AUDIT.md`. If upstream names or models the Gallery differently than the PRD assumes (for example as an event, a share, or a collection), that is written up in `PIVOT_AUDIT.md` rather than worked around.
   - Dev: implemented
 - [ ] **AC-17.1.3.2:** The Project-to-Gallery direction resolves: opening or querying the Project from AC-17.1.2 lists the Gallery created in AC-17.1.3.1. The exact query or screen used to prove this direction, and its output, are recorded in `PIVOT_AUDIT.md`.
+  - Dev: implemented
 - [ ] **AC-17.1.3.3:** The Gallery-to-Project-to-Client direction resolves: opening or querying the Gallery from AC-17.1.3.1 identifies both its Project from AC-17.1.2 and the owning Client from AC-17.1.1. The exact query or screen used to prove this direction, and its output, are recorded in `PIVOT_AUDIT.md`. If the Client is only reachable by a second lookup through the Project rather than directly from the Gallery, that is recorded as the actual upstream shape rather than worked around.
 - [ ] **AC-17.2:** A batch of real images can be uploaded and processed. Every uploaded original is stored in R2 exactly once, the expected derivative sizes are produced, and stored image records include width, height, aspect ratio, format, file size, and processing state.
 - [ ] **AC-17.3:** Gallery protection works as delivered by upstream: a password-protected gallery refuses access without the password, and grants it with the password.
@@ -336,6 +337,15 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - **`PIVOT_AUDIT.md`** (+~330 lines, new `## AC-17.1.3.1` section, placed ahead of the AC-14.6 block so that block stays last as AC-14.6 requires):
     - **Upstream models the Gallery differently** — written up, not worked around: there is no gallery or collection object in the pinned fork. The PRD's Gallery is the `events` table and the `/api/admin/events` route family.
     - **Creation route:** `POST /api/admin/events` (`adminEvents.js:330`). Unlike AC-17.1.2's Project routes this one *is* reachable — it gates on `events.create`, which the seed migration actually inserts, not the never-seeded `events.manage`. Full mount ch …
+  AC-17.1.3.2 implemented (local checks green): Committed as `efc1187`.
+  
+  **Implementation summary — AC-17.1.3.2**
+  
+  - `PIVOT_AUDIT.md`: added a new `## AC-17.1.3.2` section (front-matter `related-ac` list updated too) documenting the exact query proving the Project-to-Gallery direction: `GET /api/admin/projects/1/overview` (`vendor/picpeak/backend/src/routes/adminProjects.js:83`, gated on the seeded `events.view` permission). It reuses the already-established AC-17.1.2 Project and AC-17.1.3.1 Gallery (no new records created) and records the response showing the Project's `events` array listing the Gallery by id/name, closing with an explicit verdict citing both directions (Gallery→Project from AC-17.1.3.1, Project→Gallery here).
+  - `src/__tests__/us17-ac17.1.3.2-project-lists-gallery.test.ts`: new 14-test suite pinning the audit section content and independently re-verifying the cited route file/line against the pinned vendored fork source.
+  - Full suite: 58 test files / 1063 tests pass, no regressions. No coverage threshold is configured in this repo.
+  
+  `tsconfig.json`'s pre-existing modification (present before this session started) was left untouched and not committed.
 
 **Tester Status:** approved
 **Tester Notes:**
