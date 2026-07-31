@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 1/7 stories | 6/48 ACs
-**Last Updated:** 2026-07-31T07:25:54+00:00
+**Last Updated:** 2026-07-31T07:30:07+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -105,6 +105,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-15.2:** A specific upstream commit is identified that contains all four capabilities the pivot depends on — Projects grouping above galleries, customer accounts, webhooks, and S3-compatible storage — and the evidence for each capability at that commit is recorded. If no single commit provides all four, the gap is documented as a blocking finding.
   - Dev: implemented
 - [ ] **AC-15.3:** `PICPEAK_UPSTREAM.md` exists and records the upstream URL, the exact pinned commit hash, the branch or tag it came from, the date pinned, and the process for evaluating a future upstream update. It states that production must never track a floating upstream branch.
+  - Dev: implemented
 - [ ] **AC-15.4:** `THIRD_PARTY_NOTICES.md` exists and reproduces the upstream licence text and copyright notice in full, alongside notices for any other code copied into this repository.
 - [ ] **AC-15.5:** `FORK_CHANGELOG.md` and `UPSTREAM_SYNC.md` exist. The changelog is initialised with the pinned baseline and is the place every deliberate deviation from upstream gets recorded. The sync document states the merge or rebase policy and names the files most likely to conflict on a future update.
 - [ ] **AC-15.6:** The forked code is present in this project in a clearly separated location, and no already-shipped upstream database migration has been modified — verifiable by comparing the fork's migration files against the pinned upstream.
@@ -128,6 +129,13 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - **PICPEAK_CAPABILITY_AUDIT.md** — records evidence per capability (Projects grouping → `eb263137b98935754155824de2a03848121304b6`, 2026-06-06; customer accounts → `087ef459`, 2026-05-10; webhooks → `c488f481`, 2026-04-28; S3-compatible storage → `1b717ce5`, 2026-04-28), confirms all four files coexist at `eb263137...` with blob SHAs, confirms it's an ancestor of `main` via the compare API, and states the blocking-finding condition is **not** triggered since a single commit provides all four.
   - **src/lib/capabilityAudit.ts** — `auditCapabilities()`, pure logic that takes capability evidence records and returns `allPresent`/`blockingFinding` (the reusable decision logic behind the AC's blocking-finding requirement).
   - **src/__tests__/us15-ac15.2-picpeak-capability-audit.test.ts** — 9 tests covering the audit logic (all-presen …
+  AC-15.3 implemented (local checks green): Implemented AC-15.3 on `feature/US-15`:
+  
+  - **`PICPEAK_UPSTREAM.md`** — records upstream URL (`https://github.com/PicPeak/picpeak`), pinned commit hash (`eb263137b98935754155824de2a03848121304b6`, matching the AC-15.2 candidate), source branch (`main`), date pinned (2026-07-31), the future-update evaluation process (trigger → diff range → re-verify licence/capabilities → check `FORK_CHANGELOG.md`/`UPSTREAM_SYNC.md` conflicts → record decision → never partial-adopt), and an explicit statement that production must never track a floating upstream branch.
+  - **`src/lib/upstreamPin.ts`** — `validatePin` decision logic enforcing the pin is a full 40-char commit hash (not a branch/tag), plus required URL/ref/date fields.
+  - **`src/__tests__/us15-ac15.3-picpeak-upstream-pin.test.ts`** — 14 tests covering `validatePin` (accept valid pin; reject branch name, short SHA, empty fields, bad date) and the document's required content.
+  
+  Full suite: 45 suites / 779 tests passing; new `upstreamPin.ts` at 100% coverage.
 
 **Tester Status:** approved
 **Tester Notes:**
