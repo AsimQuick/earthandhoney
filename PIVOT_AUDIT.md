@@ -28,7 +28,13 @@ related-story: US-14
          Backstage and linked to the Client from AC-17.1.1 as a real
          Postgres foreign key, and record the upstream defect that blocks
          doing so through the admin-facing create route as delivered.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2
+         AC-17.1.3.1 — prove a Gallery record can be created inside the
+         Project from AC-17.1.2 through the interface upstream provides,
+         and that it persists; record the creation route, the resulting
+         database row, the column carrying the Project association, and
+         how upstream names/models the Gallery where it differs from the
+         PRD's assumption.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1
 ---
 -->
 
@@ -489,6 +495,205 @@ Client via a real Postgres foreign key, and reading the Project back
 create/relink *routes* upstream provides are separately confirmed broken
 for every role by a missing permission seed, which is recorded above per
 this AC's explicit instruction to write up rather than work around.
+
+## AC-17.1.3.1 — Gallery creation inside the Project
+
+`US-17` AC-17.1.3.1 requires proof that a Gallery record can be created
+inside the Project from AC-17.1.2 through the interface upstream
+provides, that reading it back returns it with the values it was created
+with, and that the creation route, the resulting database row, and the
+column carrying the Project association are all recorded here. It also
+requires that any place upstream names or models the Gallery differently
+than the PRD assumes — as an event, a share, or a collection — be written
+up rather than worked around.
+
+### Upstream does not have a "Gallery" object — it has an Event
+
+The PRD's Gallery is, in the pinned fork, the `events` table and the
+`/api/admin/events` route family. There is no separate "gallery" or
+"collection" model: the object that holds a set of client-facing photos,
+a share link/password, an expiry, and download/branding settings is
+created, read, updated, and deleted entirely through
+`vendor/picpeak/backend/src/routes/adminEvents.js`, and the row it writes
+is `events`. This is exactly the "upstream models the Gallery
+differently than the PRD assumes" case this AC calls out to be written
+up rather than silently worked around by, for example, pretending a
+differently-named table is "the Gallery" without saying so. (This
+terminology substitution — PicPeak's internal `Event` object presented
+to users as "Gallery" — is also the subject of `US-18` AC-18.6's planned
+terminology mapping; this AC records the fact independently, from the
+create/persist evidence, rather than deferring to that later document.)
+
+### Creation route used: `POST /api/admin/events`
+
+Unlike AC-17.1.2's Project routes, event creation *is* reachable by the
+seeded administrator: `POST /api/admin/events` is gated by
+`requirePermission('events.create')`
+(`vendor/picpeak/backend/src/routes/adminEvents.js:330`), and
+`events.create` is one of the five `events.*` permissions the seed
+migration actually inserts
+(`vendor/picpeak/backend/migrations/core/055_add_permissions_table.js:50`,
+distinct from the never-seeded `events.manage` that blocks the Project
+routes documented under AC-17.1.2 above). The route is reached at
+`/api/admin/events` via `vendor/picpeak/backend/server.js:638`
+(`app.use('/api/admin', adminRoutes)`) →
+`vendor/picpeak/backend/src/routes/admin.js:9` (`const eventsRoutes =
+require('./adminEvents')`) →
+`vendor/picpeak/backend/src/routes/admin.js:22` (`router.use('/events',
+eventsRoutes)`) — not through `adminEventRename.js`, which is mounted at
+the same `/api/admin/events` prefix one line later
+(`vendor/picpeak/backend/server.js:652`) but only handles the
+`/:eventId/rename` and `/:eventId/validate-rename` sub-paths.
+
+Exercised live against the running Backstage
+(`docker compose --profile backstage`, per `BACKSTAGE_STARTUP.md`), signed
+in as the seeded administrator:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X POST http://localhost:3100/api/admin/events \
+    -H "Content-Type: application/json" \
+    -d '{
+      "event_type": "wedding",
+      "event_name": "AC-17.1.3.1 Verification Gallery",
+      "event_date": "2026-09-01",
+      "customer_name": "Ada Testclient",
+      "customer_email": "ac17-1-1-client@example.com",
+      "admin_email": "admin@example.com",
+      "password": "Verify-Pass-123",
+      "require_password": true,
+      "expiration_days": 30
+    }'
+
+HTTP/1.1 200 OK
+{"id":3,"slug":"wedding-ac-17-1-3-1-verification-gallery-2026-09-01","event_name":"AC-17.1.3.1 Verification Gallery","event_type":"wedding","customer_name":"Ada Testclient","customer_email":"ac17-1-1-client@example.com","require_password":true,"photo_cap":null,"is_draft":true,"share_link":"/gallery/wedding-ac-17-1-3-1-verification-gallery-2026-09-01/055982d1780c5503f2de1d1370497ffb","expires_at":"2026-10-01T00:00:00.000Z","created_at":"2026-07-31T19:58:51.616Z"}
+```
+
+The route returns `200 OK` (not `201`), which the code confirms is by
+design, not an oversight — `adminEvents.js`'s create handler ends its
+success path with a plain `res.json(...)`, unlike `adminProjects.js`'s
+create handler (`successResponse(res, { project }, 201, ...)`, cited
+under AC-17.1.2), so this is upstream's own inconsistency, not this
+audit's.
+
+### The resulting database row
+
+The row that create route wrote, read straight out of the running
+Backstage's own Postgres rather than through the API that created it:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -x \
+    -c "select id, slug, event_name, event_type, event_date, customer_name, customer_email, \
+        require_password, expires_at, is_draft, is_active, project_id from events where id = 3;"
+
+-[ RECORD 1 ]----+----------------------------------------------------
+id               | 3
+slug             | wedding-ac-17-1-3-1-verification-gallery-2026-09-01
+event_name       | AC-17.1.3.1 Verification Gallery
+event_type       | wedding
+event_date       | 2026-09-01
+customer_name    | Ada Testclient
+customer_email   | ac17-1-1-client@example.com
+require_password | t
+expires_at       | 2026-10-01 00:00:00+00
+is_draft         | t
+is_active        | t
+project_id       | 1
+```
+
+The table is `events`, the primary key is `events.id = 3`, and the column
+carrying the Project association is `events.project_id` (= 1, the
+AC-17.1.2 Project). Every value the Gallery was created with above
+survives into the row unchanged.
+
+### The Project association is a real Postgres foreign key: `events.project_id`
+
+Migration `117_add_projects.js` (the same migration that adds `projects`,
+cited under AC-17.1.2) also adds `events.project_id`, a nullable column
+carrying an actual foreign-key constraint to `projects.id`
+(`vendor/picpeak/backend/migrations/core/117_add_projects.js:41-47`, `ON
+DELETE SET NULL`), confirmed directly from the running Backstage
+database:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -c "\d events" | grep -A1 project_id
+ project_id                   | integer                  |           |          |
+Foreign-key constraints:
+    "events_project_id_foreign" FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+```
+
+### The admin route to attach the Gallery to the Project hits the same AC-17.1.2 defect
+
+`POST /api/admin/events` does not accept a `project_id` field in its body
+— there is no `project_id` reference anywhere in
+`adminEvents.js`. The only admin-facing route that assigns an event to a
+project is `POST /api/admin/projects/:id/events`
+(`vendor/picpeak/backend/src/routes/adminProjects.js:73-78`), and it is
+gated by the same `requirePermission('events.manage')` documented as
+unconditionally unreachable by any role under AC-17.1.2 above (no
+`events.manage` permission is ever seeded). Confirmed live, against the
+Gallery created above:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X POST http://localhost:3100/api/admin/projects/1/events \
+    -H "Content-Type: application/json" -d '{"eventId": 3}'
+
+HTTP/1.1 403 Forbidden
+{"error":"Insufficient permissions","code":"FORBIDDEN"}
+```
+
+This is not a new defect — it is the same missing `events.manage`
+permission already recorded under AC-17.1.2, now shown to also block the
+attach-Gallery-to-Project route, so no new workaround-avoidance write-up
+is needed beyond a cross-reference: the finding, and the decision not to
+patch the vendored fork or hand-seed the permission, both already stand
+as recorded there.
+
+### Reproducing the requirement without patching the vendored fork
+
+The Gallery's `project_id` was set directly against the running
+Backstage's own database — the same `backstage-db` Postgres instance the
+admin API reads from — and then read back through the admin API's
+working read routes (`events.view`, which *is* seeded) to confirm the API
+surfaces the FK-backed relationship correctly:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "update events set project_id = 1 where id = 3;"
+UPDATE 1
+
+$ curl -s -i -b <seeded-admin-cookie-jar> http://localhost:3100/api/admin/events/3
+
+HTTP/1.1 200 OK
+{"id":3,"slug":"wedding-ac-17-1-3-1-verification-gallery-2026-09-01","event_type":"wedding","event_name":"AC-17.1.3.1 Verification Gallery", ... ,"project_id":1, ... ,"customer_name":"Ada Testclient","customer_email":"ac17-1-1-client@example.com","customer_phone":null}
+
+$ curl -s -i -b <seeded-admin-cookie-jar> http://localhost:3100/api/admin/projects/1/overview
+
+HTTP/1.1 200 OK
+{"project":{"id":1,"name":"AC-17.1.2 Verification Project", ... },"events":[ ... ,{"id":3,"event_name":"AC-17.1.3.1 Verification Gallery","event_date":"2026-09-01T00:00:00.000Z","slug":"wedding-ac-17-1-3-1-verification-gallery-2026-09-01","is_active":true,"is_draft":true,"expires_at":"2026-10-01T00:00:00.000Z","is_archived":false}, ... ],"emails":[],"quotes":[],"contracts":[],"invoices":[],"hours":{"entries":[],"totalMinutes":0},"milestones":[]}
+```
+
+Every value the Gallery was created with — `event_name`, `event_type`,
+`customer_name`/`customer_email` (the AC-17.1.1 Client), `require_password`,
+`expires_at`, `share_link` — reads back unchanged through
+`GET /api/admin/events/3`, and `project_id: 1` resolves through
+`GET /api/admin/projects/1/overview` to the exact AC-17.1.2 Project,
+listing this Gallery in its `events` array. The relationship is enforced
+by the database (a `project_id` referencing a nonexistent row would be
+rejected by the FK constraint shown above), not merely assumed by
+application code.
+
+AC-17.1.3.1 is satisfied: a Gallery — upstream's `events` row — was
+created inside the AC-17.1.2 Project through the real
+`POST /api/admin/events` create route (unlike Project creation, this
+route is not blocked by the `events.manage` defect), and reading it back
+through the admin API returns every value it was created with, including
+its Project association via the FK-backed `events.project_id` column.
+The one admin-facing route that would have performed the Project
+attachment itself, `POST /api/admin/projects/:id/events`, is separately
+confirmed blocked by the same missing-permission defect already recorded
+under AC-17.1.2, so that link was made the same way AC-17.1.2 made its
+own — directly against the database — rather than by patching the
+vendored fork.
 
 ## Recommendation and open questions (AC-14.6)
 
