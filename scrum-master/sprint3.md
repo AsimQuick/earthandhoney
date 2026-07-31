@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/7 stories | 12/48 ACs
-**Last Updated:** 2026-07-31T17:16:39+00:00
+**Last Updated:** 2026-07-31T19:11:05+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -242,12 +242,36 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `src/__tests__/us16-ac16.6-migration-idempotency.test.ts` — Jest suite pinning the recorded evidence in both docs so it can't silently rot, cleaned up in follow-up commit `42bf2b9` (removed an unused `idx` variable).
   
   No further changes needed; leaving the branch as-is with no new commit.
+  US-16 CI fix: ## Summary
+  
+  The Tester's coverage-threshold theory didn't hold up: reproducing CI exactly (placeholder `.env`, same `--coverage --coverageThreshold` flags, in Docker) showed overall coverage at 99.3%/97.9%/91.8%/99.3% — well clear of the 80% gate.
+  
+  The real failure was in `src/__tests__/us16-ac16.3-backstage-r2-storage.test.ts:68-80`: a test asserting the local `.env` has real (non-placeholder) R2 credentials, guarded only by "does `.env` exist." CI's "Prepare env file" step (`cp .env.example .env`) means `.env` always exists in CI — just with placeholder values — so the guard never fired and the assertion failed against `change-me-in-production`.
+  
+  **Fix:** the guard now also skips when the `R2_BUCKET` value is still the documented placeholder, consistent with the `hasLiveR2Config()` pattern already used elsewhere in the suite. Verified both ways in Docker: passes with placeholder `.env` (CI scenario) and still passes with the real local `.env` restored afterward.
+  
+  Committed as `1b54e42` on `feature/US-16`. Not pushed, per instructions — the orchestrator will re-run local checks and push.
 
 **Tester Status:** approved
 **Tester Notes:**
-  AC-16.1 through 16.5 are testable as written (Docker-only services, Postgres-not-dev-db, existing R2 bucket reuse or documented block, .env.example completeness, an exercised and recorded start-up procedure) and are approved.
+  US-16 CI diagnosis: This confirms the diagnosis. My findings:
   
-  RE-REVIEW (2026-07-30): AC-16.6 was previously returned as a requirements-defect because it required proving an upgrade that applies 'our own' extension migrations on top of an already-migrated upstream database, and no such migration exists yet in the sprint. The PO resolved this by rewording the AC (option b) rather than padding scope with a throwaway migration or deferring the whole criterion: it now requires only (a) a fresh install applying the pinned upstream migrations cleanly to an empty database, and (b) a re-run of that same command against the now-migrated database completing as a verified no-op, both with recorded command output and before/after migration-state evidence. It explicitly scopes out proving our own extension-migration upgrade path, naming Fork Discipline as the reason no such migration exists yet, and requires the deferral to be recorded in `UPSTREAM_SYNC.md` so it is not lost. This is now fully testable: two concrete, reproducible runs with an enumerable pass/fail condition (no error, no re-application, no data loss) and a named artifact (UPSTREAM_SYNC.md) for the deferral record. Approved as reworded.
+  ## Diagnosis: environment/integration gap, not a code bug — AC-16.4 vs. the coverage gate
+  
+  **What's failing:** the `test` job's "Run tests with coverage" step, which runs with a hard-coded `--coverageThreshold='{"global":{"branches":80,"functions":80,"lines":80}}'` gate (`.github/workflows/ci.yml:69`).
+  
+  **Root cause:** three pre-existing "live round-trip" test files (`us2-ac2.3-media-variant-urls`, `us2-ac2.4-alt-text-required`, `us3-ac3.3-admin-ui-image-management` — just touched by this branch's latest commit, `75fa311`) contain a guard:
+  
+  ```ts
+  function hasLiveR2Config(): boolean {
+    const endpoint = process.env.R2_ENDPOINT || ''
+    return endpoint.length > 0 && !endpoint.includes('change-me-in-production')
+  }
+  ```
+  
+  They only execute their real upload/round-trip bodies (which exercise a meaningful slice of the R2/S3-adapter and auth code paths) when `R2_ENDPOINT` is a *real* value. Otherwise they early-`return` and contribute almost nothing to coverage.
+  
+  - **Locally**, this dev's `.env` has real R2 credentials (recorded in `sprint3.json`'s `available_configuration` note), so `hasLiveR2Config()` is true, the live bodies actually run, and the …
 
 ---
 
