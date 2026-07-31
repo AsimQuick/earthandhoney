@@ -34,7 +34,11 @@ related-story: US-14
          database row, the column carrying the Project association, and
          how upstream names/models the Gallery where it differs from the
          PRD's assumption.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1
+         AC-17.1.3.2 — prove the Project-to-Gallery direction resolves:
+         opening or querying the Project from AC-17.1.2 lists the Gallery
+         created in AC-17.1.3.1; record the exact query or screen used to
+         prove this direction, and its output.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2
 ---
 -->
 
@@ -694,6 +698,54 @@ confirmed blocked by the same missing-permission defect already recorded
 under AC-17.1.2, so that link was made the same way AC-17.1.2 made its
 own — directly against the database — rather than by patching the
 vendored fork.
+
+## AC-17.1.3.2 — the Project-to-Gallery direction resolves
+
+`US-17` AC-17.1.3.2 requires proof of the reverse of AC-17.1.3.1's
+direction: not "does the Gallery point at the Project" but "does opening
+or querying the Project list the Gallery." The exact query used, and its
+output, are recorded here.
+
+### The query used: `GET /api/admin/projects/1/overview`
+
+This is the same admin-facing Project route already cited under
+AC-17.1.3.1 — `router.get('/:id/overview')`
+(`vendor/picpeak/backend/src/routes/adminProjects.js:83`), gated on the
+seeded `events.view` permission
+(`vendor/picpeak/backend/src/routes/adminProjects.js:83`), so it is
+reachable by the seeded administrator without patching the vendored fork
+or hand-seeding a permission. It was run against the same running
+Backstage, the same AC-17.1.2 Project (`id: 1`), and the same AC-17.1.3.1
+Gallery (`events.id = 3`, `project_id = 1`) already established above —
+no new record was created for this AC.
+
+### The output
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> http://localhost:3100/api/admin/projects/1/overview
+
+HTTP/1.1 200 OK
+{"project":{"id":1,"name":"AC-17.1.2 Verification Project", ... },"events":[ ... ,{"id":3,"event_name":"AC-17.1.3.1 Verification Gallery","event_date":"2026-09-01T00:00:00.000Z","slug":"wedding-ac-17-1-3-1-verification-gallery-2026-09-01","is_active":true,"is_draft":true,"expires_at":"2026-10-01T00:00:00.000Z","is_archived":false}, ... ],"emails":[],"quotes":[],"contracts":[],"invoices":[],"hours":{"entries":[],"totalMinutes":0},"milestones":[]}
+```
+
+The response's top-level `project` object is the AC-17.1.2 Project
+(`id: 1`, `name: "AC-17.1.2 Verification Project"`), and its `events`
+array — the field upstream uses in place of a "galleries" field, per the
+Event-not-Gallery naming already recorded under AC-17.1.3.1 — lists the
+AC-17.1.3.1 Gallery (`id: 3`, `event_name: "AC-17.1.3.1 Verification
+Gallery"`) by its own id and name, not merely by a bare foreign key
+value. Querying the Project therefore surfaces the Gallery directly,
+without a second round trip back through the Gallery's own `project_id`.
+
+### Verdict
+
+AC-17.1.3.2 is satisfied: the Project-to-Gallery direction resolves.
+Opening the AC-17.1.2 Project through its own overview route lists the
+AC-17.1.3.1 Gallery in the `events` array the route returns, proving the
+association is readable from both ends — Gallery-to-Project (recorded
+under AC-17.1.3.1) and Project-to-Gallery (recorded here) — through
+routes upstream provides as delivered, with no vendored route patched
+and no permission hand-seeded.
 
 ## Recommendation and open questions (AC-14.6)
 
