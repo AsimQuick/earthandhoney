@@ -71,7 +71,12 @@ services:
     env_file:
       - .env
     environment:
-      NODE_ENV: ${NODE_ENV:-production}
+      # Named BACKSTAGE_NODE_ENV (not the bare NODE_ENV) because .env is
+      # shared with the "web" service via its own env_file — a bare
+      # NODE_ENV=production placeholder in .env.example would leak into the
+      # Next.js app's dev/test container and break Jest/RTL, which rely on
+      # NODE_ENV being left for npm/Next.js to set. See AC-16.4.
+      NODE_ENV: ${BACKSTAGE_NODE_ENV:-production}
       PORT: "3000"
       JWT_SECRET: ${BACKSTAGE_JWT_SECRET:-change-me-in-production}
       ADMIN_USERNAME: ${BACKSTAGE_ADMIN_USERNAME:-admin}

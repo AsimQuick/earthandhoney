@@ -81,9 +81,13 @@ describe('AC-16.4: .env.example documents every Backstage environment variable',
     })
   })
 
-  describe('NODE_ENV — used by the Backstage backend, not previously documented', () => {
+  describe('BACKSTAGE_NODE_ENV — used by the Backstage backend, not previously documented', () => {
     it('is documented with a safe default', () => {
-      expect(valueOf(envExample, 'NODE_ENV')).toBe('production')
+      expect(valueOf(envExample, 'BACKSTAGE_NODE_ENV')).toBe('production')
+    })
+
+    it('does not also document a bare NODE_ENV, which would leak into the shared "web" service via env_file', () => {
+      expect(valueOf(envExample, 'NODE_ENV')).toBeUndefined()
     })
   })
 
