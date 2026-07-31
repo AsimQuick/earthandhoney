@@ -38,7 +38,14 @@ related-story: US-14
          opening or querying the Project from AC-17.1.2 lists the Gallery
          created in AC-17.1.3.1; record the exact query or screen used to
          prove this direction, and its output.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2
+         AC-17.1.3.3 — prove the Gallery-to-Project-to-Client direction
+         resolves: opening or querying the Gallery from AC-17.1.3.1
+         identifies both its Project from AC-17.1.2 and the owning Client
+         from AC-17.1.1; record the exact query or screen used, and its
+         output. If the Client is only reachable by a second lookup through
+         the Project rather than directly from the Gallery, record that as
+         the actual upstream shape rather than working around it.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3
 ---
 -->
 
@@ -746,6 +753,196 @@ association is readable from both ends — Gallery-to-Project (recorded
 under AC-17.1.3.1) and Project-to-Gallery (recorded here) — through
 routes upstream provides as delivered, with no vendored route patched
 and no permission hand-seeded.
+
+## AC-17.1.3.3 — the Gallery-to-Project-to-Client direction resolves
+
+`US-17` AC-17.1.3.3 requires proof that opening or querying the
+AC-17.1.3.1 Gallery identifies both its AC-17.1.2 Project and the owning
+AC-17.1.1 Client. It also requires that if the Client is only reachable
+by a second lookup through the Project — rather than directly from the
+Gallery — that shape be recorded honestly rather than worked around.
+
+### The query used: `GET /api/admin/events/3`
+
+This is the same admin-facing Gallery route already cited under
+AC-17.1.3.1 — `router.get('/:id', adminAuth, requirePermission('events.view'), ...)`
+(`vendor/picpeak/backend/src/routes/adminEvents.js:966`), gated on the
+seeded `events.view` permission. It was run against the same running
+Backstage, the same AC-17.1.3.1 Gallery (`events.id = 3`), the same
+AC-17.1.2 Project (`projects.id = 1`), and the same AC-17.1.1 Client
+(`customer_accounts.id = 3`, Ada Testclient) already established above —
+no new Gallery, Project, or Client record was created for this AC.
+
+### Both directions resolve from that one query
+
+```
+$ curl -s -b <seeded-admin-cookie-jar> http://localhost:3100/api/admin/events/3
+
+HTTP/1.1 200 OK
+{
+ "id": 3,
+ "event_name": "AC-17.1.3.1 Verification Gallery",
+ "project_id": 1,
+ "customer_accounts": [
+  {"id": 3, "email": "ac17-1-1-client@example.com",
+   "display_name": null, "first_name": "Ada", "last_name": "Testclient"}
+ ],
+ "customer_name": "Ada Testclient",
+ "customer_email": "ac17-1-1-client@example.com"
+}
+```
+
+- **Project** — `project_id: 1` on the Gallery row itself is the
+  AC-17.1.2 Project, carried by the real `events.project_id` foreign key
+  to `projects.id` documented under AC-17.1.3.1.
+- **Client** — `customer_accounts[0].id: 3` is the AC-17.1.1 Client,
+  hydrated by `customerAccountsService.getAssignmentsForEvent`
+  (`vendor/picpeak/backend/src/routes/adminEvents.js:1020-1021`) from the
+  many-to-many join table `event_customer_assignments`
+  (`vendor/picpeak/backend/migrations/core/090_add_customer_accounts.js:105-115`
+  — FK to `events.id`, FK to `customer_accounts.id`, unique on the pair).
+
+So the Client **is** reachable directly from the Gallery in a single
+query; it does not require a second lookup through the Project. The join
+row backing it, read straight out of the running Backstage's Postgres:
+
+```
+$ docker compose exec -T backstage-db psql -U backstage -d backstage \
+    -c "select id, event_id, customer_account_id, assigned_by_admin_id \
+        from event_customer_assignments order by id;"
+
+ id | event_id | customer_account_id | assigned_by_admin_id
+----+----------+---------------------+----------------------
+  1 |        2 |                   3 |                    1
+  2 |        3 |                   3 |                    1
+(2 rows)
+```
+
+(Row 1 belongs to `events.id = 2`, an earlier verification Gallery in the
+same Project from the AC-17.1.3 run before the AC was split; row 2 is the
+AC-17.1.3.1 Gallery this AC is about.)
+
+### Finding: the Gallery→Client link is NOT inherited from the Project — it must be assigned explicitly
+
+Immediately after AC-17.1.3.1 created `events.id = 3` inside the
+AC-17.1.2 Project, the same `GET /api/admin/events/3` returned
+`"customer_accounts": []` — the Gallery knew its Project, but not its
+Client, even though that Project already carried
+`projects.customer_account_id = 3` (the AC-17.1.1 Client, recorded under
+AC-17.1.2). Creating a Gallery inside a Project does **not** propagate
+the Project's Client into `event_customer_assignments`: the create
+handler only writes assignments when the request body carries
+`customer_account_ids` (`adminEvents.js:419-420` validator,
+`adminEvents.js:720-727` → `customerAccountsService.setAssignmentsForEvent`,
+`vendor/picpeak/backend/src/services/customerAccountsService.js:840`), and
+AC-17.1.3.1's create call did not send that field.
+
+The link was then established through upstream's own supported edit
+route — `router.put('/:id', adminAuth, requirePermission('events.edit'), ...)`
+(`adminEvents.js:1129`), which consumes `customer_account_ids` at
+`adminEvents.js:1471-1478` via the same `setAssignmentsForEvent`:
+
+```
+$ curl -s -b <seeded-admin-cookie-jar> -X PUT http://localhost:3100/api/admin/events/3 \
+    -H "Content-Type: application/json" \
+    -d '{"event_name":"AC-17.1.3.1 Verification Gallery","customer_account_ids":[3]}'
+
+HTTP/1.1 200 OK
+{"message":"Event updated successfully"}
+```
+
+No vendored route was patched and no `event_customer_assignments` row was
+hand-seeded into the database: the assignment was made by the upstream
+admin route, as the photographer would from the "Manage galleries"
+dialog.
+
+The consequence for Earth & Honey is a real one and is recorded rather
+than smoothed over: **a Gallery created inside a Project has no client
+association until someone assigns it**, so any later workflow that reads
+the owning Client off a Gallery (delivery emails, client-portal access,
+billing) cannot assume it is populated just because the Project has a
+Client. This is raised to the Product Owner under AC-17.9 rather than
+patched here.
+
+### Finding: `PUT /api/admin/events/:id` 500s when `customer_account_ids` is the only field sent
+
+Sending the assignment on its own fails:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X PUT http://localhost:3100/api/admin/events/3 \
+    -H "Content-Type: application/json" -d '{"customer_account_ids":[3]}'
+
+HTTP/1.1 500 Internal Server Error
+{"error":"Failed to update event"}
+```
+
+Backend log:
+
+```
+Error updating event: Error: Empty .update() call detected! Update data does
+not contain any values to update. This will result in a faulty query.
+Table: events. Columns: .
+    at async /app/src/routes/adminEvents.js:1464:5
+```
+
+The cause is upstream's own code, not this environment:
+`customer_account_ids` is not a column on `events`, so the handler
+deletes it from the update payload (`adminEvents.js:1336`) before running
+`db('events').where('id', id).update(updates)` (`adminEvents.js:1464-1466`).
+When it was the only field in the body, `updates` is left empty and knex
+throws — and because the throw happens *before* the assignment block at
+`adminEvents.js:1471`, the assignment the caller asked for is silently
+not made either. Any other real column in the same body (above:
+`event_name`, re-sent with its existing value) avoids it, which is why
+the bundled admin UI — which submits the whole edit form — never hits it.
+Recorded here as an upstream defect; not worked around in the vendored
+fork.
+
+### The second lookup through the Project also resolves (and is FK-backed)
+
+Independently of the direct assignment, the Client is *also* reachable by
+the second lookup this AC anticipated — `GET /api/admin/events/3` →
+`project_id` → the Project's own `customer_account_id`, read through the
+same `GET /api/admin/projects/1/overview` route cited under AC-17.1.3.2:
+
+```
+$ curl -s -b <seeded-admin-cookie-jar> http://localhost:3100/api/admin/projects/1/overview
+
+HTTP/1.1 200 OK
+{"project":{"id":1,"name":"AC-17.1.2 Verification Project",
+            "customerAccountId":3,"customerEmail":"ac17-1-1-client@example.com", ...}, ...}
+```
+
+`project.customerAccountId: 3` is the same AC-17.1.1 Client, resolved
+through the `projects.customer_account_id` foreign key documented under
+AC-17.1.2. Both paths agree on `customer_accounts.id = 3`.
+
+### Note: the Gallery's own `customer_name`/`customer_email` are not a reference
+
+`GET /api/admin/events/3` also returns `customer_name: "Ada Testclient"`
+and `customer_email: "ac17-1-1-client@example.com"`. These are **not**
+the Client link: they are free-text columns on `events` itself, read via
+`mapEventForApi` (`adminEvents.js:215-237`), copied from the create
+request body under AC-17.1.3.1, with no foreign key to
+`customer_accounts` and no constraint tying them to the real Client row.
+They match here only because that is what was typed at creation time; a
+typo, or a later change to the Client's email, would leave them silently
+stale. The resolvable Client reference is `customer_accounts[]` (via
+`event_customer_assignments`), not these fields.
+
+### Verdict
+
+AC-17.1.3.3 is satisfied. A single query on the AC-17.1.3.1 Gallery,
+`GET /api/admin/events/3`, identifies its AC-17.1.2 Project directly
+(`project_id: 1`) and the owning AC-17.1.1 Client directly
+(`customer_accounts[0].id: 3`, FK-backed through
+`event_customer_assignments`) — no second lookup is required for either.
+The actual upstream shape is recorded rather than worked around: that
+Client link is not inherited when a Gallery is created inside a Project
+and has to be assigned explicitly through the upstream edit route, and
+that route 500s when `customer_account_ids` is the only field sent. Both
+are upstream behaviours, written up here and raised to the Product Owner
+under AC-17.9 rather than patched in the vendored fork.
 
 ## Recommendation and open questions (AC-14.6)
 
