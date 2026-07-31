@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 1/7 stories | 6/48 ACs
-**Last Updated:** 2026-07-31T07:41:28+00:00
+**Last Updated:** 2026-07-31T07:57:55+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -111,6 +111,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-15.5:** `FORK_CHANGELOG.md` and `UPSTREAM_SYNC.md` exist. The changelog is initialised with the pinned baseline and is the place every deliberate deviation from upstream gets recorded. The sync document states the merge or rebase policy and names the files most likely to conflict on a future update.
   - Dev: implemented
 - [ ] **AC-15.6:** The forked code is present in this project in a clearly separated location, and no already-shipped upstream database migration has been modified — verifiable by comparing the fork's migration files against the pinned upstream.
+  - Dev: implemented
 
 **Dependencies:** US-14
 
@@ -156,6 +157,15 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `src/__tests__/us15-ac15.5-fork-changelog-upstream-sync.test.ts` — 19 tests covering both decision-logic functions and doc content assertions.
   
   Full suite: 822/822 tests pass, `tsc --noEmit` clean, coverage 98 …
+  AC-15.6 implemented (local checks green): AC-15.6 implemented and committed as `919c31a` on `feature/US-15`. Working tree clean.
+  
+  ## Implementation summary
+  
+  **Files added**
+  - `vendor/picpeak/` (933 files, 21 MB) — the PicPeak fork vendored at pinned upstream commit `eb263137b98935754155824de2a03848121304b6`. Tree only; the upstream `.git` directory is deliberately not vendored so there is no floating history. One upstream-tracked file (`backend/docs/SECURITY_LOGGING.md`) is masked by upstream's own `.gitignore` and was force-added to keep the vendored tree faithful.
+  - `vendor/README.md` — declares `vendor/` as the separated third-party location, states the no-edit rule for already-shipped upstream migrations (deviations go in a new higher-numbered migration + `FORK_CHANGELOG.md`), and lists where the boundary is enforced.
+  - `src/lib/picpeakMigrationManifest.ts` — git blob SHA-1 of all 127 files under `backend/migrations/` exactly as shipped at the pinned commit.
+  - `src/lib/picpeakMigrationIntegrity.ts` — `gitBlobSha()`, injectable-IO `verifyMigrationsUnmodified()`, and `verifyVendoredMigrations()` which recompute hashes from disk and report `modified` / `missing` violations. Any edit to a migration, down to whitespace, cha …
 
 **Tester Status:** approved
 **Tester Notes:**
