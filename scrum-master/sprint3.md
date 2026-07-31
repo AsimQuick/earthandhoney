@@ -1,8 +1,8 @@
 # Sprint 3
 
 **Phase:** planning
-**Progress:** 1/7 stories | 6/48 ACs
-**Last Updated:** 2026-07-31T07:57:55+00:00
+**Progress:** 2/7 stories | 12/48 ACs
+**Last Updated:** 2026-07-31T08:03:15+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -97,21 +97,21 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 ---
 
 ### US-15: Verify PicPeak upstream and create the pinned fork with licence compliance
-**Status:** in-progress | **Priority:** critical
+**Status:** done | **Priority:** critical
 
 #### Acceptance Criteria
-- [ ] **AC-15.1:** The PicPeak upstream repository is verified to actually exist and to be obtainable, and its licence is confirmed by reading the licence file in the repository rather than trusting documentation. If the licence is not MIT as the PRD assumes, work stops and the Product Owner is notified through `scrum-master/po-requests.md`.
-  - Dev: implemented
-- [ ] **AC-15.2:** A specific upstream commit is identified that contains all four capabilities the pivot depends on — Projects grouping above galleries, customer accounts, webhooks, and S3-compatible storage — and the evidence for each capability at that commit is recorded. If no single commit provides all four, the gap is documented as a blocking finding.
-  - Dev: implemented
-- [ ] **AC-15.3:** `PICPEAK_UPSTREAM.md` exists and records the upstream URL, the exact pinned commit hash, the branch or tag it came from, the date pinned, and the process for evaluating a future upstream update. It states that production must never track a floating upstream branch.
-  - Dev: implemented
-- [ ] **AC-15.4:** `THIRD_PARTY_NOTICES.md` exists and reproduces the upstream licence text and copyright notice in full, alongside notices for any other code copied into this repository.
-  - Dev: implemented
-- [ ] **AC-15.5:** `FORK_CHANGELOG.md` and `UPSTREAM_SYNC.md` exist. The changelog is initialised with the pinned baseline and is the place every deliberate deviation from upstream gets recorded. The sync document states the merge or rebase policy and names the files most likely to conflict on a future update.
-  - Dev: implemented
-- [ ] **AC-15.6:** The forked code is present in this project in a clearly separated location, and no already-shipped upstream database migration has been modified — verifiable by comparing the fork's migration files against the pinned upstream.
-  - Dev: implemented
+- [x] **AC-15.1:** The PicPeak upstream repository is verified to actually exist and to be obtainable, and its licence is confirmed by reading the licence file in the repository rather than trusting documentation. If the licence is not MIT as the PRD assumes, work stops and the Product Owner is notified through `scrum-master/po-requests.md`.
+  - Dev: done
+- [x] **AC-15.2:** A specific upstream commit is identified that contains all four capabilities the pivot depends on — Projects grouping above galleries, customer accounts, webhooks, and S3-compatible storage — and the evidence for each capability at that commit is recorded. If no single commit provides all four, the gap is documented as a blocking finding.
+  - Dev: done
+- [x] **AC-15.3:** `PICPEAK_UPSTREAM.md` exists and records the upstream URL, the exact pinned commit hash, the branch or tag it came from, the date pinned, and the process for evaluating a future upstream update. It states that production must never track a floating upstream branch.
+  - Dev: done
+- [x] **AC-15.4:** `THIRD_PARTY_NOTICES.md` exists and reproduces the upstream licence text and copyright notice in full, alongside notices for any other code copied into this repository.
+  - Dev: done
+- [x] **AC-15.5:** `FORK_CHANGELOG.md` and `UPSTREAM_SYNC.md` exist. The changelog is initialised with the pinned baseline and is the place every deliberate deviation from upstream gets recorded. The sync document states the merge or rebase policy and names the files most likely to conflict on a future update.
+  - Dev: done
+- [x] **AC-15.6:** The forked code is present in this project in a clearly separated location, and no already-shipped upstream database migration has been modified — verifiable by comparing the fork's migration files against the pinned upstream.
+  - Dev: done
 
 **Dependencies:** US-14
 

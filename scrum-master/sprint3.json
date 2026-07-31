@@ -25,7 +25,7 @@
     "Coverage threshold met \u2014 the existing CI coverage gate is not lowered to pass",
     "Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)"
   ],
-  "last_updated": "2026-07-31T07:57:55+00:00",
+  "last_updated": "2026-07-31T08:03:15+00:00",
   "stories": [
     {
       "id": "US-14",
@@ -86,7 +86,7 @@
     {
       "id": "US-15",
       "title": "Verify PicPeak upstream and create the pinned fork with licence compliance",
-      "status": "in-progress",
+      "status": "done",
       "priority": "critical",
       "dependencies": [
         "US-14"
@@ -95,43 +95,43 @@
         {
           "id": "15.1",
           "text": "The PicPeak upstream repository is verified to actually exist and to be obtainable, and its licence is confirmed by reading the licence file in the repository rather than trusting documentation. If the licence is not MIT as the PRD assumes, work stops and the Product Owner is notified through `scrum-master/po-requests.md`.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "15.2",
           "text": "A specific upstream commit is identified that contains all four capabilities the pivot depends on \u2014 Projects grouping above galleries, customer accounts, webhooks, and S3-compatible storage \u2014 and the evidence for each capability at that commit is recorded. If no single commit provides all four, the gap is documented as a blocking finding.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "15.3",
           "text": "`PICPEAK_UPSTREAM.md` exists and records the upstream URL, the exact pinned commit hash, the branch or tag it came from, the date pinned, and the process for evaluating a future upstream update. It states that production must never track a floating upstream branch.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "15.4",
           "text": "`THIRD_PARTY_NOTICES.md` exists and reproduces the upstream licence text and copyright notice in full, alongside notices for any other code copied into this repository.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "15.5",
           "text": "`FORK_CHANGELOG.md` and `UPSTREAM_SYNC.md` exist. The changelog is initialised with the pinned baseline and is the place every deliberate deviation from upstream gets recorded. The sync document states the merge or rebase policy and names the files most likely to conflict on a future update.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "15.6",
           "text": "The forked code is present in this project in a clearly separated location, and no already-shipped upstream database migration has been modified \u2014 verifiable by comparing the fork's migration files against the pinned upstream.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         }
       ],
