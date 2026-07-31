@@ -24,7 +24,11 @@ related-story: US-14
          Backstage through the route upstream provides, and that it
          persists across a container restart; record the creation route
          and the resulting `customer_accounts` database row.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1
+         AC-17.1.2 — prove a Project record can be created in the running
+         Backstage and linked to the Client from AC-17.1.1 as a real
+         Postgres foreign key, and record the upstream defect that blocks
+         doing so through the admin-facing create route as delivered.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2
 ---
 -->
 
@@ -343,6 +347,148 @@ created through the admin-facing route upstream provides, and the same
 record — same primary key, same field values — was retrievable through
 both the API and the database after a `backstage-backend` container
 restart.
+
+## AC-17.1.2 — Project creation and Client linkage
+
+`US-17` AC-17.1.2 requires proof that a Project record can be created in
+the running Backstage and linked to the Client from AC-17.1.1, that
+reading the Project back shows that Client, and that the link is a real
+Postgres foreign key rather than a free-text field. It also requires that
+any place upstream models Projects/Clients differently than the PRD
+assumes be written up here rather than worked around.
+
+### The data model matches the PRD assumption
+
+Upstream migration `117_add_projects.js` creates a `projects` table with
+a nullable `customer_account_id` column carrying an actual foreign-key
+constraint to `customer_accounts.id` (`ON DELETE SET NULL`), confirmed
+directly from the running Backstage database:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -c "\d projects"
+...
+Foreign-key constraints:
+    "projects_customer_account_id_foreign" FOREIGN KEY (customer_account_id) REFERENCES customer_accounts(id) ON DELETE SET NULL
+```
+
+`projectService.getProjectById`
+(`vendor/picpeak/backend/src/services/projectService.js:54-61`) joins
+`customer_accounts` on that column, and `transformProject`
+(`vendor/picpeak/backend/src/services/projectService.js:19-31`) exposes
+the result as `customerAccountId` / `customerEmail` on every project the
+API returns, so reading a Project back through the admin API surfaces the
+linked Client. This part of the PRD's assumption holds: Project↔Client is
+a real FK, not a free-text field.
+
+### Upstream defect found: the admin create/link routes are unreachable by any role
+
+`POST /api/admin/projects` (create), `PUT /api/admin/projects/:id`
+(update/relink), and `POST /api/admin/projects/:id/events` (attach an
+event) are each gated by `requirePermission('events.manage')`
+(`vendor/picpeak/backend/src/routes/adminProjects.js:32,54,74`, mounted
+at `vendor/picpeak/backend/server.js:706`). No permission named
+`events.manage` exists anywhere in the pinned fork:
+
+- The permissions seed (`vendor/picpeak/backend/migrations/core/055_add_permissions_table.js:49-53`)
+  defines exactly five `events.*` permissions — `events.view`,
+  `events.create`, `events.edit`, `events.delete`, `events.archive` — and
+  no `events.manage`.
+- The role/permission junction seed
+  (`vendor/picpeak/backend/migrations/core/056_add_role_permissions_table.js:46`)
+  grants `super_admin` `permissions.map(p => p.name)` — literally every
+  row that exists in the `permissions` table at migration time — so even
+  `super_admin` can only ever hold a permission that was actually seeded.
+- Migration `117_add_projects.js` (which introduces the Projects feature
+  and the `events.manage`-gated routes) never inserts a row named
+  `events.manage` into `permissions`, and no later migration does either.
+
+Confirmed directly against the running Backstage: the seeded
+administrator's role holds all 45 seeded permissions, and `events.manage`
+is not one of them:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select count(*) from permissions;"
+ count
+-------
+    45
+(1 row)
+
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select count(*) from role_permissions where role_id = 1;"
+ count
+-------
+    45
+(1 row)
+
+$ curl -s -i -X POST http://localhost:3100/api/admin/projects \
+    -H "Content-Type: application/json" -b <seeded-admin-cookie-jar> \
+    -d '{"name":"x","customerAccountId":3}'
+
+HTTP/1.1 403 Forbidden
+{"error":"Insufficient permissions","code":"FORBIDDEN"}
+```
+
+The 403 is not a scoping choice (e.g. "only a dedicated project-manager
+role may do this") — it is unconditional, because no role in the seed
+data, including `super_admin`, can ever be granted a permission that was
+never inserted into the `permissions` table. As delivered, no admin user
+of the pinned fork can create, update, or relink a Project, or attach an
+event to one, through the routes upstream provides. This is exactly the
+"upstream models/behaves differently than the PRD assumes" case this AC
+calls out to be written up rather than silently patched (e.g. by editing
+the vendored route to require an existing permission, or by hand-seeding
+a permission row upstream never shipped) — no such workaround is applied
+here, or anywhere in this repository's non-vendored code.
+
+### Reproducing the requirement without patching the vendored fork
+
+Because the create route cannot be exercised as delivered, the Project
+record was created directly against the running Backstage's own
+database — `backstage-db`, the same Postgres instance the admin API
+reads from, not a separate or mocked store — and then read back through
+the admin API's working read routes (`events.view`, which *is* seeded,
+gates those) to confirm the API surfaces the FK-backed relationship
+correctly:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -c "
+insert into projects (name, customer_account_id, status, created_at, updated_at)
+values ('AC-17.1.2 Verification Project', 3, 'active', now(), now())
+returning id, name, customer_account_id, status, created_at, updated_at;"
+
+ id |              name              | customer_account_id | status |          created_at           |          updated_at
+----+--------------------------------+---------------------+--------+-------------------------------+-------------------------------
+  1 | AC-17.1.2 Verification Project |                   3 | active | 2026-07-31 19:38:56.522096+00 | 2026-07-31 19:38:56.522096+00
+(1 row)
+
+$ curl -s -i http://localhost:3100/api/admin/projects/1 -b <seeded-admin-cookie-jar>
+
+HTTP/1.1 200 OK
+{"project":{"id":1,"name":"AC-17.1.2 Verification Project","customerAccountId":3,"customerEmail":"ac17-1-1-client@example.com","status":"active","createdAt":"2026-07-31T19:38:56.522Z","updatedAt":"2026-07-31T19:38:56.522Z"}}
+
+$ curl -s -i http://localhost:3100/api/admin/projects -b <seeded-admin-cookie-jar>
+
+HTTP/1.1 200 OK
+{"projects":[{"id":1,"name":"AC-17.1.2 Verification Project","customerAccountId":3,"customerEmail":"ac17-1-1-client@example.com","status":"active","eventCount":0,"createdAt":"2026-07-31T19:38:56.522Z","updatedAt":"2026-07-31T19:38:56.522Z"}]}
+```
+
+`customer_account_id: 3` in the row is the exact `customer_accounts.id`
+created and verified in AC-17.1.1
+(`ac17-1-1-client@example.com` / Ada Testclient), and the API response
+resolves that foreign key to `customerEmail:
+"ac17-1-1-client@example.com"` — the same Client, read back through the
+Project. The relationship is enforced by the database (a
+`customer_account_id` referencing a nonexistent row would be rejected by
+the FK constraint shown above), not merely assumed by application code.
+
+AC-17.1.2 is satisfied on the data-model question the AC asks about — a
+Project was created in the running Backstage, linked to the AC-17.1.1
+Client via a real Postgres foreign key, and reading the Project back
+(through the admin API's working read path) shows that Client. The
+create/relink *routes* upstream provides are separately confirmed broken
+for every role by a missing permission seed, which is recorded above per
+this AC's explicit instruction to write up rather than work around.
 
 ## Recommendation and open questions (AC-14.6)
 
