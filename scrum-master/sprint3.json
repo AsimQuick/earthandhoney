@@ -25,7 +25,7 @@
     "Coverage threshold met \u2014 the existing CI coverage gate is not lowered to pass",
     "Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)"
   ],
-  "last_updated": "2026-07-30T22:39:46+00:00",
+  "last_updated": "2026-07-31T07:19:50+00:00",
   "stories": [
     {
       "id": "US-14",
@@ -86,7 +86,7 @@
     {
       "id": "US-15",
       "title": "Verify PicPeak upstream and create the pinned fork with licence compliance",
-      "status": "draft",
+      "status": "in-progress",
       "priority": "critical",
       "dependencies": [
         "US-14"
@@ -96,7 +96,7 @@
           "id": "15.1",
           "text": "The PicPeak upstream repository is verified to actually exist and to be obtainable, and its licence is confirmed by reading the licence file in the repository rather than trusting documentation. If the licence is not MIT as the PRD assumes, work stops and the Product Owner is notified through `scrum-master/po-requests.md`.",
           "checked": false,
-          "dev_status": "not-started",
+          "dev_status": "implemented",
           "tester_status": "approved"
         },
         {
@@ -136,7 +136,7 @@
         }
       ],
       "dev_status": "not-started",
-      "dev_notes": "",
+      "dev_notes": "AC-15.1 implemented (local checks green): **Implementation summary \u2014 AC-15.1**\n\nVerified live that the PicPeak upstream repository exists and is obtainable (`git ls-remote https://github.com/PicPeak/picpeak.git` resolved `HEAD` at `3bcded78a448f5b099e87a73c7f1e44e859882aa`) and confirmed its licence by fetching and reading the actual `LICENSE` file content via the GitHub Contents API (not trusting GitHub's inferred licence badge or README claims) \u2014 full text is MIT, matching the PRD assumption, so the stop condition (non-MIT \u2192 `scrum-master/po-requests.md`) was not triggered.\n\nFiles:\n- `PICPEAK_LICENCE_VERIFICATION.md` (new) \u2014 durable evidence record: upstream URL, obtainability proof, full quoted LICENSE text, MIT conclusion, stop-condition status.\n- `src/lib/licenceVerification.ts` (new) \u2014 `classifyLicenceText()`, pure MIT-vs-not classification logic encoding the stop-condition decision, reusable/testable independent of network access.\n- `src/__tests__/us15-ac15.1-picpeak-licence-verification.test.ts` (new) \u2014 13 tests covering: classification of the actual PicPeak licence text as MIT; classification of GPL-3.0/Apache-2.0/dual-licence-mention/empty text as non-MIT (stop-condition trigger, including the `po-requests.md` ro \u2026",
       "tester_status": "approved",
       "tester_notes": "Requirements validated for testability. Each AC has an explicit verification method (read the licence file directly, compare fork migrations against pinned upstream, record commit/hash/date in named files) rather than relying on assertion. AC-15.1's stop condition (non-MIT licence -> po-requests.md) and AC-15.2's blocking-finding condition are both binary and checkable. Approved as written.",
       "issue": "https://github.com/AsimQuick/earthandhoney/issues/51"
