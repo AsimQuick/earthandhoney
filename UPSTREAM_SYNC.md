@@ -66,3 +66,27 @@ process in `PICPEAK_UPSTREAM.md` §3.
 
 - **Recorded:** 2026-07-31
 - **Recorded by:** dev-team (US-15, AC-15.5)
+
+## 3. Deferred proof: upgrading with our own extension migrations (AC-16.6)
+
+`MIGRATION_IDEMPOTENCY.md` (US-16, AC-16.6) proves the migration path is
+safe for the two scenarios provable today: a fresh install applying the
+pinned upstream migrations to an empty database, and the same migration
+command re-run against that now-migrated database as a no-op.
+
+It explicitly does **not** prove a third scenario: an upgrade that applies
+*our own* extension migration(s) on top of an already-migrated upstream
+database. Under Fork Discipline, no such migration exists yet — this fork
+has not added a single schema migration of its own — so there is nothing
+real to run that proof against. Inventing a throwaway migration purely to
+exercise the path would prove nothing about how our actual future
+migrations behave.
+
+**This proof is deferred to the sprint that introduces this fork's first
+extension migration.** When that migration lands, its story must repeat the
+AC-16.6 proof shape (before/after migration-state table, re-run as a no-op)
+using that real migration, before the deviation is also logged in
+`FORK_CHANGELOG.md`.
+
+- **Recorded:** 2026-07-31
+- **Recorded by:** dev-team (US-16, AC-16.6)

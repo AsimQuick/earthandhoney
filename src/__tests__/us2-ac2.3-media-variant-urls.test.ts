@@ -22,6 +22,7 @@ import type { UploadConfig } from 'payload'
 import sharp from 'sharp'
 
 import { Media } from '@/collections/Media'
+import { getLiveApiAuthToken } from '@/test-support/liveApiAuth'
 
 const root = process.cwd()
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8')
@@ -141,9 +142,13 @@ describe('AC-2.3: Media records expose URLs/keys for original, thumbnail, medium
         )
 
         let createdId: string | undefined
+        let authHeaders: { Authorization: string } | undefined
 
         try {
           await waitForServer(`http://localhost:${LIVE_TEST_PORT}/api/users`, 60000)
+
+          const token = await getLiveApiAuthToken(`http://localhost:${LIVE_TEST_PORT}`)
+          authHeaders = { Authorization: `JWT ${token}` }
 
           const original = await sharp({
             create: {
@@ -166,6 +171,7 @@ describe('AC-2.3: Media records expose URLs/keys for original, thumbnail, medium
 
           const createRes = await fetch(`http://localhost:${LIVE_TEST_PORT}/api/media`, {
             method: 'POST',
+            headers: authHeaders,
             body: form,
           })
           expect(createRes.status).toBeLessThan(300)
@@ -192,6 +198,7 @@ describe('AC-2.3: Media records expose URLs/keys for original, thumbnail, medium
           if (createdId) {
             await fetch(`http://localhost:${LIVE_TEST_PORT}/api/media/${createdId}`, {
               method: 'DELETE',
+              headers: authHeaders,
             }).catch(() => undefined)
           }
           await killServer(child)

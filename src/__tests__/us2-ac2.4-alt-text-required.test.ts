@@ -19,6 +19,7 @@ import path from 'path'
 import sharp from 'sharp'
 
 import { Media } from '@/collections/Media'
+import { getLiveApiAuthToken } from '@/test-support/liveApiAuth'
 
 const root = process.cwd()
 const LIVE_TEST_PORT = 4280
@@ -109,9 +110,13 @@ describe('AC-2.4: alt text is a required field on Media', () => {
         )
 
         let createdId: string | undefined
+        let authHeaders: { Authorization: string } | undefined
 
         try {
           await waitForServer(`http://localhost:${LIVE_TEST_PORT}/api/users`, 60000)
+
+          const token = await getLiveApiAuthToken(`http://localhost:${LIVE_TEST_PORT}`)
+          authHeaders = { Authorization: `JWT ${token}` }
 
           const original = await sharp({
             create: {
@@ -134,6 +139,7 @@ describe('AC-2.4: alt text is a required field on Media', () => {
 
           const rejectedRes = await fetch(`http://localhost:${LIVE_TEST_PORT}/api/media`, {
             method: 'POST',
+            headers: authHeaders,
             body: rejectedForm,
           })
           expect(rejectedRes.status).toBeGreaterThanOrEqual(400)
@@ -149,6 +155,7 @@ describe('AC-2.4: alt text is a required field on Media', () => {
 
           const acceptedRes = await fetch(`http://localhost:${LIVE_TEST_PORT}/api/media`, {
             method: 'POST',
+            headers: authHeaders,
             body: acceptedForm,
           })
           expect(acceptedRes.status).toBeLessThan(300)
@@ -158,6 +165,7 @@ describe('AC-2.4: alt text is a required field on Media', () => {
           if (createdId) {
             await fetch(`http://localhost:${LIVE_TEST_PORT}/api/media/${createdId}`, {
               method: 'DELETE',
+              headers: authHeaders,
             }).catch(() => undefined)
           }
           await killServer(child)
