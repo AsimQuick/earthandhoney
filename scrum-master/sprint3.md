@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/7 stories | 18/52 ACs
-**Last Updated:** 2026-07-31T19:48:37+00:00
+**Last Updated:** 2026-07-31T20:10:05+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -284,6 +284,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-17.1.2:** A Project record can be created in the running Backstage and linked to the Client created in AC-17.1.1. Reading the Project back shows the Client it belongs to, and the link is stored as a real foreign-key relationship in PostgreSQL, not a free-text field. If upstream models Projects and Clients differently than the PRD assumes, that is written up in `PIVOT_AUDIT.md` rather than worked around.
   - Dev: implemented
 - [ ] **AC-17.1.3.1:** A Gallery record can be created inside the Project from AC-17.1.2 through the interface upstream provides (admin UI or API), and it persists: reading the Gallery back returns it with the values it was created with. The exact creation route used (screen or endpoint), the resulting database row, and the column that carries the Project association are recorded in `PIVOT_AUDIT.md`. If upstream names or models the Gallery differently than the PRD assumes (for example as an event, a share, or a collection), that is written up in `PIVOT_AUDIT.md` rather than worked around.
+  - Dev: implemented
 - [ ] **AC-17.1.3.2:** The Project-to-Gallery direction resolves: opening or querying the Project from AC-17.1.2 lists the Gallery created in AC-17.1.3.1. The exact query or screen used to prove this direction, and its output, are recorded in `PIVOT_AUDIT.md`.
 - [ ] **AC-17.1.3.3:** The Gallery-to-Project-to-Client direction resolves: opening or querying the Gallery from AC-17.1.3.1 identifies both its Project from AC-17.1.2 and the owning Client from AC-17.1.1. The exact query or screen used to prove this direction, and its output, are recorded in `PIVOT_AUDIT.md`. If the Client is only reachable by a second lookup through the Project rather than directly from the Gallery, that is recorded as the actual upstream shape rather than worked around.
 - [ ] **AC-17.2:** A batch of real images can be uploaded and processed. Every uploaded original is stored in R2 exactly once, the expected derivative sizes are produced, and stored image records include width, height, aspect ratio, format, file size, and processing state.
@@ -324,6 +325,17 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - **`PIVOT_AUDIT.md`** — new `## AC-17.1.2 — Project creation and Client linkage` section, plus `17.1.2` added to the front-matter `related-ac` list and purpose block. Records:
     - The Project↔Client link **is** a real Postgres FK — `projects_customer_account_id_foreign FOREIGN KEY (customer_account_id) REFERENCES customer_accounts(id) ON DELETE SET NULL`, created by upstream migration `117_add_projects.js`; `projectService.getProjectById` joins `customer_accounts` and `transformProject` exposes `customerAccountId`/`customerEmail`. The PRD's assumption holds here.
     - **An upstream defect, written up rather than worked around** (as this AC explicitly requires): `POST /api/admin/projects`, `PUT /api/admin/projects/:id`, and `POST /api/admin/projects/:id/events` are all gated on `requirePermission('events.manage')` (`adminProjects.js:32,54,74`), but **no migration in the pinned fork ever inserts a permission named `events.m …
+  AC-17.1.3.1 implemented (local checks green): Working tree clean, commit landed on `feature/US-17`, nothing pushed.
+  
+  ## Implementation summary — AC-17.1.3.1
+  
+  **State found:** the previous agent had left a complete but **uncommitted** `PIVOT_AUDIT.md` write-up and no test suite. I independently re-verified every claim in that write-up against the live stack and the pinned fork before building on it — the Postgres row, the `events_project_id_foreign` constraint, the `projects` row it points at, and all eight cited file/line references all check out. I found one genuine gap and closed it.
+  
+  **Files changed (2):**
+  
+  - **`PIVOT_AUDIT.md`** (+~330 lines, new `## AC-17.1.3.1` section, placed ahead of the AC-14.6 block so that block stays last as AC-14.6 requires):
+    - **Upstream models the Gallery differently** — written up, not worked around: there is no gallery or collection object in the pinned fork. The PRD's Gallery is the `events` table and the `/api/admin/events` route family.
+    - **Creation route:** `POST /api/admin/events` (`adminEvents.js:330`). Unlike AC-17.1.2's Project routes this one *is* reachable — it gates on `events.create`, which the seed migration actually inserts, not the never-seeded `events.manage`. Full mount ch …
 
 **Tester Status:** approved
 **Tester Notes:**
