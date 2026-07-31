@@ -22,6 +22,7 @@ import sharp from 'sharp'
 
 import { Galleries } from '@/collections/Galleries'
 import { Media } from '@/collections/Media'
+import { getLiveApiAuthToken } from '@/test-support/liveApiAuth'
 
 const root = process.cwd()
 const LIVE_TEST_PORT = 4281
@@ -167,9 +168,13 @@ describe('AC-3.3: upload / reorder / remove images and select a cover image enti
         const base = `http://localhost:${LIVE_TEST_PORT}`
         const mediaIds: string[] = []
         let galleryId: string | undefined
+        let authHeaders: { Authorization: string } | undefined
 
         try {
           await waitForServer(`${base}/api/users`, 60000)
+
+          const token = await getLiveApiAuthToken(base)
+          authHeaders = { Authorization: `JWT ${token}` }
 
           // Same POST the admin UI's inline "Create New" upload drawer issues.
           const uploadOne = async (label: string, color: { r: number; g: number; b: number }) => {
@@ -181,7 +186,7 @@ describe('AC-3.3: upload / reorder / remove images and select a cover image enti
             const form = new FormData()
             form.append('file', new Blob([new Uint8Array(buffer)], { type: 'image/jpeg' }), `${label}.jpg`)
             form.append('_payload', JSON.stringify({ alt: `AC-3.3 ${label}` }))
-            const res = await fetch(`${base}/api/media`, { method: 'POST', body: form })
+            const res = await fetch(`${base}/api/media`, { method: 'POST', headers: authHeaders, body: form })
             expect(res.status).toBeLessThan(300)
             const body = await res.json()
             return (body.doc ?? body).id as string
@@ -193,9 +198,9 @@ describe('AC-3.3: upload / reorder / remove images and select a cover image enti
           mediaIds.push(imageB)
 
           // Attach both to a new gallery, in order [A, B], covered by A.
-          const createRes = await fetch(`${base}/api/galleries`, {
+          const createRes = await fetch(`${base}/api/galleries?depth=0`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
             body: JSON.stringify({
               title: 'AC-3.3 fixture gallery',
               images: [{ image: imageA }, { image: imageB }],
@@ -211,9 +216,9 @@ describe('AC-3.3: upload / reorder / remove images and select a cover image enti
 
           // Reorder: swap to [B, A] — the same PATCH the array field's
           // drag-to-reorder sends (the whole array, in its new order).
-          const reorderRes = await fetch(`${base}/api/galleries/${galleryId}`, {
+          const reorderRes = await fetch(`${base}/api/galleries/${galleryId}?depth=0`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
             body: JSON.stringify({ images: [{ image: imageB }, { image: imageA }] }),
           })
           expect(reorderRes.status).toBeLessThan(300)
@@ -223,9 +228,9 @@ describe('AC-3.3: upload / reorder / remove images and select a cover image enti
 
           // Remove: drop image A, keep only B — the same PATCH the array
           // field's row-remove button sends.
-          const removeRes = await fetch(`${base}/api/galleries/${galleryId}`, {
+          const removeRes = await fetch(`${base}/api/galleries/${galleryId}?depth=0`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
             body: JSON.stringify({ images: [{ image: imageB }] }),
           })
           expect(removeRes.status).toBeLessThan(300)
@@ -234,9 +239,9 @@ describe('AC-3.3: upload / reorder / remove images and select a cover image enti
           expect(removedDoc.images.map((row: { image: unknown }) => row.image)).toEqual([imageB])
 
           // Select a different cover image (B instead of A).
-          const coverRes = await fetch(`${base}/api/galleries/${galleryId}`, {
+          const coverRes = await fetch(`${base}/api/galleries/${galleryId}?depth=0`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...authHeaders },
             body: JSON.stringify({ coverImage: imageB }),
           })
           expect(coverRes.status).toBeLessThan(300)
@@ -245,10 +250,15 @@ describe('AC-3.3: upload / reorder / remove images and select a cover image enti
           expect(coveredDoc.coverImage).toBe(imageB)
         } finally {
           if (galleryId) {
-            await fetch(`${base}/api/galleries/${galleryId}`, { method: 'DELETE' }).catch(() => undefined)
+            await fetch(`${base}/api/galleries/${galleryId}`, {
+              method: 'DELETE',
+              headers: authHeaders,
+            }).catch(() => undefined)
           }
           for (const id of mediaIds) {
-            await fetch(`${base}/api/media/${id}`, { method: 'DELETE' }).catch(() => undefined)
+            await fetch(`${base}/api/media/${id}`, { method: 'DELETE', headers: authHeaders }).catch(
+              () => undefined,
+            )
           }
           await killServer(child)
         }
