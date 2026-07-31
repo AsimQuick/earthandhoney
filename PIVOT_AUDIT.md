@@ -82,7 +82,15 @@ related-story: US-14
          noting whether each entry was surfaced in the backend source, the
          migrations, or both. Every AC-17.4.1.1.1.1.1.2 name appears in the
          merged inventory. No classification, nothing dropped.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3
+         AC-17.4.1.1.1.1.2 — working from the AC-17.4.1.1.1.1.1.3 merged
+         inventory of 35 names, names every occurrence that does not
+         express a Gallery's own lifetime as a ruled-out group, each with a
+         one-line reason for what the value actually governs and at least
+         one file:line against the pinned commit. Explicitly names the
+         fork's expiry wording for admin sessions, guest tokens, and share
+         links as ruled-out groups rather than leaving them unmentioned. No
+         name is ruled out without the evidence cited.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2
 ---
 -->
 
@@ -1768,6 +1776,219 @@ which each underlying value appears exactly once, each marked Backend
 source only / Migrations only / Both. Every name AC-17.4.1.1.1.1.1.2
 recorded appears in the merged inventory. Nothing is classified and no name
 is dropped for looking irrelevant.
+
+## AC-17.4.1.1.1.1.2 — ruling out occurrences that are not about a Gallery's own expiry
+
+`US-17` AC-17.4.1.1.1.1.2 works from the 35-entry merged inventory
+AC-17.4.1.1.1.1.1.3 recorded above. For every entry, this criterion asks
+what the underlying value actually governs. An entry stays aside — not
+ruled out here — only where every occurrence of it governs the Gallery's
+own `events.expires_at` lifecycle (creation-time duration, the read-back
+state, the emails/webhooks/dashboard counts that report or act on it);
+that positive case is AC-17.4.1.1.1.1.3's deliverable, not this one's.
+Everything else is gathered into named groups below, each with a one-line
+statement of what it actually governs and at least one file:line against
+the pinned commit (`eb263137b98935754155824de2a03848121304b6`). A name is
+ruled out only on the evidence cited here — never because it looked
+unpromising. It is a code-level finding: no live Backstage instance was
+started or used.
+
+Several entries are a single name shared by more than one unrelated table,
+constant, or code path (`expires_at`, `expiresIn`, `TOKEN_EXPIRED`,
+`TokenExpiredError`, `CACHE_TTL`), so this criterion works at the level of
+individual occurrences of an entry, not the entry as a single indivisible
+unit — an entry can therefore have some occurrences that stay aside
+(the Gallery's own expiry) and other occurrences that are ruled out below.
+
+### Occurrences that stay aside — they express the Gallery's own lifetime
+
+Recorded here only for contrast, so every one of the 35 entries is
+accounted for one way or the other and none is silently skipped. These are
+not ruled out; AC-17.4.1.1.1.1.3 covers them on the positive side.
+
+| Entry | Name(s) | What ties it to the Gallery's own `events.expires_at` |
+|---|---|---|
+| E1 (events occurrence) | `expires_at` | The column itself: `vendor/picpeak/backend/migrations/core/061_add_optional_date_expiration_settings.js:32` (`ALTER TABLE events ALTER COLUMN expires_at DROP NOT NULL`); read by `vendor/picpeak/backend/src/middleware/auth.js:179` to decide gallery access. |
+| E4 | `expiry_date` | Notification merge-field reporting the Gallery's own `expires_at` value in emails (`vendor/picpeak/backend/src/routes/adminEvents.js:800,1080,1642,1710`). |
+| E5 | `expiration_warning` | `template_key` for the "gallery expiring soon" email, fired off the Gallery's own `expires_at` (`vendor/picpeak/backend/src/services/expirationChecker.js:36,78`). |
+| E6 | `gallery_expired` / `galleryExpiredExists` | `template_key` for the "gallery has expired" email, fired off the same column (`vendor/picpeak/backend/src/services/expirationChecker.js:144,149`). |
+| E7 | `event_require_expiration` | Setting governing whether an event/Gallery's own `expires_at` is mandatory at creation (`vendor/picpeak/backend/src/routes/adminEvents.js:79,104`). |
+| E10 | `expiration_days` | Create-event request field that sets the Gallery's own `expires_at` at creation time (`vendor/picpeak/backend/src/routes/adminEvents.js:376,446`). |
+| E11 | `general_default_expiration_days` | Default value for E10 (`vendor/picpeak/backend/src/services/settingsService.js:148`). |
+| E12 | `require_expiration` | API field exposing E7's policy per event (`vendor/picpeak/backend/src/routes/adminEvents.js:88,104,115`). |
+| E13 | `is_expired` | API field computed directly from the Gallery's own `expires_at` (`vendor/picpeak/backend/src/routes/gallery.js:186`). |
+| E16 | `GALLERY_EXPIRED` | Error code returned when the Gallery's own `expires_at` has passed (`vendor/picpeak/backend/src/middleware/auth.js:182`). |
+| E30 | `expiringEvents` | Dashboard count of Galleries whose own `expires_at` falls within 7 days (`vendor/picpeak/backend/src/routes/adminDashboard.js:24`). |
+| E31 | `expirationChecker` | Admin system-status field for the background job that acts on the Gallery's own `expires_at` (`vendor/picpeak/backend/src/routes/adminSystem.js:264`). |
+| E32 | `expiring` | `?status=expiring` list filter, same 7-day window as E30 (`vendor/picpeak/backend/src/routes/adminEvents.js:906`). |
+| E33 | `event.expired` | Webhook fired when the Gallery's own `expires_at` is crossed (`vendor/picpeak/backend/src/services/webhookService.js:17`, fired at `vendor/picpeak/backend/src/services/expirationChecker.js:105`). |
+
+### Ruled-out group: Admin sessions
+
+**Governs:** how long an administrator's own login session, long-lived API
+token, or account-invitation link stays valid — never a Gallery's own
+`expires_at`.
+
+| Entry | Name(s) | Evidence (file:line) |
+|---|---|---|
+| E15, E19 | `TOKEN_EXPIRED` / `TokenExpiredError` | `vendor/picpeak/backend/src/middleware/auth.js:26-27,148-149` — admin JWT verification. |
+| E9 | `expiresIn` | `vendor/picpeak/backend/src/routes/auth.js:115` (`/admin/login`, `expiresIn: '24h'`). |
+| E1 | `expires_at` (`api_tokens`) | `vendor/picpeak/backend/migrations/core/081_add_api_tokens.js:26` — long-lived programmatic API token. |
+| E1 | `expires_at` (`admin_invitations`) | `vendor/picpeak/backend/migrations/core/058_add_admin_invitations_table.js:37` — admin account-invitation link. |
+| E2 | `invite_expires_at` / `hasInviteExpiresAt` | `vendor/picpeak/backend/migrations/core/057_add_role_to_admin_users.js:20,38` — `admin_users` invite-onboarding column. |
+| E20 | `CACHE_TTL` (permissions) | `vendor/picpeak/backend/src/middleware/permissions.js:13` — caches an admin's computed permission set. |
+
+### Ruled-out group: Gallery-access and customer-portal session tokens
+
+**Governs:** how long the temporary session a *visitor* is issued after
+already passing a password check, share-link check, or customer login
+lasts — the session token's own lifetime, not the Gallery record's
+`expires_at` that gated entry to get it. `GALLERY_TOKEN_TTL_SECONDS`
+carries "gallery" in its name but names this session token, confirmed by
+its only use site being the token this route mints, not a column read
+from or written to `events`.
+
+| Entry | Name(s) | Evidence (file:line) |
+|---|---|---|
+| E9 | `expiresIn` | `vendor/picpeak/backend/src/routes/auth.js:268` (`/gallery/verify`, password success), `:344` (`/gallery/:slug/client-login`), `:428` (`/gallery/share-login`), `:592` (`/session`, reports remaining time on the already-issued token). |
+| E24 | `GALLERY_TOKEN_TTL_SECONDS` | `vendor/picpeak/backend/src/routes/customer.js:87,179` — customer-portal-issued gallery session token. |
+| E28 | `TOKEN_TTL_SECONDS` | `vendor/picpeak/backend/src/routes/customerAuth.js:48,124` — customer portal login session. |
+| E15, E19 | `TOKEN_EXPIRED` / `TokenExpiredError` | `vendor/picpeak/backend/src/middleware/customerAuth.js:47-48` — customer JWT verification. |
+
+### Ruled-out group: Guest tokens
+
+**Governs:** a lightweight guest identity's own session token or
+email-verification code, used for guest uploads/recovery without a full
+customer account — a separate identity/session concern from the Gallery
+record's own `expires_at`.
+
+| Entry | Name(s) | Evidence (file:line) |
+|---|---|---|
+| E9 | `expiresIn` | `vendor/picpeak/backend/src/middleware/guestAuth.js:84,96` (`signGuestToken`, default `'24h'`). |
+| E1 | `expires_at` (`guest_verification_codes`) | `vendor/picpeak/backend/migrations/core/078_add_guest_identity.js:65`. |
+| E22 | `CODE_TTL_MS` | `vendor/picpeak/backend/src/services/guestRecoveryService.js:18` — the 15-minute constant backing the row above. |
+| E18 | `expired_or_missing` | `vendor/picpeak/backend/src/services/guestRecoveryService.js:102` — reason value when a guest's verification code has expired or was never issued. |
+
+### Ruled-out group: Share links
+
+**Governs:** single-use links a customer is emailed, or the Gallery's own
+share-link URL — either the link's own expiry timestamp, or, for the
+Gallery's share link specifically, "expired" wording that is not backed by
+any distinct timer at all.
+
+`vendor/picpeak/backend/src/routes/auth.js:418` returns `{"error":
+"Invalid or expired share link"}` from inside `/gallery/share-login`
+whenever the submitted token does not equal `getEventShareToken(event)`
+(`auth.js:413-419`) — a plain string mismatch, not a time comparison. The
+`events` table carries no `share_token`-specific expiry column (confirmed:
+`vendor/picpeak/backend/src/database/db.js:141,190,243-246` add and
+backfill `events.share_token` with no accompanying `expires_at`-like
+column), so this occurrence of expiry wording governs nothing distinct
+from a wrong/stale token; a *correct* token on this same route mints the
+session token already ruled out above (`auth.js:428`). The fork uses the
+identical `"Invalid or expired <noun> link"` phrasing for the other
+one-shot links in this group (e.g. `"Invalid or expired reset link"`,
+`vendor/picpeak/backend/src/services/customerAccountsService.js:1379`),
+which — unlike the share link — *are* backed by their own `expires_at`
+column, cited per-row below.
+
+| Entry | Name(s) | Evidence (file:line) |
+|---|---|---|
+| — | "Invalid or expired share link" wording | `vendor/picpeak/backend/src/routes/auth.js:418` (see above; not a merged-inventory name — corroborating evidence for the group, not a separate ruled-out entry). |
+| E1 | `expires_at` (`customer_invitations`) | `vendor/picpeak/backend/migrations/core/090_add_customer_accounts.js:88`. |
+| E25 | `INVITATION_TTL_MS` | `vendor/picpeak/backend/src/services/customerAccountsService.js:23,130` — backs the row above. |
+| E1 | `expires_at` (`customer_password_resets`) | `vendor/picpeak/backend/migrations/core/092_customer_features_branding_resets.js:98`. |
+| E26 | `PASSWORD_RESET_TTL_MS` | `vendor/picpeak/backend/src/services/customerAccountsService.js:1165,1315` — backs the row above. |
+| E1 | `expires_at` (`quote_action_tokens`) | `vendor/picpeak/backend/migrations/core/107_crm_consolidated.js:897`. |
+| E1 | `expires_at` (`contract_action_tokens`) | `vendor/picpeak/backend/migrations/core/107_crm_consolidated.js:1358`. |
+| E1 | `expires_at` (`invoice_payment_check_tokens`) | `vendor/picpeak/backend/migrations/core/107_crm_consolidated.js:1146`. |
+| E15, E17 | `TOKEN_EXPIRED` / `TOKEN_NO_EXPIRY` | `vendor/picpeak/backend/src/utils/publicTokenGuards.js:104,108` — `"This link has expired"`, the shared guard for `quote_action_tokens`/`contract_action_tokens` links. |
+| E35, E9 | `expires` / `expiresIn` | `vendor/picpeak/backend/src/routes/protectedImages.js:17,19,46,178,197,205,241`; `vendor/picpeak/backend/src/routes/secureImages.js:51,77`; `vendor/picpeak/backend/src/services/secureImageService.js:20,30,53` — a short-lived signed URL to one protected image. |
+| E9 | `expiresIn` | `vendor/picpeak/backend/src/services/storage/s3Storage.js:483,507`; `vendor/picpeak/backend/src/services/storage/S3StorageBackend.js:147`; `vendor/picpeak/backend/src/routes/adminBackup.js:743,755` — presigned S3 download/backup URLs. |
+
+### Ruled-out group: Internal cache and housekeeping constants
+
+**Governs:** purely internal system bookkeeping — in-memory caches and
+stale-partial-upload cleanup — tied to no Gallery, admin, customer, or
+guest identity at all.
+
+| Entry | Name(s) | Evidence (file:line) |
+|---|---|---|
+| E20 | `CACHE_TTL` (update check) | `vendor/picpeak/backend/src/services/updateCheckService.js:9` — caches a GitHub version-check response for an hour. |
+| E21 | `CACHE_TTL_MS` | `vendor/picpeak/backend/src/services/uploadSettings.js:5`; `vendor/picpeak/backend/src/services/publicSiteService.js:12`. |
+| E23 | `FONTS_CACHE_TTL_MS` | `vendor/picpeak/backend/src/services/fontsService.js:43`. |
+| E27 | `PUBLIC_SITE_CACHE_TTL_MS` | `vendor/picpeak/backend/src/services/publicSiteService.js:12` (`process.env.PUBLIC_SITE_CACHE_TTL_MS`). |
+| E29 | `UPLOAD_EXPIRATION_MS` | `vendor/picpeak/backend/src/services/chunkedUploadService.js:17` — cleans up a stale, never-finished chunked upload after 24h. |
+
+### Ruled-out group: Session-token revocation bookkeeping
+
+**Governs:** the cutoff a revoked JWT (of any role — admin, customer, or
+gallery) was originally due to expire, kept only so the revocation-check
+index can stop bothering with it once it would have expired anyway — a
+token-lifecycle housekeeping value, not a Gallery value.
+
+| Entry | Name(s) | Evidence (file:line) |
+|---|---|---|
+| E1 | `expires_at` (`revoked_tokens`) | `vendor/picpeak/backend/migrations/legacy/017_add_token_revocation_tables.js:14`. |
+| E8 | `revoked_tokens_expires_at_index` | `vendor/picpeak/backend/migrations/legacy/017_add_token_revocation_tables.js:43`. |
+
+### Ruled-out group: Business-document validity and status (quotes & contracts)
+
+**Governs:** when a quote or contract's own terms are considered stale,
+and a quote's CRM lifecycle status — properties of a billing document, not
+of a Gallery.
+
+| Entry | Name(s) | Evidence (file:line) |
+|---|---|---|
+| E3 | `valid_until` / `validUntil` | `vendor/picpeak/backend/migrations/core/107_crm_consolidated.js:779` (`quotes`), `:1228` (`contracts`); `vendor/picpeak/backend/src/routes/adminQuotes.js:84`. |
+| E34 | `expired` (quote status) | `vendor/picpeak/backend/src/services/quoteService.js:51` (`VALID_QUOTE_TRANSITIONS`); `vendor/picpeak/backend/src/routes/adminDashboard.js:392` (status-count key). |
+
+### Ruled-out group: HTTP cache-control header
+
+**Governs:** telling a browser or proxy never to cache a response. The
+literal value is the fixed string `'0'`, not a timestamp of any kind, and
+is set on every response the two middlewares below touch regardless of
+any Gallery.
+
+| Entry | Name(s) | Evidence (file:line) |
+|---|---|---|
+| E14 | `Expires` | `vendor/picpeak/backend/src/middleware/noStoreCache.js:35`; `vendor/picpeak/backend/src/middleware/secureImageMiddleware.js:261`. |
+
+### Coverage check
+
+14 entries (E1's `events` occurrence, E4, E5, E6, E7, E10, E11, E12, E13,
+E16, E30, E31, E32, E33) stay aside as expressing the Gallery's own
+lifetime. The remaining 21 entries — E1's nine other occurrences (across
+`admin_invitations`, `api_tokens`, `customer_invitations`,
+`customer_password_resets`, `quote_action_tokens`,
+`contract_action_tokens`, `invoice_payment_check_tokens`,
+`revoked_tokens`, `guest_verification_codes`), E2, E3, E8, E9, E14, E15,
+E17, E18, E19, E20, E21, E22, E23, E24, E25, E26, E27, E28, E29, E34, E35 —
+are each ruled out above, across eight named groups. Every entry from the
+AC-17.4.1.1.1.1.1.3 merged inventory appears exactly once in this
+accounting (either stays aside above, or is ruled out in exactly one
+group's table, though a few multi-occurrence entries — E1, E9, E15 —
+contribute rows to more than one group, one row per distinct occurrence).
+Admin sessions, guest tokens, and share links — the three groups this
+criterion explicitly requires — are each named above, with their own
+evidence, rather than left unmentioned.
+
+### Verdict
+
+AC-17.4.1.1.1.1.2 is satisfied: working from the AC-17.4.1.1.1.1.1.3
+merged inventory of 35 entries against the same pinned commit
+(`eb263137b98935754155824de2a03848121304b6`), every occurrence that does
+not express a Gallery's own `events.expires_at` lifetime is gathered into
+eight named, ruled-out groups — Admin sessions, Gallery-access and
+customer-portal session tokens, Guest tokens, Share links, Internal cache
+and housekeeping constants, Session-token revocation bookkeeping,
+Business-document validity and status, and the HTTP cache-control header —
+each with a one-line statement of what the value actually governs and at
+least one file:line citation against the pinned commit. Admin sessions,
+guest tokens, and share links are each named explicitly, as this criterion
+requires. No name is ruled out on anything but the evidence cited above,
+and the coverage check confirms every one of the 35 merged-inventory
+entries is accounted for, with none left unmentioned.
 
 ## Recommendation and open questions (AC-14.6)
 
