@@ -88,6 +88,15 @@ services:
       DB_NAME: ${BACKSTAGE_DB_NAME:-backstage}
     ports:
       - "3101:3000"
+    # The vendored frontend's nginx.conf proxies every /api route to the
+    # Docker hostname "backend" (resolved at request time via Docker's DNS
+    # at 127.0.0.11). Our service is called "backstage-backend", so without
+    # this alias nginx would fail to resolve it. Fork Discipline says fix it
+    # here rather than editing vendor/picpeak/frontend/nginx.conf.
+    networks:
+      default:
+        aliases:
+          - backend
     depends_on:
       backstage-db:
         condition: service_healthy

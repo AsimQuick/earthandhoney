@@ -85,6 +85,19 @@ describe('AC-16.1: Backstage runs entirely as docker-compose services', () => {
       expect(compose.services['backstage-backend'].environment.DB_HOST).toBe('backstage-db')
     })
 
+    it('exposes the backend under the "backend" alias the vendored nginx.conf proxies to', () => {
+      // vendor/picpeak/frontend/nginx.conf hardcodes `proxy_pass
+      // http://backend:3000` and resolves it through Docker DNS at request
+      // time. Our service is named "backstage-backend", so the alias is what
+      // makes frontend → backend resolution work by network hostname without
+      // editing the vendored config.
+      const nginxConf = read('vendor/picpeak/frontend/nginx.conf')
+      expect(nginxConf).toMatch(/set \$backend_upstream backend;/)
+      expect(compose.services['backstage-backend'].networks?.default?.aliases).toEqual(
+        expect.arrayContaining(['backend']),
+      )
+    })
+
     it('no service-to-service environment value routes through localhost or 127.0.0.1', () => {
       for (const name of ['backstage-backend', 'backstage-frontend', 'backstage-db']) {
         const env = compose.services[name].environment ?? {}
