@@ -85,9 +85,16 @@ describe('AC-7.2: CI includes a clean-checkout smoke path', () => {
     })
   })
 
-  it('docker-compose.yml declares exactly the two services the smoke path must boot', () => {
+  it('docker-compose.yml boots exactly the two services the smoke path needs by default', () => {
+    // A bare `docker compose up` (no --profile flag) starts only services
+    // that declare no `profiles`. US-16 added Backstage services gated
+    // behind `profiles: [backstage]` specifically so this smoke path keeps
+    // booting just the Next.js app + its database, unchanged.
     const compose = parse(read('docker-compose.yml'))
-    expect(Object.keys(compose.services).sort()).toEqual(['db', 'web'])
+    const defaultServices = Object.entries(compose.services as Record<string, { profiles?: string[] }>)
+      .filter(([, service]) => !service.profiles?.length)
+      .map(([name]) => name)
+    expect(defaultServices.sort()).toEqual(['db', 'web'])
   })
 
   it('runs on the same triggers as the rest of CI (push + pull_request), not just deploy', () => {
