@@ -24,6 +24,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Vendor design-template assets (CLAUDE.md) — not our code, never linted.
     "public/photobuddy/**",
+    // Vendored PicPeak fork (US-15, pinned commit) — not our code, never linted.
+    "vendor/picpeak/**",
     // Generated test coverage report.
     "coverage/**",
   ]),
