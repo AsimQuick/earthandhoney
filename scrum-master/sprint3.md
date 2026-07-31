@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/7 stories | 12/48 ACs
-**Last Updated:** 2026-07-31T08:13:42+00:00
+**Last Updated:** 2026-07-31T08:31:54+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -180,6 +180,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-16.1:** The forked Backstage, its database, and any worker or cache component it requires all run as services defined in `docker-compose.yml`. Nothing is installed on the host machine, and services address each other by Docker network hostname rather than localhost.
   - Dev: implemented
 - [ ] **AC-16.2:** The Backstage runs on PostgreSQL — not on any development-only database the upstream may default to — and its migrations complete cleanly against an empty database.
+  - Dev: implemented
 - [ ] **AC-16.3:** The Backstage is configured to use the project's existing Cloudflare R2 bucket through its S3-compatible storage settings. No new parallel bucket is created. If the existing R2 credentials cannot be obtained, the story is blocked and recorded in `scrum-master/po-requests.md` rather than worked around with a substitute store.
 - [ ] **AC-16.4:** `.env.example` documents every environment variable the Backstage needs, with safe placeholder values and a comment for each explaining what it is and where the real value comes from. No real secret is committed.
 - [ ] **AC-16.5:** A documented, repeatable start-up procedure exists that takes a clean checkout to a running Backstage with an administrator able to sign in, and it is exercised end to end at least once with the result recorded.
@@ -200,6 +201,16 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `src/__tests__/us16-ac16.1-backstage-docker-services.test.ts` — added a test that pins the nginx proxy target and the compose alias together, so an upstream rename of that hostname fails loudly instead of silently breaking routing.
   
   **Already in place from `326d26b` (verified, not …
+  AC-16.2 implemented (local checks green): AC-16.2 is complete and committed on `feature/US-16`.
+  
+  ## Implementation summary
+  
+  **Files changed (1 commit, `aedaf49`):**
+  - `src/__tests__/us16-ac16.2-backstage-postgres-migrations.test.ts` (new, 12 tests) — pins the configuration that makes the Postgres migration outcome deterministic: `DATABASE_CLIENT=pg` set inline in `environment:` (so it outranks `env_file: .env`), `NODE_ENV` routed to `knexfile.js`'s production block rather than its `sqlite3` development default, no `DATABASE_PATH`/`TEST_DATABASE_PATH` sqlite escape hatch, `backstage-db` running the official `postgres:` image, credentials/DB-name wired end-to-end between backend and db, backend gated on `service_healthy`, and the vendored entrypoint running `npm run migrate:safe` *before* `exec "$@"` hands off to the server.
+  
+  No production code changed. The compose wiring itself (`DATABASE_CLIENT: pg`, `NODE_ENV: ${NODE_ENV:-production}`, dedicated `backstage-db`) already landed with AC-16.1, so this AC's deliverable is the proof and the regression lock. No vendored file was edited — Fork Discipline holds. No dependency changes, so no `package-lock.json` update.
+  
+  **Live verification (run by me, from a genuinely empty databas …
 
 **Tester Status:** approved
 **Tester Notes:**
