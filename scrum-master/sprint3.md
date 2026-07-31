@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/7 stories | 18/52 ACs
-**Last Updated:** 2026-07-31T20:55:21+00:00
+**Last Updated:** 2026-07-31T21:07:57+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -292,6 +292,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-17.2:** A batch of real images can be uploaded and processed. Every uploaded original is stored in R2 exactly once, the expected derivative sizes are produced, and stored image records include width, height, aspect ratio, format, file size, and processing state.
   - Dev: implemented
 - [ ] **AC-17.3:** Gallery protection works as delivered by upstream: a password-protected gallery refuses access without the password, and grants it with the password.
+  - Dev: implemented
 - [ ] **AC-17.4:** The expiry mechanism works: a gallery past its expiry no longer grants client access, and the state change is visible to the photographer.
 - [ ] **AC-17.5:** A client can view the gallery through its client-facing route and download images where the gallery's download policy permits, including any archive download the upstream provides.
 - [ ] **AC-17.6:** At least one operational gallery email is sent through the Backstage email system to a capture inbox or mail catcher, and its queued/sent state is visible.
@@ -372,6 +373,26 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   ### Files changed
   - **`PIVOT_AUDIT.md`** — AC-17.2 section: upload route and permission seeding (with file/line citations), processing to `complete`, R2 exactly-once + byte-identical proof, eager-vs-lazy derivative analysis, and a field-by-field table against the AC's list. Corrected one factual error: the schema has **37** columns, not 36 (verified via `\d photos`).
   - **`src/__tests__/us17-ac17.2-bat …
+  AC-17.3 implemented (local checks green): Working tree clean, one new commit on `feature/US-17`, not pushed.
+  
+  ## Implementation summary — US-17 / AC-17.3
+  
+  **Status: implemented** (commit `1af65ed` — `[US-17] AC-17.3 implemented`)
+  
+  A previous agent left partial work on the branch (an uncommitted `PIVOT_AUDIT.md` section and an untracked test file, 2 of 33 tests failing). I re-verified its claims live rather than trusting them, then completed and corrected the work.
+  
+  ### Live re-verification performed
+  Backstage was up (`docker compose --profile backstage`). I re-ran the whole sequence against `events.id = 3` (slug `wedding-ac-17-1-3-1-verification-gallery-2026-09-01`, `require_password = true`) and it reproduced exactly:
+  
+  | Step | Result |
+  |---|---|
+  | `GET /api/gallery/:slug/photos`, no token | `401 {"error":"No token provided"}` |
+  | `POST /api/auth/gallery/verify`, wrong password | `401 {"error":"Invalid gallery or password"}`, logged as `login_fail` in `access_logs` |
+  | `POST /api/auth/gallery/verify`, correct password | `200`, JWT issued, `gallery_token` + per-slug cookies set |
+  | `GET .../photos` with that cookie jar | `200`, photo ids `[3, 2, 1]` (the AC-17.2 batch) |
+  
+  ### Files changed
+  - **`PIVOT_AUDIT.md`** — AC-17.3 …
 
 **Tester Status:** approved
 **Tester Notes:**
