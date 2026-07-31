@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/7 stories | 12/48 ACs
-**Last Updated:** 2026-07-31T08:50:49+00:00
+**Last Updated:** 2026-07-31T17:16:39+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -188,6 +188,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-16.5:** A documented, repeatable start-up procedure exists that takes a clean checkout to a running Backstage with an administrator able to sign in, and it is exercised end to end at least once with the result recorded.
   - Dev: implemented
 - [ ] **AC-16.6:** The migration path is proven safe as far as it can be at this point in the sprint. Two runs are executed and their command output recorded: (a) a fresh install applies the pinned upstream migrations cleanly to an empty database, and (b) the same migration command re-run against that now-already-migrated database completes as a no-op — no error, no re-application, no data loss — with the migration-state table (or the upstream's equivalent record) shown before and after to prove the runner is idempotent and safe against an existing install. Proving an upgrade that applies *our own* extension migrations on top of an already-migrated upstream database is explicitly out of scope for this story: under Fork Discipline no such migration exists yet, and inventing a throwaway one would prove nothing real. That proof is deferred to the sprint that introduces the first extension migration, and `UPSTREAM_SYNC.md` records the deferral so it is not lost.
+  - Dev: implemented
 
 **Dependencies:** US-15
 
@@ -233,6 +234,14 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `src/__tests__/us16-ac16.5-backstage-startup-runbook.test.ts` (new, 12 tests, all passing): pins the runbook's required steps and the recorded evidence (migration summary, health status, 200 response with cookie, PASS verdict) so the proof can't silently rot out of the doc.
   
   Full suite: 53 test suites / 925 tests passing, coverage 98.46% statements. No dependency changes. Docker services torn down af …
+  AC-16.6 already satisfied on the story branch (no new commit; Tester-verified): Already fully satisfied — the previous session's commits already completed this AC.
+  
+  **ALREADY-SATISFIED** — evidence:
+  - `MIGRATION_IDEMPOTENCY.md` (commit `cf43bb4`) records both required proof runs: (a) fresh install applying all 96 pinned migrations cleanly to an empty database with before/after migration-table row counts, and (b) the identical command re-run against the already-migrated database completing as a no-op (Applied: 0), including a second re-run confirming steady-state convergence, plus explicit no-data-loss checks (unchanged `applied_at` timestamps, table counts, seeded admin user).
+  - `UPSTREAM_SYNC.md` §3 (same commit) records the deferral of proving our own extension-migration upgrade path, citing Fork Discipline as the reason none exists yet.
+  - `src/__tests__/us16-ac16.6-migration-idempotency.test.ts` — Jest suite pinning the recorded evidence in both docs so it can't silently rot, cleaned up in follow-up commit `42bf2b9` (removed an unused `idx` variable).
+  
+  No further changes needed; leaving the branch as-is with no new commit.
 
 **Tester Status:** approved
 **Tester Notes:**
