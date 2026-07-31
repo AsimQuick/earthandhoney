@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/7 stories | 18/52 ACs
-**Last Updated:** 2026-07-31T20:39:18+00:00
+**Last Updated:** 2026-07-31T20:55:21+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -290,6 +290,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-17.1.3.3:** The Gallery-to-Project-to-Client direction resolves: opening or querying the Gallery from AC-17.1.3.1 identifies both its Project from AC-17.1.2 and the owning Client from AC-17.1.1. The exact query or screen used to prove this direction, and its output, are recorded in `PIVOT_AUDIT.md`. If the Client is only reachable by a second lookup through the Project rather than directly from the Gallery, that is recorded as the actual upstream shape rather than worked around.
   - Dev: implemented
 - [ ] **AC-17.2:** A batch of real images can be uploaded and processed. Every uploaded original is stored in R2 exactly once, the expected derivative sizes are produced, and stored image records include width, height, aspect ratio, format, file size, and processing state.
+  - Dev: implemented
 - [ ] **AC-17.3:** Gallery protection works as delivered by upstream: a password-protected gallery refuses access without the password, and grants it with the password.
 - [ ] **AC-17.4:** The expiry mechanism works: a gallery past its expiry no longer grants client access, and the state change is visible to the photographer.
 - [ ] **AC-17.5:** A client can view the gallery through its client-facing route and download images where the gallery's download policy permits, including any archive download the upstream provides.
@@ -358,6 +359,19 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - The array was empty for the AC-17.1.3.1 Gallery only because its create call omitted the field.
   
   I established the link through upstream's own admin edit route (no fork patch, no hand-seeded row), and `GET /api/admin/events/3` now returns `project_id: 1` **and** `customer_accounts[0].id: 3` in one query. Both directions resolve; the Project-overview second lookup is recorded as agreein …
+  AC-17.2 implemented (local checks green): Committed to `feature/US-17`, not pushed.
+  
+  ## Implementation summary — AC-17.2
+  
+  The previous agent had left an uncommitted audit section and test file claiming a live Docker run. **I independently re-verified that evidence against the still-running stack before trusting it** — it is genuine:
+  
+  - **Live DB** (`earthandhoney-backstage-db-1`): all three `photos` rows match the recorded values exactly — widths 950/1920/350, heights 534/1080/262, sizes 15539/64450/5440, `mime_type=image/jpeg`, `processing_status=complete`, `hero_path` NULL, thumbnail/preview hashes as written.
+  - **Live R2**: exactly one object per original at the precise source byte sizes, plus the recorded thumbnail and preview derivatives.
+  - **Source files**: byte sizes, SHA-256, and pixel dimensions all match the audit.
+  
+  ### Files changed
+  - **`PIVOT_AUDIT.md`** — AC-17.2 section: upload route and permission seeding (with file/line citations), processing to `complete`, R2 exactly-once + byte-identical proof, eager-vs-lazy derivative analysis, and a field-by-field table against the AC's list. Corrected one factual error: the schema has **37** columns, not 36 (verified via `\d photos`).
+  - **`src/__tests__/us17-ac17.2-bat …
 
 **Tester Status:** approved
 **Tester Notes:**
