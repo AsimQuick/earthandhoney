@@ -73,7 +73,16 @@ related-story: US-14
          merging snake_case/camelCase spellings of the same underlying name
          into one entry each. States the raw hit count the list is reduced
          from. No classification, nothing dropped for looking irrelevant.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2
+         AC-17.4.1.1.1.1.1.3 — re-run the same six commands against the
+         fork's backend source directory, reduce that portion of their
+         output to a deduplicated list of names using the same method as
+         AC-17.4.1.1.1.1.1.2, then merge that list with the migration-
+         directory list from AC-17.4.1.1.1.1.1.2 into one deduplicated
+         inventory in which each underlying value appears exactly once,
+         noting whether each entry was surfaced in the backend source, the
+         migrations, or both. Every AC-17.4.1.1.1.1.1.2 name appears in the
+         merged inventory. No classification, nothing dropped.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3
 ---
 -->
 
@@ -1566,6 +1575,199 @@ recorded as single entries rather than as four separate names. Nothing
 found is classified and no name was dropped for looking irrelevant — the
 `ttl` false positives (`settled`, `Throttle`) and the prose inflections of
 "expire" are accounted for as containing no name, not silently omitted.
+
+## AC-17.4.1.1.1.1.1.3 — backend-source names merged with the migration list
+
+`US-17` AC-17.4.1.1.1.1.1.3 takes the same six commands recorded in
+AC-17.4.1.1.1.1.1.1, reduces the portion of their output that falls inside
+`vendor/picpeak/backend/src` to a deduplicated list of every distinct field,
+column, or setting name that output surfaces — using the identical method
+AC-17.4.1.1.1.1.1.2 applied to the migration directory — and then merges
+that list with AC-17.4.1.1.1.1.1.2's migration-directory list into a single
+deduplicated inventory in which each underlying value appears exactly once,
+noting for each entry whether it was surfaced in the backend source, the
+migrations, or both. Nothing is classified here and no name is dropped for
+looking irrelevant. It is a code-level finding: no live Backstage instance
+was started or used.
+
+### Re-running the commands, scoped to the backend source directory
+
+The same six commands from AC-17.4.1.1.1.1.1.1, unchanged, run against the
+same pinned fork (`eb263137b98935754155824de2a03848121304b6`) and filtered
+to `vendor/picpeak/backend/src` — the same figures already given in that
+AC's per-directory split table:
+
+| Term | `backend/src` hits |
+|---|---|
+| `expir` | 439 |
+| `expires_at` | 144 |
+| `expiry` | 38 |
+| `ttl` | 79 |
+| `valid_until` | 45 |
+| `lifetime` | 1 |
+| **Total** | **746** |
+
+### From 746 raw hits to 33 names
+
+**Recorded hit count this list is reduced from: 746.**
+
+Following AC-17.4.1.1.1.1.1.2's two-step method: sorting and de-duplicating
+the 746 raw `file:line:content` triples leaves **546 unique matched lines**.
+Of those 546, **118 contain none of the names recorded below** and are
+accounted for, not silently discarded, as one of:
+
+- Natural-language prose — comments, docstrings, log/error messages, and
+  test descriptions (e.g. `"rejects when a non-expired pending invitation
+  exists"`, `"Password gates, expiring links..."`).
+- Function/method names describing expiry-related *behaviour* rather than
+  naming a stored or exposed value (`checkExpirations`, `expirationChecker`
+  the scheduler-start function, `extendExpiration`, `handleExpiredEvent`,
+  `isSessionExpired`, `queueExpirationWarning`, `startExpirationChecker`,
+  `cleanupExpiredRevocations`, `cleanupExpiredUploads`,
+  `buildCookieOptionsWithExpiry`).
+- Private/internal bookkeeping variables never exposed as an API field, DB
+  column, or setting (`cacheExpiry`, `expiredEvents`, `expiredIds`,
+  `newExpiration`, `_ttlSeconds`/`ttlSeconds` as a generic utility
+  parameter).
+- The same `ttl`-substring false-positive property already recorded in
+  AC-17.4.1.1.1.1.1.1 (`settled`, `Throttle`), which in `backend/src` also
+  catches `settle`, `settleReject`, `settleResolve`, `allSettled`,
+  `throttle`, `throttling`, `skipThrottle`, and the payment-throttle
+  `reason` value `throttled_24h` — none of these name an expiry-related
+  field, column, or setting; the match is an accident of the substring
+  `ttl` appearing inside "sett**l**ed"/"thro**ttl**e".
+- The bare words `TTL`, `Expiration`, `Expired`, `Expiry`, `lifetime` used
+  as ordinary English inside a comment or log string, not as an
+  identifier.
+
+What is left after removing those lines is **33 distinct names**, listed
+below with representative evidence. Six of the 33 are also recorded in
+AC-17.4.1.1.1.1.1.2's migration-directory list (marked **Also in
+migrations**); the rest are new to this AC.
+
+| Name(s) recorded together | Kind | Also in migrations? | Evidence (file:line) |
+|---|---|---|---|
+| `expires_at` / `expiresAt` | DB column (read via query/middleware) and the camelCase API-response field for the same column | Yes (`expires_at`) | `vendor/picpeak/backend/src/middleware/auth.js:179`; `vendor/picpeak/backend/src/routes/adminCustomers.js:84` (`expiresAt: e.expires_at`) |
+| `expiresIn` | JWT-signing / presigned-URL option field name (`jsonwebtoken`, S3 adapter) | No | `vendor/picpeak/backend/src/routes/customerAuth.js:124`; `vendor/picpeak/backend/src/middleware/guestAuth.js:84,96` |
+| `expiry_date` | Handlebars/notification-payload merge-field name | Yes | `vendor/picpeak/backend/src/routes/adminEvents.js:800,1080,1642,1710` |
+| `expiration_days` | Request-body field name (event/gallery create, also echoed as validator target) | No | `vendor/picpeak/backend/src/routes/adminEvents.js:376` (`body('expiration_days')`), `:446` |
+| `general_default_expiration_days` | `setting_key` value (public application setting) | No | `vendor/picpeak/backend/src/services/settingsService.js:148` |
+| `require_expiration` | API response field name (event field-requirements object), derived from but spelled differently than `event_require_expiration` | No | `vendor/picpeak/backend/src/routes/adminEvents.js:88,104,115` |
+| `event_require_expiration` | `setting_key` value | Yes | `vendor/picpeak/backend/src/routes/adminEvents.js:79,104`; `vendor/picpeak/backend/src/routes/publicSettings.js:135` |
+| `is_expired` | API response field name (`GET` gallery info) | No | `vendor/picpeak/backend/src/routes/gallery.js:186` |
+| `Expires` | HTTP response header name, explicitly set to disable caching | No | `vendor/picpeak/backend/src/middleware/noStoreCache.js:35`; `vendor/picpeak/backend/src/middleware/secureImageMiddleware.js:261` |
+| `TOKEN_EXPIRED` | API error `code` value | No | `vendor/picpeak/backend/src/middleware/auth.js:27,149`; `vendor/picpeak/backend/src/middleware/customerAuth.js:48` |
+| `GALLERY_EXPIRED` | API error `code` value | No | `vendor/picpeak/backend/src/middleware/auth.js:182` |
+| `TOKEN_NO_EXPIRY` | API error `code` value | No | `vendor/picpeak/backend/src/utils/publicTokenGuards.js:104` |
+| `expired_or_missing` | Service-level `reason` value (guest recovery) | No | `vendor/picpeak/backend/src/services/guestRecoveryService.js:102` |
+| `TokenExpiredError` | Third-party (`jsonwebtoken`) error-class name the fork's own code names and checks against | No | `vendor/picpeak/backend/src/middleware/auth.js:26,148`; `vendor/picpeak/backend/src/middleware/customerAuth.js:47` |
+| `valid_until` / `validUntil` | DB column (`quotes`, `contracts`) and its camelCase API-response field | Yes | `vendor/picpeak/backend/src/routes/adminQuotes.js:84` (`validUntil: q.valid_until`) |
+| `CACHE_TTL` | Named cache-duration constant (permissions cache; update-check cache) | No | `vendor/picpeak/backend/src/middleware/permissions.js:13`; `vendor/picpeak/backend/src/services/updateCheckService.js:9` |
+| `CACHE_TTL_MS` | Named cache-duration constant (upload-settings cache; public-site cache) | No | `vendor/picpeak/backend/src/services/uploadSettings.js:5`; `vendor/picpeak/backend/src/services/publicSiteService.js:12` |
+| `CODE_TTL_MS` | Named recovery-code duration constant | No | `vendor/picpeak/backend/src/services/guestRecoveryService.js:18` |
+| `FONTS_CACHE_TTL_MS` | Named cache-duration constant | No | `vendor/picpeak/backend/src/services/fontsService.js:43` |
+| `GALLERY_TOKEN_TTL_SECONDS` | Named token-duration constant | No | `vendor/picpeak/backend/src/routes/customer.js:87` |
+| `INVITATION_TTL_MS` | Named invitation-duration constant | No | `vendor/picpeak/backend/src/services/customerAccountsService.js:23` |
+| `PASSWORD_RESET_TTL_MS` | Named reset-token-duration constant | No | `vendor/picpeak/backend/src/services/customerAccountsService.js:1165` |
+| `PUBLIC_SITE_CACHE_TTL_MS` | Environment-variable name | No | `vendor/picpeak/backend/src/services/publicSiteService.js:12` (`process.env.PUBLIC_SITE_CACHE_TTL_MS`) |
+| `TOKEN_TTL_SECONDS` | Named token-duration constant (customer auth) | No | `vendor/picpeak/backend/src/routes/customerAuth.js:48` |
+| `UPLOAD_EXPIRATION_MS` | Named upload-expiration constant | No | `vendor/picpeak/backend/src/services/chunkedUploadService.js:17` |
+| `expiringEvents` | API response field name (admin dashboard summary) | No | `vendor/picpeak/backend/src/routes/adminDashboard.js:24,101` |
+| `expiration_warning` | `email_type`/`template_key` value | Yes | `vendor/picpeak/backend/src/services/expirationChecker.js:36,78`; `vendor/picpeak/backend/src/database/db.js:468` (comment) |
+| `gallery_expired` / `galleryExpiredExists` | Email `template_key` value (`gallery_expired` occurs here; the camelCase existence-check `galleryExpiredExists` occurs only in migrations, per AC-17.4.1.1.1.1.1.2) | Yes | `vendor/picpeak/backend/src/services/expirationChecker.js:144,149` |
+| `expirationChecker` | API response field name (`services.expirationChecker` on the admin system-status endpoint) — the same spelling also names the scheduler-start function/module, recorded separately above as a non-name | No | `vendor/picpeak/backend/src/routes/adminSystem.js:264` |
+| `expiring` | `status` query-filter value (`GET` events list, `?status=expiring`) | No | `vendor/picpeak/backend/src/routes/adminEvents.js:906` |
+| `event.expired` | Webhook event-type name, part of the fork's frozen `EVENT_TYPES` catalog | No | `vendor/picpeak/backend/src/services/webhookService.js:17`; fired at `vendor/picpeak/backend/src/services/expirationChecker.js:105` |
+| `expired` | `quotes.status` enum value (dashboard status-count key and valid quote-status transition) | No | `vendor/picpeak/backend/src/services/quoteService.js:51`; `vendor/picpeak/backend/src/routes/adminDashboard.js:392` |
+| `expires` | Signed image-token field name (`{photoId, expires}`) | No | `vendor/picpeak/backend/src/routes/protectedImages.js:19,46` |
+
+No other distinct field, column, or setting name occurs in the backend
+source output: every remaining unique line either repeats one of the 33
+names above under a different call site, or falls in one of the six
+prose/function-name/internal-variable/false-positive buckets described
+above.
+
+### Merging with AC-17.4.1.1.1.1.1.2's migration-directory list
+
+AC-17.4.1.1.1.1.1.2 recorded 8 names/pairs from the migration directory.
+Six of them (marked "Yes" in the table above) are also surfaced by the
+backend source: `expires_at`, `valid_until`, `expiry_date`,
+`expiration_warning`, `gallery_expired` (its `galleryExpiredExists`
+camelCase pair-partner is migrations-only), and `event_require_expiration`.
+The remaining two — `invite_expires_at`/`hasInviteExpiresAt` and
+`revoked_tokens_expires_at_index` — occur nowhere in
+`vendor/picpeak/backend/src` (confirmed: zero hits for either spelling),
+so they carry forward into the merged inventory as migrations-only.
+
+Combining the backend source's 33 names with the migration directory's 8
+names, collapsing the six shared entries into one row each rather than
+counting them twice, yields **35 distinct merged entries** — each
+underlying value appears exactly once, with its origin recorded:
+
+Entry keys are written `E1`…`E35` rather than as bare numbers so these rows
+are not mistaken for AC-14.1's classified inventory rows, which are the only
+rows in this document that lead with a bare number.
+
+| Entry | Name(s) | Surfaced in |
+|---|---|---|
+| E1 | `expires_at` / `expiresAt` | Both |
+| E2 | `invite_expires_at` / `hasInviteExpiresAt` | Migrations only |
+| E3 | `valid_until` / `validUntil` | Both |
+| E4 | `expiry_date` | Both |
+| E5 | `expiration_warning` | Both |
+| E6 | `gallery_expired` / `galleryExpiredExists` | Both |
+| E7 | `event_require_expiration` | Both |
+| E8 | `revoked_tokens_expires_at_index` | Migrations only |
+| E9 | `expiresIn` | Backend source only |
+| E10 | `expiration_days` | Backend source only |
+| E11 | `general_default_expiration_days` | Backend source only |
+| E12 | `require_expiration` | Backend source only |
+| E13 | `is_expired` | Backend source only |
+| E14 | `Expires` (HTTP header) | Backend source only |
+| E15 | `TOKEN_EXPIRED` | Backend source only |
+| E16 | `GALLERY_EXPIRED` | Backend source only |
+| E17 | `TOKEN_NO_EXPIRY` | Backend source only |
+| E18 | `expired_or_missing` | Backend source only |
+| E19 | `TokenExpiredError` | Backend source only |
+| E20 | `CACHE_TTL` | Backend source only |
+| E21 | `CACHE_TTL_MS` | Backend source only |
+| E22 | `CODE_TTL_MS` | Backend source only |
+| E23 | `FONTS_CACHE_TTL_MS` | Backend source only |
+| E24 | `GALLERY_TOKEN_TTL_SECONDS` | Backend source only |
+| E25 | `INVITATION_TTL_MS` | Backend source only |
+| E26 | `PASSWORD_RESET_TTL_MS` | Backend source only |
+| E27 | `PUBLIC_SITE_CACHE_TTL_MS` | Backend source only |
+| E28 | `TOKEN_TTL_SECONDS` | Backend source only |
+| E29 | `UPLOAD_EXPIRATION_MS` | Backend source only |
+| E30 | `expiringEvents` | Backend source only |
+| E31 | `expirationChecker` | Backend source only |
+| E32 | `expiring` | Backend source only |
+| E33 | `event.expired` | Backend source only |
+| E34 | `expired` (quote status) | Backend source only |
+| E35 | `expires` (image-token field) | Backend source only |
+
+Every one of AC-17.4.1.1.1.1.1.2's 8 recorded names/pairs appears in this
+merged inventory (rows E1–E8) — nothing from that criterion is lost. Nothing
+in this merged inventory is classified here; per this AC's scope, that
+division is deferred to AC-17.4.1.1.1.1.2 and AC-17.4.1.1.1.1.3, the two
+criteria this merged inventory is handed to next.
+
+### Verdict
+
+AC-17.4.1.1.1.1.1.3 is satisfied: against the same pinned fork
+(`eb263137b98935754155824de2a03848121304b6`), the same six commands
+recorded in AC-17.4.1.1.1.1.1.1 were re-run scoped to
+`vendor/picpeak/backend/src` (746 raw matching lines, the recorded hit
+count that portion is reduced from, collapsing to 546 unique lines of
+which 118 carry no name), reduced by the same method AC-17.4.1.1.1.1.1.2
+used to 33
+deduplicated field/column/setting names with camelCase/snake_case pairs
+recorded as single entries, and merged with AC-17.4.1.1.1.1.1.2's 8
+migration-directory names into one deduplicated inventory of 35 entries in
+which each underlying value appears exactly once, each marked Backend
+source only / Migrations only / Both. Every name AC-17.4.1.1.1.1.1.2
+recorded appears in the merged inventory. Nothing is classified and no name
+is dropped for looking irrelevant.
 
 ## Recommendation and open questions (AC-14.6)
 
