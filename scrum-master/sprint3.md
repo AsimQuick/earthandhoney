@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/7 stories | 12/48 ACs
-**Last Updated:** 2026-07-31T08:03:15+00:00
+**Last Updated:** 2026-07-31T08:13:42+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -174,10 +174,11 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 ---
 
 ### US-16: Boot the forked Backstage in a production-like Docker environment on PostgreSQL and existing R2 credentials
-**Status:** draft | **Priority:** critical
+**Status:** in-progress | **Priority:** critical
 
 #### Acceptance Criteria
 - [ ] **AC-16.1:** The forked Backstage, its database, and any worker or cache component it requires all run as services defined in `docker-compose.yml`. Nothing is installed on the host machine, and services address each other by Docker network hostname rather than localhost.
+  - Dev: implemented
 - [ ] **AC-16.2:** The Backstage runs on PostgreSQL — not on any development-only database the upstream may default to — and its migrations complete cleanly against an empty database.
 - [ ] **AC-16.3:** The Backstage is configured to use the project's existing Cloudflare R2 bucket through its S3-compatible storage settings. No new parallel bucket is created. If the existing R2 credentials cannot be obtained, the story is blocked and recorded in `scrum-master/po-requests.md` rather than worked around with a substitute store.
 - [ ] **AC-16.4:** `.env.example` documents every environment variable the Backstage needs, with safe placeholder values and a comment for each explaining what it is and where the real value comes from. No real secret is committed.
@@ -187,6 +188,18 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 **Dependencies:** US-15
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-16.1 implemented (local checks green): Done. Working tree clean, still on `feature/US-16`, nothing pushed.
+  
+  ## Implementation summary — US-16 / AC-16.1
+  
+  **State on arrival:** the previous agent's commit `326d26b` had already added the three Backstage services and the AC test. I verified that work rather than duplicating it, then found and fixed one real defect it left.
+  
+  **Files changed (this session, commit `df59e72`):**
+  - `docker-compose.yml` — added a default-network alias `backend` to the `backstage-backend` service. The vendored `vendor/picpeak/frontend/nginx.conf` hardcodes `proxy_pass http://$backend_upstream:3000` with `set $backend_upstream backend;`, resolved at request time through Docker DNS (`resolver 127.0.0.11`). Our service is named `backstage-backend`, so without the alias every `/api` request from the frontend would fail DNS resolution. Fixed in compose rather than by editing the vendored config, preserving Fork Discipline.
+  - `src/__tests__/us16-ac16.1-backstage-docker-services.test.ts` — added a test that pins the nginx proxy target and the compose alias together, so an upstream rename of that hostname fails loudly instead of silently breaking routing.
+  
+  **Already in place from `326d26b` (verified, not …
 
 **Tester Status:** approved
 **Tester Notes:**

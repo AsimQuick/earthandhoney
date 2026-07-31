@@ -25,7 +25,7 @@
     "Coverage threshold met \u2014 the existing CI coverage gate is not lowered to pass",
     "Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)"
   ],
-  "last_updated": "2026-07-31T08:03:15+00:00",
+  "last_updated": "2026-07-31T08:13:42+00:00",
   "stories": [
     {
       "id": "US-14",
@@ -144,7 +144,7 @@
     {
       "id": "US-16",
       "title": "Boot the forked Backstage in a production-like Docker environment on PostgreSQL and existing R2 credentials",
-      "status": "draft",
+      "status": "in-progress",
       "priority": "critical",
       "dependencies": [
         "US-15"
@@ -154,7 +154,7 @@
           "id": "16.1",
           "text": "The forked Backstage, its database, and any worker or cache component it requires all run as services defined in `docker-compose.yml`. Nothing is installed on the host machine, and services address each other by Docker network hostname rather than localhost.",
           "checked": false,
-          "dev_status": "not-started",
+          "dev_status": "implemented",
           "tester_status": "approved"
         },
         {
@@ -194,7 +194,7 @@
         }
       ],
       "dev_status": "not-started",
-      "dev_notes": "",
+      "dev_notes": "AC-16.1 implemented (local checks green): Done. Working tree clean, still on `feature/US-16`, nothing pushed.\n\n## Implementation summary \u2014 US-16 / AC-16.1\n\n**State on arrival:** the previous agent's commit `326d26b` had already added the three Backstage services and the AC test. I verified that work rather than duplicating it, then found and fixed one real defect it left.\n\n**Files changed (this session, commit `df59e72`):**\n- `docker-compose.yml` \u2014 added a default-network alias `backend` to the `backstage-backend` service. The vendored `vendor/picpeak/frontend/nginx.conf` hardcodes `proxy_pass http://$backend_upstream:3000` with `set $backend_upstream backend;`, resolved at request time through Docker DNS (`resolver 127.0.0.11`). Our service is named `backstage-backend`, so without the alias every `/api` request from the frontend would fail DNS resolution. Fixed in compose rather than by editing the vendored config, preserving Fork Discipline.\n- `src/__tests__/us16-ac16.1-backstage-docker-services.test.ts` \u2014 added a test that pins the nginx proxy target and the compose alias together, so an upstream rename of that hostname fails loudly instead of silently breaking routing.\n\n**Already in place from `326d26b` (verified, not \u2026",
       "tester_status": "approved",
       "tester_notes": "AC-16.1 through 16.5 are testable as written (Docker-only services, Postgres-not-dev-db, existing R2 bucket reuse or documented block, .env.example completeness, an exercised and recorded start-up procedure) and are approved.\n\nRE-REVIEW (2026-07-30): AC-16.6 was previously returned as a requirements-defect because it required proving an upgrade that applies 'our own' extension migrations on top of an already-migrated upstream database, and no such migration exists yet in the sprint. The PO resolved this by rewording the AC (option b) rather than padding scope with a throwaway migration or deferring the whole criterion: it now requires only (a) a fresh install applying the pinned upstream migrations cleanly to an empty database, and (b) a re-run of that same command against the now-migrated database completing as a verified no-op, both with recorded command output and before/after migration-state evidence. It explicitly scopes out proving our own extension-migration upgrade path, naming Fork Discipline as the reason no such migration exists yet, and requires the deferral to be recorded in `UPSTREAM_SYNC.md` so it is not lost. This is now fully testable: two concrete, reproducible runs with an enumerable pass/fail condition (no error, no re-application, no data loss) and a named artifact (UPSTREAM_SYNC.md) for the deferral record. Approved as reworded.",
       "issue": "https://github.com/AsimQuick/earthandhoney/issues/52"
