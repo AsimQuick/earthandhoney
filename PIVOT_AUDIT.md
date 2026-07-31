@@ -45,7 +45,17 @@ related-story: US-14
          output. If the Client is only reachable by a second lookup through
          the Project rather than directly from the Gallery, record that as
          the actual upstream shape rather than working around it.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3
+         AC-17.2 — prove a batch of real images can be uploaded to the
+         Gallery from AC-17.1.3.1 and processed: every uploaded original is
+         stored in R2 exactly once (byte-identical to the source), the
+         derivative sizes the pinned fork actually produces are recorded —
+         which ones are eager (part of upload processing) and which are
+         lazy (generated on first request) — and the stored `photos` row
+         is checked against every field this AC names (width, height,
+         aspect ratio, format, file size, processing state), recording
+         honestly where the schema does not carry a field this AC expects
+         as its own column.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2
 ---
 -->
 
@@ -943,6 +953,213 @@ and has to be assigned explicitly through the upstream edit route, and
 that route 500s when `customer_account_ids` is the only field sent. Both
 are upstream behaviours, written up here and raised to the Product Owner
 under AC-17.9 rather than patched in the vendored fork.
+
+## AC-17.2 — batch image upload and processing
+
+This AC was proven live on 2026-07-31 against the running Backstage
+(`docker compose --profile backstage`, per `BACKSTAGE_STARTUP.md`), uploading
+into the AC-17.1.3.1 Gallery (`events.id = 3`,
+`wedding-ac-17-1-3-1-verification-gallery-2026-09-01`). Three real JPEGs
+already committed to this repo (`public/photobuddy/img/`) were used so the
+proof is against genuine image content, not synthetic test fixtures — no
+project code was written for this AC; it is a live-verification exercise like
+AC-17.1.1 through AC-17.1.3.3.
+
+### Upload route used, and that it is reachable
+
+```
+POST /api/admin/photos/3/upload   (multipart, field name "photos", 3 files)
+```
+
+Handler: `vendor/picpeak/backend/src/routes/adminPhotos.js:131`, gated on
+`adminAuth`, `requirePermission('photos.upload')`,
+`requireEventOwnership`. `photos.upload` is seeded for `super_admin` (all
+permissions — `vendor/picpeak/backend/migrations/core/056_add_role_permissions_table.js:46`)
+and explicitly listed for `admin`/`editor`
+(`vendor/picpeak/backend/migrations/core/056_add_role_permissions_table.js:51,73`),
+naming the permission at
+`vendor/picpeak/backend/migrations/core/055_add_permissions_table.js:57`
+— unlike AC-17.1.2's `events.manage`, this one really is granted, and the
+call below succeeds as the seeded administrator with no permission gap to
+record.
+
+```
+$ curl -s -b <seeded-admin-cookie-jar> -X POST http://localhost:3101/api/admin/photos/3/upload \
+    -F "photos=@public/photobuddy/img/about_img.jpg;type=image/jpeg" \
+    -F "photos=@public/photobuddy/img/slide/4.jpg;type=image/jpeg" \
+    -F "photos=@public/photobuddy/img/gallery/8.jpg;type=image/jpeg"
+
+HTTP 202
+{"upload_id":"4c92fefb376f95c287f272a202b71227","count":3,
+ "photo_ids":[1,2,3],"message":"Successfully 3 queued", ...}
+```
+
+The route returns `202 Accepted` immediately and queues the files for
+background processing (`adminPhotos.js:303-313`) — the pinned fork does not
+process synchronously in the request/response cycle.
+
+### Processing completes for every uploaded file
+
+```
+$ curl -s -b <seeded-admin-cookie-jar> \
+    http://localhost:3101/api/admin/photos/uploads/4c92fefb376f95c287f272a202b71227/status
+
+{"upload_id":"4c92fefb...","event_id":3,"total":3,
+ "pending":0,"processing":0,"complete":3,"failed":0,
+ "photos":[{"id":1,...,"status":"complete"},
+           {"id":2,...,"status":"complete"},
+           {"id":3,...,"status":"complete"}]}
+```
+
+All three photos reached `processing_status = 'complete'` (polled 5s after
+upload) via the background worker's `processPhoto`
+(`vendor/picpeak/backend/src/services/photoProcessor.js:418-508`), not the
+upload handler itself.
+
+### Every original is stored in R2 exactly once, byte-identical to the source
+
+```
+$ aws s3api list-objects-v2 --endpoint-url $R2_ENDPOINT --bucket $R2_BUCKET \
+    --prefix "backstage/events/active/wedding-ac-17-1-3-1-verification-gallery-2026-09-01/"
+
+backstage/events/active/.../AC-17.1.3.1_Verification_Galle_individual_0001.jpg   15539
+backstage/events/active/.../AC-17.1.3.1_Verification_Galle_individual_0002.jpg   64450
+backstage/events/active/.../AC-17.1.3.1_Verification_Galle_individual_0003.jpg    5440
+```
+
+Exactly one object per uploaded file, at the key computed once in
+`photoProcessor.js` / `adminPhotos.js:343` (`events/active/<slug>/<filename>`)
+and never rewritten by processing (the worker only ever reads the original
+back via `withLocalCopy`, `imageProcessor.js:229-242` — it does not
+re-`put` it). A round-trip download of photo 1's object and a SHA-256
+comparison against the original source file confirms the stored original is
+unmodified, not merely same-sized:
+
+```
+$ shasum -a 256 <downloaded R2 object> public/photobuddy/img/about_img.jpg
+97e2eeb6bb8fe9939f4dc4f1600bd053175942bf9152d56dc0652745d6b7f416  <downloaded>
+97e2eeb6bb8fe9939f4dc4f1600bd053175942bf9152d56dc0652745d6b7f416  public/photobuddy/img/about_img.jpg
+```
+
+### Derivative sizes: one is eager, two more exist but are lazy — recorded honestly
+
+The pinned fork's `imageProcessor.js` defines three derivative tiers:
+thumbnail (`generateThumbnail`, line 126), hero (`generateHeroImage`, line
+368), and lightbox preview (`generatePreviewImage`, line 500). But
+`processPhoto` — the only code path the background worker runs for every
+uploaded photo (`photoProcessor.js:459-475`) — calls `generateThumbnail` and
+extracts `sharp(...).metadata()` for width/height; it never calls
+`generateHeroImage` or `generatePreviewImage`. Confirmed by absence: neither
+name appears anywhere in `photoProcessor.js`.
+
+So, as actually delivered, **only the thumbnail is produced automatically by
+upload processing**. This was verified directly — immediately after all
+three photos reached `complete`, `hero_path` and `preview_path` were both
+`NULL` on every row, while `thumbnail_path` was populated for all three:
+
+```
+$ psql ... -c "select id, thumbnail_path, hero_path, preview_path from photos where event_id=3;"
+ id |                thumbnail_path                 | hero_path | preview_path
+----+------------------------------------------------+-----------+--------------
+  1 | thumbnails/thumb_e37d8201_..._0001.jpg          |           |
+  2 | thumbnails/thumb_dfe11154_..._0002.jpg          |           |
+  3 | thumbnails/thumb_a36bde16_..._0003.jpg          |           |
+```
+
+The thumbnail derivative was confirmed present in R2 (one object per photo
+under `backstage/thumbnails/`, e.g. `thumb_e37d8201_..._0001.jpg`, 4967
+bytes) and correctly sized: the live `app_settings` row has
+`thumbnail_fit = "cover"` (not the `imageProcessor.js:24` code comment's
+`'inside'` default — that default is only used when no setting row exists;
+migration seeding sets `cover`), and the downloaded thumbnail for photo 1
+(source 950×534) measured exactly 300×300, matching `thumbnail_width` /
+`thumbnail_height` in `app_settings`.
+
+Hero and preview are not dead code — they are **lazy, on-demand**
+derivatives, generated the first time something asks for them:
+`ensureHeroImage` is only called from the client-facing gallery route
+`GET /api/gallery/:slug/hero/:photoId`
+(`vendor/picpeak/backend/src/routes/gallery.js:1384`, gated on
+`verifyGalleryAccess` — the password/token flow AC-17.3 and AC-17.5 verify),
+and `ensurePreviewImage` is only called from the equivalent lightbox route
+(`gallery.js:1482-1485`) or the admin-triggered backfill endpoint
+`POST /api/admin/thumbnails/regenerate-previews`
+(`vendor/picpeak/backend/src/routes/adminThumbnails.js:200-246`).
+
+To confirm the preview tier actually works (not just that it is wired up),
+the admin backfill endpoint was called directly for this event:
+
+```
+$ curl -s -b <seeded-admin-cookie-jar> -X POST \
+    http://localhost:3101/api/admin/thumbnails/regenerate-previews \
+    -H "Content-Type: application/json" -d '{"eventId":3}'
+{"message":"Started regenerating 3 previews","count":3}
+```
+
+All three rows picked up a `preview_path` within seconds, each backed by
+exactly one new R2 object under `backstage/previews/` (e.g.
+`preview_f20c5354_..._0002.jpg`, 10103 bytes). The preview for photo 2
+(source 1920×1080, at the tier's 1920px long-edge cap) downloaded at
+1920×1080 — aspect preserved, no upscale — confirming `generatePreviewImage`
+(`imageProcessor.js:500-557`) works correctly when invoked. The hero tier
+was not live-exercised in this AC because its only route requires the
+client-facing gallery access flow that AC-17.3/AC-17.5 own; that it is wired
+identically to preview (`ensureHeroImage`, same `withLocalCopy` +
+`generate*` pattern, `imageProcessor.js:450-486`) is confirmed by reading the
+code, not by a fabricated end-to-end run.
+
+**Recorded honestly, not silently patched:** AC-17.2 asks that "the expected
+derivative sizes are produced" as part of upload processing. As pinned, the
+fork produces exactly one derivative eagerly (thumbnail); the other two
+named tiers exist, are correctly implemented, and were confirmed to work
+when actually triggered, but are not produced until something requests them.
+This is not a defect to fix here — Fork Discipline forbids editing
+`photoProcessor.js`'s vendored processing path — but it is a real gap
+between what a reader of the PRD might assume ("processing produces the
+derivatives") and what upload processing alone actually does. Raised to the
+Product Owner under AC-17.9 rather than assumed away.
+
+### Stored image record fields, checked against this AC's list
+
+The `photos` table (`\d photos` against `backstage-db`) was checked field by
+field against every attribute this AC names:
+
+| AC-17.2 field   | Stored as                          | Present for photos 1–3? |
+|-----------------|-------------------------------------|--------------------------|
+| width           | `photos.width` (integer)             | Yes — 950, 1920, 350     |
+| height          | `photos.height` (integer)            | Yes — 534, 1080, 262     |
+| aspect ratio    | **not a stored column**              | No — see below           |
+| format          | `photos.mime_type` (varchar)         | Yes — `image/jpeg` (×3)  |
+| file size       | `photos.size_bytes` (integer)        | Yes — 15539, 64450, 5440 |
+| processing state| `photos.processing_status` (varchar) | Yes — `complete` (×3)    |
+
+**Recorded honestly:** there is no `aspect_ratio` column anywhere in the
+pinned schema (confirmed by reading `\d photos` in full — the 37 columns
+listed carry no such field, and no migration under
+`vendor/picpeak/backend/migrations/` adds one). Aspect ratio is always a
+derived value (`width / height`) computed by callers when needed, never
+persisted. This is a genuine gap against the AC's literal wording ("stored
+image records include ... aspect ratio") rather than a misreading — the
+value the AC asks for is fully recoverable from the two columns that are
+stored (width and height are both always populated together, per
+`photoProcessor.js:467-473`), but it is not itself a stored field. Raised to
+the Product Owner under AC-17.9 alongside the derivative-size finding above,
+rather than silently treated as satisfied by the derivable value.
+
+### Verdict
+
+AC-17.2 is satisfied for the parts the pinned fork actually delivers: a
+batch of three real images uploaded through the admin route processes to
+`complete`, each original lands in R2 exactly once and byte-identical to its
+source, and the `photos` row for each carries width, height, format
+(`mime_type`), file size (`size_bytes`), and processing state
+(`processing_status`). Two findings are recorded honestly rather than
+patched or assumed away: only one derivative tier (thumbnail) is produced
+eagerly by upload processing — hero and preview exist, are correctly
+implemented, and were proven to work when explicitly triggered, but are
+lazy — and aspect ratio is not a stored column, only a derivable value from
+the two that are. Both are written up here and raised in
+`scrum-master/po-requests.md` per AC-17.9, not silently decided.
 
 ## Recommendation and open questions (AC-14.6)
 
