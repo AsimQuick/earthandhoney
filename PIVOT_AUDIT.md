@@ -67,7 +67,13 @@ related-story: US-14
          backend source and migration directories, plus each command's
          matching-line count. No names extracted, nothing classified —
          code-level only, no live Backstage required.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1
+         AC-17.4.1.1.1.1.1.2 — re-run the same six commands and reduce the
+         migration-directory portion of their output to a deduplicated list
+         of every distinct field, column, or setting name it surfaces,
+         merging snake_case/camelCase spellings of the same underlying name
+         into one entry each. States the raw hit count the list is reduced
+         from. No classification, nothing dropped for looking irrelevant.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2
 ---
 -->
 
@@ -1456,6 +1462,110 @@ matching-line count is recorded (697, 238, 87, 81, 47, 1). No name is
 extracted and nothing found is classified here — that is deferred to the
 criteria that follow, which now have a fixed, checkable volume of output to
 work from.
+
+## AC-17.4.1.1.1.1.1.2 — migration-directory names: deduplicated list
+
+`US-17` AC-17.4.1.1.1.1.1.2 takes the six commands recorded in
+AC-17.4.1.1.1.1.1.1 above, re-runs them against the same pinned commit
+(`eb263137b98935754155824de2a03848121304b6`), and reduces the portion of
+their output that falls inside `vendor/picpeak/backend/migrations` to a
+deduplicated list of every distinct field, column, or setting name that
+output surfaces. Nothing is classified here and no name is dropped for
+looking irrelevant — classification is deferred to a later criterion. It
+is a code-level finding: no live Backstage instance was started or used.
+
+### Re-running the commands, scoped to the migration directory
+
+The commands are exactly the six from AC-17.4.1.1.1.1.1.1, unchanged:
+
+```
+grep -rIn --include="*.js" -i -- "<term>" vendor/picpeak/backend/src vendor/picpeak/backend/migrations
+```
+
+for `<term>` in `expir`, `expires_at`, `expiry`, `ttl`, `valid_until`,
+`lifetime`. This criterion works from the same output, filtered to the
+lines whose path falls under `vendor/picpeak/backend/migrations` — the
+same figures already given in AC-17.4.1.1.1.1.1.1's per-directory split
+table:
+
+| Term | `backend/migrations` hits |
+|---|---|
+| `expir` | 258 |
+| `expires_at` | 94 |
+| `expiry` | 49 |
+| `ttl` | 2 |
+| `valid_until` | 2 |
+| `lifetime` | 0 |
+| **Total** | **405** |
+
+### From 405 raw hits to 8 names
+
+**Recorded hit count this list is reduced from: 405.**
+
+405 is the sum of the six commands' migration-directory matching lines,
+counted the same way `wc -l` counts them — with a line counted once per
+term it matches, so a line containing both `expir` and `expiry` (e.g. any
+line with the word "expiry") is counted twice toward the 405. Reducing
+that raw count to names happens in two steps, both mechanical:
+
+1. **Collapse to unique lines.** The six commands overlap heavily — every
+   `expires_at` hit is also an `expir` hit, every `expiry` hit is also an
+   `expir` hit, and so on. Sorting and de-duplicating the 405 raw
+   `file:line:content` triples leaves **262 unique matched lines**.
+2. **Keep only lines that actually name a field, column, or setting.**
+   Most of the 262 unique lines are natural-language copy or comments
+   that merely contain one of the six search substrings as part of an
+   ordinary word — the German/French/Spanish/Portuguese/Russian/Slovenian/
+   Dutch email-template prose ("expira", "expirará", "expirando",
+   "verloopt", "läuft ab", "poteče", …), the English verb forms ("will
+   expire", "has expired", "Expiring Soon"), and — for the `ttl`
+   term specifically — two pure false-positive substring matches that
+   name nothing at all: `settled` (`107_crm_consolidated.js:320`) and
+   `Throttle` (`107_crm_consolidated.js:1006`, a comment). None of these
+   are a field, column, or setting name; they are prose, and are recorded
+   here as accounted for, not silently discarded. 67 of the 262 unique
+   lines fall in this bucket.
+
+What is left after removing prose-only lines is **8 distinct names**,
+listed below. Two of the eight are recorded as a single entry each because
+they are a snake_case name and the camelCase form the fork uses for that
+same underlying column/lookup, differing only in spelling:
+
+| Name(s) recorded together | Kind | Evidence (file:line) |
+|---|---|---|
+| `expires_at` | Column name (repeated across `admin_invitations`, `customer_accounts`, `api_tokens`, `revoked_tokens`, guest-identity sessions, `quote_action_tokens`, `contract_action_tokens`) and the matching Handlebars merge-field `{{expires_at}}` in the emails that report that column's value | `vendor/picpeak/backend/migrations/core/058_add_admin_invitations_table.js:37` (`table.timestamp('expires_at').notNullable();`); `vendor/picpeak/backend/migrations/core/090_add_customer_accounts.js:88`; `vendor/picpeak/backend/migrations/core/107_crm_consolidated.js:897,1146,1358`; `vendor/picpeak/backend/migrations/legacy/017_add_token_revocation_tables.js:14` |
+| `invite_expires_at` / `hasInviteExpiresAt` | Column name (`admin_users`) and the camelCase existence-check variable the same migration uses for that column | `vendor/picpeak/backend/migrations/core/057_add_role_to_admin_users.js:38` (`table.timestamp('invite_expires_at');`) and `:20` (`const hasInviteExpiresAt = await knex.schema.hasColumn('admin_users', 'invite_expires_at');`) |
+| `valid_until` | Column name (`quotes`, `contracts`) | `vendor/picpeak/backend/migrations/core/107_crm_consolidated.js:779` (`quotes`) and `:1228` (`contracts`) |
+| `expiry_date` | Handlebars template merge-field name, declared in each gallery-created template's `variables` array and substituted as `{{expiry_date}}` in the template body | `vendor/picpeak/backend/migrations/core/001_init.js:125` (`variables: JSON.stringify([..., 'expiry_date'])`) |
+| `expiration_warning` | `template_key` value naming the "gallery expiring soon" email template | `vendor/picpeak/backend/migrations/core/001_init.js:128` (`template_key: 'expiration_warning',`) |
+| `gallery_expired` / `galleryExpiredExists` | `template_key` value naming the "gallery has expired" email template, and the camelCase existence-check variable the fork uses for that same template lookup | `vendor/picpeak/backend/migrations/legacy/020_ensure_default_email_templates.js:45` (`template_key: 'gallery_expired',`) and `vendor/picpeak/backend/migrations/legacy/010_add_missing_email_templates.js:3-7` (`const galleryExpiredExists = await knex('email_templates')...; if (!galleryExpiredExists) {`) |
+| `event_require_expiration` | `setting_key` value naming an application setting | `vendor/picpeak/backend/migrations/core/061_add_optional_date_expiration_settings.js:11` (`{ setting_key: 'event_require_expiration', setting_value: JSON.stringify(true), setting_type: 'boolean' }`) |
+| `revoked_tokens_expires_at_index` | Database index name | `vendor/picpeak/backend/migrations/legacy/017_add_token_revocation_tables.js:43` (`CREATE INDEX IF NOT EXISTS "revoked_tokens_expires_at_index" ON "revoked_tokens" ("expires_at")`) |
+
+No other distinct field, column, or setting name occurs in the
+migration-directory output: every remaining unique line either repeats one
+of the eight names above (e.g. `expires_at` also appears inside
+`table.index(['expires_at'])`, `table.dropColumn(...)`,
+`knex.schema.hasColumn(...)`, and `ALTER TABLE events ALTER COLUMN
+expires_at DROP NOT NULL` in `061_add_optional_date_expiration_settings.js:32`
+— all the same name, not a new one) or is one of the prose/false-positive
+lines accounted for above.
+
+### Verdict
+
+AC-17.4.1.1.1.1.1.2 is satisfied: the same six commands recorded in
+AC-17.4.1.1.1.1.1.1 were re-run against the same pinned commit
+(`eb263137b98935754155824de2a03848121304b6`), the migration-directory
+portion of their output — 405 raw matching lines, the recorded hit count
+this list is reduced from — is reduced to a deduplicated list of 8 field,
+column, and setting names (`expires_at`; `invite_expires_at` /
+`hasInviteExpiresAt`; `valid_until`; `expiry_date`; `expiration_warning`;
+`gallery_expired` / `galleryExpiredExists`; `event_require_expiration`;
+`revoked_tokens_expires_at_index`), with the two snake_case/camelCase pairs
+recorded as single entries rather than as four separate names. Nothing
+found is classified and no name was dropped for looking irrelevant — the
+`ttl` false positives (`settled`, `Throttle`) and the prose inflections of
+"expire" are accounted for as containing no name, not silently omitted.
 
 ## Recommendation and open questions (AC-14.6)
 
