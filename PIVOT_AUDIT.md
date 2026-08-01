@@ -2951,6 +2951,130 @@ Gallery-path read of its own, drawn only from the code evidence recorded
 in AC-17.4.1.1.1.2.1 through this criterion. It is a code-level finding:
 no live Gallery was created or changed for it.
 
+## AC-17.4.1.1.1.3 — the PostgreSQL table and column, identified from the schema
+
+`US-17` AC-17.4.1.1.1.3 identifies the PostgreSQL table and column that
+carry a Gallery's own expiry value from the schema source that creates
+them, precisely enough for AC-17.4.1.2 to query the column verbatim. Its
+scope is fixed to two commands already run against the pinned commit
+(`eb263137b98935754155824de2a03848121304b6`): a grep for column
+declarations of every name in the AC-17.4.1.1.1.2.1 confirmed/ruled-out
+shortlist across `vendor/picpeak/backend/src/database/db.js` and
+`vendor/picpeak/backend/migrations/`, and a grep for later alterations to
+`events.expires_at`. Nothing else was read. This section restates the
+write-path and read-path shapes AC-17.4.1.1.1.2.2.3 and
+AC-17.4.1.1.1.2.3 already recorded rather than re-deriving them.
+
+### (a) Schema record: the Gallery's stored expiry column
+
+**Table:** `events`. **Column:** `expires_at`.
+
+- **Creating definition:** `vendor/picpeak/backend/src/database/db.js:143`
+  — `table.datetime('expires_at').notNullable();`, inside
+  `initializeDatabase()`'s `db.schema.createTable('events', (table) => {...})`
+  (`db.js:122-125` opens the `createTable('events', ...)` block this line
+  sits inside).
+- **Migration that executes that definition:**
+  `vendor/picpeak/backend/migrations/core/001_init.js` — no file in
+  `vendor/picpeak/backend/migrations/` contains the `createTable('events', ...)`
+  call itself (confirmed by list 1: every other declaration line sits
+  inside a different migration file creating a different table, per part
+  (b) below); instead `001_init.js:2` requires
+  `initializeDatabase` from `db.js` and `001_init.js:12` calls
+  `await initializeDatabase();` inside its `exports.up`, which is what
+  runs `db.js:143`'s `createTable('events', ...)` block. PostgreSQL takes
+  the `if (!hasEventsTable)` branch this line sits inside
+  (`db.js:124-166`); the file's other, `else`-branch table rebuild
+  (`db.js:169-...`) is gated on `!isPostgres` and does not apply here.
+- **Later alteration (list 2):**
+  `vendor/picpeak/backend/migrations/core/061_add_optional_date_expiration_settings.js:32`
+  — `await knex.raw('ALTER TABLE events ALTER COLUMN expires_at DROP NOT NULL');`,
+  reached only on the PostgreSQL branch of that migration
+  (`061_add_optional_date_expiration_settings.js:29-30`, gated on
+  `client === 'pg' || client === 'postgresql'`).
+- **Disagreement:** the creating definition (`db.js:143`) declares
+  `expires_at` `NOT NULL`; the later PostgreSQL-only migration
+  (`061_add_optional_date_expiration_settings.js:32`) drops that
+  constraint. The two disagree on nullability, and the later line wins.
+- **Resulting state on PostgreSQL, once both cited lines have run:** type
+  `datetime` as declared (knex `.datetime()`, `db.js:143`); nullable
+  (`061:32` overrides the creating definition's `NOT NULL`); no default
+  (`db.js:143` calls no `.defaultTo(...)`, and `061:32` does not add one).
+  Optional live check against the running Backstage PostgreSQL (US-16)
+  confirms this with no further disagreement:
+  `SELECT table_name, column_name, data_type, is_nullable, column_default
+  FROM information_schema.columns WHERE table_name='events' AND
+  column_name='expires_at';` returns
+  `events | expires_at | timestamp with time zone | YES | ` (nullable,
+  no default) — consistent with the schema-source-derived state above.
+
+### (b) The thirteen confirmed entries, one row each
+
+| Entry | Name(s) | Column | Upstream shape (restated) |
+|---|---|---|---|
+| E1 | `expires_at` | `events.expires_at` — `db.js:143` | Persisted column; see (a). |
+| E4 | `expiry_date` | no column of its own | Outbound-email template variable populated from `expires_at` when an email is queued; never read back into any client- or Customer-facing response (AC-17.4.1.1.1.2.3). |
+| E5 | `expiration_warning` | no column of its own | Email-template/notification-kind literal passed as the `email_type` argument to `queueEmail`, not a Gallery column (AC-17.4.1.1.1.2.2.3). |
+| E6 | `gallery_expired` / `galleryExpiredExists` | no column of its own | Same shape as E5 — an `email_type` literal passed to `queueEmail` from inside the scheduled job's `handleExpiredEvent`, never read on a live request (AC-17.4.1.1.1.2.3). |
+| E7 | `event_require_expiration` | no column of its own | Read once at Gallery-creation time to decide whether to compute `expires_at`; an admin-side creation-form setting, not re-read once the Gallery exists (AC-17.4.1.1.1.2.3). |
+| E10 | `expiration_days` | no column of its own | Read only inside the admin create-Gallery form flow to compute the new Gallery's `expires_at`; never read again once the Gallery exists (AC-17.4.1.1.1.2.3). |
+| E11 | `general_default_expiration_days` | no column of its own | Prefills the create-Gallery form's `expiration_days` default client-side; never read again once the Gallery exists (AC-17.4.1.1.1.2.3). |
+| E12 | `require_expiration` | no column of its own | Same boolean/site as E7, read at Gallery-creation time to gate the `expires_at` write; not re-read once the Gallery exists (AC-17.4.1.1.1.2.3). |
+| E13 | `is_expired` | no column of its own | Computed on every read from the already-stored `is_active` and `expires_at` columns, never itself persisted (AC-17.4.1.1.1.2.2.3). |
+| E16 | `GALLERY_EXPIRED` | no column of its own | Hardcoded response-code literal returned by the (dead) access-gate middleware when `expires_at` has passed; never written to any row (AC-17.4.1.1.1.2.2.3). |
+| E30 | `expiringEvents` | no column of its own | Dashboard response-object key for a live aggregate `COUNT` over `events` rows filtered by `expires_at`, computed fresh on every dashboard request, never stored (AC-17.4.1.1.1.2.2.3). |
+| E32 | `expiring` | no column of its own | Request-time list-filter value compared against a query parameter to add an `expires_at`-range `WHERE` clause; never written to a row (AC-17.4.1.1.1.2.2.3). |
+| E33 | `event.expired` | no column of its own | Outbound webhook event-type string fired from the scheduled `expirationChecker` job; its only reader is an external listener outside the application (AC-17.4.1.1.1.2.3). |
+
+None of the other twelve entries' names appear anywhere in list 1's
+thirteen declaration lines — every one of those lines declares
+`expires_at` (the E1 name only), on `events` (`db.js:143`) or on a
+different table (`admin_invitations` —
+`migrations/core/058_add_admin_invitations_table.js:37`;
+`revoked_tokens` (again, via the `017` legacy migration this time) —
+`migrations/legacy/017_add_token_revocation_tables.js:14,21`;
+`api_tokens` — `migrations/core/081_add_api_tokens.js:26`; the table
+`migrations/core/078_add_guest_identity.js:65` creates; the table
+`migrations/core/090_add_customer_accounts.js:88` creates; the table
+`migrations/core/092_customer_features_branding_resets.js:98` creates;
+and the three tables `migrations/core/107_crm_consolidated.js:897,1146,1358`
+create; plus `db.js:424,431`, on `revoked_tokens` — a token-revocation
+table, not the Gallery table). Each of those is a
+same-named `expires_at` column on a table other than the Gallery's
+`events`, so per this AC's scope it belongs to that other table and does
+not make any of E4–E33 a column of the Gallery's, per (b)'s instruction.
+
+### (c) Verbatim query for AC-17.4.1.2
+
+```sql
+SELECT expires_at FROM events WHERE id = $1;
+```
+
+### (d) Count
+
+1 of the 13 rows carries a column (`events.expires_at`, E1); 12 of the 13
+rows carry `no column of its own` (E4, E5, E6, E7, E10, E11, E12, E13,
+E16, E30, E32, E33). 1 + 12 = 13.
+
+### Verdict
+
+AC-17.4.1.1.1.3 is satisfied: against the pinned commit
+(`eb263137b98935754155824de2a03848121304b6`) and the two fixed-scope
+grep commands given for this criterion, the Gallery's stored expiry
+value is identified as `events.expires_at`, declared at `db.js:143`
+(`NOT NULL`, no default), executed by the `core/001_init.js` migration's
+call to `initializeDatabase()`, and later altered to nullable on PostgreSQL only by
+`061_add_optional_date_expiration_settings.js:32` — a disagreement
+recorded rather than smoothed over, with both lines cited and the
+resulting state confirmed against the running Backstage PostgreSQL. All
+thirteen AC-17.4.1.1.1.2.1 confirmed entries are accounted for: one
+carries the column, twelve carry `no column of its own` with their
+already-recorded upstream shape restated rather than re-derived, and the
+count (1 + 12 = 13) is stated. The verbatim query AC-17.4.1.2 will run is
+given in full. No row is unresolved, so none is carried forward. It is a
+documentation-only, code-level finding: no live Gallery was created or
+changed for it, and no source file was modified.
+
 ## Recommendation and open questions (AC-14.6)
 
 ### Explicit keep/replace/retire recommendation
