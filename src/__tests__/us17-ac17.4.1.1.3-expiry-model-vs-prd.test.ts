@@ -208,9 +208,22 @@ describe('AC-17.4.1.1.3: the pinned fork\'s expiry model against the PRD\'s assu
     })
 
     it('the vendored fork has no local modifications (git-clean)', () => {
+      // Some sandboxed test runners invoke this via a shell whose PATH
+      // doesn't include the directories git actually lives in, so widen
+      // it here rather than relying on whatever PATH the process inherits.
+      const path = [
+        process.env.PATH,
+        '/usr/bin',
+        '/usr/local/bin',
+        '/opt/homebrew/bin',
+        '/bin',
+      ]
+        .filter(Boolean)
+        .join(':')
       const status = execSync('git status --porcelain -- vendor/picpeak', {
         cwd: root,
         encoding: 'utf8',
+        env: { ...process.env, PATH: path },
       })
       expect(status.trim()).toBe('')
     })
