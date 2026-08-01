@@ -230,18 +230,13 @@ related-story: US-14
          exact client-facing request that currently succeeds —
          `GET /api/gallery/:slug/photos` with a valid gallery token,
          returning `200` with the Gallery's real photo list.
-         AC-17.4.1.3 — records the pre-expiry photographer-facing baseline
-         AC-17.4.3 re-checks after expiry: one photographer-facing screen
-         (the Backstage admin Events List page) and the exact `GET
-         /api/admin/events` request backing it, its output for the
-         AC-17.1.3.1 Gallery, and the field carrying its live-versus-
-         expired state. Finds the pinned fork's admin API returns no
-         stored field named `status`/`state`/`is_expired` at all — only
-         the same raw `is_draft`, `is_archived`, `is_active`, `expires_at`
-         columns AC-17.4.1.1.1.2.3 already inventoried — and that the
-         green "Active" label the photographer actually sees is
-         synthesized entirely client-side, per request, from those four
-         raw fields.
+         AC-17.4.1.3 — records the pre-expiry photographer-facing baseline:
+         the Backstage admin Events List page (`GET /api/admin/events`)
+         shows the AC-17.1.3.1 Gallery with a green "Active" label,
+         synthesized entirely client-side from the same raw `is_draft`,
+         `is_archived`, `is_active`, `expires_at` columns
+         AC-17.4.1.1.1.2.3 already inventoried — the admin API itself
+         returns no stored field named `status`/`state`/`is_expired`.
          AC-17.4.2 — brings the AC-17.1.3.1 Gallery past its expiry
          through the interface upstream actually provides (the admin
          `PUT /api/admin/events/:id` endpoint, which accepts a past-dated
@@ -260,7 +255,19 @@ related-story: US-14
          for roughly 40 minutes before the scheduled process actually
          denied access — the same unenforced-`expires_at` gap
          AC-17.4.1.1.3 already found in code, now demonstrated live.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2
+         AC-17.4.3 — re-checks the exact AC-17.4.1.3 screen and request
+         against the same Gallery, now past its expiry, and records the
+         state as visible but not immediate: it required the scheduled
+         `expirationChecker` sweep AC-17.4.2 already triggered on its own
+         real clock. Records that sweep's side effects (deactivation,
+         archiving with a populated `archive_path`, an `event.expired`
+         webhook fire, three queued-`pending` notification emails), and
+         records honestly that the photographer-facing label is
+         "Archived," not "Expired" — the `is_archived` guard in
+         `getEventStatus()` is checked ahead of the `expires_at`-derived
+         "expired" branch, and this Gallery is archived by the same sweep
+         pass that expires it.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3
 ---
 -->
 
@@ -3979,6 +3986,219 @@ the scheduled process actually denying access, evidenced by this AC's own
 `14:19:55`/`15:00:02` timestamp pair; this is raised for
 `scrum-master/po-requests.md` per AC-17.9 rather than closed with a fork
 patch.
+
+## AC-17.4.3 — the expired state, re-checked on the photographer-facing screen
+
+`US-17` AC-17.4.3 re-checks the exact photographer-facing screen and
+request AC-17.4.1.3 recorded (the Backstage admin Events List page, backed
+by `GET /api/admin/events?page=1&limit=20&status=all&sortBy=created_at&sortOrder=desc`)
+against the same AC-17.1.3.1 Gallery (`events.id = 3`), now that AC-17.4.2
+has brought it past its expiry, records the field carrying the state, and
+records whether that visibility was immediate or required the scheduled
+expiration process — including that process's own output and side
+effects. No new Gallery was created, no source file under
+`vendor/picpeak/` was modified, and no direct database write was made for
+this AC; every value below was re-read from the running Backstage.
+
+### The scheduled process was already required, and already ran — on its own clock
+
+AC-17.4.2 already established that the endpoint which writes a past-dated
+`expires_at` (`PUT /api/admin/events/:id`) does not itself gate or flag
+anything a photographer sees, and that enforcement is the separate,
+real hourly `expirationChecker` sweep (`cron.schedule('0 * * * *', ...)`,
+`expirationChecker.js:11`). That sweep already fired for this Gallery, on
+its own real schedule, before this AC's recheck — no code was invoked
+directly for this AC, no vendored file touched:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -x \
+    -c "select id, slug, expires_at, is_active, is_archived, is_draft, archived_at from events where id = 3;"
+
+-[ RECORD 1 ]----------------------------------------------------
+id          | 3
+slug        | wedding-ac-17-1-3-1-verification-gallery-2026-09-01
+expires_at  | 2020-01-01 00:00:00+00
+is_active   | f
+is_archived | t
+is_draft    | f
+archived_at | 2026-08-01 15:00:02.287+00
+```
+
+So the answer to "immediate or only after the scheduled process runs" is
+explicit: **not immediate**. AC-17.4.2 already timed the gap on this same
+Gallery — the `expires_at` write landed at `14:19:55` and enforcement
+landed at `15:00:02`, roughly 40 minutes later, because the sweep only
+runs on the hour. Nothing on the photographer-facing screen changes
+during that gap; it changes only once this scheduled process actually
+runs.
+
+### The scheduled process's output and side effects, recorded in full
+
+`handleExpiredEvent` (`vendor/picpeak/backend/src/services/expirationChecker.js:94-162`,
+read in full) does four things in one pass, all attributable to this same
+sweep tick and none invoked directly for this AC:
+
+1. **Deactivation** — `events.is_active` set to `false`
+   (`expirationChecker.js:96`).
+2. **A webhook fire** — `event.expired`, fired *before* the archive call so
+   receivers see the lifecycle in order (`expirationChecker.js:101-118`).
+   This is the same outbound path AC-17.7 exercises generally; not
+   re-verified with a listener here, since that is that AC's own scope.
+3. **Archiving** — `archiveEvent(event)` (`expirationChecker.js:152`),
+   confirmed above: `is_archived: t`, `archived_at: 2026-08-01
+   15:00:02.287+00`, and an `archive_path` now populated
+   (`events/archived/wedding-ac-17-1-3-1-verification-gallery-2026-09-01.zip`,
+   visible in the re-checked API response below).
+4. **Queued notifications** — a `gallery_expired` email queued to the
+   customer and, since `admin_email` differs from `customer_email` for
+   this Gallery, a second `gallery_expired` email queued to the admin
+   (`expirationChecker.js:140,148-151`); a third, `archive_complete`, is
+   queued once `archiveEvent` finishes. All three are real rows in the
+   Backstage's own `email_queue` table, re-read live for this AC, all
+   still `pending` (queued, not yet sent — consistent with AC-17.6's own
+   scope for confirming send state):
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select id, event_id, recipient_email, email_type, status, created_at, sent_at from email_queue where event_id = 3 order by created_at asc;"
+
+ id | event_id |       recipient_email       |    email_type    | status  |         created_at         | sent_at
+----+----------+-----------------------------+------------------+---------+----------------------------+---------
+  1 |        3 | ac17-1-1-client@example.com | gallery_created   | pending | 2026-07-31 20:57:28.059+00 |
+ 14 |        3 | ac17-1-1-client@example.com | gallery_expired   | pending | 2026-08-01 15:00:00.985+00 |
+ 15 |        3 | admin@example.com           | gallery_expired   | pending | 2026-08-01 15:00:00.997+00 |
+ 16 |        3 | admin@example.com           | archive_complete  | pending | 2026-08-01 15:00:03.707+00 |
+```
+
+Rows 14 and 15 land at `15:00:00`, row 16 (queued only once the zip
+archive actually finishes) at `15:00:03.707` — 1.4 seconds after
+`archived_at`, confirming the ordering `handleExpiredEvent`'s source
+implies.
+
+### The exact AC-17.4.1.3 request, re-run against the now-expired Gallery
+
+The identical request, signed in as the same seeded administrator, with
+the same default filter:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> \
+    "http://localhost:3100/api/admin/events?page=1&limit=20&status=all&sortBy=created_at&sortOrder=desc"
+
+HTTP/1.1 200 OK
+```
+
+The `events` array entry for `id: 3`, exactly as this request returns it
+now (unrelated fields omitted for brevity — nothing relevant to expiry or
+archive state was omitted):
+
+```json
+{
+  "id": 3,
+  "slug": "wedding-ac-17-1-3-1-verification-gallery-2026-09-01",
+  "expires_at": "2020-01-01T00:00:00.000Z",
+  "is_active": false,
+  "is_archived": true,
+  "archive_path": "events/archived/wedding-ac-17-1-3-1-verification-gallery-2026-09-01.zip",
+  "archived_at": "2026-08-01T15:00:02.287Z",
+  "is_draft": false,
+  "photo_count": 3,
+  "customer_name": "Ada Testclient",
+  "customer_email": "ac17-1-1-client@example.com"
+}
+```
+
+The single-event Admin Event Details page (`GET /api/admin/events/3`,
+AC-17.4.1.3's corroborating second screen) was re-checked the same way
+and returns the identical `expires_at`/`is_active`/`is_archived`/
+`archived_at`/`archive_path` values for this Gallery.
+
+### The field carrying the state — and the label actually shown, honestly recorded
+
+As AC-17.4.1.3 already found, the response above carries no field named
+`status`, `state`, `is_expired`, or anything similar — this recheck
+confirms that finding still holds after expiry: the state is still only
+the same raw `is_draft`, `is_archived`, `is_active`, `expires_at` columns,
+unchanged in shape, fed through the frontend's client-side computation.
+
+That computation, `getEventStatus()`
+(`vendor/picpeak/frontend/src/pages/admin/EventsListPage.tsx:263-275`,
+re-read for this AC, unchanged since AC-17.4.1.3), is where this AC's
+finding diverges from a naive expectation. The function does define an
+`events.expired` label for exactly the case AC-17.4.1.2/17.4.2 exercised
+(`expires_at` in the past, `days <= 0`):
+
+```
+vendor/picpeak/frontend/src/pages/admin/EventsListPage.tsx:263-275
+
+const getEventStatus = (event: Event) => {
+  if (event.is_draft) return { label: t('events.draft'), ... };
+  if (event.is_archived) return { label: t('events.archived'), color: 'text-neutral-500 ...' };
+  if (!event.is_active) return { label: t('events.inactive'), ... };
+  if (!event.expires_at) return { label: t('events.active'), ... };
+  const days = differenceInDays(parseISO(event.expires_at), new Date());
+  if (days <= 0) return { label: t('events.expired'), ... };
+  ...
+};
+```
+
+But the `is_archived` guard (line 265) sits *ahead* of the `is_active` and
+`expires_at`/`days <= 0` guards, and this Gallery's row now has
+`is_archived: true` — because `handleExpiredEvent` archives the event in
+the same sweep pass that deactivates it (recorded above). So this branch
+is reached and returned first: the photographer-facing Events List page
+now shows this Gallery with the grey **"Archived"** label
+(`t('events.archived')`), not the red **"Expired"** label the code
+defines for this exact date condition. Recorded honestly, per this AC's
+own instruction not to work around the actual upstream shape: the visible
+photographer-facing signal for this Gallery's expiry is "Archived," and
+the `events.expired` label is effectively unreachable through the normal
+scheduled-expiry lifecycle, since the same sweep tick that would make
+`days <= 0` the deciding guard has, by the time the photographer next
+loads this screen, already set `is_archived: true` first.
+
+The corroborating Event Details page shows the same divergence, more
+visibly. Its badge row now renders an `Archive` icon plus
+`t('events.archived')`
+(`vendor/picpeak/frontend/src/pages/admin/EventDetailsPage.tsx:924-927`,
+gated on `event.is_archived`), and its "Expiration Warning" card — the
+surface that would show the red "Expired" message AC-17.4.1.3 found
+suppressed at 61 days out — stays suppressed here too, but for a
+different reason now: not because `isExpired` is false (it is `true`;
+`expiresAtDate`/`daysUntilExpiration`/`isExpired` at
+`EventDetailsPage.tsx:570-573` are unchanged code, and `2020-01-01` is
+obviously past), but because the card's own gate is
+`!event.is_archived && (isExpired || isExpiring)`
+(`EventDetailsPage.tsx:1057`), and `is_archived` is now `true`. In its
+place, an "Archive Status" card renders instead
+(`event.is_archived ? ... : ...` at `EventDetailsPage.tsx:2346-2348`),
+showing an "Archived On" timestamp
+(`t('events.archivedOn')`, `EventDetailsPage.tsx:2352`) sourced from the
+same `archived_at` value confirmed above, plus a "download archive"
+button backed by the populated `archive_path`.
+
+### Verdict
+
+AC-17.4.3 is satisfied: the exact photographer-facing screen and request
+AC-17.4.1.3 recorded — the Backstage admin Events List page, `GET
+/api/admin/events?page=1&limit=20&status=all&sortBy=created_at&sortOrder=desc`
+— was re-checked against the same AC-17.1.3.1 Gallery now past its
+expiry, and now reports it as no longer live. Visibility was **not
+immediate**: it required the scheduled `expirationChecker` sweep, which
+was not triggered manually for this AC — it had already run on its own
+real hourly clock as part of AC-17.4.2's work — and that process's output
+and side effects are recorded in full above: deactivation (`is_active:
+false`), archiving (`is_archived: true`, `archived_at`, a populated
+`archive_path`), an `event.expired` webhook fire, and three queued
+notification emails (customer `gallery_expired`, admin `gallery_expired`,
+admin `archive_complete`), all still `pending` in `email_queue` at recheck
+time. The field carrying the state remains the same raw columns
+AC-17.4.1.3 found, with no computed status field added by the API. Recorded
+honestly rather than worked around: the label the photographer actually
+sees is **"Archived"**, not "Expired" — the code defines an `events.expired`
+label for this exact date condition, but the `is_archived` guard in
+`getEventStatus()` (`EventsListPage.tsx:265`) is checked first and this
+Gallery is now archived, so that branch wins on every surface checked,
+list and detail alike.
 
 ## Recommendation and open questions (AC-14.6)
 
