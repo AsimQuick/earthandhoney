@@ -281,9 +281,17 @@ related-story: US-14
          own prior work, and that upstream's own archive-restore endpoint
          cannot recover it under this deployment's S3 storage backend — so
          a second Gallery, created the same way AC-17.1.3.1 was, carries
-         this AC's live proof instead. The single-photo download route is
-         explicitly not called, per this AC's own scope, which reserves
-         its fork patch for the criteria that follow.
+         this AC's live proof instead. Also records, from reading the
+         pinned source alone, the starting shape the two criteria that
+         follow act on: the archive route already resolving through
+         `resolvePhotoStorageKey`/`getStorage()` and so needing no patch,
+         against the single-photo route's local-filesystem-only
+         `resolvePhotoFilePath`, its `res.sendFile` error callback that
+         logs without ever responding, and its `download_count` /
+         `access_logs` writes landing before the send. The single-photo
+         download route is explicitly not called, per this AC's own
+         scope, which reserves its fork patch for the criteria that
+         follow.
 related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3, 17.5.1
 ---
 -->
@@ -4226,9 +4234,13 @@ through `POST /api/auth/gallery/verify`, `GET /api/gallery/:slug/photos`
 returning every photo, `GET /api/gallery/:slug/download-all` returning a
 valid zip with its size and entry list recorded, and the download routes
 refusing with `403` once `allow_downloads` is flipped off, restored
-afterward. This AC modifies no source file; every action below is either a
-live HTTP call against the running Backstage or a read of its own
-Postgres — no file under `vendor/picpeak/` was touched, and nothing in
+afterward. It also requires recording, from reading the pinned source
+only, the starting shape the two criteria that follow act on — why the
+archive route needs no patch and how the single-photo route differs from
+it — which is the last subsection below. This AC modifies no source file;
+every action below is either a live HTTP call against the running
+Backstage, a read of its own Postgres, or a read of the pinned source
+— no file under `vendor/picpeak/` was touched, and nothing in
 `FORK_CHANGELOG.md`, `PICPEAK_UPSTREAM_DEFECTS.md`, or `UPSTREAM_SYNC.md`
 changes for this AC. The single-photo download route
 (`GET /:slug/download/:photoId`) is deliberately never called here, per
@@ -4295,10 +4307,13 @@ exec -T backstage-backend sh -c 'env | grep STORAGE_BACKEND'` →
 `STORAGE_BACKEND=s3`), the archive this Gallery's own expiry sweep wrote
 lives in R2, not on the container's local filesystem, so `fs.access()`
 correctly reports it missing and the restore is refused. This is the same
-class of defect UD-1 already registers for the single-photo download
-route — a local-filesystem-only code path in an S3-backed deployment —
-but a different route and file, and registering it formally is out of
-this AC's scope (no new `PICPEAK_UPSTREAM_DEFECTS.md` entry was added);
+class of defect the single-photo download route carries (recorded from
+the pinned source at the end of this section, and owed as a formal
+register entry to the criteria that follow) — a local-filesystem-only
+code path in an S3-backed deployment — but a different route and file,
+and registering it formally is out of this AC's scope (no
+`PICPEAK_UPSTREAM_DEFECTS.md` entry was added, and that file does not
+exist on this branch yet);
 it is recorded here only as the evidence for why restore was not a viable
 path forward, and is worth the Product Owner's attention under AC-17.9.
 
@@ -4374,9 +4389,10 @@ nodejs:nodejs storage data logs`, relative to `WORKDIR /app`). With no
 started `backstage-backend` container has no `/storage` at all, and the
 non-root `nodejs` user the server actually runs as (confirmed via
 `/proc/<pid>/status`) cannot create it directly under the root-owned `/`.
-This is a third instance of the same defect family as UD-1 and the
-archive-restore gap above — a hard-coded local-filesystem assumption that
-does not hold in this deployment — and is likewise not registered as a
+This is a third instance of the same defect family as the single-photo
+download route and the archive-restore gap above — a hard-coded
+local-filesystem assumption that does not hold in this deployment — and
+is likewise not registered as a
 new formal defect here, since doing so is outside this AC's scope; it is
 recorded only as the reason a one-time, non-source operational fix was
 needed:
@@ -4626,6 +4642,140 @@ http_code=200
 the `Content-Length`-only recheck in the previous section, `id 56`, both
 land after the restore — consistent with the gap above.)
 
+### The shape the two criteria that follow act on, read out of the pinned source
+
+This last part of the AC is a *reading*, not an investigation. The
+Product Owner's own verified run (`scrum-master/po-requests.md`,
+2026-08-01) handed this criterion the line references and the
+storage-backend diagnosis below as fixed scope; what follows confirms
+each of them against the pinned source at
+`vendor/picpeak/backend/src/routes/gallery.js`, and nothing here is
+re-derived by fresh investigation or by calling the route. The
+single-photo download route is not called anywhere in this criterion —
+on this stack it does not error, it hangs, and every call to it anywhere
+in `US-17` must carry a hard timeout (`curl --max-time 10`, or an
+explicit client timeout).
+
+**The archive route needs no patch — it already resolves through the
+storage backend.** `GET /:slug/download-all` (`gallery.js:739`) builds
+each zip entry through `resolvePhotoStorageKey` and `getStorage()`:
+
+```js
+// vendor/picpeak/backend/src/routes/gallery.js:836-837, 844, 870-872
+const { resolvePhotoStorageKey } = require('../services/photoResolver');
+const storage = getStorage();
+...
+  const storageKey = resolvePhotoStorageKey(req.event, photo);
+...
+  } else if (storageKey) {
+    const stream = await storage.get(storageKey);
+    archive.append(stream, { name: archiveName });
+```
+
+`resolvePhotoStorageKey` (`services/photoResolver.js:20-38`) returns a
+*relative key* (`events/active/{slug}/individual/{filename}`), never an
+absolute local path, and `getStorage()` picks the backend this deployment
+is actually configured for (`STORAGE_BACKEND=s3`, confirmed live earlier
+in this AC). That is precisely why the archive download recorded above
+returned `200` and a valid three-entry zip with no fork patch of any
+kind — the code path this AC exercised never touches the container's
+local filesystem for photo bytes. `resolvePhotoFilePath` still appears on
+two *fallback* branches of the same loop (`gallery.js:861`, `874`), but
+both are guarded by `storageKey` being null, which happens only for
+`reference`/`external`-mode photos (`photoResolver.js:24-27`); the
+managed photos in this Gallery take neither branch.
+
+**The single-photo route resolves through the local filesystem only.**
+`GET /:slug/download/:photoId` (`gallery.js:631`) resolves its bytes with
+the sibling helper instead:
+
+```js
+// vendor/picpeak/backend/src/routes/gallery.js:665-676
+let filePath;
+try {
+  filePath = resolvePhotoFilePath(req.event, photo);
+} catch (resolveError) {
+  logger.error('Failed to resolve photo path for download', { ... });
+  return res.status(404).json({ error: 'Photo file not found' });
+}
+```
+
+`resolvePhotoFilePath` (`photoResolver.js:45-90`) has no
+storage-backend branch at all. For a managed photo it ends at
+`safePathJoin(path.join(getStoragePath(), 'events/active'), relativeSegment)`,
+where `getStoragePath()` is `process.env.STORAGE_PATH ||
+path.join(__dirname, '../../../storage')` (`photoResolver.js:5`) — an
+absolute path on the container's own disk, computed identically whether
+`STORAGE_BACKEND` is `local` or `s3`. It neither calls `getStorage()` nor
+consults `STORAGE_BACKEND`. This is the same local-filesystem-only shape
+already recorded in this AC for `POST /api/admin/archives/:id/restore`
+and for the create route's `/storage` `mkdir`, in a third place: a route
+that assumes photo bytes are reachable as a file, in a deployment where
+they are objects in R2.
+
+**Its failure path logs but never responds.** The non-watermarked branch
+streams with `res.sendFile` and passes a callback that only writes a log
+line:
+
+```js
+// vendor/picpeak/backend/src/routes/gallery.js:716-725
+res.sendFile(filePath, (downloadError) => {
+  if (downloadError) {
+    logger.error('Error streaming gallery download', {
+      slug: req.params.slug,
+      photoId,
+      eventId: req.event.id,
+      error: downloadError.message,
+    });
+  }
+});
+```
+
+There is no `res.status(...)`, no `res.end()`, and no `next(...)` inside
+that callback — the only statement in it is `logger.error`. The
+handler's own `try/catch` (opened at `gallery.js:632`, caught at
+`gallery.js:727-735`, where it *does* send a `500`) cannot cover it
+either:
+`res.sendFile`'s callback is invoked asynchronously, after the handler's
+`try` block has already returned, so a stream failure is swallowed by the
+callback and never converted into a response. That is the shape behind
+the hang, and it is why the single-photo route is not called here.
+
+**Both write rows before the send is attempted.** The download counter
+and the audit-log row are written *above* the resolve-and-send block, not
+after it:
+
+```js
+// vendor/picpeak/backend/src/routes/gallery.js:653-663
+// Update download count
+await db('photos').where('id', photoId).increment('download_count', 1);
+
+// Log download
+await db('access_logs').insert({
+  event_id: req.event.id,
+  ip_address: req.ip,
+  user_agent: req.headers['user-agent'],
+  action: 'download',
+  photo_id: photoId
+});
+```
+
+`gallery.js:654` increments `photos.download_count` and `gallery.js:657`
+inserts the `access_logs` row, both before `resolvePhotoFilePath` at
+`gallery.js:667` and long before `res.sendFile` at `gallery.js:716`. A
+request that resolves to a missing file, or that hangs in the stream,
+therefore still leaves a completed-looking `download` row and an
+incremented counter behind it. This ordering is deliberately contrasted
+with what this AC proved live for `download-all`, where the
+`allow_downloads` refusal happens before anything is recorded and no
+`access_logs` row appeared for either `403`.
+
+Nothing in this subsection changes a file. It is the recorded starting
+shape the two criteria that follow act on; every change to vendored
+source, and every out-of-file record of the patch (`FORK_CHANGELOG.md`,
+`PICPEAK_UPSTREAM_DEFECTS.md`, `UPSTREAM_SYNC.md`, and the upstream issue
+text), is owed to them and is deliberately absent here.
+
 ### Verdict
 
 AC-17.5.1 is satisfied: a client obtains a gallery token via
@@ -4643,8 +4793,9 @@ patch. Recorded honestly rather than silently substituted: the
 AC-17.1.3.1 Gallery this AC was asked to reuse was found already archived
 by AC-17.4.2/AC-17.4.3's own prior work on this branch, upstream's own
 archive-restore endpoint cannot recover it under this deployment's S3
-storage backend (a defect of the same family as UD-1, not formally
-registered here as that is out of this AC's scope), and a second Gallery
+storage backend (a defect of the same local-filesystem-only family as the
+single-photo download route, not formally registered here as that is out
+of this AC's scope), and a second Gallery
 — created through the same supported interface AC-17.1.3.1 already
 proved — carries this AC's live proof instead. A related, one-time local
 directory permission gap (`/storage` unwritable by the non-root
@@ -4656,6 +4807,22 @@ for the Product Owner's attention under AC-17.9. The single-photo
 download route was not called anywhere in this AC, per its own scope; its
 hang under this same S3 storage backend, and the fork patch that fixes
 it, are owed to the criteria that follow.
+
+The starting shape those two criteria act on is recorded here from
+reading the pinned source alone, and every line reference the Product
+Owner's own verified run supplied was confirmed against it rather than
+re-derived: the archive route resolves through `resolvePhotoStorageKey`/
+`getStorage()` (`gallery.js:836`) and so needs no patch, while
+`GET /:slug/download/:photoId` (`gallery.js:631`) resolves through the
+local-filesystem-only `resolvePhotoFilePath` (`gallery.js:667`, defined
+at `services/photoResolver.js:45-90` with no storage-backend branch),
+streams with `res.sendFile` whose error callback only logs and never
+responds (`gallery.js:717-725`), and increments `download_count`
+(`gallery.js:654`) and inserts the `access_logs` row (`gallery.js:657`)
+before the send is ever attempted. This criterion modified no source
+file: the audit section above is its entire deliverable, and no
+`FORK_CHANGELOG.md`, `PICPEAK_UPSTREAM_DEFECTS.md`, `UPSTREAM_SYNC.md`,
+or upstream-issue record was written for it.
 
 ## Recommendation and open questions (AC-14.6)
 
