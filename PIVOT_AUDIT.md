@@ -101,7 +101,20 @@ related-story: US-14
          the reason rather than omitted. This shortlist is the output of
          the AC-17.4.1.1.1.1.1.1 through AC-17.4.1.1.1.1.3 group of criteria
          as a whole, handed to AC-17.4.1.1.1.2 to confirm from code.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3
+         AC-17.4.1.1.1.2.1 — settles every entry on the AC-17.4.1.1.1.1.3
+         candidate shortlist as confirmed or ruled out, from application
+         code at the pinned commit rather than from this audit's own prior
+         reasoning: each disposition carries a one-line reason and at
+         least one file:line. Confirms 13 of the 14 shortlist entries as
+         genuinely participating in a Gallery's own `events.expires_at`
+         lifecycle on the Gallery path. Finds that the 14th,
+         `expirationChecker`, does not — its only occurrence is a
+         hardcoded status literal that never reads or derives from
+         `events.expires_at` — and moves it into a new ruled-out group.
+         Reconciles the confirmed set and the corrected ruled-out entry
+         against the full 14-entry shortlist so every entry is placed
+         exactly once, with nothing left unresolved.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1
 ---
 -->
 
@@ -2130,6 +2143,147 @@ occurrence, `expiry_date`, `expiration_warning`, `gallery_expired`,
 `event.expired` — is the output of the AC-17.4.1.1.1.1.1.1 through
 AC-17.4.1.1.1.1.3 group of criteria as a whole, and is what
 AC-17.4.1.1.1.2 confirms from code.
+
+## AC-17.4.1.1.1.2.1 — settling the shortlist: confirmed set and corrected ruled-out list
+
+`US-17` AC-17.4.1.1.1.2.1 works from the 14-entry candidate shortlist
+AC-17.4.1.1.1.1.3 recorded above. Every entry on that shortlist is
+settled here as **confirmed** or **ruled out**, against the pinned
+commit (`eb263137b98935754155824de2a03848121304b6`), from application
+code read directly for this AC — not from the prior sections' own
+reasoning, not from documentation, and not because an entry looked
+promising or unpromising. No field's role on the write path versus the
+read path is decided here; that split is AC-17.4.1.1.1.2.2 (write) and
+AC-17.4.1.1.1.2.3 (read)'s deliverable. This AC's deliverable is the
+confirmed set and the corrected ruled-out list those two later criteria
+build on. It is a code-level finding: no live gallery was created or
+changed for it.
+
+### Confirmed: 13 of the 14 shortlist entries genuinely participate in the Gallery's own expiry
+
+Each row below was settled by opening the cited file at the cited line
+in the vendored fork and reading what the code actually does with the
+name, not by re-reading the shortlist's own stated reason.
+
+| Entry | Name(s) | Evidence (file:line) | What the code does |
+|---|---|---|---|
+| E1 (`events` occurrence) | `expires_at` | `vendor/picpeak/backend/src/middleware/auth.js:178-182` | `if (event.expires_at && new Date(event.expires_at) < new Date())` gates gallery access directly on the column. |
+| E4 | `expiry_date` | `vendor/picpeak/backend/src/routes/adminEvents.js:800` | `expiry_date: expires_at ? expires_at.toISOString() : null` — the merge field is populated straight from the value just computed for the row's own `expires_at`. |
+| E5 | `expiration_warning` | `vendor/picpeak/backend/src/services/expirationChecker.js:25-30,78` | The query feeding this branch is `whereNotNull('expires_at').where('expires_at', '<=', warningDate)`; the email it queues carries `expiry_date: event.expires_at`. |
+| E6 | `gallery_expired` / `galleryExpiredExists` | `vendor/picpeak/backend/src/services/expirationChecker.js:46-53,144,149` | `handleExpiredEvent` — which queues this email — is only ever called for rows the prior query matched with `where('expires_at', '<=', now)`. |
+| E7 | `event_require_expiration` | `vendor/picpeak/backend/src/routes/adminEvents.js:104,596-605` | The setting is read into `requirements.require_expiration`, which gates the exact block that computes the created event's `expires_at` from `expiration_days`. |
+| E10 | `expiration_days` | `vendor/picpeak/backend/src/routes/adminEvents.js:446,605` | `expires_at.setDate(expires_at.getDate() + parseInt(expiration_days, 10))` — added directly onto the base date to produce the stored `expires_at`. |
+| E11 | `general_default_expiration_days` | `vendor/picpeak/frontend/src/pages/admin/CreateEventPage.tsx:236-242` | `setFormData(prev => ({ ...prev, expires_in_days: settings.general_default_expiration_days }))` — prefills the value the admin submits as E10's `expiration_days`, so it reaches the same `expires_at` computation. The shortlist's `settingsService.js:148` citation only shows the value being exposed to the frontend; this is the stronger citation that shows it actually being used to set a Gallery's expiry default. |
+| E12 | `require_expiration` | `vendor/picpeak/backend/src/routes/adminEvents.js:596` | `if (fieldRequirements.require_expiration) { ... }` is the same boolean as E7, read at the exact point that gates the write — not, as the shortlist described it, a separate per-event API field; there is no such field in `adminEvents.js`'s responses. The corrected description does not change the disposition: it still gates whether `expires_at` is set. |
+| E13 | `is_expired` | `vendor/picpeak/backend/src/routes/gallery.js:186` | `is_expired: !event.is_active \|\| (event.expires_at && new Date(event.expires_at) < new Date())` — computed directly from the column in the same handler. |
+| E16 | `GALLERY_EXPIRED` | `vendor/picpeak/backend/src/middleware/auth.js:181-182` | The `code` returned by the exact conditional block cited for E1 above. |
+| E30 | `expiringEvents` | `vendor/picpeak/backend/src/routes/adminDashboard.js:23-29` | The count query filters `events` directly on `.where('expires_at', '<=', sevenDaysFromNow...).where('expires_at', '>', now...)`. |
+| E32 | `expiring` | `vendor/picpeak/backend/src/routes/adminEvents.js:905-913` | The `status === 'expiring'` branch filters on `events.expires_at` with the same 7-day window as E30. |
+| E33 | `event.expired` | `vendor/picpeak/backend/src/services/webhookService.js:16-17`; `vendor/picpeak/backend/src/services/expirationChecker.js:99-119` | Fired only from inside `handleExpiredEvent` (reached via the `expires_at <= now` query above), with `expires_at: event.expires_at` in its payload. |
+
+### Ruled out: E31 (`expirationChecker`) is not the gallery-lifetime field
+
+Reading the cited code, rather than trusting the shortlist's stated
+reason ("Admin system-status field for the background job that acts on
+the Gallery's own `expires_at`"), shows it is a fixed literal:
+
+```
+vendor/picpeak/backend/src/routes/adminSystem.js:262-265
+      services: {
+        fileWatcher: { status: 'active' }, // These would ideally check actual service status
+        expirationChecker: { status: 'active' },
+        emailProcessor: { status: 'active' }
+      },
+```
+
+The comment on the line above it — "These would ideally check actual
+service status" — is upstream's own admission that this is a
+placeholder, not a real health check. Confirming this is not one
+occurrence read out of context: `expirationChecker.js`
+(`vendor/picpeak/backend/src/services/expirationChecker.js`) exports
+only `startExpirationChecker`, nothing that reports its own run state,
+and a search of every occurrence of the string `expirationChecker` in
+the backend source turns up exactly three, none of which assigns this
+field from anything but the literal above:
+
+| File:line | What it is |
+|---|---|
+| `vendor/picpeak/backend/src/routes/adminSystem.js:264` | The hardcoded `{ status: 'active' }` cited above — the E31 occurrence itself. |
+| `vendor/picpeak/backend/src/services/workerManager.js:18` | `require('./expirationChecker')` — a module import, not a status read. |
+| `vendor/picpeak/backend/src/services/invoiceSchedulerService.js:18` | A code comment referencing the module by name, not a status read. |
+
+`expirationChecker` therefore never reads, writes, or derives from
+`events.expires_at`, or from any other state belonging to any Gallery —
+it always reports `'active'` regardless of whether the cron job in
+`expirationChecker.js` is running, has ever run, or has ever found an
+expired Gallery. It does not participate in a Gallery's own expiry on
+the Gallery path, so it is not the gallery-lifetime field the shortlist
+took it for.
+
+#### Ruled-out group: Hardcoded system-status labels
+
+**Governs:** nothing — a fixed placeholder string presented to the
+admin as a service-health indicator, never computed from any Gallery,
+admin, customer, or job state. This is a new group, alongside the eight
+AC-17.4.1.1.1.1.2 began, for the one shortlist entry this AC finds does
+not belong in the confirmed set.
+
+| Entry | Name(s) | Evidence (file:line) |
+|---|---|---|
+| E31 | `expirationChecker` | `vendor/picpeak/backend/src/routes/adminSystem.js:264` (see above). |
+
+### Reconciling the confirmed set and the corrected ruled-out entry against the 14-entry shortlist
+
+| Entry | Disposition |
+|---|---|
+| E1 (`events` occurrence) | **Confirmed.** |
+| E4 | **Confirmed.** |
+| E5 | **Confirmed.** |
+| E6 | **Confirmed.** |
+| E7 | **Confirmed.** |
+| E10 | **Confirmed.** |
+| E11 | **Confirmed.** |
+| E12 | **Confirmed.** |
+| E13 | **Confirmed.** |
+| E16 | **Confirmed.** |
+| E30 | **Confirmed.** |
+| E31 | **Ruled out** — moved to the new "Hardcoded system-status labels" group above. |
+| E32 | **Confirmed.** |
+| E33 | **Confirmed.** |
+
+That is 13 confirmed dispositions plus 1 ruled-out disposition — 13 + 1
+= 14, matching the AC-17.4.1.1.1.1.3 shortlist's size exactly, with
+every shortlist entry appearing exactly once above. E1 here still
+refers only to its `events.expires_at` occurrence, per the shortlist and
+AC-17.4.1.1.1.1.3's split treatment of E1's other nine occurrences —
+this AC does not reopen that split, which stands as AC-17.4.1.1.1.1.2
+and AC-17.4.1.1.1.1.3 already recorded it.
+
+### Unresolved entries: none
+
+Every one of the 14 shortlist entries is settled above, either
+confirmed or ruled out, with the evidence that settled it. Nothing is
+left unresolved.
+
+### Verdict
+
+AC-17.4.1.1.1.2.1 is satisfied: working from the AC-17.4.1.1.1.1.3
+candidate shortlist against the pinned commit
+(`eb263137b98935754155824de2a03848121304b6`), 13 of its 14 entries are
+confirmed from application code as genuinely participating in a
+Gallery's own `events.expires_at` lifecycle on the Gallery path, each
+with a one-line reason and file:line evidence. The 14th, `expirationChecker`,
+is found from the same code-level reading not to be the gallery-lifetime
+field — its only occurrence is a hardcoded status literal disconnected
+from any Gallery's `expires_at` — and is moved into a new ruled-out
+group, "Hardcoded system-status labels," alongside the eight
+AC-17.4.1.1.1.1.2 began. The confirmed set (13 entries) and the
+corrected ruled-out entry are reconciled against the full 14-entry
+shortlist so each appears exactly once, with nothing left unresolved.
+No entry above was settled because it looked promising or unpromising —
+each disposition is anchored to the code cited. This confirmed set is
+what AC-17.4.1.1.1.2.2 and AC-17.4.1.1.1.2.3 go on to evidence on the
+write and read paths respectively.
 
 ## Recommendation and open questions (AC-14.6)
 
