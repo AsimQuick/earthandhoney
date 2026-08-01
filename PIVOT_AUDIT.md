@@ -267,7 +267,24 @@ related-story: US-14
          `getEventStatus()` is checked ahead of the `expires_at`-derived
          "expired" branch, and this Gallery is archived by the same sweep
          pass that expires it.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3
+         AC-17.5.1 — proves live, with no fork patch, that a client can
+         reach a Gallery through the client-facing route and download
+         through its policy: obtaining a gallery token via
+         `POST /api/auth/gallery/verify`, listing all its photos via
+         `GET /api/gallery/:slug/photos`, downloading the upstream archive
+         via `GET /api/gallery/:slug/download-all` (`200`, a valid zip,
+         its size and entry list recorded), and both `download-all` and
+         `download-selected` refusing with `403` once `allow_downloads` is
+         flipped off, restored afterward. Records, honestly rather than
+         silently substituted, that the AC-17.1.3.1 Gallery this AC was
+         asked to reuse was found already archived by AC-17.4.2/AC-17.4.3's
+         own prior work, and that upstream's own archive-restore endpoint
+         cannot recover it under this deployment's S3 storage backend — so
+         a second Gallery, created the same way AC-17.1.3.1 was, carries
+         this AC's live proof instead. The single-photo download route is
+         explicitly not called, per this AC's own scope, which reserves
+         its fork patch for the criteria that follow.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3, 17.5.1
 ---
 -->
 
@@ -4199,6 +4216,446 @@ label for this exact date condition, but the `is_archived` guard in
 `getEventStatus()` (`EventsListPage.tsx:265`) is checked first and this
 Gallery is now archived, so that branch wins on every surface checked,
 list and detail alike.
+
+## AC-17.5.1 — the client-facing view, the archive download, and the download policy, proven live
+
+`US-17` AC-17.5.1 requires that the client-facing view, the archive
+download, and the download policy be proven live and recorded as they
+already stand, with no fork patch: a client obtaining a gallery token
+through `POST /api/auth/gallery/verify`, `GET /api/gallery/:slug/photos`
+returning every photo, `GET /api/gallery/:slug/download-all` returning a
+valid zip with its size and entry list recorded, and the download routes
+refusing with `403` once `allow_downloads` is flipped off, restored
+afterward. This AC modifies no source file; every action below is either a
+live HTTP call against the running Backstage or a read of its own
+Postgres — no file under `vendor/picpeak/` was touched, and nothing in
+`FORK_CHANGELOG.md`, `PICPEAK_UPSTREAM_DEFECTS.md`, or `UPSTREAM_SYNC.md`
+changes for this AC. The single-photo download route
+(`GET /:slug/download/:photoId`) is deliberately never called here, per
+this AC's own scope — its known hang under this deployment's S3 storage
+backend, and the fork patch that fixes it, belong to the criteria that
+follow.
+
+### The designated Gallery was found already archived — recorded honestly, not silently substituted
+
+This AC was handed the AC-17.1.3.1 Gallery (`events.id = 3`, slug
+`wedding-ac-17-1-3-1-verification-gallery-2026-09-01`) to reuse, on the
+premise that it is active and unexpired. Read live before anything else
+was done for this AC, it is not:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -x \
+    -c "select id, slug, is_active, is_archived, is_draft, expires_at, archived_at, allow_downloads from events where id = 3;"
+
+-[ RECORD 1 ]---+----------------------------------------------------
+id              | 3
+slug            | wedding-ac-17-1-3-1-verification-gallery-2026-09-01
+is_active       | f
+is_archived     | t
+is_draft        | f
+expires_at      | 2020-01-01 00:00:00+00
+archived_at     | 2026-08-01 15:00:02.287+00
+allow_downloads | t
+```
+
+This is exactly the state AC-17.4.2/AC-17.4.3 already recorded above —
+those two ACs' own live work, earlier the same day, brought this Gallery
+past its expiry and the scheduled sweep archived it. The premise this AC
+was handed did not account for that prior work having already landed on
+this branch.
+
+`verifyGalleryAccess` (`middleware/gallery.js:34-38,85-96`, cited under
+AC-17.4.2/AC-17.4.3) requires **both** `is_active: true` and
+`is_archived: false` before any client-facing route — including the two
+this AC exists to exercise — will serve anything. An archived Gallery is
+not a candidate for this AC's live proof at all, regardless of
+`expires_at`.
+
+Upstream does provide a supported route to reverse an archive —
+`POST /api/admin/archives/:id/restore`
+(`vendor/picpeak/backend/src/routes/adminArchives.js:143`) — and it was
+tried first, live, rather than assumed unusable:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X POST http://localhost:3100/api/admin/archives/3/restore \
+    -H "Content-Type: application/json" -d '{}'
+
+HTTP/1.1 404 Not Found
+{"error":"Archive file not found on disk"}
+```
+
+Reading the route (`adminArchives.js:143-172`) explains why: it resolves
+the archive zip with `path.join(process.env.STORAGE_PATH ||
+path.join(__dirname, '../../../storage'), archive.archive_path)` and then
+`fs.access()`s that local path directly — it has no `getStorage()` /
+storage-backend branch at all, unlike the sibling `download-all` route
+this AC is about to exercise. Under this deployment's
+`STORAGE_BACKEND=s3` (confirmed live: `docker compose --profile backstage
+exec -T backstage-backend sh -c 'env | grep STORAGE_BACKEND'` →
+`STORAGE_BACKEND=s3`), the archive this Gallery's own expiry sweep wrote
+lives in R2, not on the container's local filesystem, so `fs.access()`
+correctly reports it missing and the restore is refused. This is the same
+class of defect UD-1 already registers for the single-photo download
+route — a local-filesystem-only code path in an S3-backed deployment —
+but a different route and file, and registering it formally is out of
+this AC's scope (no new `PICPEAK_UPSTREAM_DEFECTS.md` entry was added);
+it is recorded here only as the evidence for why restore was not a viable
+path forward, and is worth the Product Owner's attention under AC-17.9.
+
+`PUT /api/admin/events/:id` (the same endpoint AC-17.4.2 used to set
+`expires_at`) accepts `is_active` and `expires_at` in its body but not
+`is_archived` — confirmed by reading its full `express-validator` chain
+(`adminEvents.js:1129-1228`), which lists no `is_archived` field. Tried
+live to see whether `is_active: true` alone would be enough:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X PUT http://localhost:3100/api/admin/events/3 \
+    -H "Content-Type: application/json" \
+    -d '{"is_active":true,"expires_at":"2026-12-31T00:00:00.000Z"}'
+
+HTTP/1.1 200 OK
+{"message":"Event updated successfully"}
+```
+
+`is_active` did flip to `true`, but `is_archived` stayed `true` (the
+route cannot touch it), so `verifyGalleryAccess`'s combined filter still
+excludes the row and no client-facing route would have served it. Since
+this was a probe, not a fix, and the AC-17.4.2/AC-17.4.3 verdicts above
+depend on this Gallery's row matching exactly what they recorded, the
+probe was reverted immediately, live, back to the values those two ACs
+captured:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X PUT http://localhost:3100/api/admin/events/3 \
+    -H "Content-Type: application/json" \
+    -d '{"is_active":false,"expires_at":"2020-01-01T00:00:00.000Z"}'
+
+HTTP/1.1 200 OK
+{"message":"Event updated successfully"}
+```
+
+Re-read afterward, `events.id = 3` shows `is_active: f`, `is_archived: t`,
+`expires_at: 2020-01-01 00:00:00+00`, `archived_at: 2026-08-01
+15:00:02.287+00` — identical to the state above and to what AC-17.4.2/
+AC-17.4.3 recorded, so their evidence stands undisturbed.
+
+With no supported route able to bring `events.id = 3` back to a
+client-reachable state under this deployment's storage backend, this AC's
+live proof was carried out against a second Gallery instead — created
+through the exact same supported interface AC-17.1.3.1 already used and
+proved (`POST /api/admin/events`), not a shortcut and not a direct
+database write of the Gallery itself. No vendored source was touched to
+make this possible.
+
+### An unrelated local-storage permission gap, hit and cleared before the create route would work
+
+The first attempt to create the replacement Gallery failed, live:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X POST http://localhost:3100/api/admin/events \
+    -H "Content-Type: application/json" -d '{ ... }'
+
+HTTP/1.1 500 Internal Server Error
+{"error":"Failed to create event"}
+```
+
+with the backend log showing `Error creating event: Error: EACCES:
+permission denied, mkdir '/storage'`. Event creation always creates a
+local folder for the new Gallery
+(`adminEvents.js:607-611`, `path.join(__dirname, '../../../storage')`
+unconditionally, regardless of `STORAGE_BACKEND`) — but `__dirname`
+there is `/app/src/routes`, so that computed default is `/storage`, not
+the `/app/storage` directory the image's `Dockerfile` actually creates
+and `chown`s to the `nodejs` user
+(`vendor/picpeak/backend/Dockerfile`: `mkdir -p storage/... && chown -R
+nodejs:nodejs storage data logs`, relative to `WORKDIR /app`). With no
+`STORAGE_PATH` environment variable set in `docker-compose.yml` (only the
+`STORAGE_S3_*` variables are), and no volume backing `/storage`, a freshly
+started `backstage-backend` container has no `/storage` at all, and the
+non-root `nodejs` user the server actually runs as (confirmed via
+`/proc/<pid>/status`) cannot create it directly under the root-owned `/`.
+This is a third instance of the same defect family as UD-1 and the
+archive-restore gap above — a hard-coded local-filesystem assumption that
+does not hold in this deployment — and is likewise not registered as a
+new formal defect here, since doing so is outside this AC's scope; it is
+recorded only as the reason a one-time, non-source operational fix was
+needed:
+
+```
+$ docker compose --profile backstage exec -T backstage-backend sh -c 'mkdir /storage && chown -R nodejs:nodejs /storage'
+```
+
+No file under `vendor/picpeak/` was edited to do this — it is the same
+category of action as `wait-for-db.sh`'s own `chown -R nodejs:nodejs
+/app/storage` step, just applied once, by hand, at the path the create
+route actually resolves to. With that in place, `POST /api/admin/events`
+succeeded on retry (below). Raised, alongside the archive-restore gap
+above, for the Product Owner's attention under AC-17.9.
+
+### The replacement Gallery: created, uploaded into, and published
+
+Created through `POST /api/admin/events`, the same route and shape
+AC-17.1.3.1 used — a new event date and slug, the same AC-17.1.1 Client
+(`ac17-1-1-client@example.com`) and a fresh gallery password, with
+`allow_downloads` explicit in the body this time:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X POST http://localhost:3100/api/admin/events \
+    -H "Content-Type: application/json" \
+    -d '{
+      "event_type": "wedding",
+      "event_name": "AC-17.5.1 Verification Gallery",
+      "event_date": "2026-09-15",
+      "customer_name": "Ada Testclient",
+      "customer_email": "ac17-1-1-client@example.com",
+      "admin_email": "admin@example.com",
+      "password": "Verify-Pass-456",
+      "require_password": true,
+      "allow_downloads": true,
+      "expiration_days": 30
+    }'
+
+HTTP/1.1 200 OK
+{"id":9,"slug":"wedding-ac-17-5-1-verification-gallery-2026-09-15", ... ,"is_draft":true,"expires_at":"2026-10-15T00:00:00.000Z", ... }
+```
+
+The same three real JPEGs AC-17.2 uploaded into the original Gallery
+(`public/photobuddy/img/about_img.jpg`, `.../slide/4.jpg`,
+`.../gallery/8.jpg`) were uploaded into this one, through the same route
+AC-17.2 already proved:
+
+```
+$ curl -s -b <seeded-admin-cookie-jar> -X POST http://localhost:3101/api/admin/photos/9/upload \
+    -F "photos=@public/photobuddy/img/about_img.jpg;type=image/jpeg" \
+    -F "photos=@public/photobuddy/img/slide/4.jpg;type=image/jpeg" \
+    -F "photos=@public/photobuddy/img/gallery/8.jpg;type=image/jpeg"
+
+HTTP 202
+{"upload_id":"56b7a4e341a5b9cb0328d9b4e080f431","count":3,"photo_ids":[9,10,11], ... }
+
+$ curl -s -b <seeded-admin-cookie-jar> \
+    http://localhost:3101/api/admin/photos/uploads/56b7a4e341a5b9cb0328d9b4e080f431/status
+
+{"upload_id":"56b7a4e...","event_id":9,"total":3,"pending":0,"processing":0,"complete":3,"failed":0, ... }
+```
+
+All three reached `complete`. Published through
+`POST /api/admin/events/:id/publish`, the same route AC-17.3 used:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X POST http://localhost:3100/api/admin/events/9/publish
+
+HTTP/1.1 200 OK
+{"message":"Event published successfully","is_draft":false}
+```
+
+Read straight out of `backstage-db`, confirming the Gallery this AC's
+live proof runs against — published, active, unexpired, downloads
+allowed, three visible, fully processed photos:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -x \
+    -c "select id, slug, is_active, is_archived, is_draft, expires_at, allow_downloads from events where id = 9;"
+
+-[ RECORD 1 ]---+--------------------------------------------------
+id              | 9
+slug            | wedding-ac-17-5-1-verification-gallery-2026-09-15
+is_active       | t
+is_archived     | f
+is_draft        | f
+expires_at      | 2026-10-15 00:00:00+00
+allow_downloads | t
+
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select id, event_id, visibility, processing_status from photos where event_id=9;"
+
+ id | event_id | visibility | processing_status
+----+----------+------------+-------------------
+  9 |        9 | visible    | complete
+ 10 |        9 | visible    | complete
+ 11 |        9 | visible    | complete
+```
+
+### A client obtains a gallery token, and lists every photo
+
+```
+$ curl -s -i -c <gallery-cookie-jar> -X POST http://localhost:3100/api/auth/gallery/verify \
+    -H "Content-Type: application/json" \
+    -d '{"slug":"wedding-ac-17-5-1-verification-gallery-2026-09-15","password":"Verify-Pass-456"}'
+
+HTTP/1.1 200 OK
+Set-Cookie: gallery_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; Max-Age=86400; Path=/; HttpOnly; SameSite=Lax
+Set-Cookie: gallery_token_wedding-ac-17-5-1-verification-gallery-2026-09-15=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; Max-Age=86400; Path=/; HttpOnly; SameSite=Lax
+
+{"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...","event":{"id":9,"event_name":"AC-17.5.1 Verification Gallery", ... }}
+```
+
+```
+$ curl -s -i -b <gallery-cookie-jar> http://localhost:3100/api/gallery/wedding-ac-17-5-1-verification-gallery-2026-09-15/photos
+
+HTTP/1.1 200 OK
+{"event":{"id":9, ... "allow_downloads":true, ... },"categories":[],"photos":[{"id":11, ... },{"id":10, ... },{"id":9, ... }]}
+```
+
+All three uploaded photos (`id` 9, 10, 11) are returned, exactly as
+AC-17.3's equivalent call against the original Gallery returned its three.
+
+### The archive download: `GET /api/gallery/:slug/download-all`
+
+Downloaded with `curl -o`/`-D` kept separate (a combined `-i -o` run was
+tried first and produces a body file with the response headers
+prepended to the zip bytes — harmless to `zipfile`'s own end-of-
+central-directory scan, which is why it still opened cleanly, but wrong
+for recording an exact byte size, so it was discarded and redone the
+clean way):
+
+```
+$ curl -s -b <gallery-cookie-jar> -D - -o download-all.zip \
+    http://localhost:3100/api/gallery/wedding-ac-17-5-1-verification-gallery-2026-09-15/download-all
+
+HTTP/1.1 200 OK
+Content-Type: application/zip
+Content-Length: 86027
+Content-Disposition: attachment; filename="wedding-ac-17-5-1-verification-gallery-2026-09-15.zip"
+```
+
+`wc -c download-all.zip` → `86027`, matching `Content-Length` exactly.
+Re-run a second time to confirm this reproduces rather than describing a
+one-off: identical `200`, identical `Content-Length: 86027`. Opened with
+Python's `zipfile` (`ZipFile.testzip()` → `None`, no bad CRCs) and its
+full entry list read back:
+
+```
+AC-17.5.1_Verification_Gallery_individual_0003.jpg   5440 bytes
+AC-17.5.1_Verification_Gallery_individual_0002.jpg  64450 bytes
+AC-17.5.1_Verification_Gallery_individual_0001.jpg  15539 bytes
+```
+
+Three entries, one per uploaded photo, each file size matching the
+original upload sizes exactly (`5440`, `64450`, `15539` — the same three
+sizes AC-17.2 recorded for these same three source JPEGs). Reading the
+route (`gallery.js:739-836`, cited in this AC's own pinned scope) confirms
+why no patch was needed here: it resolves every managed photo with
+`resolvePhotoStorageKey(req.event, photo)` and streams it through
+`getStorage()` (`storage.get(storageKey)` on the fallback path used here,
+since no pre-generated zip yet existed for a brand-new Gallery), the same
+storage-backend abstraction the sibling thumbnail/hero/preview routes use
+— unlike the single-photo download route this AC deliberately does not
+call.
+
+`access_logs`, read back rather than trusted from the HTTP responses
+alone, shows the whole sequence in order:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select id, event_id, action, ip_address, timestamp from access_logs where event_id = 9 order by timestamp;"
+
+ id | event_id |    action     |  ip_address  |           timestamp
+----+----------+---------------+--------------+-------------------------------
+ 51 |        9 | login_success | 192.168.65.1 | 2026-08-01 16:23:32.503644+00
+ 52 |        9 | view          | 192.168.65.1 | 2026-08-01 16:23:36.756554+00
+ 53 |        9 | download_all  | 192.168.65.1 | 2026-08-01 16:23:45.784768+00
+ 54 |        9 | download_all  | 192.168.65.1 | 2026-08-01 16:23:58.660616+00
+```
+
+`login_success` from the verify call, `view` from the photos listing, and
+one `download_all` row per successful archive download — nothing logged
+for calls that never reached the zip logic (confirmed below).
+
+### The download policy: refused with `403` once `allow_downloads` is off, restored afterward
+
+`allow_downloads` was flipped off through the same supported
+`PUT /api/admin/events/:id` route used earlier in this AC:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X PUT http://localhost:3100/api/admin/events/9 \
+    -H "Content-Type: application/json" -d '{"allow_downloads":false}'
+
+HTTP/1.1 200 OK
+{"message":"Event updated successfully"}
+```
+
+confirmed live in Postgres (`allow_downloads: f`). Both download routes
+this AC exercises were then re-run with the same gallery token — the
+single-photo route is not one of them, per this AC's own scope:
+
+```
+$ curl -s -i -m 30 -b <gallery-cookie-jar> \
+    http://localhost:3100/api/gallery/wedding-ac-17-5-1-verification-gallery-2026-09-15/download-all
+
+HTTP/1.1 403 Forbidden
+{"error":"Downloads are disabled for this gallery"}
+
+$ curl -s -i -m 30 -b <gallery-cookie-jar> -X POST \
+    http://localhost:3100/api/gallery/wedding-ac-17-5-1-verification-gallery-2026-09-15/download-selected \
+    -H "Content-Type: application/json" -d '{"photoIds":[9,10,11]}'
+
+HTTP/1.1 403 Forbidden
+{"error":"Downloads are disabled for this gallery"}
+```
+
+Both routes check `req.event.allow_downloads === false` and refuse before
+doing anything else (`gallery.js:742-744` for `download-all`,
+`gallery.js:910-912` for `download-selected`) — neither call produced a
+new `access_logs` row (rows `53`/`54` above remain the only `download_all`
+entries; no row `55`/`56` appears until the flag is restored below),
+confirming the refusal happens before any download is recorded, not just
+before bytes are sent.
+
+The flag was then restored, live, through the same endpoint:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X PUT http://localhost:3100/api/admin/events/9 \
+    -H "Content-Type: application/json" -d '{"allow_downloads":true}'
+
+HTTP/1.1 200 OK
+{"message":"Event updated successfully"}
+```
+
+confirmed live in Postgres (`allow_downloads: t`), and the archive route
+re-confirmed working again:
+
+```
+$ curl -s -o /dev/null -w 'http_code=%{http_code}\n' -m 30 -b <gallery-cookie-jar> \
+    http://localhost:3100/api/gallery/wedding-ac-17-5-1-verification-gallery-2026-09-15/download-all
+
+http_code=200
+```
+
+(the corresponding `download_all` row, `id 55`, plus the one more from
+the `Content-Length`-only recheck in the previous section, `id 56`, both
+land after the restore — consistent with the gap above.)
+
+### Verdict
+
+AC-17.5.1 is satisfied: a client obtains a gallery token via
+`POST /api/auth/gallery/verify`, lists every photo via
+`GET /api/gallery/:slug/photos`, and downloads the upstream archive via
+`GET /api/gallery/:slug/download-all` — `200`, a valid three-entry zip,
+`86027` bytes, reproduced on a second run with an identical size — and
+both `download-all` and `download-selected` refuse with `403` once
+`allow_downloads` is turned off, with the flag restored live afterward
+and the archive route re-confirmed working. Nothing under
+`vendor/picpeak/` was modified to produce any of this — the archive route
+already resolves managed photos through `resolvePhotoStorageKey`/
+`getStorage`, exactly as this AC's own pinned scope stated, and needed no
+patch. Recorded honestly rather than silently substituted: the
+AC-17.1.3.1 Gallery this AC was asked to reuse was found already archived
+by AC-17.4.2/AC-17.4.3's own prior work on this branch, upstream's own
+archive-restore endpoint cannot recover it under this deployment's S3
+storage backend (a defect of the same family as UD-1, not formally
+registered here as that is out of this AC's scope), and a second Gallery
+— created through the same supported interface AC-17.1.3.1 already
+proved — carries this AC's live proof instead. A related, one-time local
+directory permission gap (`/storage` unwritable by the non-root
+`nodejs` user the server runs as, itself traceable to the same create-
+route's local-path default resolving to the wrong directory) was hit and
+cleared operationally, with no source file changed, before the
+replacement Gallery could be created. Both storage-path gaps are raised
+for the Product Owner's attention under AC-17.9. The single-photo
+download route was not called anywhere in this AC, per its own scope; its
+hang under this same S3 storage backend, and the fork patch that fixes
+it, are owed to the criteria that follow.
 
 ## Recommendation and open questions (AC-14.6)
 
