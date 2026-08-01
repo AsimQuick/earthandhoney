@@ -114,7 +114,25 @@ related-story: US-14
          Reconciles the confirmed set and the corrected ruled-out entry
          against the full 14-entry shortlist so every entry is placed
          exactly once, with nothing left unresolved.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1
+         AC-17.4.1.1.1.2.2.1 — for each of the AC-17.4.1.1.1.2.1 confirmed
+         set's 13 entries, records where application code writes or
+         otherwise determines it on the Gallery creation path
+         (`POST /api/admin/events`, the creation route AC-17.1.3.1
+         established), with file:line evidence against the pinned commit
+         and, where a value is computed, the inputs and code that compute
+         it; records the role each field plays on that path. Six entries
+         (`expires_at`, `expiry_date`, `event_require_expiration`,
+         `expiration_days`, `general_default_expiration_days`,
+         `require_expiration`) have a creation-path write. The other
+         seven (`expiration_warning`, `gallery_expired`/
+         `galleryExpiredExists`, `is_expired`, `GALLERY_EXPIRED`,
+         `expiringEvents`, `expiring`, `event.expired`) have none, each
+         recorded as no creation-path write found together with the
+         creation routes inspected to reach that. Settles nothing about
+         whether an unwritten field's absence is its expected upstream
+         shape — that is AC-17.4.1.1.1.2.2.3's deliverable — and moves
+         nothing between the confirmed and ruled-out lists.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1
 ---
 -->
 
@@ -2303,6 +2321,172 @@ No entry above was settled because it looked promising or unpromising —
 each disposition is anchored to the code cited. This confirmed set is
 what AC-17.4.1.1.1.2.2 and AC-17.4.1.1.1.2.3 go on to evidence on the
 write and read paths respectively.
+
+## AC-17.4.1.1.1.2.2.1 — the write path: creation-path evidence for the confirmed set
+
+`US-17` AC-17.4.1.1.1.2.2.1 works from the 13-entry confirmed set
+AC-17.4.1.1.1.2.1 settled above. For each of those 13 entries, this
+section records — against the pinned commit
+(`eb263137b98935754155824de2a03848121304b6`) — the code that writes or
+determines it on the Gallery creation path, the inputs and code that
+compute it where the value is computed rather than given, and the role
+it plays on that path. Where inspection finds no creation-path write, it
+is recorded as such together with the creation route(s) inspected to
+reach that; it does not decide here whether that absence is expected
+(derived, computed elsewhere, or a default/policy value) — that question
+belongs to AC-17.4.1.1.1.2.2.3. No entry is added to or moved off the
+confirmed or ruled-out lists here.
+
+### The Gallery creation path
+
+The Gallery creation route is `POST /api/admin/events`
+(`vendor/picpeak/backend/src/routes/adminEvents.js:330-864`), the same
+route AC-17.1.3.1 already established as "the creation route used" for a
+Gallery — admin-authenticated, gated by the seeded `events.create`
+permission, and reached via `server.js:638` → `admin.js:22` (which
+`require`s `./adminEvents` at line 9) ahead of the `adminEventRename.js`
+mount at the same URL prefix (`server.js:652`). Throughout this section
+`server.js` means `vendor/picpeak/backend/server.js` — it sits at the
+backend root, not under `backend/src/`.
+
+Two other reachable event-creation endpoints exist in the pinned commit
+and were inspected for this AC wherever a confirmed-set entry had no
+write on the primary route: `POST /api/events`
+(`vendor/picpeak/backend/src/routes/events.js:60`, `adminAuth`-gated but
+without the `events.create` RBAC check, mounted at `server.js:632` — an
+older, parallel implementation of the same create flow, not the route
+AC-17.1.3.1 exercised) and `POST /api/v1/events`
+(`vendor/picpeak/backend/src/routes/v1/events.js:114`, gated by
+`apiTokenAuth` + `requireApiScope('admin')`, mounted at `server.js:720`
+— the external integration API). A fourth insert site,
+`vendor/picpeak/backend/src/routes/adminEvents-enhanced.js:92`, is never
+`require`d by `server.js` and is unreachable dead code, so it is not a
+creation route and is not inspected further. None of the seven
+no-write entries below appear in either of the two other reachable
+routes either (confirmed by grepping each file for every entry's
+name/string); the six written entries are evidenced only against the
+primary route, consistent with AC-17.1.3.1's own choice of that route as
+"the" Gallery creation path.
+
+### File shorthand used by the tables below
+
+The tables cite code by short name to stay readable. Each short name
+resolves to exactly one file in the vendored fork at the pinned commit:
+
+| Short name | Full path |
+|---|---|
+| `server.js` | `vendor/picpeak/backend/server.js` |
+| `admin.js` | `vendor/picpeak/backend/src/routes/admin.js` |
+| `adminEvents.js` | `vendor/picpeak/backend/src/routes/adminEvents.js` |
+| `adminEvents-enhanced.js` | `vendor/picpeak/backend/src/routes/adminEvents-enhanced.js` |
+| `events.js` | `vendor/picpeak/backend/src/routes/events.js` |
+| `v1/events.js` | `vendor/picpeak/backend/src/routes/v1/events.js` |
+| `adminDashboard.js` | `vendor/picpeak/backend/src/routes/adminDashboard.js` |
+| `gallery.js` | `vendor/picpeak/backend/src/routes/gallery.js` |
+| `auth.js` | `vendor/picpeak/backend/src/middleware/auth.js` |
+| `expirationChecker.js` | `vendor/picpeak/backend/src/services/expirationChecker.js` |
+| `webhookService.js` | `vendor/picpeak/backend/src/services/webhookService.js` |
+| `workerManager.js` | `vendor/picpeak/backend/src/services/workerManager.js` |
+| `db.js` | `vendor/picpeak/backend/src/database/db.js` |
+| `CreateEventPage.tsx` | `vendor/picpeak/frontend/src/pages/admin/CreateEventPage.tsx` |
+
+Note `events.js` and `v1/events.js` are distinct files with the same
+basename; they are always cited with the disambiguating `v1/` prefix
+where the v1 route is meant.
+
+### Written or determined on the creation path (6 of 13)
+
+| Entry | Name | Role on the creation path | Evidence (file:line) | What the code does |
+|---|---|---|---|---|
+| E1 | `expires_at` | The Gallery's own stored expiry timestamp — the value every other confirmed entry ultimately reads, gates on, or copies. | `adminEvents.js:592-606` (computed), `adminEvents.js:679` (stored), `adminEvents.js:857` (echoed in the create response) | Computed from `event_date` (or, if absent, the current date) plus `expiration_days` (E10) days, but only when `fieldRequirements.require_expiration` (E7/E12) is true; otherwise stays `null`. `expires_at.setDate(expires_at.getDate() + parseInt(expiration_days, 10))` at line 605. Stored into the `events` insert as `expires_at: expires_at ? expires_at.toISOString() : null` (line 679), and the same value is echoed back in the `POST` response body (line 857). |
+| E4 | `expiry_date` | A copy of E1's just-computed value, embedded in the creation-confirmation email so the client sees the Gallery's expiry date in the email PicPeak queues when the Gallery is created. | `adminEvents.js:792-802` (built), `adminEvents.js:800` (set from E1), `adminEvents.js:812-820` (queued) | `expiry_date: expires_at ? expires_at.toISOString() : null` (line 800) is set directly from the `expires_at` local variable E1 computed earlier in the same handler, inside the `emailData` object built at lines 792-802 and then serialised into `email_data: JSON.stringify(emailData)` (line 816) by the `db('email_queue').insert({...})` call at lines 812-820. This only runs conditionally — `if (customerEmail && !isDraft)` (line 790), where `isDraft = parseBooleanInput(is_draft, true)` (line 788) and `is_draft` is destructured with a `true` default (line 482) — so a Gallery created without an explicit `is_draft: false` in the request does not queue this email or write this value at all. |
+| E7 | `event_require_expiration` | Global admin-configured policy switch deciding, per new Gallery, whether E1's `expires_at` is computed at all. | `adminEvents.js:71-89,104` (read into `fieldRequirements.require_expiration`), `adminEvents.js:431` (called), `adminEvents.js:596` (used as the gate) | `getEventFieldRequirements()` (defined lines 71-118) selects the `app_settings` row keyed `event_require_expiration` and assigns it to `requirements.require_expiration` at line 104 (defaulting to `true` if the setting row is absent, lines 84-89). The create handler calls it into `fieldRequirements` at line 431, then gates E1's whole computation block on it: `if (fieldRequirements.require_expiration) { ... }` (line 596). |
+| E10 | `expiration_days` | Per-Gallery input controlling how many days after the base date the Gallery expires — the addend in E1's computation. | `adminEvents.js:376` (validated), `adminEvents.js:446` (destructured, default `30`), `adminEvents.js:605` (used) | `body('expiration_days').isInt({ min: 1, max: 365 }).optional()` validates the request field; destructured from `req.body` with `expiration_days = 30` as the fallback (line 446); consumed directly by `expires_at.setDate(expires_at.getDate() + parseInt(expiration_days, 10))` (line 605), the same computation cited for E1. |
+| E11 | `general_default_expiration_days` | Client-side default that seeds the admin's form before submission — determines the out-of-the-box `expiration_days` (E10) value for new Galleries unless the admin overrides it in the form. | `CreateEventPage.tsx:237-244` (prefill), `CreateEventPage.tsx:463` (submitted as `expiration_days`) | A `useEffect` (lines 237-244) sets `formData.expires_in_days` from `settings.general_default_expiration_days` (read at line 238, assigned at line 241) whenever the admin settings load, replacing the hardcoded `expires_in_days: 30` initial value at line 124. On submit, `expiration_days: requireExpiration ? formData.expires_in_days : undefined` (line 463) is the exact field name and value the `POST /api/admin/events` body carries as E10. This is server-adjacent (it runs in the admin browser, not in `adminEvents.js`), but it is the code that determines the value E10 receives absent an explicit admin edit, and it is part of the same admin "create event" screen/flow as the route above. |
+| E12 | `require_expiration` | Same runtime gate as E7 — AC-17.4.1.1.1.2.1 already found E12 names the identical boolean read at `adminEvents.js:596`, not a separate field; this AC's creation-path reading confirms that identity rather than reopening it. | `adminEvents.js:596` | `if (fieldRequirements.require_expiration) { ... }` — the same conditional cited for E7 above; there is no second, independently-written `require_expiration` value on the creation path. |
+
+### No creation-path write found (7 of 13)
+
+Each of the following was searched for by name/string across all three
+reachable event-creation routes (`adminEvents.js`'s `POST /`, `events.js`'s
+`POST /`, `v1/events.js`'s `POST /events`) and found in none of them —
+every occurrence of each name in the pinned commit's backend source is
+outside those three handlers.
+
+| Entry | Name(s) | Where the name does occur (not creation-path) | Creation routes inspected |
+|---|---|---|---|
+| E5 | `expiration_warning` | `expirationChecker.js:36,78` — a scheduled background job (`startExpirationChecker`, `services/workerManager.js:18`) that queries already-stored `events` rows and queues a warning email; `database/db.js:468` is a schema-migration comment listing it as an `email_templates.template_key` value, not a code write. | `adminEvents.js` `POST /` (no occurrence); `events.js` `POST /` (no occurrence); `v1/events.js` `POST /events` (no occurrence). |
+| E6 | `gallery_expired` / `galleryExpiredExists` | `expirationChecker.js:46-53,144,149` — same background job; `handleExpiredEvent` queues this email only for rows the job's own query already matched with `expires_at <= now`, i.e. after creation, on a schedule. | Same three routes inspected; no occurrence in any. |
+| E13 | `is_expired` | `routes/gallery.js:186` — the public, client-facing gallery-access route; computed on each read from the already-stored `expires_at` (`!event.is_active \|\| (event.expires_at && new Date(event.expires_at) < new Date())`). | Same three routes inspected; no occurrence in any. |
+| E16 | `GALLERY_EXPIRED` | `middleware/auth.js:181-182` — the access-gate middleware that returns this code when a request for an already-created Gallery arrives after its `expires_at`; only reachable on a subsequent access attempt, never during creation. | Same three routes inspected; no occurrence in any. |
+| E30 | `expiringEvents` | `routes/adminDashboard.js:24-30` — a dashboard aggregate count query filtering already-stored `events` rows by `expires_at` between now and 7 days out (lines 27-28), surfaced as a stat at line 101. | Same three routes inspected; no occurrence in any. |
+| E32 | `expiring` | `adminEvents.js:906-913` — but inside `router.get('/', ...)` (the list endpoint, line 867), a different handler in the same file that filters already-stored rows by `status === 'expiring'`; not inside the `POST /` handler this AC evidences. | Same three routes inspected (including a second look at `adminEvents.js` specifically for occurrences outside `POST /`); no occurrence inside any `POST` creation handler. |
+| E33 | `event.expired` | `services/webhookService.js:17` — a member of the frozen `EVENT_TYPES` list (lines 13-21) — and `services/expirationChecker.js:105`, the sole `webhookService.fire('event.expired', ...)` call, inside `handleExpiredEvent` (line 94), reached by the same background job's `expires_at <= now` query as E6 (line 50), never from the creation route (which instead fires `event.created` at `adminEvents.js:767` and `event.published` at `adminEvents.js:829`). | Same three routes inspected; no occurrence in any. |
+
+### Reconciling against the AC-17.4.1.1.1.2.1 confirmed set
+
+| Entry | Creation-path disposition |
+|---|---|
+| E1 | Written — `adminEvents.js:679`. |
+| E4 | Written (conditionally) — `adminEvents.js:800,812-820`. |
+| E5 | No creation-path write found. |
+| E6 | No creation-path write found. |
+| E7 | Written (as the E1 gate) — `adminEvents.js:104,596`. |
+| E10 | Written — `adminEvents.js:446,605`. |
+| E11 | Written (client-side, feeds E10) — `CreateEventPage.tsx:237-244,463`. |
+| E12 | Written (same location as E7) — `adminEvents.js:596`. |
+| E13 | No creation-path write found. |
+| E16 | No creation-path write found. |
+| E30 | No creation-path write found. |
+| E32 | No creation-path write found. |
+| E33 | No creation-path write found. |
+
+That is 6 written plus 7 no-write dispositions — 6 + 7 = 13, matching the
+AC-17.4.1.1.1.2.1 confirmed set exactly, with every entry appearing once.
+
+### No contradiction of AC-17.4.1.1.1.2.1's dispositions
+
+Reading each entry's creation-path evidence here does not contradict any
+disposition AC-17.4.1.1.1.2.1 recorded — that AC confirmed each of the 13
+entries as genuinely participating in a Gallery's own `expires_at`
+lifecycle *somewhere* on the Gallery path (creation, read, or background
+job), not specifically that each has a creation-path write. Finding that
+7 of the 13 participate only on the read path or in a background job
+(E5, E6, E13, E16, E30, E32, E33) is consistent with, not a correction
+of, AC-17.4.1.1.1.2.1's own file:line citations for those entries, which
+already pointed at `expirationChecker.js`, `gallery.js`, `auth.js`, and
+`adminDashboard.js` rather than `adminEvents.js`'s creation handler. No
+file:line cited here disagrees with anything AC-17.4.1.1.1.2.1 cited.
+
+Four citations are stated here at a tighter line range than
+AC-17.4.1.1.1.2.1 gave them, after re-reading the same code: E11
+`CreateEventPage.tsx:236-242` → `237-244` (the `useEffect` runs 237-244;
+236 is its preceding comment and 243-244 close it), E30
+`adminDashboard.js:23-29` → `24-30` (23 is blank; the query runs 24-30),
+E33 `webhookService.js:16-17` → `:17` (16 is `'event.archived'`; only 17
+is `'event.expired'`) and `expirationChecker.js:99-119` → `:105` (the
+single `fire('event.expired', ...)` call inside `handleExpiredEvent`,
+line 94). Each refinement lands inside or immediately adjacent to the
+range AC-17.4.1.1.1.2.1 gave and points at the same code for the same
+reason, so none is a contradiction of a disposition and none is carried
+to AC-17.4.1.1.1.2.2.3 as one; they are recorded here only so a reader
+comparing the two sections line-for-line is not left guessing.
+
+### Verdict
+
+AC-17.4.1.1.1.2.2.1 is satisfied: for every one of the AC-17.4.1.1.1.2.1
+confirmed set's 13 entries, this section records — against the pinned
+commit (`eb263137b98935754155824de2a03848121304b6`) — either the
+creation-path code that writes or determines it, with the inputs and
+computing code where the value is computed (E1, E4, E7, E10, E11, E12),
+or that no creation-path write was found together with the three
+creation routes inspected to reach that conclusion (E5, E6, E13, E16,
+E30, E32, E33). Each entry states the role it plays on the creation
+path. Nothing is decided here about whether a no-write finding is the
+field's expected upstream shape — that is AC-17.4.1.1.1.2.2.3's
+deliverable — and no entry is added to, or moved between, the confirmed
+or ruled-out lists AC-17.4.1.1.1.2.1 settled. This is a code-level
+finding only; no live Gallery was created or changed for it.
 
 ## Recommendation and open questions (AC-14.6)
 
