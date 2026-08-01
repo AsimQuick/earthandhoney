@@ -169,7 +169,28 @@ related-story: US-14
          carried forward from AC-17.4.1.1.1.2.2.2 as unresolved. This
          closed write-path record is what AC-17.4.1.1.1.2.3 pairs with the
          read path.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3
+         AC-17.4.1.1.1.2.3 — the read-path counterpart to
+         AC-17.4.1.1.1.2.2.3: for each of the AC-17.4.1.1.1.2.1 confirmed
+         set's 13 entries, records the code that reads it on the Gallery
+         path — where it is read when a Gallery is served, and where it
+         is read when an access decision is made — stating whether each
+         read gates access, only reports state, or does both. Finds only
+         two entries are read on the Gallery path at all: `expires_at`
+         (reports state at `gallery.js:184,475`; gates access at
+         `customer.js:148` and `auth.js:576`) and the read-time-derived
+         `is_expired` (reports state at `gallery.js:186`; gates the
+         frontend UI at `GalleryPage.tsx:275`). Finds, and records rather
+         than works around, that `middleware/auth.js`'s previously-cited
+         `galleryAuth` function is dead code never wired to any route,
+         and that the guest/client password- and share-token login
+         routes plus the middleware actually mounted on every
+         photo-serving route never check `expires_at` at all. Records
+         the other nine confirmed entries as never read on the Gallery
+         path with the actual upstream shape and file:line establishing
+         each. Closes the AC-17.4.1.1.1.1.1.1 through AC-17.4.1.1.1.2.3
+         group with its finding: the pinned fork expresses a Gallery's
+         own expiry with exactly one stored field, `events.expires_at`.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3
 ---
 -->
 
@@ -2658,6 +2679,277 @@ unresolved, so nothing is carried forward as still-unresolved. This
 closed write-path record is what AC-17.4.1.1.1.2.3 goes on to pair with
 the read path. It is a code-level finding: no live Gallery was created
 or changed for it.
+
+## AC-17.4.1.1.1.2.3 — the read path, and the closing finding this group of criteria exists to produce
+
+`US-17` AC-17.4.1.1.1.2.3 works from the same AC-17.4.1.1.1.2.1 confirmed
+set of 13 entries, against the same pinned commit
+(`eb263137b98935754155824de2a03848121304b6`). For each entry it records
+the code that reads it **on the Gallery path** — where it is read when a
+Gallery is served to a viewer, and where it is read when an access
+decision is made about that viewer — stating whether each read gates
+access, only reports state, or does both. Where a confirmed entry is
+never read on the Gallery path, that is recorded as the actual upstream
+shape with the evidence establishing it, per the same rule
+AC-17.4.1.1.1.2.2.3 already applied to the write path. Nothing moves
+between the confirmed and ruled-out lists here except with the file:line
+that settles it, recorded in both places — none does. This is a
+code-level finding: no live Gallery was created or changed for it.
+
+### What "the Gallery path" means here, and the surfaces inspected
+
+"The Gallery path" is read the same way the preceding write-path
+criteria scoped it: code that runs when an actual client (guest, the
+per-event "client" access level, or a Customer-dashboard user) is served
+a Gallery or has an access decision made about them — as distinct from
+admin-only monitoring/listing screens, which are a different audience on
+a different, `adminAuth`-gated path. Every route and middleware file that
+reads `expires_at`, `is_expired`, or any other confirmed-set name was
+inspected; the ones that turned out to sit on the Gallery path are:
+
+| Short name | Full path | What it is |
+|---|---|---|
+| `gallery.js` | `vendor/picpeak/backend/src/routes/gallery.js` | The public, client-facing gallery routes (`/resolve`, `/:slug/info`, `/:slug/photos`, `/:slug/download*`, `/:slug/photo\|thumbnail\|hero\|preview/:photoId`, `/:slug/stats`). |
+| `middleware/gallery.js` | `vendor/picpeak/backend/src/middleware/gallery.js` | Exports `verifyGalleryAccess`, the access-gate middleware every one of `gallery.js`'s protected routes above actually uses. |
+| `routes/auth.js` | `vendor/picpeak/backend/src/routes/auth.js` | The guest/client login routes that exchange a slug (+ optional password/share-token) for a gallery JWT (`POST /gallery/verify`, `/gallery/:slug/client-login`, `/gallery/share-login`), plus `GET /session`. |
+| `middleware/auth.js` | `vendor/picpeak/backend/src/middleware/auth.js` | Exports a *second*, differently-implemented `galleryAuth` and a *second* `verifyGalleryAccess` — distinct functions from the ones in `middleware/gallery.js` above, inspected below because AC-17.4.1.1.1.2.1 cited this file for E1. |
+| `routes/customer.js` | `vendor/picpeak/backend/src/routes/customer.js` | The Customer-dashboard routes (the "Client" identity from AC-17.1.1) that list a Customer's assigned Galleries and exchange a Customer session for a gallery JWT. |
+| `GalleryPage.tsx` | `vendor/picpeak/frontend/src/pages/GalleryPage.tsx` | The frontend page component that renders a Gallery to a viewer, consuming `gallery.js`'s `/:slug/info` response. |
+
+`routes/adminDashboard.js` (E30) and `adminEvents.js`'s list handler
+(E32) were re-inspected here as well, specifically to confirm they sit
+outside this set — both are gated by `adminAuth` +
+`requirePermission(...)` (`adminDashboard.js:10`, `adminEvents.js:867`),
+reached only via `/api/admin/...`, never by a guest, client, or Customer
+request for a specific Gallery.
+
+### A dead-code finding that changes where the real access gate is: `middleware/auth.js`'s `galleryAuth` is never wired to any route
+
+AC-17.4.1.1.1.2.1 cited `middleware/auth.js:178-182` as the evidence for
+E1 gating gallery access on `expires_at`. Re-reading that file for this
+AC's read-path evidence turns up a structural fact the write-path
+sections had no reason to surface: `middleware/auth.js` defines its own
+`galleryAuth` (lines 132-200, `expires_at` check at 178-182,
+`GALLERY_EXPIRED` literal at 182) and its own `verifyGalleryAccess`
+(lines 262-287), separate functions from the identically-named
+`verifyGalleryAccess` exported by `middleware/gallery.js` that
+`gallery.js`'s routes actually import (`gallery.js:9`). A search of every
+`require(...)` of `middleware/auth.js` in the pinned commit —
+
+```
+$ grep -rn "middleware/auth['\"])" vendor/picpeak/backend/server.js vendor/picpeak/backend/src -r
+vendor/picpeak/backend/server.js:726:  const { adminAuth } = require('./src/middleware/auth');
+vendor/picpeak/backend/src/routes/adminApiTokens.js:11:const { adminAuth } = require('./../middleware/auth');
+vendor/picpeak/backend/src/routes/adminArchives.js:7:const { adminAuth } = require('../middleware/auth');
+... (39 route files total, every one destructuring only `adminAuth`)
+```
+
+— shows every one of the 39 files that requires `middleware/auth.js`
+destructures only `adminAuth`. Neither `galleryAuth`, `photoAuth`, nor
+`middleware/auth.js`'s own `verifyGalleryAccess` is imported anywhere.
+(`routes/galleryFeedback.js`'s `photoAuth` is a same-named but distinct
+function from `middleware/photoAuth.js`, a different file — confirmed by
+reading its import, `galleryFeedback.js:3`.) `middleware/auth.js:178-182`
+— and the `GALLERY_EXPIRED` literal at line 182 — is therefore dead code:
+it is never reached by any live request, on the Gallery path or any
+other. AC-17.4.1.1.1.2.1's citation of this line as evidence that E1
+"gates gallery access directly on the column" is not wrong about what
+the code *does* if called, but this AC's read-path inspection is what
+establishes it is *never called* — the actual access-gating code lives
+elsewhere, evidenced below. This does not move E1 or E16 between the
+confirmed and ruled-out lists (both remain confirmed as genuinely
+participating in the Gallery's own `expires_at` lifecycle, per
+AC-17.4.1.1.1.2.1's own reasoning, which did not require the cited code
+to be reachable); it changes only which citation is the operative one for
+E1's and E16's actual read-path role, recorded below.
+
+### Per-entry read-path evidence
+
+| Entry | Name(s) | Read on the Gallery path? | Evidence (file:line) | Role |
+|---|---|---|---|---|
+| E1 | `expires_at` | Yes — five sites, three of them live | `gallery.js:116` (selected), `:184` (returned in `/:slug/info` response) | Reports state — `/:slug/info` never blocks on it. |
+| | | | `gallery.js:475` (returned in `/:slug/photos` response, inside the handler `verifyGalleryAccess` already let through) | Reports state — read after access is already granted by a middleware that does not itself check this column (see below). |
+| | | | `customer.js:148` (`if (event.expires_at && new Date(event.expires_at) < new Date())`, inside `GET /events/:slug/access-token`) | **Gates** — returns `410 {"error":"This gallery has expired"}` before a Customer's gallery JWT is minted (`customer.js:168-181`). |
+| | | | `auth.js:576` (`if (event.expires_at && new Date(event.expires_at) < new Date())`, inside `GET /session`) | **Gates** — flips an existing gallery token's session-validity report to `{valid:false, error:'Gallery has expired'}` (`auth.js:577`). |
+| | | | `middleware/auth.js:178-182` (dead `galleryAuth`, see above) | Neither — unreachable; would gate if it were ever called, but it is not on the Gallery path at all. |
+| E4 | `expiry_date` | No | — | Never read on the Gallery path — see the "never read" table below. |
+| E5 | `expiration_warning` | No | — | Never read on the Gallery path — see below. |
+| E6 | `gallery_expired` / `galleryExpiredExists` | No | — | Never read on the Gallery path — see below. |
+| E7 | `event_require_expiration` | No | — | Never read on the Gallery path — see below. |
+| E10 | `expiration_days` | No | — | Never read on the Gallery path — see below. |
+| E11 | `general_default_expiration_days` | No | — | Never read on the Gallery path — see below. |
+| E12 | `require_expiration` | No | — | Never read on the Gallery path — see below. |
+| E13 | `is_expired` | Yes — computed on the backend, consumed by the frontend | `gallery.js:186` (`is_expired: !event.is_active \|\| (event.expires_at && new Date(event.expires_at) < new Date())`, inside `/:slug/info`) | Reports state in the API response — `/:slug/info` still returns `200` with this field regardless of its value. |
+| | | | `GalleryPage.tsx:275` (`if (galleryInfo?.is_expired) { return <expired-state UI>; }`) | **Gates** — this `if` sits ahead of the `isAuthenticated && event` branch (`GalleryPage.tsx:336`) that renders the password prompt / gallery view, so a viewer never reaches either once `is_expired` is true, regardless of whether they already hold a valid token. |
+| E16 | `GALLERY_EXPIRED` | No | `middleware/auth.js:182` is the only occurrence in the pinned commit (confirmed by grep of the whole backend and frontend source trees); it sits inside the same dead `galleryAuth` function documented above. | Never read on the Gallery path — see below (a literal string that is emitted by no live response). |
+| E30 | `expiringEvents` | No | — | Never read on the Gallery path — see below. |
+| E32 | `expiring` | No | — | Never read on the Gallery path — see below. |
+| E33 | `event.expired` | No | — | Never read on the Gallery path — see below. |
+
+### Where the guest/client token-issuing routes do *not* read `expires_at`, for contrast
+
+The absence above is not an oversight in this audit's search — it was
+confirmed by reading each of the three guest/client gallery-login
+handlers in full. None of them checks `expires_at` before minting a
+24-hour gallery JWT; each checks only `is_active`/`is_archived` (and,
+where relevant, the password/share-token):
+
+| Route | Evidence (file:line) | What it checks before minting a token |
+|---|---|---|
+| `POST /api/auth/gallery/verify` | `auth.js:197-199` (`db('events').where({slug, is_active:..., is_archived:...})`), `:231` (password compare) | `is_active`, `is_archived`, password — no `expires_at` read anywhere in the handler (`auth.js:184-294`). |
+| `POST /api/auth/gallery/:slug/client-login` | `auth.js:311-313` (same `is_active`/`is_archived` filter), `:328` (password compare) | Same — no `expires_at` read in the handler (`auth.js:297-370`). |
+| `POST /api/auth/gallery/share-login` | `auth.js:398-400` (same filter), `:414-416` (share-token compare) | Same — no `expires_at` read in the handler (`auth.js:373-457`). |
+
+And once a token exists, `middleware/gallery.js`'s `verifyGalleryAccess`
+— the middleware `gallery.js` actually mounts on every protected route
+(`/:slug/photos`, `/:slug/download*`, `/:slug/photo\|thumbnail\|hero\|preview/:photoId`,
+`/:slug/stats`, `/:eventId/upload`) — filters the `events` row only on
+`slug`/`id`, `is_active`, `is_archived`, and (for anonymous requests)
+`is_draft`, across its three query branches (`middleware/gallery.js:34-38,40`
+no-token/public branch; `:87-91,93` slug branch; `:107-111,113` fallback
+eventId branch); a full read of the file (177 lines) confirms
+`expires_at` appears nowhere in it. So a
+guest, client, or Customer who already holds a token issued before a
+Gallery's `expires_at` passed — or who obtains one through a login route
+above, none of which reject an already-expired Gallery on `is_active`
+grounds alone — is never blocked from listing, viewing, or downloading
+photos through any code path this section inspected. The only two live
+backend reads that gate on `expires_at` are the Customer-dashboard
+token-exchange route and the session-validity check, both cited above;
+neither sits in front of the actual photo-serving routes. This is exactly
+the "confirmed field's role, stated honestly" this AC calls for, not a
+defect to be silently patched here.
+
+### The seven entries never read on the Gallery path: actual upstream shape
+
+Each of these was searched for by name/string across every file listed
+in "surfaces inspected" above (`gallery.js`, `middleware/gallery.js`,
+`auth.js`'s gallery-facing routes, `middleware/auth.js`, `customer.js`,
+and `GalleryPage.tsx`) and found in none of them. Four of the five
+never-*written* entries AC-17.4.1.1.1.2.2.3 already found
+(`expiration_warning`, `GALLERY_EXPIRED`, `expiringEvents`, `expiring`)
+are also never *read* on this path — plus three more (`expiry_date`,
+`event_require_expiration`/`require_expiration`'s two names, and
+`expiration_days`/`general_default_expiration_days`) that AC-17.4.1.1.1.2.2.3
+found *were* written (on creation and/or edit) but this AC finds are
+never read back anywhere on the Gallery-serving or access-decision path
+— only on the admin-side creation form or inside outbound email
+templating, which is a write/dispatch concern, not a read on this path.
+
+| Entry | Name(s) | Actual upstream shape (why it is never read here) | File:line establishing it |
+|---|---|---|---|
+| E4 | `expiry_date` | Exists only as an outbound-email template variable, populated from E1 at the moment each email is queued (creation-confirmation, publish, expiry-warning/expired) and consumed only by the email formatter — never read back into any client- or Customer-facing response. | `vendor/picpeak/backend/src/routes/adminEvents.js:800` (built into `emailData`), `vendor/picpeak/backend/src/services/emailProcessor.js:599-600` (`if (processedVariables.expiry_date) { processedVariables.expiry_date = await formatDate(...) }` — the only place that reads the key back, to format it for the outgoing email body). |
+| E5 | `expiration_warning` | An `email_type` literal the scheduled `expirationChecker` job queries against `email_queue` and passes to `queueEmail` — read only by that background job, never by a Gallery-serving or access-decision request. | `vendor/picpeak/backend/src/services/expirationChecker.js:36` (`.where('email_type', 'expiration_warning')`). |
+| E6 | `gallery_expired` / `galleryExpiredExists` | Same shape as E5 — an `email_type` literal passed to `queueEmail` from inside the scheduled job's `handleExpiredEvent`, never read on a live request. | `vendor/picpeak/backend/src/services/expirationChecker.js:144,149` (`queueEmail(event.id, ..., 'gallery_expired', ...)`). |
+| E7 / E12 | `event_require_expiration` / `require_expiration` | Read exactly once, at Gallery-creation time, to decide whether to compute `expires_at` at all (`adminEvents.js:104,596`, already cited under AC-17.4.1.1.1.2.2.1) — an admin-side creation-form setting, not something re-read when an existing Gallery is served or an access decision is made about it. | `vendor/picpeak/backend/src/routes/adminEvents.js:104,596` (same citations AC-17.4.1.1.1.2.2.1 already gave for the creation-path write; no further, separate read site exists anywhere in the pinned commit). |
+| E10 / E11 | `expiration_days` / `general_default_expiration_days` | Read only inside the admin "create Gallery" form flow — `general_default_expiration_days` prefills the form (`CreateEventPage.tsx:238`), `expiration_days` is read once by `adminEvents.js` to compute the new Gallery's `expires_at` (`adminEvents.js:446,605`, already cited under AC-17.4.1.1.1.2.2.1). Neither is read again once the Gallery exists. | `vendor/picpeak/frontend/src/pages/admin/CreateEventPage.tsx:238`; `vendor/picpeak/backend/src/routes/adminEvents.js:446,605`. |
+| E16 | `GALLERY_EXPIRED` | A response-code literal inside the dead `galleryAuth` function documented above; it is the only occurrence of the string in the entire pinned commit (backend and frontend), so nothing — not even error-handling code looking for this code — ever reads it. | `vendor/picpeak/backend/src/middleware/auth.js:182` (sole occurrence, confirmed by a whole-tree grep). |
+| E30 | `expiringEvents` | A live aggregate `COUNT` computed fresh on every request to the admin dashboard stats endpoint, read only by `adminAuth`-gated admin UI, never by a Gallery-serving or access-decision request for a specific Gallery. | `vendor/picpeak/backend/src/routes/adminDashboard.js:10` (`adminAuth` gate), `:24-30,101` (the query and response key, already cited under AC-17.4.1.1.1.2.2.3's write-path table). |
+| E32 | `expiring` | A request-time query-string filter value on the admin events list endpoint, read only inside that `adminAuth`+`events.view`-gated handler, never on the Gallery-serving or access-decision path. | `vendor/picpeak/backend/src/routes/adminEvents.js:867` (`adminAuth` gate), `:905-913` (the filter). |
+| E33 | `event.expired` | An outbound webhook event-type string fired from inside the scheduled `expirationChecker` job (`services/expirationChecker.js:105`); its only "reader" is whatever external listener the operator wires up outside this application (US-17 AC-17.7's territory) — nothing inside the pinned commit itself reads it back on the Gallery path. | `vendor/picpeak/backend/src/services/webhookService.js:17` (the literal, in the frozen `EVENT_TYPES` list); `vendor/picpeak/backend/src/services/expirationChecker.js:105` (the sole `fire('event.expired', ...)` call). |
+
+That is 9 entries never read on the Gallery path (E4, E5, E6, E7, E10,
+E11, E12, E16, E30, E32, E33 — eleven names across 9 table rows, E7/E12
+and E10/E11 each sharing a row per the same identity/pairing
+AC-17.4.1.1.1.2.1 and AC-17.4.1.1.1.2.2.1 already established) plus 2
+entries read on the Gallery path (E1, E13) — 9 + 2 = 11 rows covering all
+13 confirmed entries (E7=E12 one gate, E10 feeds from E11 one
+computation, matching the pairings the write-path sections already
+recorded and not reopened here).
+
+### No contradiction found; confirmed and ruled-out lists unchanged
+
+Every file:line cited above either matches a citation
+AC-17.4.1.1.1.2.1, AC-17.4.1.1.1.2.2.1, or AC-17.4.1.1.1.2.2.2 already
+made, or is new evidence for a question those sections did not ask (a
+read, not a write). The one new structural fact this AC surfaces —
+`middleware/auth.js`'s `galleryAuth`/`verifyGalleryAccess` being dead
+code — does not contradict AC-17.4.1.1.1.2.1's disposition of E1 or E16
+as confirmed (that disposition rests on the code doing what it says if
+reached, which it does), so the confirmed set (13 entries) and the
+ruled-out list stand unchanged in both places; no entry moves.
+
+### The closing finding: the field the pinned fork uses to express a Gallery's own expiry
+
+Drawing only on the code evidence recorded across AC-17.4.1.1.1.2.1
+through this criterion — not on documentation or assumption — the pinned
+fork expresses a Gallery's own expiry with exactly one stored field:
+
+**`events.expires_at`** (E1) is the Gallery's own expiry timestamp. It is
+the only confirmed-set entry that is itself a persisted column on the
+Gallery's own row (`events`): computed and written at creation
+(`adminEvents.js:605,679`), cleared/set/extended on edit
+(`events.js:346,383`, `eventService.js:448,478`,
+`adminEvents.js:284` — AC-17.4.1.1.1.2.2.1/.2.2.2/.2.2.3), and read on
+the Gallery path both to report state (`gallery.js:184,475`) and to gate
+access at two of the pinned fork's live token-issuing/session surfaces
+(`customer.js:148`, `auth.js:576` — this AC). Every other confirmed entry
+is either derived from `expires_at` at read time and never itself
+stored (`is_expired`, E13 — `gallery.js:186`, read on the Gallery path
+to report state and, via the frontend, to gate the UI at
+`GalleryPage.tsx:275`), or is a policy input that only shapes
+`expires_at` at creation time (`event_require_expiration`/
+`require_expiration`, `expiration_days`/`general_default_expiration_days`),
+or is a downstream consumer of the already-computed value with no
+Gallery-path read of its own (the email-template copy `expiry_date`, the
+notification-kind literals `expiration_warning`/`gallery_expired`, the
+hardcoded-and-unreachable `GALLERY_EXPIRED`, or the admin-only aggregates
+`expiringEvents`/`expiring` and the outbound webhook `event.expired`).
+
+Recorded honestly rather than worked around: the pinned fork's
+enforcement of `events.expires_at` on the actual Gallery-serving path is
+narrower than a single "the column gates access" statement would imply.
+Two live surfaces gate on it directly — `GET
+/api/customer/events/:slug/access-token` (`customer.js:148`, the
+Customer-dashboard token exchange) and `GET /api/auth/session`
+(`auth.js:576`, session-validity reporting for an already-issued token)
+— but the three guest/client password- and share-token-based login
+routes that mint the gallery JWT most Gallery viewers actually use
+(`POST /api/auth/gallery/verify`, `/gallery/:slug/client-login`,
+`/gallery/share-login`) never check it, and neither does
+`middleware/gallery.js`'s `verifyGalleryAccess`, the single middleware
+actually mounted on every protected photo-serving route. The one
+function that would have closed that gap, `middleware/auth.js`'s
+`galleryAuth`, is never wired to any route. The only place this gap is
+closed for an ordinary (non-Customer-dashboard) viewer is the frontend:
+`GalleryPage.tsx:275` refuses to render the password prompt or the
+gallery once `/:slug/info`'s `is_expired` (E13) is true. This is the
+actual upstream shape established by the evidence above, not a
+workaround applied by this audit — it is the finding
+AC-17.4.1.1.2 (the PostgreSQL column) and AC-17.4.1.1.2's sibling
+criterion for the scheduled process are to build on, taking `events.expires_at`
+as the field whose column and scheduled-process (already located at
+`services/expirationChecker.js`, started by
+`services/workerManager.js:18`) those later criteria examine.
+
+### Verdict
+
+AC-17.4.1.1.1.2.3 is satisfied: for every one of the AC-17.4.1.1.1.2.1
+confirmed set's 13 entries, this section records — against the pinned
+commit (`eb263137b98935754155824de2a03848121304b6`) — either the
+Gallery-path code that reads it, stating whether each read gates access,
+only reports state, or does both (E1, E13), or that no Gallery-path read
+was found together with the actual upstream shape and the file:line
+establishing it (E4, E5, E6, E7, E10, E11, E12, E16, E30, E32, E33). A
+re-read of `middleware/auth.js`'s previously-cited `galleryAuth` function
+for this AC's read-path question finds it is never wired to any route —
+dead code — which does not move E1 or E16 between the confirmed and
+ruled-out lists (neither disposition depended on that code being
+reachable) but does correct which citation is the operative one for
+their actual read-path role; that correction, and every other citation
+above, is recorded consistently with AC-17.4.1.1.1.2.1,
+AC-17.4.1.1.1.2.2.1, and AC-17.4.1.1.1.2.2.2, so the confirmed set and
+ruled-out list stand unchanged in both places. The audit closes with the
+finding this group of criteria exists to produce: the pinned fork
+expresses a Gallery's own expiry with exactly one stored field,
+`events.expires_at`, read on the Gallery path to both report state
+(`gallery.js:184,475`) and — at exactly two of the fork's live surfaces,
+`customer.js:148` and `auth.js:576` — gate access; every other confirmed
+entry is either a read-time derivation of it (`is_expired`), a
+creation-time input that shapes it, or a downstream consumer with no
+Gallery-path read of its own, drawn only from the code evidence recorded
+in AC-17.4.1.1.1.2.1 through this criterion. It is a code-level finding:
+no live Gallery was created or changed for it.
 
 ## Recommendation and open questions (AC-14.6)
 
