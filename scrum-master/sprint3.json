@@ -25,7 +25,7 @@
     "Coverage threshold met \u2014 the existing CI coverage gate is not lowered to pass",
     "Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)"
   ],
-  "last_updated": "2026-08-01T06:44:15+00:00",
+  "last_updated": "2026-08-01T11:59:12+00:00",
   "stories": [
     {
       "id": "US-14",
@@ -378,7 +378,7 @@
         },
         {
           "id": "17.5",
-          "text": "A client can view the gallery through its client-facing route and download images where the gallery's download policy permits, including any archive download the upstream provides.",
+          "text": "A client can view the gallery through its client-facing route and download images where the gallery's download policy permits, including any archive download the upstream provides. Disposition recorded 2026-08-01 (Project Lead decision on po-requests.md item 11): single-image download hangs because that route resolves the file via a local-filesystem-only path instead of the S3/R2 storage backend the sibling download-all/download-selected routes already use (vendor.gallery.js:667,717), and its error path swallows the failure without responding. Fix by patching the vendored fork so the single-image route uses the storage backend the same way protectedImages.js already does, and making the error path actually respond (e.g. a proper 404/500) instead of hanging. Comment the patch clearly as a vendor-defect fix so it stays legible against future upstream rebases, and file the defect with PicPeak upstream so the patch can eventually be dropped. Also fix the side-effect ordering bug noted alongside it: download_count and the access_logs row currently commit before the file is confirmed sent, so a failed download is recorded as successful \u2014 move those writes to after a confirmed send.",
           "checked": false,
           "dev_status": "not-started",
           "tester_status": "approved"
