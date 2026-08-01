@@ -83,6 +83,55 @@ is to be specified for an already-released gallery.
 | 9 | **Starting point for those tokens** | Derive them from the US-8 photobuddy-derived shell already in the repo, then deliberately diverge toward Earth & Honey's own identity. | **Confirmed 2026-07-30 — derive from photobuddy, but modernize deliberately, not verbatim.** Recorded creative brief for the sprint-4 design-token story: photobuddy currently reads dated — replace its typefaces with **Fraunces** (display serif, headlines) paired with **Inter** (body/UI sans), both open-source/self-hostable with no licensing cost. Palette: near-black (not pure `#000`) as the primary ink color, a neutral grey scale for secondary/tertiary content and surfaces, no accent color beyond that near-black/grey range. The token set must be small and disciplined — a limited, named scale (not one-off values), built as small, composable components rather than page-specific styling, and designed with both Frontstage (Payload/Next.js) and Backstage/Project Room (PicPeak fork templates) as consumers from day one, consistent with Pillar 3 (deterministic beauty, no page-level CSS editing). This is direction, not a locked visual spec — the sprint-4 story should still produce real mockups for confirmation before broad rollout. |
 | 10 | **Real launch content** | Non-blocking. We can proceed on placeholder imagery and copy. When available, please supply real galleries, homepage copy, package/pricing information, and the Weddings / Engagements / Details content so placeholders are replaced before launch. | **informational** |
 | 11 | **Disposition of a verified vendor defect: single-image client download is broken against S3/R2 storage** (detail in the section immediately below) | Non-blocking today — it sits ~14 ACs downstream of the task in flight. It does need a decision before AC-17.5 is dispatched, because AC-17.5 as written cannot pass against this stack. Options and my recommendation are in the section below. | **informational — awaiting your disposition before AC-17.5 runs** |
+| 12 | **The dev-team 40-turn cap, not the requirements, is what has been failing US-17** (detail in the section immediately below) | Raise the per-session turn cap for the Dev Team from 40 to ~80 for audit-shaped criteria, or let a capped session commit its partial work so the next one resumes instead of restarting. This is a Project Lead setting and only you can change it. | **awaiting your decision — I have unblocked the criterion in flight by other means, so nothing is stalled today** |
+
+## The real cause of the US-17 stall: a 40-turn session cap (recorded 2026-08-01)
+
+AC-17.4.1.1.1.2.2.2 has now failed on six consecutive dev sessions, across both Sonnet and Opus, and
+has been split four times and rewritten once in response. Before rewriting it a second time I read the
+session logs in `logs/` rather than the criterion, and they contradict what all five of those earlier
+change records assumed.
+
+**Every single failure is the same one:** `"subtype": "error_max_turns"`, `"errors": ["Reached maximum
+number of turns (40)"]`. Not a token budget — `project-state.json` shows the session that failed at
+02:30 had used 19,434 of its 50,000 tokens. Not a timeout, not a model failing to understand the
+requirement, not an ambiguous acceptance criterion. **The sessions run out of tool calls.**
+
+This is not confined to one criterion. **Eleven of the last twelve dev sessions in this story ended at
+the turn cap**, at a combined cost of **$31.32 for zero committed work product**. The sessions in this
+story that did succeed closed at 19, 29, 34, 38 and 40 turns — the cap sits right on top of where the
+work actually lands, so any criterion that spends turns on discovery before it can begin writing
+overruns it.
+
+Two properties of this story make it worse:
+- **`PIVOT_AUDIT.md` is now 171 KB.** Every fresh session pays to read it before it can add a section.
+- **Failed sessions leave nothing behind.** The work product of eleven capped sessions was discarded,
+  so each attempt restarted from zero. Several earlier ACs in this story only passed because a *later*
+  session found an earlier one's uncommitted draft still in the working tree and finished it — that
+  is the pipeline's actual success mechanism, and it stopped working here.
+
+**What I have already done, so nothing is blocked on your answer.** I rewrote AC-17.4.1.1.1.2.2.2 a
+second time, attacking tool calls rather than word count: I ran the edit-path grep myself and wrote its
+fifteen call sites into the criterion as fixed scope, dropped the `server.js` read, the permission/gate
+column and the reachability finding (no downstream criterion consumes any of them), and stated
+explicitly that a documentation-only criterion owes no pinning test suite — a Dev Team convention that
+has been costing 25–105 tests per audit AC and which the Definition of Done does not require on a
+criterion that changes no source file. The criterion is now a read-a-given-list-and-fill-a-13-row-table
+task. It should fit inside 40 turns. **The splitting has stopped either way — it was never the problem.**
+
+**Why I am still raising it.** The rewrite fixes one criterion by hand. The same shape is still ahead in
+**AC-17.4.1.1.1.2.3** (read path), **AC-17.4.1.1.1.3** (schema/migration) and **AC-17.10** (contract
+signing, seven elements each needing file/line evidence) — and I cannot pre-run the search for all of
+them without becoming the Dev Team. My recommendation, in order of preference:
+
+1. **Raise the Dev Team turn cap to ~80 for this story.** Smallest change, directly addresses the
+   measured cause. At current rates a capped session already costs $2–4, so the cap is not saving money
+   — it is spending it on abandoned work.
+2. **Make a capped session commit its partial work before exiting.** Restores the resume-from-draft
+   mechanism that carried the earlier ACs, and is the more durable fix of the two.
+3. If neither is acceptable, tell me and I will keep pre-running searches into criteria by hand — but
+   that shifts investigation work into requirements, which is not where it belongs, and it will slow
+   sprint 3 down.
 
 ## Verified defect — single-image gallery download hangs on S3/R2 storage (recorded 2026-08-01)
 
