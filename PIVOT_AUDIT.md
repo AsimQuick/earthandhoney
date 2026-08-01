@@ -190,7 +190,21 @@ related-story: US-14
          each. Closes the AC-17.4.1.1.1.1.1.1 through AC-17.4.1.1.1.2.3
          group with its finding: the pinned fork expresses a Gallery's
          own expiry with exactly one stored field, `events.expires_at`.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3
+         AC-17.4.1.1.1.3 — identifies the PostgreSQL table and column
+         from the schema source: `events.expires_at`, declared at
+         `db.js:143`, executed via `core/001_init.js`'s call to
+         `initializeDatabase()`, later altered to nullable on PostgreSQL
+         only by `061_add_optional_date_expiration_settings.js:32`.
+         AC-17.4.1.1.2 — locates the scheduled process that acts on
+         `events.expires_at`: `expirationChecker.js`'s
+         `checkExpirations()`/`handleExpiredEvent()`, registered by a
+         `cron.schedule('0 * * * *', ...)` expression (hourly, via
+         `node-cron`) at `expirationChecker.js:11`, started at
+         `server.js:820` in the process this deployment actually runs.
+         Records `workerManager.js`'s duplicate call site as dead code,
+         never invoked by any script, Dockerfile, PM2 config, or compose
+         file in the pinned commit.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2
 ---
 -->
 
@@ -3074,6 +3088,170 @@ count (1 + 12 = 13) is stated. The verbatim query AC-17.4.1.2 will run is
 given in full. No row is unresolved, so none is carried forward. It is a
 documentation-only, code-level finding: no live Gallery was created or
 changed for it, and no source file was modified.
+
+## AC-17.4.1.1.2 — the scheduled process, and how it is triggered
+
+`US-17` AC-17.4.1.1.2 locates, from code against the pinned commit
+(`eb263137b98935754155824de2a03848121304b6`), the scheduled process that
+acts on the field confirmed by AC-17.4.1.1.1.2.1 (`events.expires_at`,
+E1) and stated with its role by AC-17.4.1.1.1.2.3 — and records how that
+process is triggered (cron expression, timer interval, or on request),
+with the file:line where the trigger is registered or started. If no
+scheduled process acted on the field at all, that absence would itself
+be the finding; it is not the case here, so this section records what
+was found instead. It is a code-level finding: no live Gallery was
+created or changed for it.
+
+### The scheduled process located in code
+
+`vendor/picpeak/backend/src/services/expirationChecker.js` is the sole
+scheduled process that acts on `events.expires_at`:
+
+- `expirationChecker.js:9-16` — `function startExpirationChecker()`
+  registers the schedule (evidenced in the next subsection) and logs
+  `'Expiration checker started'`.
+- `expirationChecker.js:18-59` — `checkExpirations()`, the function the
+  schedule invokes on every tick. It runs two queries against `events`,
+  both filtered on `expires_at`: one for galleries needing a 7-day
+  warning email (`whereNotNull('expires_at').where('expires_at', '<=',
+  warningDate).where('expires_at', '>', now)`, `:25-30`) and one for
+  galleries already past expiry (`whereNotNull('expires_at').where(
+  'expires_at', '<=', now)`, `:46-50`).
+- `expirationChecker.js:94-162` — `handleExpiredEvent(event)`, called
+  once per row the second query matches (`:52-54`). It sets
+  `is_active: false` on the row (`:97`), fires the `event.expired`
+  webhook with `expires_at: event.expires_at` in the payload (`:104-120`),
+  queues `gallery_expired` emails to the customer and, where configured,
+  the admin (`:143-153`), and starts archiving the gallery (`:156`,
+  `archiveEvent(event)`).
+
+This is exactly the confirmed field's role as AC-17.4.1.1.1.2.1 and
+AC-17.4.1.1.1.2.3 already stated it, not a new claim: the same
+`expires_at`-filtered queries and the same `handleExpiredEvent` call
+were already cited there as the process those criteria attributed the
+E1/E5/E6/E33 write-path and read-path behaviour to.
+
+### How it is triggered: a cron expression, not a timer interval or an on-request handler
+
+`expirationChecker.js:1` — `const cron = require('node-cron');`
+(`node-cron@^3.0.2`, `vendor/picpeak/backend/package.json:45`).
+`expirationChecker.js:11` —
+
+```js
+cron.schedule('0 * * * *', async () => {
+  await checkExpirations();
+});
+```
+
+`'0 * * * *'` is a standard five-field cron expression: minute `0` of
+every hour, every day, every month, every day of the week — i.e. once
+per hour, on the hour. No third `options` argument is passed to
+`cron.schedule`, so no explicit timezone override applies; `node-cron`
+runs the schedule against the host process's local timezone. This is an
+in-process recurring schedule registered by application code at server
+startup, not an OS-level crontab entry, not a `setInterval`/`setTimeout`
+timer, and not a handler invoked on an incoming HTTP request — of the
+three trigger shapes this AC distinguishes, it is the first: a cron
+expression, evaluated by the `node-cron` library inside the same Node
+process that serves the API.
+
+A whole-backend search confirms no second scheduled process registers
+against this field: `grep -rn "cron.schedule\|setInterval" backend/src`
+finds eight other recurring jobs (temp-upload cleanup, auth-attempt
+cleanup, token-revocation cleanup, chunked-upload cleanup, the
+invoice-scheduler cron at `invoiceSchedulerService.js:53`, and three
+backup/S3-import jobs), and none of their bodies reference
+`expires_at` (`grep -l "expires_at" backend/src/services/
+invoiceSchedulerService.js backend/src/services/backupService.js
+backend/src/services/databaseBackup.js` returns no matches). The
+scheduled process named above is the only one.
+
+### Where the trigger is registered or started, and a second, unused entry point
+
+`startExpirationChecker` is `require`d and called from two places in the
+pinned commit — but only one of them actually runs in this fork's
+deployment.
+
+**The live path — `server.js`, the process this deployment actually
+runs:**
+
+- `vendor/picpeak/backend/server.js:22` — `const { startExpirationChecker
+  } = require('./src/services/expirationChecker');`
+- `vendor/picpeak/backend/server.js:820` — `startExpirationChecker();`,
+  inside `async function startServer()` (`:791-912`), a few lines ahead
+  of `app.listen(PORT, ...)` (`:903`).
+- `vendor/picpeak/backend/server.js:914` — `startServer();`, called at
+  module scope, so `startExpirationChecker()` — and with it the
+  `cron.schedule('0 * * * *', ...)` registration — runs every time
+  `server.js` is executed as the process entry point.
+- `server.js` is confirmed as the process this deployment actually runs,
+  three ways: `vendor/picpeak/backend/package.json:7` —
+  `"start": "node server.js"`; the vendored
+  `vendor/picpeak/backend/Dockerfile`'s final `CMD ["./wait-for-db.sh",
+  "node", "server.js"]`; and `vendor/picpeak/backend/ecosystem.config.js:4`
+  — the PM2 process definition's `script: './server.js'`. Our own
+  `docker-compose.yml`'s `backstage-backend` service (added under
+  AC-16.1/AC-16.2) sets no `command:` override — confirmed by `grep -n
+  "command:" docker-compose.yml` returning no match — so the container
+  runs the vendored `Dockerfile`'s unmodified `CMD`, i.e. `node
+  server.js`.
+
+**The dead path — `workerManager.js`, never invoked by anything in the
+pinned commit:**
+
+- `vendor/picpeak/backend/src/services/workerManager.js:17-18` —
+  `require('./fileWatcher')` and `const { startExpirationChecker } =
+  require('./expirationChecker');`
+- `workerManager.js:22-39` — `async function startWorkers()` calls
+  `startExpirationChecker()` at `:31`.
+- `workerManager.js:72` — `startWorkers();`, called at module scope, so
+  if this file were ever executed as a process entry point it would
+  register the same cron job a second time.
+- It is not: `workerManager.js` does not appear in
+  `vendor/picpeak/backend/package.json`'s `scripts` block (only
+  `server.js` is referenced, by `start` and `dev`), not in the vendored
+  `Dockerfile`'s `CMD`, not in `ecosystem.config.js`'s single `picpeak`
+  app definition, not in our `docker-compose.yml` (no service names it),
+  and not in upstream's own `vendor/picpeak/docker-compose*.yml` files —
+  a whole-repository `grep -rln "workerManager"` under
+  `vendor/picpeak/backend/` and a `grep -n "workerManager"` across every
+  compose file and `package.json`/`Dockerfile` in the vendored tree
+  return no hits outside `workerManager.js` itself. It is dead code: a
+  second, unused entry point that duplicates `server.js`'s registration
+  if it were ever run standalone, structurally the same shape
+  AC-17.4.1.1.1.2.3 already found for `middleware/auth.js`'s
+  `galleryAuth` — present in the source, never wired to anything that
+  actually executes.
+
+The trigger this deployment actually starts, then, is registered at
+`expirationChecker.js:11` (the `cron.schedule` call itself) and started
+at `server.js:820` (the call site actually reached by the running
+container), reached via `server.js:914`'s module-scope `startServer()`
+call — not `workerManager.js`, which is never executed.
+
+### Verdict
+
+AC-17.4.1.1.2 is satisfied: the scheduled process acting on the
+AC-17.4.1.1.1.2.1-confirmed, AC-17.4.1.1.1.2.3-stated field
+(`events.expires_at`) is `expirationChecker.js`'s
+`checkExpirations()`/`handleExpiredEvent()` pair, registered by
+`startExpirationChecker()` (`expirationChecker.js:9-16`) via a cron
+expression — `cron.schedule('0 * * * *', ...)` at `expirationChecker.js:11`,
+once per hour on the hour, via `node-cron` — not a timer interval and
+not an on-request handler. A whole-backend search confirms it is the
+only scheduled process that references `expires_at`. The trigger is
+started, in the process this deployment actually runs, at
+`server.js:820` inside `startServer()`, itself invoked at module scope
+by `server.js:914`, with `server.js` confirmed as the real entry point
+by `package.json`'s `start` script, the vendored `Dockerfile`'s `CMD`,
+`ecosystem.config.js`'s PM2 definition, and the absence of any
+`command:` override in our own `docker-compose.yml`. A second call site,
+`workerManager.js:18` (called from `workerManager.js:31`, itself
+invoked at `workerManager.js:72`), is found and recorded honestly as
+dead code — never referenced by any script, Dockerfile, PM2 config, or
+compose file in the pinned commit or this repository — rather than
+silently treated as equivalent to the live path. It is a code-level
+finding: no live Gallery was created or changed for it.
 
 ## Recommendation and open questions (AC-14.6)
 
