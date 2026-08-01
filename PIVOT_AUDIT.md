@@ -204,7 +204,25 @@ related-story: US-14
          Records `workerManager.js`'s duplicate call site as dead code,
          never invoked by any script, Dockerfile, PM2 config, or compose
          file in the pinned commit.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2
+         AC-17.4.1.1.3 — writes up how the expiry model established by
+         AC-17.4.1.1.1.1.1.1 through AC-17.4.1.1.1.3 and AC-17.4.1.1.2
+         compares with the PRD's assumption (`PRD.md:863-901`, section
+         13's workflow diagram and Gallery-controls list), drawing only on
+         the code evidence those criteria already recorded — no new
+         search, no live Backstage. Finds agreement that a Gallery-level
+         expiry control exists and that it culminates in an automatic
+         archive matching the PRD's "Gallery archived" workflow step, and
+         finds three differences recorded as the actual upstream shape
+         rather than patched: the PRD lists "expiration window" as a peer
+         of "password protection", but password protection is uniformly
+         backend-enforced (AC-17.3) while `expires_at` gates only two of
+         the fork's several live access surfaces (AC-17.4.1.1.1.2.3);
+         upstream couples archiving with a separate `is_active` deactivation
+         flag the PRD's single "archived" end state does not name; and
+         upstream's archive trigger is purely elapsed time against
+         `expires_at`, not the PRD diagram's implied download-completion
+         trigger.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3
 ---
 -->
 
@@ -3252,6 +3270,172 @@ dead code — never referenced by any script, Dockerfile, PM2 config, or
 compose file in the pinned commit or this repository — rather than
 silently treated as equivalent to the live path. It is a code-level
 finding: no live Gallery was created or changed for it.
+
+## AC-17.4.1.1.3 — the pinned fork's expiry model against the PRD's assumption
+
+`US-17` AC-17.4.1.1.3 adds no code search and exercises no live
+Backstage. It writes up how the expiry model established by
+AC-17.4.1.1.1.1.1.1 through AC-17.4.1.1.1.3 (the inventory-and-
+confirmation chain, closing with AC-17.4.1.1.1.3's schema identification)
+and AC-17.4.1.1.2 (the scheduled process) compares with what the PRD
+assumes about gallery expiry, drawing only on the code evidence those
+criteria already recorded. Where the pinned fork expresses expiry
+differently than the PRD assumes, that difference is recorded as the
+actual upstream shape below; no fork patch is made anywhere in this
+section to close any of the gaps it records — nothing under
+`vendor/picpeak/` is edited by this AC.
+
+### What the PRD assumes
+
+`scrum-master/PRD.md` says something about gallery expiry in exactly two
+places, and only two:
+
+- The top-level client-relationship diagram near the start of the
+  document (`PRD.md:9-27`) — the same lifecycle CLAUDE.md's Product
+  Vision restates as "Visitor → Lead → Booking → Contract → Payment →
+  Session → temporary Gallery Delivery → Download → Archive" — names
+  `Gallery Delivery Window` (`PRD.md:22`) as its own sequential stage,
+  followed by `Download Completed` (`PRD.md:24`) and then `Archive`
+  (`PRD.md:26`) as the final stage of the whole client relationship.
+- Section 13, "Client Gallery Delivery" (`PRD.md:863`), which says the
+  same thing a second time, in more detail: a workflow diagram
+  (`PRD.md:874-890`) ending in **"Gallery archived"** as its terminal
+  step, immediately after "Client downloads photos" — again a sequential
+  pipeline (upload → link → view → download → archived), not naming a
+  scheduled background process or any intermediate state between
+  "downloaded" and "archived" — plus a flat "Gallery controls" list
+  (`PRD.md:897-900`): `private link`, `password protection`, `download
+  enabled`, `expiration window` — four items given as peers, with no
+  further detail on what "expiration window" stores, what enforces it,
+  or how it relates to the "Gallery archived" workflow step.
+
+Nowhere else in `PRD.md` mentions expiry, archiving, or deactivation of a
+Gallery — confirmed by re-reading the whole document, not by a fresh
+keyword search re-run against the fork (that search is AC-17.4.1.1.1.1.1.1's
+territory, scoped to the fork's backend source, not the PRD). Both
+places the PRD does mention it agree with each other: a Gallery
+("Gallery Delivery Window" / "expiration window") reaches an "Archive" /
+"Gallery archived" end state as the next sequential stage after
+download, with no storage shape, no enforcement mechanism, and no
+trigger condition specified for either transition.
+
+### What the pinned fork actually does, restated from AC-17.4.1.1.1.3 and AC-17.4.1.1.2
+
+AC-17.4.1.1.1.3 identified the Gallery's own expiry as exactly one
+persisted column, `events.expires_at` (`db.js:143`), the only one of the
+AC-17.4.1.1.1.2.1 confirmed set's 13 entries that is itself a stored
+column on the Gallery's row — every other confirmed entry is a read-time
+derivation, a creation-time input, or a downstream consumer with no
+column of its own (AC-17.4.1.1.1.3(b)).
+
+AC-17.4.1.1.2 located the scheduled process that acts on that column:
+`expirationChecker.js`'s hourly `cron.schedule('0 * * * *', ...)`
+(`expirationChecker.js:11`), started at `server.js:820` in the process
+this deployment actually runs. On each tick, `checkExpirations()` finds
+rows whose `expires_at` has passed and calls `handleExpiredEvent(event)`
+once per row, which — per AC-17.4.1.1.2's restatement of
+AC-17.4.1.1.1.2.2.3's write-path evidence — sets `is_active: false`
+(`expirationChecker.js:97`), fires the `event.expired` webhook
+(`:104-120`), queues `gallery_expired` emails (`:143-153`), and starts
+archiving the gallery via `archiveEvent(event)` (`:156`).
+
+AC-17.4.1.1.1.2.3's closing finding further established that this
+scheduled sweep is not the only thing that determines whether a viewer
+is actually let in: `expires_at` gates access at exactly two of the
+fork's live surfaces — the Customer-dashboard token exchange
+(`customer.js:148`) and the session-validity check (`auth.js:576`) — but
+the three guest/client password- and share-token login routes that mint
+the gallery JWT most viewers use, and `middleware/gallery.js`'s
+`verifyGalleryAccess` (the access-gate middleware actually mounted on
+every photo-serving route), never read `expires_at` at all. The only
+place an ordinary viewer is stopped once a Gallery has expired is the
+frontend, `GalleryPage.tsx:275`, gating on the derived `is_expired` flag.
+
+### Where the two agree
+
+- **A Gallery-level expiry control exists, matching the PRD's
+  "expiration window".** The PRD names an expiry control per Gallery
+  (`PRD.md:900`); the pinned fork stores exactly one such value per
+  Gallery row, `events.expires_at` (AC-17.4.1.1.1.3). Neither side treats
+  expiry as a property of anything other than the Gallery/event itself.
+- **Expiry culminates in an automatic archive, matching the PRD's
+  "Gallery archived" terminal step.** The PRD's workflow diagram ends in
+  "Gallery archived" (`PRD.md:890`) with no manual "archive" action named
+  among the Gallery controls list — archiving reads as an automatic
+  pipeline outcome, not something the photographer triggers by hand.
+  Upstream's `handleExpiredEvent` matches that shape exactly: the
+  scheduled cron sweep calls `archiveEvent(event)`
+  (`expirationChecker.js:156`) itself, with no admin action in the loop.
+  On this point the two agree, including on the automatic-not-manual
+  character of the transition.
+
+### Where they differ
+
+Neither of the two shapes this AC's own text names as possibilities —
+"only as an archive or deactivation state" with no dedicated expiry
+value, or "no scheduled process at all" — is what was actually found:
+the pinned fork does have a dedicated stored expiry column
+(`events.expires_at`) and it does have a scheduled process
+(`expirationChecker.js`'s hourly cron). The real differences are
+narrower, and each is recorded here rather than closed with a fork
+patch:
+
+1. **"Expiration window" is listed as a peer of "password protection",
+   but the two are not enforced the same way.** The PRD's flat Gallery-
+   controls list (`PRD.md:897-900`) gives `password protection` and
+   `expiration window` equal billing, implying comparable enforcement.
+   AC-17.3 exercised password protection live and found it backend-
+   enforced by the actual mounted middleware: `GET
+   /api/gallery/:slug/photos` with no token returns `401 {"error":"No
+   token provided"}` before any password is even considered
+   (`middleware/gallery.js:62`, cited in AC-17.3). `expires_at` has no
+   equivalent uniform backend gate — per AC-17.4.1.1.1.2.3's finding
+   restated above, the same `verifyGalleryAccess` middleware that
+   enforces the password never reads `expires_at`, and the login routes
+   that issue a viewer's token never check it either; enforcement for an
+   ordinary viewer exists only in the frontend. Where the PRD's listing
+   implies "expiration window" behaves like its sibling controls, the
+   code shows it is the one control among the four not enforced at the
+   layer the others are.
+2. **Upstream couples archiving with a separate deactivation flag the
+   PRD's single end state does not name.** The PRD's workflow names one
+   terminal state, "Gallery archived" (`PRD.md:890`). Upstream's
+   `handleExpiredEvent` sets two things on the same pass: `is_active:
+   false` (`expirationChecker.js:97`) and, separately, the archive action
+   (`:156`) — a deactivation flag and an archive action recorded as
+   distinct steps in the code, not one combined state. The PRD gives no
+   name to an intermediate "deactivated" state between "downloaded" and
+   "archived"; upstream's model has one.
+3. **Upstream's archive trigger is elapsed time alone, not the PRD
+   diagram's implied download-completion trigger.** The PRD's workflow
+   diagram places "Gallery archived" immediately after "Client downloads
+   photos" (`PRD.md:886-890`), reading as a sequential, delivery-driven
+   transition. `checkExpirations()`'s queries filter only on
+   `expires_at` against the current time (`expirationChecker.js:46-50`,
+   restated under AC-17.4.1.1.2) — there is no query condition anywhere
+   in that function referencing downloads, views, or any other client
+   activity. A Gallery whose password was never even used still expires
+   and archives on the cron's schedule once `expires_at` passes, and,
+   per AC-17.4.1.1.1.2.3's read-path finding, a client who already holds
+   a token from before expiry is not blocked from continuing to view or
+   download through the routes that never check `expires_at`. Upstream's
+   actual trigger is purely time-based, independent of the PRD
+   diagram's delivery-sequence framing in both directions.
+
+### Verdict
+
+AC-17.4.1.1.3 is satisfied: this section states plainly, from the code
+evidence AC-17.4.1.1.1.1.1.1 through AC-17.4.1.1.1.3 and AC-17.4.1.1.2
+already recorded and `scrum-master/PRD.md` section 13's own text, where
+the pinned fork's expiry model agrees with the PRD's assumption (a
+Gallery-level expiry control that culminates in an automatic archive)
+and where it differs (uneven enforcement relative to password
+protection, a separate deactivation flag the PRD does not name, and a
+purely time-based trigger rather than a download-completion-driven one).
+Each difference is recorded as the actual upstream shape with the
+file:line evidence already established by the two preceding criteria; no
+new code search was run, no live Backstage was exercised, and no change
+was made under `vendor/picpeak/` to close any of them.
 
 ## Recommendation and open questions (AC-14.6)
 
