@@ -4824,6 +4824,223 @@ file: the audit section above is its entire deliverable, and no
 `FORK_CHANGELOG.md`, `PICPEAK_UPSTREAM_DEFECTS.md`, `UPSTREAM_SYNC.md`,
 or upstream-issue record was written for it.
 
+## AC-17.5.2 — the single-photo download route patched to read through the storage backend, proven live
+
+### The patch
+
+`GET /:slug/download/:photoId` (`gallery.js:633`) now resolves managed
+photos the same way `protectedImages.js:105-130` and this file's own
+`/:slug/photo/:photoId` route already do: `resolvePhotoStorageKey`
+(`services/photoResolver.js`) returns the relative storage key, and a
+`storage.stat()` call against `getStorage()` both confirms the object
+exists and supplies `Content-Length` — no local-filesystem assumption
+remains on the managed-photo path. `resolvePhotoFilePath` now runs only
+in the `else` branch, when `storageKey` is `null` (external/reference
+photos, `photoResolver.js:24-27`), so that fallback is unchanged and
+unregressed. The watermark branch (`gallery.js:743-746`) materializes a
+tmp local copy via `withLocalCopy(storageKey, ...)` before calling
+`watermarkService.applyWatermark`, matching the `withLocalCopy` pattern
+`protectedImages.js:292-293` already established, since `applyWatermark`
+only accepts a path. Every region the AC named is marked in-file with a
+`vendor-defect fix: US-17 AC-17.5.2` comment (`gallery.js:667`, `717`,
+`739`, `756`, `813`), so the patch stays legible against a future
+upstream rebase.
+
+Every failure path answers rather than falling through: `storageKey`
+resolution failure → `404` (`gallery.js:688`); `storage.stat()` returning
+null → `404` (`gallery.js:702`); `resolvePhotoFilePath` failure for a
+no-storage-key photo → `404` (`gallery.js:714`); a storage stream that
+fails to open → `500`, or `res.destroy()` if headers are already sent
+(`gallery.js:768-780`); a stream `error` event after piping has started →
+`500`/`destroy()` by the same headersSent check (`gallery.js:781-794`);
+and the `res.sendFile` error callback — the exact upstream hang this AC
+exists to close — now inspects `res.headersSent` and answers `404` for
+`ENOENT` or `500` otherwise instead of only logging (`gallery.js:805-824`).
+The outer `try/catch` (`gallery.js:634`, `826-838`) mirrors the same
+headersSent check for anything unresolved by the branches above.
+
+### The pinning test suite
+
+`vendor/picpeak/backend/src/__tests__/galleryDownload.storageBackend.test.js`
+covers exactly the claims this criterion makes about the patched source
+— it does not re-run AC-17.5.1's live evidence. Run inside the
+`backstage-backend` container (the production image omits
+`devDependencies`, so `supertest`/`jest` were installed ephemerally with
+`npm install --include=dev` in a `docker compose run --rm` container that
+was discarded afterward — nothing was installed into the committed
+`node_modules` or the image):
+
+```
+PASS src/__tests__/galleryDownload.storageBackend.test.js
+  GET /:slug/download/:photoId — storage backend + failure-path pinning (US-17 AC-17.5.2)
+    ✓ managed photo: streams via the storage backend with Content-Length from storage stat()
+    ✓ external/reference photo (no storage key): falls back to resolvePhotoFilePath and streams the file
+    ✓ absent storage object: storage.stat() returning null answers 404 with a body
+    ✓ photo row whose storage key cannot be resolved answers 404
+    ✓ external photo whose local file path cannot be resolved answers 404
+    ✓ a storage stream error before any bytes are sent answers 500 instead of hanging
+    ✓ res.sendFile failing on a missing external file answers 404 instead of only logging (the upstream hang)
+    ✓ watermark branch materializes a local copy via withLocalCopy and calls applyWatermark with a path, not a buffer
+
+Test Suites: 1 passed, 1 total
+Tests:       8 passed, 8 total
+```
+
+The full `gallery`-scoped suite (`galleryDownload.storageBackend.test.js`,
+`galleryOgService.shareImage.test.js`, `verifyGalleryAccess.customerRevoke.test.js`)
+was also run together — `3 passed, 3 total`, `23 passed, 23 total` — no
+regression in the two adjacent gallery test files this AC did not touch.
+
+### A stale running container caught before it could produce a false-positive live proof
+
+Before running the live proof below, `docker compose --profile backstage exec
+backstage-backend md5sum src/routes/gallery.js` was checked against the
+committed file and **did not match** — the container that had been running
+for the prior 7 hours was serving an image built from a materially
+different, uncommitted version of this same route (its download-count/
+access-log writes were already wired to `res.on('finish', ...)`, the
+exact "move the writes" change this AC's own scope defers to AC-17.5.3,
+plus other side-effect and comment differences from what's on this
+branch). Proving against it would have recorded behavior this branch
+does not actually contain. `docker compose build backstage-backend`
+followed by `docker compose --profile backstage up -d backstage-backend
+--force-recreate` rebuilt and recreated the container from the current
+source (the `backstage-db` container, and the AC-17.5.1 Gallery's data in
+it, were untouched — only the stateless backend service was recreated);
+the container's `gallery.js` md5sum then matched the committed file
+byte-for-byte (`6f19792c8a262a27875d91c2453d950d`), and the live proof
+below runs against that rebuilt container.
+
+### Live proof: a real photo downloads successfully
+
+Reusing the AC-17.5.1 Verification Gallery (`event id 9`, slug
+`wedding-ac-17-5-1-verification-gallery-2026-09-15`, password
+`Verify-Pass-456`, `allow_downloads: true`, three managed photos `9`/`10`/`11`
+already confirmed live and unchanged by this AC). Every call below carries
+`curl -m 15`.
+
+```
+$ curl -s -i -m 15 -c <gallery-cookie-jar> -X POST http://localhost:3100/api/auth/gallery/verify \
+    -H "Content-Type: application/json" \
+    -d '{"slug":"wedding-ac-17-5-1-verification-gallery-2026-09-15","password":"Verify-Pass-456"}'
+
+HTTP/1.1 200 OK
+Set-Cookie: gallery_token=eyJhbGci...; Max-Age=86400; Path=/; HttpOnly; SameSite=Lax
+
+$ curl -s -m 15 -b <gallery-cookie-jar> -D headers-200.txt -o photo9.jpg \
+    http://localhost:3100/api/gallery/wedding-ac-17-5-1-verification-gallery-2026-09-15/download/9
+
+HTTP/1.1 200 OK
+Content-Type: image/jpeg
+Content-Length: 15539
+Content-Disposition: attachment; filename="AC-17.5.1_Verification_Gallery_individual_0001.jpg"; filename*=UTF-8''AC-17.5.1_Verification_Gallery_individual_0001.jpg
+```
+
+`wc -c photo9.jpg` → `15539`, matching `Content-Length` exactly and the
+same size AC-17.2/AC-17.5.1 recorded for this source JPEG. `file
+photo9.jpg` → `JPEG image data, JFIF standard 1.02, ... 950x534, components
+3` — real image bytes, not an error body. `Content-Disposition` carries
+both the plain `filename` and the RFC 5987 `filename*` parameter, per this
+AC's own requirement. The backend's own request log confirms the whole
+call completed in 304ms — not a hang:
+
+```
+[2026-08-01T23:15:11.512Z] GET .../download/9
+[2026-08-01T23:15:11.816Z] GET .../download/9 -> 200 (304ms)
+```
+
+### Live proof: a photo pointed at a storage object that does not exist answers 404 promptly
+
+A photo row was injected directly into Postgres, in the same event, with
+a `path` pointing at an object never uploaded to the storage backend:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -c "
+insert into photos (event_id, filename, path, type, size_bytes, uploaded_by, source_origin, media_type, mime_type, visibility, processing_status)
+values (9, 'ac-17-5-2-ghost.jpg', 'wedding-ac-17-5-1-verification-gallery-2026-09-15/ac-17-5-2-ghost-does-not-exist.jpg', 'individual', 1234, 'admin', 'managed', 'image', 'image/jpeg', 'visible', 'complete')
+returning id;"
+
+ id
+----
+ 12
+```
+
+```
+$ curl -s -m 15 -b <gallery-cookie-jar> -D headers-404.txt -o body-404.json -w 'http_code=%{http_code} time_total=%{time_total}\n' \
+    http://localhost:3100/api/gallery/wedding-ac-17-5-1-verification-gallery-2026-09-15/download/12
+
+http_code=404 time_total=0.114586
+```
+
+Body: `{"error":"Photo file not found"}` — a real response body, not an
+empty connection close. `0.11`s, not a hang. The backend's own log shows
+exactly which branch answered it — `storage.stat()` on the resolved key
+returned null (`gallery.js:696-702`), the object genuinely does not
+exist, not a resolver crash:
+
+```
+{"slug":"wedding-...","photoId":"12","eventId":9,"storageKey":"events/active/wedding-ac-17-5-1-verification-gallery-2026-09-15/ac-17-5-2-ghost-does-not-exist.jpg","level":"error","message":"Photo not found in storage backend for download","timestamp":"2026-08-01 23:15:15.848"}
+[2026-08-01T23:15:15.739Z] GET .../download/12
+[2026-08-01T23:15:15.849Z] GET .../download/12 -> 404 (110ms)
+```
+
+Re-read from Postgres: `photos.download_count` for id `12` and the
+`access_logs` `download` row both landed (id `63`, `photo_id: '12'`) —
+consistent with this AC's own pinned reading that those two writes
+(`gallery.js:656-665`) still happen unconditionally, before the
+resolve-and-send block, on this branch. Recording a completed-looking
+download for a request that then 404s is the exact defect the AC-17.5.2
+scope text names and defers: "moving the `download_count` and
+`access_logs` writes... is owed to AC-17.5.3." Nothing here contradicts
+that deferral; it's independent live confirmation that the shape AC-17.5.1
+already read out of the source is still the live, observable behavior on
+this branch as of this AC.
+
+The injected row was then deleted:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -c \
+    "delete from photos where id=12 returning id;"
+
+DELETE 1
+```
+
+confirmed gone with a follow-up `select` returning zero rows. The
+`access_logs` row the failed request produced (id `63`) was left in
+place rather than deleted — `access_logs.photo_id` carries no foreign
+key to `photos`, so it is not an orphaned reference, and editing an
+access-log audit trail after the fact to make a test look cleaner would
+misrepresent what actually happened live.
+
+### Verdict
+
+AC-17.5.2 is satisfied. `GET /:slug/download/:photoId` resolves managed
+photos through `resolvePhotoStorageKey`/`getStorage()` exactly as
+`protectedImages.js:105-130` does, with `Content-Length` from the same
+`stat()`; `resolvePhotoFilePath` survives only on the no-storage-key
+(external/reference) branch; the watermark branch materializes a local
+copy via `withLocalCopy` before calling `watermarkService.applyWatermark`;
+and every failure path — absent storage object, unresolvable path, a
+stream error before or after headers are sent, and the upstream
+`res.sendFile` hang itself — answers instead of hanging, each region
+marked in-file as a `US-17 AC-17.5.2` vendor-defect fix. An 8-test pinning
+suite (`galleryDownload.storageBackend.test.js`) covers these claims
+against the patched source and passes, alongside the two adjacent gallery
+test files (`23 passed, 23 total` combined). Proven live against the
+running Backstage: a real photo from the AC-17.5.1 Gallery downloads
+`200` with `15539` real JPEG bytes matching `Content-Length` and a
+`filename*`-bearing `Content-Disposition`, in `304`ms; an injected photo
+row pointed at a storage object that was never uploaded answers `404`
+with a body in `110`ms, with the injected row cleaned up afterward. Caught
+and corrected before either live call ran: the container that had been
+running for the prior 7 hours was on a stale image carrying a materially
+different, uncommitted version of this same route; it was rebuilt and
+recreated from the committed source (verified by matching md5sum) so the
+live proof above reflects what this branch actually contains, not a
+divergent local artifact. Out of scope, per this AC's own text and
+confirmed still true live: the `download_count`/`access_logs` writes still
+happen before resolution rather than after success, owed to AC-17.5.3.
+
 ## Recommendation and open questions (AC-14.6)
 
 ### Explicit keep/replace/retire recommendation
