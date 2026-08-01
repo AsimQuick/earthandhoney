@@ -242,7 +242,25 @@ related-story: US-14
          green "Active" label the photographer actually sees is
          synthesized entirely client-side, per request, from those four
          raw fields.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3
+         AC-17.4.2 — brings the AC-17.1.3.1 Gallery past its expiry
+         through the interface upstream actually provides (the admin
+         `PUT /api/admin/events/:id` endpoint, which accepts a past-dated
+         `expires_at` with no future-date validation, plus the real
+         hourly `expirationChecker` cron sweep AC-17.4.1.1.2 already
+         located — no fork patch, no direct database write of the
+         enforcement fields), then re-runs the exact client-facing
+         request recorded as succeeding in AC-17.4.1.2 and records it now
+         refused: `404 {"error":"Gallery not found or expired"}`, both
+         cold and with the genuine gallery token minted seven seconds
+         before the expiry write, proving a pre-expiry session/token is
+         not still honoured. Records, from the real database timestamps
+         (the `expires_at` write at 14:19:55 UTC against the sweep's
+         `archived_at` of 15:00:02 UTC), a real enforcement-lag gap: the
+         Gallery was already "past its expiry" by its own stored value
+         for roughly 40 minutes before the scheduled process actually
+         denied access — the same unenforced-`expires_at` gap
+         AC-17.4.1.1.3 already found in code, now demonstrated live.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2
 ---
 -->
 
@@ -3725,6 +3743,242 @@ expiry — the same request against the same route, whose computed label
 is expected to flip once `expirationChecker.js`'s scheduled sweep (per
 AC-17.4.1.1.2) flips `is_active` to `false` and this same `expires_at`
 value has passed.
+
+## AC-17.4.2 — the Gallery brought past its expiry, and the client-facing refusal
+
+`US-17` AC-17.4.2 brings the AC-17.1.3.1 Gallery (`events.id = 3`, slug
+`wedding-ac-17-1-3-1-verification-gallery-2026-09-01`) past its expiry
+through the interface upstream actually provides, re-runs the exact
+client-facing request AC-17.4.1.2 recorded as succeeding, and records it
+now refused — with the status code and body. It also records whether a
+client session/token issued before expiry is still honoured afterwards.
+No source file under `vendor/picpeak/` was modified, and no fork patch
+closes any gap this AC finds; gaps are recorded here and raised for
+`scrum-master/po-requests.md`.
+
+### The interface upstream provides for bringing a Gallery past its expiry
+
+Two of this AC's three named interface shapes — "admin screen, endpoint,
+or the scheduled expiration process" — are both real and both used here,
+in the order a photographer/operator would actually encounter them; the
+third (an admin screen as a distinct UI surface from the endpoint it
+calls) is the same endpoint via the Backstage UI and is not exercised
+separately.
+
+**(1) The endpoint: `PUT /api/admin/events/:id` accepts a past-dated
+`expires_at`, with no future-date validation.** Its validator
+(`vendor/picpeak/backend/src/routes/adminEvents.js:1129,1142`) is:
+
+```js
+router.put('/:id', adminAuth, requirePermission('events.edit'), requireEventOwnership, [
+  ...
+  body('expires_at').optional({ nullable: true, checkFalsy: true }).isISO8601(),
+  ...
+```
+
+`isISO8601()` checks only that the value parses as a date — nothing in
+this validator chain, and nothing in the handler body that follows it
+(`adminEvents.js:1230-1420`, read in full), rejects a value in the past
+or requires it to be later than the Gallery's current `expires_at` or the
+current time. This is a genuinely supported route for setting an expiry
+in the past; no direct database write was needed for this part, and none
+was made — confirmed by the pinned fork's own `activity_logs` table,
+which records the write as a normal admin action, not by out-of-band
+means:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select id, activity_type, actor_type, actor_name, metadata, created_at from activity_logs where event_id = 3 order by created_at asc;"
+
+ id |  activity_type  | actor_type | actor_name |                                                    metadata                                                    |          created_at
+----+-----------------+------------+------------+------------------------------------------------------------------------------------------------------------------+-------------------------------
+  9 | event_created   | admin      | admin      | {"event_type":"wedding","expires_at":"2026-10-01T00:00:00.000Z","require_password":true,"password_strength":4} | 2026-07-31 19:58:51.613022+00
+ 10 | event_updated   | admin      | admin      | {"changes":["event_name"],"eventName":"AC-17.1.3.1 Verification Gallery"}                                      | 2026-07-31 20:26:09.660474+00
+ 11 | photos_uploaded | admin      | admin      | {"count":3,"replacedCount":0,"eventName":"AC-17.1.3.1 Verification Gallery"}                                   | 2026-07-31 20:41:11.634004+00
+ 12 | event_published | admin      | admin      | {"event_name":"AC-17.1.3.1 Verification Gallery"}                                                              | 2026-07-31 20:57:28.069053+00
+ 28 | event_updated   | admin      | admin      | {"changes":["expires_at"],"eventName":"AC-17.1.3.1 Verification Gallery"}                                      | 2026-08-01 14:19:55.118138+00
+```
+
+Row `28` is this AC's write, issued as the seeded administrator against
+the running Backstage (`docker compose --profile backstage`, per
+`BACKSTAGE_STARTUP.md`) with `PUT /api/admin/events/3` and body
+`{"expires_at":"2020-01-01T00:00:00.000Z"}`. Re-issued live for this
+record, unchanged, to capture its response directly (the value was
+already `2020-01-01`, so this re-issue is idempotent and changes nothing
+further):
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X PUT http://localhost:3100/api/admin/events/3 \
+    -H "Content-Type: application/json" \
+    -d '{"expires_at":"2020-01-01T00:00:00.000Z"}'
+
+HTTP/1.1 200 OK
+{"message":"Event updated successfully"}
+```
+
+**(2) The scheduled expiration process is what actually enforces it, and
+did so on its own real schedule — not manually invoked.**
+AC-17.4.1.1.2 already located this as `expirationChecker.js`'s hourly
+`cron.schedule('0 * * * *', ...)` (`expirationChecker.js:11`), and
+AC-17.4.1.1.3 already found, from code alone, that the route this AC
+re-runs (`verifyGalleryAccess`, gating `GET /api/gallery/:slug/photos`)
+never reads `expires_at` at all — only `is_active`, which the sweep sets.
+Nothing in this AC forced that sweep to run early: the row was written at
+`14:19:55.118138+00`, and the real cron's next natural tick after that
+is `15:00:00`. The Gallery's current row shows the sweep did fire there,
+on the actual clock, with no code invoked directly and no vendored file
+touched:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -x \
+    -c "select id, slug, expires_at, is_active, is_archived, is_draft, archived_at from events where id = 3;"
+
+-[ RECORD 1 ]----------------------------------------------------
+id          | 3
+slug        | wedding-ac-17-1-3-1-verification-gallery-2026-09-01
+expires_at  | 2020-01-01 00:00:00+00
+is_active   | f
+is_archived | t
+is_draft    | f
+archived_at | 2026-08-01 15:00:02.287+00
+```
+
+`is_active: f` and `archived_at: 2026-08-01 15:00:02.287+00` — 2.287
+seconds past the top of the hour, exactly matching `checkExpirations()`
+running once as the first job on the `0 * * * *` tick, per
+`handleExpiredEvent`'s `is_active: false` write
+(`expirationChecker.js:97`) and `archiveEvent(event)` call
+(`expirationChecker.js:156`), both already cited under AC-17.4.1.1.2.
+
+### The exact AC-17.4.1.2 request, re-run, and refused
+
+AC-17.4.1.2 recorded `GET /api/gallery/wedding-ac-17-1-3-1-verification-
+gallery-2026-09-01/photos` with a valid gallery token succeeding with
+`200`. Re-run verbatim against the now-expired Gallery, with no token:
+
+```
+$ curl -s -i http://localhost:3100/api/gallery/wedding-ac-17-1-3-1-verification-gallery-2026-09-01/photos
+
+HTTP/1.1 404 Not Found
+{"error":"Gallery not found or expired"}
+```
+
+`404`, not `401` — the "no token" branch of `verifyGalleryAccess`
+(`middleware/gallery.js:26-47`, cited under AC-17.4.1.2) only returns
+`401 {"error":"No token provided"}` when a password would still be
+required of a *live* Gallery; here the `is_active: formatBoolean(true)`
+filter in its own query (`middleware/gallery.js:34-38`) already excludes
+the row entirely, so the query returns nothing and the handler falls
+through to `404 {"error":"Gallery not found or expired"}`
+(`middleware/gallery.js:45-47`).
+
+### Whether a client session/token issued before expiry is still accepted
+
+A genuine gallery token for this Gallery, minted while it was still
+unexpired, was captured before the `expires_at` write above: obtained at
+`14:19:48` UTC via `POST /api/auth/gallery/verify`
+(`{"slug":"wedding-ac-17-1-3-1-verification-gallery-2026-09-01",
+"password":"Verify-Pass-123"}`, the same password AC-17.3/AC-17.4.1.2
+used) — 7 seconds before the `expires_at` write recorded as
+`activity_logs` row `28` above, and with a 24-hour JWT `exp` claim
+(`1785680388`, i.e. `2026-08-02 14:19:48 UTC`) that is still valid at the
+time this AC re-runs the request, so this is a genuine test of a
+pre-expiry token surviving expiry, not an already-expired-by-its-own-
+claims token:
+
+```
+$ python3 -c "import base64,json; p='eyJldmVudElkIjozLCJldmVudFNsdWciOiJ3ZWRkaW5nLWFjLTE3LTEtMy0xLXZlcmlmaWNhdGlvbi1nYWxsZXJ5LTIwMjYtMDktMDEiLCJ0eXBlIjoiZ2FsbGVyeSIsImlwIjoiMTkyLjE2OC42NS4xIiwibG9naW5UaW1lIjoxNzg1NTkzOTg4NDE4LCJpYXQiOjE3ODU1OTM5ODgsImV4cCI6MTc4NTY4MDM4OCwiaXNzIjoicGljcGVhay1hdXRoIn0'; p+='='*(-len(p)%4); print(json.dumps(json.loads(base64.urlsafe_b64decode(p))))"
+
+{"eventId": 3, "eventSlug": "wedding-ac-17-1-3-1-verification-gallery-2026-09-01", "type": "gallery", "ip": "192.168.65.1", "loginTime": 1785593988418, "iat": 1785593988, "exp": 1785680388, "iss": "picpeak-auth"}
+```
+
+Re-running the exact AC-17.4.1.2 request with this pre-expiry token:
+
+```
+$ curl -s -i -b <pre-expiry-gallery-cookie-jar> http://localhost:3100/api/gallery/wedding-ac-17-1-3-1-verification-gallery-2026-09-01/photos
+
+HTTP/1.1 404 Not Found
+{"error":"Gallery not found or expired"}
+```
+
+Refused, identically to the no-token case. **No gap here**: a client
+session/token issued before expiry is *not* still accepted afterwards.
+This is not a coincidence of timing — it is guaranteed by the code path
+itself, already read in full for this AC. When a token is present,
+`verifyGalleryAccess` decodes it and then re-queries the Gallery by slug
+with the same `is_active: formatBoolean(true)` filter unconditionally
+ANDed into the `WHERE` clause
+(`middleware/gallery.js:85-96`), regardless of anything the decoded token
+claims; if that query returns no row, the handler returns `404` before
+the token's own claims (`decoded.eventId`, `decoded.via`, etc.) are ever
+consulted further (`middleware/gallery.js:99,119-121`). There is no
+session store and no cache of "already authenticated" — every request,
+token or not, is re-authorized against the live `is_active` column.
+
+### The real gap this AC finds: enforcement lag between the two named interfaces
+
+Setting `expires_at` into the past through the supported endpoint and the
+scheduled process actually enforcing it are two different moments, and
+this AC's own timestamps show the gap between them was real, not
+theoretical:
+
+- `expires_at` write (endpoint): `2026-08-01 14:19:55.118138+00`
+  (`activity_logs` row `28`).
+- Enforcement (scheduled process): `2026-08-01 15:00:02.287+00`
+  (`events.archived_at`).
+
+For roughly **40 minutes**, this Gallery's own stored `expires_at` value
+was already in the past — by the AC's own plain-language standard, "past
+its expiry" — while the endpoint that set it, `PUT
+/api/admin/events/:id`, gave no indication that enforcement was still
+pending (`200 {"message":"Event updated successfully"}`, cited above, is
+indistinguishable from any other successful edit). This AC did not
+capture a live client request during that specific 40-minute window
+(the request re-run above was issued after the sweep had already fired,
+per its own logged time), so the claim that access continued to succeed
+throughout that window is not a separately observed data point here — it
+follows deterministically from code this audit has already read and
+cited: AC-17.4.1.1.3 already established that `verifyGalleryAccess`
+never reads `expires_at` at all, only `is_active`
+(`middleware/gallery.js:34-38,85-96`, both re-read for this AC), and
+`is_active` was unchanged (`t`) until the sweep's `15:00:02.287+00`
+write. Given that code path and those two timestamps, a request issued
+at any point in that window is not a matter of interpretation — this is
+the same finding AC-17.4.1.1.3 already recorded as "difference #1" and
+"#3" from code alone, now dated with a real before/after pair rather
+than argued in the abstract. Worst case for a Gallery whose `expires_at`
+falls just after an hour boundary, this lag approaches a full hour, since
+the sweep only ever runs on the hour.
+
+This is a real gap under this AC's own terms ("a session that outlives
+the expiry is a real gap rather than a detail" — applied here to the
+Gallery's overall access window, not a session specifically, since no
+actual session/token gap was found) and is raised to the Product Owner:
+`scrum-master/po-requests.md` should record that "past its expiry, the
+gallery no longer grants client access" holds only up to an hour late,
+not immediately, because the only route that changes `expires_at` does
+not itself gate any access surface, and the field that does gate access
+(`is_active`) only changes on the next hourly sweep.
+
+### Verdict
+
+AC-17.4.2 is satisfied: the AC-17.1.3.1 Gallery was brought past its
+expiry through the interface upstream provides — the supported `PUT
+/api/admin/events/:id` endpoint for setting `expires_at` into the past
+(no direct database write), and the real, unforced hourly
+`expirationChecker` sweep for the enforcement itself — and the exact
+client-facing request AC-17.4.1.2 recorded as succeeding was re-run and
+is now refused: `404 {"error":"Gallery not found or expired"}`, both cold
+and with a genuine token minted 7 seconds before the `expires_at` write.
+A client session/token issued before expiry is confirmed, both live and
+from the unconditional `is_active` filter in `verifyGalleryAccess`, to
+not still be accepted afterwards — no session/token gap. A real gap is
+found and recorded rather than patched: up to roughly an hour of lag
+between a Gallery becoming "past its expiry" by its own stored value and
+the scheduled process actually denying access, evidenced by this AC's own
+`14:19:55`/`15:00:02` timestamp pair; this is raised for
+`scrum-master/po-requests.md` per AC-17.9 rather than closed with a fork
+patch.
 
 ## Recommendation and open questions (AC-14.6)
 
