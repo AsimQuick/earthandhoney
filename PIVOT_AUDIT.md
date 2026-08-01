@@ -152,7 +152,24 @@ related-story: US-14
          `event.expired`); the other nine do not. Moves nothing between
          the confirmed and ruled-out lists, and does not judge whether an
          absence is the field's expected upstream shape.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2
+         AC-17.4.1.1.1.2.2.3 — reconciles the AC-17.4.1.1.1.2.2.1
+         creation-path evidence and the AC-17.4.1.1.1.2.2.2 edit-path
+         evidence into exactly one write-path disposition per
+         AC-17.4.1.1.1.2.1 confirmed-set entry — written on creation,
+         written on edit, written on both, or never written on the
+         Gallery path — and states the resulting counts against the
+         13-entry confirmed set. For each of the five entries never
+         written on the Gallery path, records the actual upstream shape
+         (a notification-kind literal, a read-time-computed value, a
+         hardcoded response code, a dashboard aggregate key, or a
+         request-time filter value) with the file:line establishing it.
+         Finds no contradiction against AC-17.4.1.1.1.2.1,
+         AC-17.4.1.1.1.2.2.1, or AC-17.4.1.1.1.2.2.2, so the confirmed set
+         and ruled-out list stand unchanged in both places, and no row is
+         carried forward from AC-17.4.1.1.1.2.2.2 as unresolved. This
+         closed write-path record is what AC-17.4.1.1.1.2.3 pairs with the
+         read path.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3
 ---
 -->
 
@@ -2527,6 +2544,120 @@ finding only; no live Gallery was created or changed for it.
 | E33 | `event.expired` | `services/expirationChecker.js:97` | Set | `handleExpiredEvent`'s `update({ is_active: false })` at this line is followed, in the same function, by `webhookService.fire('event.expired', { event: {...}, expires_at: event.expires_at })` inside a non-fatal `try`/`catch`. |
 
 4 of 13 rows carry a write (E1, E4, E6, E33); 9 of 13 rows carry `no edit-path write found` (E5, E7, E10, E11, E12, E13, E16, E30, E32); 4 + 9 = 13.
+
+## AC-17.4.1.1.1.2.2.3 — reconciling write-path disposition: one disposition per confirmed field
+
+`US-17` AC-17.4.1.1.1.2.2.3 works from the creation-path evidence
+AC-17.4.1.1.1.2.2.1 recorded and the edit-path evidence
+AC-17.4.1.1.1.2.2.2 recorded, both against the AC-17.4.1.1.1.2.1
+confirmed set's 13 entries. Every entry is given exactly one write-path
+disposition here — **written on creation**, **written on edit**,
+**written on both**, or **never written on the Gallery path** —
+reconciling the two prior sections' per-entry findings rather than
+re-deriving them from code. Where an entry is never written, this
+section records the actual upstream shape (derivation, computed value,
+or fixed/default literal) with the file:line establishing it, rather
+than leaving the absence unexplained. No entry is added to or moved
+between the confirmed and ruled-out lists here.
+
+### Reconciling the creation-path and edit-path findings
+
+| Entry | Name(s) | Creation-path (AC-17.4.1.1.1.2.2.1) | Edit-path (AC-17.4.1.1.1.2.2.2) | Write-path disposition |
+|---|---|---|---|---|
+| E1 | `expires_at` | Written — `adminEvents.js:679` | Written — `adminEvents.js:284` (cleared), `events.js:346`/`eventService.js:448` (set), `events.js:383`/`eventService.js:478` (extended) | **Written on both** |
+| E4 | `expiry_date` | Written (conditionally) — `adminEvents.js:800,812-820` | Written — `adminEvents.js:1063` (publish-email copy), `expirationChecker.js:97` (expiry-email copy) | **Written on both** |
+| E5 | `expiration_warning` | No creation-path write found | No edit-path write found | **Never written** — see below |
+| E6 | `gallery_expired` / `galleryExpiredExists` | No creation-path write found | Written — `expirationChecker.js:97` | **Written on edit only** |
+| E7 | `event_require_expiration` | Written (as the E1 gate) — `adminEvents.js:104,596` | No edit-path write found | **Written on creation only** |
+| E10 | `expiration_days` | Written — `adminEvents.js:446,605` | No edit-path write found | **Written on creation only** |
+| E11 | `general_default_expiration_days` | Written (client-side, feeds E10) — `CreateEventPage.tsx:237-244,463` | No edit-path write found | **Written on creation only** |
+| E12 | `require_expiration` | Written (same location as E7) — `adminEvents.js:596` | No edit-path write found | **Written on creation only** |
+| E13 | `is_expired` | No creation-path write found | No edit-path write found | **Never written** — see below |
+| E16 | `GALLERY_EXPIRED` | No creation-path write found | No edit-path write found | **Never written** — see below |
+| E30 | `expiringEvents` | No creation-path write found | No edit-path write found | **Never written** — see below |
+| E32 | `expiring` | No creation-path write found | No edit-path write found | **Never written** — see below |
+| E33 | `event.expired` | No creation-path write found | Written — `expirationChecker.js:97` (`webhookService.fire`) | **Written on edit only** |
+
+### Counts against the confirmed set
+
+- Written on both creation and edit: E1, E4 — **2**
+- Written on creation only: E7, E10, E11, E12 — **4**
+- Written on edit only: E6, E33 — **2**
+- Never written on the Gallery path: E5, E13, E16, E30, E32 — **5**
+
+2 + 4 + 2 + 5 = **13**, matching the AC-17.4.1.1.1.2.1 confirmed set
+exactly. Every one of the 13 entries carries exactly one write-path
+disposition above, so every field is accounted for and none is left
+without one.
+
+### The five never-written entries: actual upstream shape
+
+Each of these five is never written to a Gallery's own `events` row
+anywhere in application code (per the exhaustive creation-route and
+fifteen-call-site edit-route inspections AC-17.4.1.1.1.2.2.1 and
+AC-17.4.1.1.1.2.2.2 already ran). Rather than leaving that absence
+unexplained, this is the actual shape each one has instead:
+
+| Entry | Name(s) | Actual upstream shape | File:line establishing it |
+|---|---|---|---|
+| E5 | `expiration_warning` | An email-template/notification-kind literal, not a Gallery column. The scheduled job (`expirationChecker.js`) queries `events` rows already matching `expires_at <= warningDate`, checks whether an email of this literal type was already queued for that row, then passes the literal string as the `email_type` argument to `queueEmail`. | `vendor/picpeak/backend/src/services/expirationChecker.js:36` (`.where('email_type', 'expiration_warning')`), `:78` (`await queueEmail(event.id, recipientEmail, 'expiration_warning', {`) |
+| E13 | `is_expired` | Computed on every read from the already-stored `is_active` and `expires_at` columns, never itself persisted. | `vendor/picpeak/backend/src/routes/gallery.js:186` (`is_expired: !event.is_active \|\| (event.expires_at && new Date(event.expires_at) < new Date())`) |
+| E16 | `GALLERY_EXPIRED` | A hardcoded response-code literal returned by the access-gate middleware when an already-created Gallery's stored `expires_at` has passed; the literal itself is never written to any row. | `vendor/picpeak/backend/src/middleware/auth.js:179-182` (`if (event.expires_at && new Date(event.expires_at) < new Date()) { return res.status(410).json({ error: 'Gallery has expired', code: 'GALLERY_EXPIRED' }); }`) |
+| E30 | `expiringEvents` | A dashboard response-object key for a live aggregate `COUNT` over already-stored `events` rows filtered by `expires_at`, computed fresh on every dashboard request rather than stored anywhere. | `vendor/picpeak/backend/src/routes/adminDashboard.js:24-30` (the `count('id as count')` query filtered on `expires_at`), `:101` (`expiringEvents: expiringEvents.count \|\| 0` in the response body) |
+| E32 | `expiring` | A request-time list-filter value: the admin UI passes `status=expiring` as a query parameter, which the list handler compares against the literal string to decide whether to add an `expires_at`-range `WHERE` clause; it is never written to a row. | `vendor/picpeak/backend/src/routes/adminEvents.js:905` (`} else if (status === 'expiring') {`), `:906-913` (the `expires_at`-range filter it adds) |
+
+None of the five is stored, computed-and-cached, or defaulted onto the
+Gallery's own row at any point — each is either a literal string used to
+classify or filter, or a value computed fresh from already-stored
+`is_active`/`expires_at` at read or dashboard-query time.
+
+### No contradiction found
+
+Re-reading the creation-path and edit-path evidence together to build
+the table above surfaces no contradiction against any
+AC-17.4.1.1.1.2.1 disposition, and none against AC-17.4.1.1.1.2.2.1's or
+AC-17.4.1.1.1.2.2.2's own findings — every file:line cited in the
+reconciliation table above is a citation already made by one of those
+two sections, and the five never-written entries' actual-shape table
+re-reads the same code those two sections already pointed at (or, for
+E5/E16/E30, code adjacent to it) to state the shape rather than reopen
+the disposition. No shortlist entry, confirmed-set entry, or ruled-out
+entry from AC-17.4.1.1.1.2.1 or AC-17.4.1.1.1.1.2 required correction,
+so the confirmed set (13 entries) and the ruled-out list stand unchanged
+in both places.
+
+### Unresolved rows carried from AC-17.4.1.1.1.2.2.2: none
+
+AC-17.4.1.1.1.2.2.2 left no row marked unresolved — its table gives
+each of the 13 confirmed entries a definite edit-path disposition (a
+call site among the fifteen, or `no edit-path write found`), and its own
+reconciliation states "4 of 13 rows carry a write ... 9 of 13 rows carry
+`no edit-path write found`; 4 + 9 = 13" with nothing outstanding. There
+is therefore nothing to settle here from that AC, and nothing to carry
+forward as still unresolved.
+
+### Verdict
+
+AC-17.4.1.1.1.2.2.3 is satisfied: every one of the AC-17.4.1.1.1.2.1
+confirmed set's 13 entries is given exactly one write-path disposition —
+written on both creation and edit (E1, E4 — 2), written on creation only
+(E7, E10, E11, E12 — 4), written on edit only (E6, E33 — 2), or never
+written on the Gallery path (E5, E13, E16, E30, E32 — 5) — and the
+resulting counts (2 + 4 + 2 + 5 = 13) are stated against the size of the
+confirmed set, so every field is accounted for and none is left without
+a write-path disposition. Each of the five never-written entries is
+recorded with the actual upstream shape it has instead (a
+notification-kind literal, a read-time-computed value, a hardcoded
+response code, a dashboard aggregate key, or a request-time filter
+value) and the file:line establishing that shape, rather than being
+worked around or left blank. No contradiction against
+AC-17.4.1.1.1.2.1, AC-17.4.1.1.1.2.2.1, or AC-17.4.1.1.1.2.2.2 was
+found, so the confirmed set and ruled-out list are unchanged and no
+candidate moves between lists. AC-17.4.1.1.1.2.2.2 left no row
+unresolved, so nothing is carried forward as still-unresolved. This
+closed write-path record is what AC-17.4.1.1.1.2.3 goes on to pair with
+the read path. It is a code-level finding: no live Gallery was created
+or changed for it.
 
 ## Recommendation and open questions (AC-14.6)
 
