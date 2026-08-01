@@ -132,7 +132,27 @@ related-story: US-14
          whether an unwritten field's absence is its expected upstream
          shape — that is AC-17.4.1.1.1.2.2.3's deliverable — and moves
          nothing between the confirmed and ruled-out lists.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1
+         AC-17.4.1.1.1.2.2.2 — the edit-path counterpart to
+         AC-17.4.1.1.1.2.2.1: against the same fixed, pre-run inspection
+         list of fifteen `.update(`/`.increment(`/`.del(` call sites on
+         the `events` table (paths relative to
+         `vendor/picpeak/backend/src/`: `routes/adminEvents.js:284`,
+         `routes/adminEvents.js:1063`, `routes/events.js:346,359,383`,
+         `routes/adminExternalMedia.js:178`,
+         `services/downloadZipService.js:64,225,313`,
+         `services/expirationChecker.js:97`,
+         `services/eventService.js:448,459,478`,
+         `services/archiveService.js:132`,
+         `services/projectService.js:93`), records for each of the
+         AC-17.4.1.1.1.2.1 confirmed set's 13 entries either the call
+         site(s) among those fifteen that set, extend, recompute, or
+         clear it once a Gallery already exists, or `no edit-path write
+         found`. Four entries have an edit-path write (`expires_at`,
+         `expiry_date`, `gallery_expired`/`galleryExpiredExists`,
+         `event.expired`); the other nine do not. Moves nothing between
+         the confirmed and ruled-out lists, and does not judge whether an
+         absence is the field's expected upstream shape.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2
 ---
 -->
 
@@ -2487,6 +2507,26 @@ field's expected upstream shape — that is AC-17.4.1.1.1.2.2.3's
 deliverable — and no entry is added to, or moved between, the confirmed
 or ruled-out lists AC-17.4.1.1.1.2.1 settled. This is a code-level
 finding only; no live Gallery was created or changed for it.
+
+## AC-17.4.1.1.1.2.2.2
+
+| Entry | Name(s) | Call site(s) (of the fifteen) | Set / extended / recomputed / cleared | Inputs and computing code |
+|---|---|---|---|---|
+| E1 | `expires_at` | `routes/adminEvents.js:284`; `routes/events.js:346`; `routes/events.js:383`; `services/eventService.js:448`; `services/eventService.js:478` | Cleared (`adminEvents.js:284`); set (`events.js:346`, `eventService.js:448`); extended (`events.js:383`, `eventService.js:478`) | `adminEvents.js:284`: `deleteEventCascade`'s `trx('events').where('id', eventId).del()` removes the whole row, `expires_at` included, inside a transaction also deleting the event's `activity_logs`/`access_logs`/`email_queue`/`photos` rows.<br>`events.js:346`: `update(updates)` where `updates = {...req.body}` minus `id`/`slug`/`created_at`/`password_confirmation` (`host_name`/`host_email` rejected outright) — an `expires_at` value present in the request body is written through unchanged, not recomputed.<br>`events.js:383`: the `/:id/extend` handler — `newExpiration = new Date(event.expires_at); newExpiration.setDate(newExpiration.getDate() + days)` (`days` validated `1`–`365`), then `update({ expires_at: newExpiration, is_active: true })`.<br>`eventService.js:448`: `updateEvent(id, updates)` — the same generic passthrough as `events.js:346`, over a caller-supplied `updates` object with the same keys stripped.<br>`eventService.js:478`: `extendExpiration(id, days)` — the same computation as `events.js:383`. |
+| E4 | `expiry_date` | `routes/adminEvents.js:1063`; `services/expirationChecker.js:97` | Set (both, copied from the row's `expires_at`) | `adminEvents.js:1063`: the `/:id/publish` handler's `update({ is_draft: false })` at this line is followed, in the same handler, by `emailData.expiry_date = event.expires_at ? new Date(event.expires_at).toISOString() : null` (built into the `emailData` object, then `db('email_queue').insert(...)`), gated on `if (customerEmail)`.<br>`expirationChecker.js:97`: `handleExpiredEvent`'s `update({ is_active: false })` at this line is followed, in the same function, by `customerVars.expiry_date = event.expires_at`, used in the `gallery_expired` emails queued right after. |
+| E5 | `expiration_warning` | — | No edit-path write found | — |
+| E6 | `gallery_expired` / `galleryExpiredExists` | `services/expirationChecker.js:97` | Set | `handleExpiredEvent`'s `update({ is_active: false })` at this line is followed, in the same function, by `queueEmail(event.id, recipientEmail, 'gallery_expired', customerVars)` and, when a distinct admin email is configured, a second `'gallery_expired'` queue call for the admin. |
+| E7 | `event_require_expiration` | — | No edit-path write found | — |
+| E10 | `expiration_days` | — | No edit-path write found | — |
+| E11 | `general_default_expiration_days` | — | No edit-path write found | — |
+| E12 | `require_expiration` | — | No edit-path write found | — |
+| E13 | `is_expired` | — | No edit-path write found | — |
+| E16 | `GALLERY_EXPIRED` | — | No edit-path write found | — |
+| E30 | `expiringEvents` | — | No edit-path write found | — |
+| E32 | `expiring` | — | No edit-path write found | — |
+| E33 | `event.expired` | `services/expirationChecker.js:97` | Set | `handleExpiredEvent`'s `update({ is_active: false })` at this line is followed, in the same function, by `webhookService.fire('event.expired', { event: {...}, expires_at: event.expires_at })` inside a non-fatal `try`/`catch`. |
+
+4 of 13 rows carry a write (E1, E4, E6, E33); 9 of 13 rows carry `no edit-path write found` (E5, E7, E10, E11, E12, E13, E16, E30, E32); 4 + 9 = 13.
 
 ## Recommendation and open questions (AC-14.6)
 
