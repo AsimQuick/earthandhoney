@@ -183,7 +183,7 @@ describe('AC-17.4.1.1.1.2.2.3: reconciling write-path disposition', () => {
     })
 
     it('E13 (is_expired): the read-time computation citation is real', () => {
-      expect(lineAt(`${VENDOR_SRC}/routes/gallery.js`, 186)).toMatch(
+      expect(lineAt(`${VENDOR_SRC}/routes/gallery.js`, 188)).toMatch(
         /is_expired: !event\.is_active \|\| \(event\.expires_at && new Date\(event\.expires_at\) < new Date\(\)\)/
       )
     })

@@ -448,7 +448,7 @@ describe('AC-17.4.1.1.1.2.2.1: the write path — creation-path evidence for the
     })
 
     it('E13: is_expired is computed on read from the already-stored expires_at', () => {
-      expect(lineAt('vendor/picpeak/backend/src/routes/gallery.js', 186)).toMatch(
+      expect(lineAt('vendor/picpeak/backend/src/routes/gallery.js', 188)).toMatch(
         /is_expired: !event\.is_active \|\| \(event\.expires_at && new Date\(event\.expires_at\) < new Date\(\)\)/
       )
     })

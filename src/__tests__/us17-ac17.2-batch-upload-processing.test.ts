@@ -235,8 +235,8 @@ describe('AC-17.2: a batch of real images can be uploaded and processed', () => 
       )
 
       const galleryLines = read('vendor/picpeak/backend/src/routes/gallery.js').split('\n')
-      expect(galleryLines[1383]).toContain('const heroPath = await ensureHeroImage(photo);')
-      expect(galleryLines[1484]).toContain('ensurePreviewImage(photo)')
+      expect(galleryLines[1486]).toContain('const heroPath = await ensureHeroImage(photo);')
+      expect(galleryLines[1587]).toContain('ensurePreviewImage(photo)')
 
       const adminThumbLines = read('vendor/picpeak/backend/src/routes/adminThumbnails.js').split('\n')
       expect(adminThumbLines[199]).toContain("router.post('/regenerate-previews'")

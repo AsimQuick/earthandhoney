@@ -107,8 +107,8 @@ describe('AC-17.4.1.2: pre-expiry client-facing baseline is recorded', () => {
 
     it('those cited lines really are the photos route, its mount, and verifyGalleryAccess', () => {
       const gallery = read('vendor/picpeak/backend/src/routes/gallery.js').split('\n')
-      expect(gallery[215]).toContain("router.get('/:slug/photos'")
-      expect(gallery[215]).toContain('verifyGalleryAccess')
+      expect(gallery[217]).toContain("router.get('/:slug/photos'")
+      expect(gallery[217]).toContain('verifyGalleryAccess')
 
       const server = read('vendor/picpeak/backend/server.js').split('\n')
       expect(server[634]).toContain("app.use('/api/gallery', galleryRoutes)")

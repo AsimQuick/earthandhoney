@@ -1864,7 +1864,7 @@ migrations**); the rest are new to this AC.
 | `general_default_expiration_days` | `setting_key` value (public application setting) | No | `vendor/picpeak/backend/src/services/settingsService.js:148` |
 | `require_expiration` | API response field name (event field-requirements object), derived from but spelled differently than `event_require_expiration` | No | `vendor/picpeak/backend/src/routes/adminEvents.js:88,104,115` |
 | `event_require_expiration` | `setting_key` value | Yes | `vendor/picpeak/backend/src/routes/adminEvents.js:79,104`; `vendor/picpeak/backend/src/routes/publicSettings.js:135` |
-| `is_expired` | API response field name (`GET` gallery info) | No | `vendor/picpeak/backend/src/routes/gallery.js:186` |
+| `is_expired` | API response field name (`GET` gallery info) | No | `vendor/picpeak/backend/src/routes/gallery.js:188` |
 | `Expires` | HTTP response header name, explicitly set to disable caching | No | `vendor/picpeak/backend/src/middleware/noStoreCache.js:35`; `vendor/picpeak/backend/src/middleware/secureImageMiddleware.js:261` |
 | `TOKEN_EXPIRED` | API error `code` value | No | `vendor/picpeak/backend/src/middleware/auth.js:27,149`; `vendor/picpeak/backend/src/middleware/customerAuth.js:48` |
 | `GALLERY_EXPIRED` | API error `code` value | No | `vendor/picpeak/backend/src/middleware/auth.js:182` |
