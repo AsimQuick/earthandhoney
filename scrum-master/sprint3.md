@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/7 stories | 18/68 ACs
-**Last Updated:** 2026-08-01T15:27:05+00:00
+**Last Updated:** 2026-08-01T15:37:53+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -326,6 +326,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-17.4.2:** Past its expiry, the gallery no longer grants client access. The Gallery from AC-17.1.3.1 is brought past its expiry through the interface upstream provides (admin screen, endpoint, or the scheduled expiration process), and the exact client-facing request recorded as succeeding in AC-17.4.1.2 is re-run and is now refused — with the status code and response body recorded in `PIVOT_AUDIT.md`. It is also recorded whether a client session or token issued before expiry is still accepted afterwards, since a session that outlives the expiry is a real gap rather than a detail. If upstream provides no supported route for setting an expiry in the past and the value has to be changed directly in the database, that is recorded as the actual upstream shape rather than presented as a supported flow. No fork patch and no workaround — any gap goes to `PIVOT_AUDIT.md` and `scrum-master/po-requests.md` per AC-17.9.
   - Dev: implemented
 - [ ] **AC-17.4.3:** The expired state is visible to the photographer. The photographer-facing screen or endpoint recorded in AC-17.4.1.3 is re-checked after the expiry proven in AC-17.4.2, and now reports the Gallery as expired — with the exact screen or query, its output, and the field carrying the state recorded in `PIVOT_AUDIT.md`. It is recorded whether that visibility is immediate or only appears once the scheduled expiration process runs; if a scheduled process is required, it is actually triggered and its output recorded, along with any side effect it performs (archiving, deactivation, or a queued notification). If the only photographer-visible signal is a raw expiry date the photographer must interpret themselves, or an email rather than a state in the interface, that is recorded as the actual upstream shape rather than worked around.
+  - Dev: implemented
 - [ ] **AC-17.5:** A client can view the gallery through its client-facing route and download images where the gallery's download policy permits, including any archive download the upstream provides. Disposition recorded 2026-08-01 (Project Lead decision on po-requests.md item 11): single-image download hangs because that route resolves the file via a local-filesystem-only path instead of the S3/R2 storage backend the sibling download-all/download-selected routes already use (vendor.gallery.js:667,717), and its error path swallows the failure without responding. Fix by patching the vendored fork so the single-image route uses the storage backend the same way protectedImages.js already does, and making the error path actually respond (e.g. a proper 404/500) instead of hanging. Comment the patch clearly as a vendor-defect fix so it stays legible against future upstream rebases, and file the defect with PicPeak upstream so the patch can eventually be dropped. Also fix the side-effect ordering bug noted alongside it: download_count and the access_logs row currently commit before the file is confirmed sent, so a failed download is recorded as successful — move those writes to after a confirmed send.
 - [ ] **AC-17.6:** At least one operational gallery email is sent through the Backstage email system to a capture inbox or mail catcher, and its queued/sent state is visible.
 - [ ] **AC-17.7:** At least one Backstage webhook fires and is received by a listener that logs the payload, proving the outbound integration path we will later use to refresh Frontstage content.
@@ -587,6 +588,17 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
     - **(1) The endpoint**: `PUT /api/admin/events/:id` (`vendor/picpeak/backend/src/routes/adminEvents.js:1129,1142`) accepts a past-dated `expires_at` with no future-date validation — a genuinely supported route, confirmed both by the fork's own `activity_logs` audit trail (a real admin write at `14:19:55.118138+00`, not a direct DB write) and by re-issuing the same PUT live (`200 {"message":"Event updated successfully"}`).
     - **(2) The scheduled process**: the real hourly `expirationChecker` cron (`expirationChecker.js:11`) enforced it on its own natural schedule — `archived_at: 2026-08-01 15:00:02.287+00`, 2.287 seconds past the hour, with no code invoked directly.
     - The exact AC-17.4.1.2 client-facing request (`GET /api/gallery/.../photos`) re-run and refused: `404 {"error":"Gallery not found or expired"}` — both cold and with a **genuine gallery token minted 7 seconds before the expiry write** (recovered from a prior turn's sc …
+  AC-17.4.3 implemented (local checks green): Committed as `f75a5c2` on `feature/US-17`. Not pushed, per instructions.
+  
+  ## Implementation summary — AC-17.4.3
+  
+  Re-checked the exact photographer-facing screen and request AC-17.4.1.3 recorded (Backstage admin Events List page, `GET /api/admin/events?...`) against the AC-17.1.3.1 Gallery (`events.id = 3`), live against the running Backstage, now that AC-17.4.2 already brought it past expiry.
+  
+  **Files changed:**
+  - `PIVOT_AUDIT.md` — new `## AC-17.4.3` section plus front-matter updates (`related-ac` list, purpose summary). Records:
+    - Visibility is **not immediate** — it required the scheduled `expirationChecker` hourly sweep, which had already run on its own real clock as part of AC-17.4.2 (no manual trigger needed for this AC).
+    - That sweep's full output/side effects, re-read live: deactivation (`is_active: false`), archiving (`is_archived: true`, `archived_at`, a populated `archive_path`), an `event.expired` webhook fire (`expirationChecker.js:94-162`), and three queued notification emails (customer `gallery_expired`, admin `gallery_expired`, admin `archive_complete`) — all still `pending` in `email_queue`.
+    - The re-run request's exact `200` response for the Gallery, and the …
 
 **Tester Status:** approved
 **Tester Notes:**
