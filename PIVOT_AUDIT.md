@@ -292,7 +292,22 @@ related-story: US-14
          download route is explicitly not called, per this AC's own
          scope, which reserves its fork patch for the criteria that
          follow.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3, 17.5.1
+         AC-17.5.3 — moves the `download_count` increment and the
+         `access_logs` insert out of their upstream pre-send position into
+         one guarded helper fired only on a confirmed delivery (the
+         response's `finish` event, and `res.sendFile`'s success branch for
+         the external-photo path), never from a failure branch, and proves
+         it live by reading Postgres directly: the AC-17.5.2 successful
+         download still increments the count and still writes one
+         `action = 'download'` row, while the AC-17.5.2 `404` now leaves the
+         count untouched and writes no row at all. Registers the patch so it
+         cannot become permanent by accident — a dated `deviation` entry in
+         `FORK_CHANGELOG.md`, the UD-1 entry in `PICPEAK_UPSTREAM_DEFECTS.md`
+         with its explicit drop condition, a drop-rather-than-merge flag in
+         `UPSTREAM_SYNC.md` §4, and a submission-ready upstream report held
+         in `.github/upstream-issues/` as `prepared, not submitted` with
+         exactly what is needed to submit it named.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3, 17.5.1, 17.5.2, 17.5.3
 ---
 -->
 
@@ -1322,6 +1337,16 @@ and `ensurePreviewImage` is only called from the equivalent lightbox route
 (`gallery.js:1482-1485`) or the admin-triggered backfill endpoint
 `POST /api/admin/thumbnails/regenerate-previews`
 (`vendor/picpeak/backend/src/routes/adminThumbnails.js:200-246`).
+
+> **Line-number addendum (added by AC-17.5.3).** The two `gallery.js` numbers
+> just above are the pinned-upstream ones, which is where they were read and
+> where they remain correct against the pin. The fork patches to the
+> single-photo download route higher up that file — AC-17.5.2 (+103 lines)
+> then AC-17.5.3 (+44 more) — shifted everything below them, so in the
+> vendored file as it now stands the `ensureHeroImage` call is at
+> `gallery.js:1531` (upstream `1384`) and the `ensurePreviewImage` call site
+> is at `gallery.js:1629-1632` (upstream `1482-1485`). `adminThumbnails.js`
+> is untouched by either patch and its numbers stand unchanged.
 
 To confirm the preview tier actually works (not just that it is wired up),
 the admin backfill endpoint was called directly for this event:
@@ -5040,6 +5065,387 @@ live proof above reflects what this branch actually contains, not a
 divergent local artifact. Out of scope, per this AC's own text and
 confirmed still true live: the `download_count`/`access_logs` writes still
 happen before resolution rather than after success, owed to AC-17.5.3.
+
+### Line-number addendum (added by AC-17.5.3)
+
+AC-17.5.3 inserted its guarded recording helper into the same route, above
+every region this section cites, so the `gallery.js` line numbers above are
+the ones that were current when this section was written and have since
+shifted. They are re-anchored here rather than rewritten in place, so the
+record of what AC-17.5.2 read stays intact:
+
+| Cited above | Now at | Anchor |
+|---|---|---|
+| `633` | `633` | route declaration (unchanged) |
+| `634` | `634` | outer `try {` (unchanged) |
+| `667` | `694` | `vendor-defect fix: US-17 AC-17.5.2 (start)` |
+| `688` | `715` | storage-key resolution failure → `404` |
+| `702` | `729` | `storage.stat()` null → `404` |
+| `714` | `741` | `resolvePhotoFilePath` failure → `404` |
+| `717` | `744` | `vendor-defect fix: US-17 AC-17.5.2 (end)` |
+| `739` | `766` | `withLocalCopy` watermark comment |
+| `743-746` | `770-773` | watermark buffer resolution |
+| `756` | `786` | storage-stream branch comment |
+| `768-780` | `798-810` | stream open failure → `500`/`destroy()` |
+| `781-794` | `811-824` | stream `error` event → `500`/`destroy()` |
+| `805-824` | `843-868` | `res.sendFile` callback |
+| `813` | `851` | the `res.sendFile` hang fix comment |
+| `826-838` | `870-882` | outer `catch` |
+
+Nothing in AC-17.5.2's own patch changed — the shift is entirely the lines
+AC-17.5.3 added above and inside the same route.
+
+## AC-17.5.3 — the download recorded only on a confirmed delivery, proven live from Postgres
+
+### The patch
+
+Upstream ran both writes at the very top of the route, before the file was
+resolved at all: the `download_count` increment at `gallery.js:654` and the
+`access_logs` insert at `gallery.js:657` of the pinned commit
+`eb263137b98935754155824de2a03848121304b6`, with `resolvePhotoFilePath` not
+reached until line `667`. Anything that failed after that point — the `404`
+this route intends, or the `res.sendFile` hang AC-17.5.2 closed — had already
+been recorded as a completed download.
+
+Both writes now live in one guarded helper, `recordConfirmedDownload()`,
+defined once at `gallery.js:665-691` and called only from a confirmed
+delivery:
+
+- **`gallery.js:783`** — `res.once('finish', recordConfirmedDownload)` on the
+  watermark branch, attached immediately before `res.send(watermarkedBuffer)`,
+  i.e. only once that branch has committed to a real send.
+- **`gallery.js:830-832`** — on the storage-stream branch, the `finish`
+  listener is attached from the *stream's own* `end` event rather than up
+  front. A Node readable emits `end` only after being fully and successfully
+  read, and `end` and `error` are mutually exclusive, so the listener is never
+  in place ahead of an error response written to the same `res`.
+- **`gallery.js:861-867`** — `res.sendFile`'s success branch (the `else` of
+  `if (downloadError)`) for the external/reference-photo path, which is where
+  that path's confirmed-delivery signal actually is.
+
+No failure branch calls it: the `403`s (downloads disabled, hidden photo), the
+four `404`s, the `500`s, the `res.destroy()` paths, and the outer `catch` all
+answer and return without touching it. A `downloadRecorded` flag makes the
+helper idempotent, so a response that somehow emitted `finish` twice still
+records once. The two writes appear nowhere else in the route — verified by
+counting them in the route body, `router.get('/:slug/download/:photoId'` to
+`router.get('/:slug/download-all'`: exactly one
+`increment('download_count', 1)` and exactly one `db('access_logs').insert(`.
+(The sibling `download-all`, `download-selected` and view routes further down
+the file keep their own `access_logs` writes; those are different routes and
+outside this AC.)
+
+Because the writes are now fired from an event listener rather than awaited
+inline, each carries its own `.catch()` that logs (`Failed to record download
+count` / `Failed to record download access log`) — a bookkeeping failure after
+the bytes are already on the wire must not crash a response that has already
+succeeded.
+
+Each changed region carries the same in-file vendor-defect comment convention
+AC-17.5.2 established in this route: a `// --- vendor-defect fix: US-17
+AC-17.5.3 (start) --- / (end) ---` block around the helper (`gallery.js:655`,
+`692`) naming the register entry it belongs to (`UD-1 part (3)`, see
+`PICPEAK_UPSTREAM_DEFECTS.md`), plus a single-line `vendor-defect fix: US-17
+AC-17.5.3` comment at each of the three call sites (`gallery.js:781`, `825`,
+`862`).
+
+### The pinning test suite
+
+The AC-17.5.2 suite is extended in place rather than duplicated —
+`vendor/picpeak/backend/src/__tests__/galleryDownload.storageBackend.test.js`,
+now **14 tests**. Each of the eight AC-17.5.2 tests gained the matching
+ordering assertion (a delivery records the pair exactly once; each failure
+path records neither), and a dedicated AC-17.5.3 block adds six more. Run in
+Docker against the vendored backend
+(`docker run --rm -v "$PWD/vendor/picpeak/backend:/app" -w /app node:20-alpine
+npx jest src/__tests__/galleryDownload.storageBackend.test.js`):
+
+```
+PASS src/__tests__/galleryDownload.storageBackend.test.js
+  GET /:slug/download/:photoId — storage backend + failure-path pinning (US-17 AC-17.5.2)
+    ✓ managed photo: streams via the storage backend with Content-Length from storage stat()
+    ✓ external/reference photo (no storage key): falls back to resolvePhotoFilePath and streams the file
+    ✓ absent storage object: storage.stat() returning null answers 404 with a body
+    ✓ photo row whose storage key cannot be resolved answers 404
+    ✓ external photo whose local file path cannot be resolved answers 404
+    ✓ a storage stream error before any bytes are sent answers 500 instead of hanging
+    ✓ res.sendFile failing on a missing external file answers 404 instead of only logging (the upstream hang)
+    ✓ watermark branch materializes a local copy via withLocalCopy and calls applyWatermark with a path, not a buffer
+  GET /:slug/download/:photoId — download recorded only on confirmed delivery (US-17 AC-17.5.3)
+    ✓ the two writes appear nowhere in the route before the file is resolved — a storage.stat() 404 never touches them
+    ✓ a confirmed managed-photo delivery records the pair exactly once, with the requested photo id
+    ✓ a stream that fails after bytes are already on the wire records nothing
+    ✓ the downloads-disabled 403 short-circuit records nothing
+    ✓ the hidden-photo 403 short-circuit records nothing
+    ✓ the pair is written by one guarded helper — the two writes appear nowhere else in the route
+
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+```
+
+The same `gallery`-scoped run as AC-17.5.2 (adding
+`galleryOgService.shareImage.test.js` and
+`verifyGalleryAccess.customerRevoke.test.js`) — `3 passed, 3 total`,
+`29 passed, 29 total`, up from AC-17.5.2's 23 by exactly the six tests added
+here, with no regression in the two adjacent files.
+
+Every request in that suite still carries the AC-17.5.2 hard timeout
+(`REQUEST_TIMEOUT_MS`, plus a per-`it` timeout), so a regression that
+reintroduces a hang fails fast rather than consuming the run.
+
+The register entries and the source-level ordering claims are pinned
+separately, in this project's own suite, by
+`src/__tests__/us17-ac17.5.3-download-recorded-on-confirmed-delivery.test.ts`
+(**53 tests**) — the vendored suite runs under the fork's own toolchain and
+never sees this repository's root documents.
+
+### Live proof
+
+Against the running Backstage (`docker compose --profile backstage`), reusing
+the AC-17.5.1 Verification Gallery (`event id 9`, slug
+`wedding-ac-17-5-1-verification-gallery-2026-09-15`, password
+`Verify-Pass-456`) and the same photo `9` AC-17.5.2 downloaded. The container
+was confirmed to be serving exactly the committed route before any call —
+`docker compose --profile backstage exec backstage-backend md5sum
+src/routes/gallery.js` → `a794948ea6d60e50bcec35a4ae959a72`, byte-for-byte
+equal to the working file — so this is not the stale-image trap AC-17.5.2
+caught. Every request carries `curl -m 15`, per AC-17.5.2.
+
+**Baseline, read straight from Postgres:**
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -c \
+    "select id, filename, download_count from photos where event_id=9 order by id;" \
+    -c "select max(id) as max_access_log_id from access_logs;"
+
+ id |                      filename                      | download_count
+----+----------------------------------------------------+----------------
+  9 | AC-17.5.1_Verification_Gallery_individual_0001.jpg |              5
+ 10 | AC-17.5.1_Verification_Gallery_individual_0002.jpg |              0
+ 11 | AC-17.5.1_Verification_Gallery_individual_0003.jpg |              0
+
+ max_access_log_id
+-------------------
+                66
+```
+
+**The successful download still records.** The AC-17.5.2 success case,
+re-run:
+
+```
+$ curl -s -i -m 15 -c <jar> -X POST http://localhost:3100/api/auth/gallery/verify \
+    -H "Content-Type: application/json" \
+    -d '{"slug":"wedding-ac-17-5-1-verification-gallery-2026-09-15","password":"Verify-Pass-456"}'
+HTTP/1.1 200 OK
+
+$ curl -s -m 15 -b <jar> -D headers-200.txt -o photo9.jpg \
+    -w 'http_code=%{http_code} time_total=%{time_total} size=%{size_download}\n' \
+    http://localhost:3100/api/gallery/wedding-ac-17-5-1-verification-gallery-2026-09-15/download/9
+
+http_code=200 time_total=0.290209 size=15539
+
+HTTP/1.1 200 OK
+Content-Type: image/jpeg
+Content-Length: 15539
+Content-Disposition: attachment; filename="AC-17.5.1_Verification_Gallery_individual_0001.jpg"; filename*=UTF-8''AC-17.5.1_Verification_Gallery_individual_0001.jpg
+```
+
+`wc -c photo9.jpg` → `15539`, matching `Content-Length`; `file photo9.jpg` →
+`JPEG image data, JFIF standard 1.02, ... 950x534, components 3` — real image
+bytes. Re-read from Postgres immediately afterward:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -c \
+    "select id, download_count from photos where id=9;" \
+    -c "select id, event_id, action, photo_id, ip_address, timestamp from access_logs where id > 66 order by id;"
+
+ id | download_count
+----+----------------
+  9 |              6
+
+ id | event_id |    action     | photo_id |  ip_address  |           timestamp
+----+----------+---------------+----------+--------------+-------------------------------
+ 67 |        9 | login_success |          | 192.168.65.1 | 2026-08-01 23:37:47.880111+00
+ 68 |        9 | download      | 9        | 192.168.65.1 | 2026-08-01 23:37:53.161352+00
+```
+
+`download_count` went `5` → `6`, and exactly one new `action = 'download'`
+row landed (id `68`, `photo_id: '9'`). Row `67` is the gallery-password
+verification that preceded it, not a second download. The behaviour a working
+download must keep is intact — the writes were moved, not dropped.
+
+**The 404 no longer records.** The AC-17.5.2 failure case, re-run the same
+way: a photo row injected directly into Postgres pointing at an object never
+uploaded to the storage backend.
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -c "
+insert into photos (event_id, filename, path, type, size_bytes, uploaded_by, source_origin, media_type, mime_type, visibility, processing_status)
+values (9, 'ac-17-5-3-ghost.jpg', 'wedding-ac-17-5-1-verification-gallery-2026-09-15/ac-17-5-3-ghost-does-not-exist.jpg', 'individual', 1234, 'admin', 'managed', 'image', 'image/jpeg', 'visible', 'complete')
+returning id, download_count;"
+
+ id | download_count
+----+----------------
+ 14 |              0
+```
+
+`max(access_logs.id)` at this point: `68`.
+
+```
+$ curl -s -m 15 -b <jar> -D headers-404.txt -o body-404.json \
+    -w 'http_code=%{http_code} time_total=%{time_total}\n' \
+    http://localhost:3100/api/gallery/wedding-ac-17-5-1-verification-gallery-2026-09-15/download/14
+
+http_code=404 time_total=0.108268
+
+$ cat body-404.json
+{"error":"Photo file not found"}
+```
+
+A real body, in `0.11`s — not a hang. The backend's own log names the branch
+that answered and confirms the round trip:
+
+```
+{"slug":"wedding-...","photoId":"14","eventId":9,"storageKey":"events/active/wedding-ac-17-5-1-verification-gallery-2026-09-15/ac-17-5-3-ghost-does-not-exist.jpg","level":"error","message":"Photo not found in storage backend for download","timestamp":"2026-08-01 23:38:07.286"}
+[2026-08-01T23:38:07.184Z] GET .../download/14
+[2026-08-01T23:38:07.288Z] GET .../download/14 -> 404 (104ms)
+```
+
+Re-read from Postgres immediately afterward:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -c \
+    "select id, download_count from photos where id=14;" \
+    -c "select id, action, photo_id, timestamp from access_logs where id > 68 order by id;" \
+    -c "select count(*) as download_rows_for_ghost from access_logs where photo_id = '14';"
+
+ id | download_count
+----+----------------
+ 14 |              0
+
+ id | action | photo_id | timestamp
+----+--------+----------+-----------
+(0 rows)
+
+ download_rows_for_ghost
+-------------------------
+                       0
+```
+
+`download_count` stayed at `0`. **No `access_logs` row was written at all** —
+not a `download` row, not a row of any other action. This is the direct
+contrast with AC-17.5.2's own recorded run, where the identical 404 left
+`download_count` incremented and an `action: 'download'` row (id `63`) behind:
+the pairing that showed the ordering bug is gone rather than merely moved to
+a different position in the route.
+
+The injected row was then deleted:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -c \
+    "delete from photos where id in (13,14) returning id, filename;"
+
+ id |      filename
+----+---------------------
+ 14 | ac-17-5-3-ghost.jpg
+DELETE 1
+```
+
+(`13` was a ghost row from an earlier run of this same proof and was already
+gone; the delete confirms it.) A follow-up `select` shows event `9` back to
+its three real photos, `9`/`10`/`11`, with photo `9`'s `download_count` at
+`6`. Nothing was deleted from `access_logs` — the AC-17.5.2 rows recording
+its pre-fix behaviour, including row `63`, are left exactly as they landed,
+because editing an audit trail after the fact to make a later result look
+cleaner would misrepresent what happened.
+
+### The patch is registered so it can be dropped
+
+Four entries, so the workaround cannot silently become permanent:
+
+1. **`FORK_CHANGELOG.md`** — a dated `2026-08-01` `deviation` entry covering
+   all three parts of the patch, naming the two files it touched
+   (`vendor/picpeak/backend/src/routes/gallery.js` and its pinning suite) and
+   the upstream lines this AC moved (`gallery.js:654`, `657`). It states in
+   its own first bullet that it is a vendor-defect workaround, **not** a
+   permanent deviation. The entry satisfies `validateChangelogEntry`
+   (`src/lib/forkChangelog.ts`, AC-15.5), which rejects a `deviation` naming
+   no files.
+2. **`PICPEAK_UPSTREAM_DEFECTS.md`** — the `UD-1` entry: the defect in three
+   parts, its upstream location at the pinned commit
+   (`backend/src/routes/gallery.js`, the `GET /:slug/download/:photoId`
+   route, line `631`; the ordering defect at `653-663`), the fork patch that
+   works around it, and the explicit drop condition — the pin moves to an
+   upstream commit where the route resolves through `getStorage()`, answers on
+   every failure path, **and** records only after a confirmed send, all three
+   at the same commit, with a partial upstream fix reducing the patch rather
+   than dropping it.
+3. **`UPSTREAM_SYNC.md` §4** — a new drop-rather-than-merge section, kept
+   deliberately distinct from §2's permanent-deviation table. §1's merge
+   strategy would otherwise carry this patch forward forever; §4 says to
+   delete it instead once UD-1's drop condition is met, and to record the
+   deletion as its own changelog entry. It also notes that
+   `backend/src/routes/gallery.js` is now conflict-prone but is *not* added to
+   §2, because §2 lists files this fork expects to deviate at permanently and
+   this one is expected to stop deviating.
+4. **The upstream report** —
+   `.github/upstream-issues/UD-1-gallery-single-download.md`, written in
+   upstream's terms (no story numbers, no references to this repository's own
+   documents), covering all three parts with the same reproduction.
+
+### The upstream report: `prepared, not submitted`
+
+Per AC-17.9, an honest recorded state rather than a silently open task. The
+report is complete and would be filed by a single command, recorded verbatim
+in the register:
+
+```
+$ gh issue create --repo PicPeak/picpeak \
+    --title "Single-photo gallery download ignores the storage backend (hangs on S3), and records the download before it succeeds" \
+    --body-file .github/upstream-issues/UD-1-gallery-single-download.md
+```
+
+**What is needed to submit it, exactly:** an explicit human decision to
+publish under a named GitHub identity. Nothing technical is missing — the
+`gh` CLI on the development machine is authenticated (account `AsimQuick`,
+token scopes including `repo`) and PicPeak has issues enabled, so the command
+above would run as-is. What is missing is authorisation: filing it posts
+permanently and publicly to a third-party repository, attributed to whichever
+personal account `gh` is authenticated as, and choosing to speak to another
+project's maintainers under one's own name is a human's call, not an
+automated one. No additional credential, organisation membership, or approval
+from PicPeak is required. It is clearable by the repository owner — or any
+maintainer willing to have the issue attributed to their account — by running
+that command and replacing the register's status line with the resulting
+issue URL, which is also what lets a future sync check whether upstream's fix
+has landed and the patch can be dropped.
+
+### Verdict
+
+AC-17.5.3 is satisfied. The `download_count` increment and the `access_logs`
+insert have moved out of upstream's pre-send position (`gallery.js:654` and
+`657` at the pin) into a single guarded `recordConfirmedDownload()` helper
+(`gallery.js:665-691`) fired only from a confirmed delivery — the response's
+`finish` event on the watermark branch (`783`) and, via the storage stream's
+own `end` event, on the streaming branch (`830-832`), plus `res.sendFile`'s
+success branch on the external-photo path (`861-867`) — and from no failure
+branch. The two writes appear nowhere else in the route, and every changed
+region carries the same in-file vendor-defect comment convention AC-17.5.2
+established. Proven live against the running Backstage and read straight from
+Postgres: the AC-17.5.2 successful download still moves `download_count`
+`5` → `6` and still writes exactly one `action = 'download'` row (id `68`),
+while the AC-17.5.2 `404` leaves `download_count` at `0` and writes no
+`access_logs` row at all — against AC-17.5.2's own recorded run of the same
+404, which left both behind. The patch is registered in all four places
+(`FORK_CHANGELOG.md` deviation, `PICPEAK_UPSTREAM_DEFECTS.md` UD-1 with its
+drop condition, `UPSTREAM_SYNC.md` §4 drop-rather-than-merge, and the
+submission-ready report in `.github/upstream-issues/`), with the report's
+state recorded as `prepared, not submitted` and the one thing needed to
+submit it — a human's decision to publish under a named GitHub identity —
+named explicitly. The AC-17.5.2 pinning suite is extended in place to 14
+tests covering the ordering claims, with the register entries and the
+source-level ordering claims pinned by a further 53 tests in this project's
+own suite.
 
 ## Recommendation and open questions (AC-14.6)
 

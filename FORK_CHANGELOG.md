@@ -29,6 +29,59 @@ this changelog exists to prevent.
 
 New entries are added to the top of the log (most recent first).
 
+A `deviation` entry that exists only to work around an upstream *bug* also
+gets an entry in `PICPEAK_UPSTREAM_DEFECTS.md` and is flagged
+drop-rather-than-merge in `UPSTREAM_SYNC.md` §4, so it is never mistaken at
+sync time for a permanent, project-specific deviation.
+
+---
+
+## 2026-08-01 — `deviation`
+
+**Single-photo gallery download patched: read through the storage backend,
+answer on every failure path, and record the download only once it is
+confirmed sent.** Works around upstream defect **UD-1** — see
+`PICPEAK_UPSTREAM_DEFECTS.md` for the defect, the upstream report, and the
+condition under which this patch is dropped.
+
+- **Type:** vendor-defect workaround, **not** a permanent deviation. It is
+  flagged drop-rather-than-merge in `UPSTREAM_SYNC.md` §4: when the pin moves
+  to an upstream commit carrying upstream's own fix, this patch is deleted
+  rather than merged forward.
+- **Upstream location patched:** `backend/src/routes/gallery.js`, the
+  `GET /:slug/download/:photoId` route (line 631 at the pinned commit
+  `eb263137b98935754155824de2a03848121304b6`).
+- **What changed, in three parts** (all three are the same upstream route and
+  were fixed together):
+  1. Managed photos resolve through `resolvePhotoStorageKey()` +
+     `getStorage()` instead of the local-filesystem-only
+     `resolvePhotoFilePath()` (which survives only for external/reference
+     photos), with `Content-Length` from the storage `stat()`; the watermark
+     branch materializes a temp local copy via `withLocalCopy()`. US-17
+     AC-17.5.2.
+  2. Every failure path answers — `404`/`500` while headers are unsent,
+     `res.destroy()` once they are — including the `res.sendFile()` error
+     callback that upstream left logging-only, which hung the request. US-17
+     AC-17.5.2.
+  3. The `download_count` increment (upstream `gallery.js:654`) and the
+     `access_logs` insert (upstream `gallery.js:657`) moved out of their
+     pre-send position into a single guarded helper fired only on a confirmed
+     delivery — the response's `finish` event, and `res.sendFile()`'s success
+     branch — never from a failure branch. US-17 AC-17.5.3.
+- **Files touched:**
+  - `vendor/picpeak/backend/src/routes/gallery.js` — the patched route; every
+    changed region carries an in-file `vendor-defect fix: US-17 AC-17.5.2` or
+    `AC-17.5.3` comment so the patch stays legible against a future sync.
+  - `vendor/picpeak/backend/src/__tests__/galleryDownload.storageBackend.test.js`
+    — new pinning suite covering the patched behaviour (14 tests).
+- **Evidence:** `PIVOT_AUDIT.md`, sections "AC-17.5.2 — the single-photo
+  download route patched to read through the storage backend, proven live"
+  and "AC-17.5.3 — the download recorded only on a confirmed delivery, proven
+  live from Postgres".
+
+- **Recorded:** 2026-08-01
+- **Recorded by:** dev-team (US-17, AC-17.5.3)
+
 ---
 
 ## 2026-07-31 — `baseline`

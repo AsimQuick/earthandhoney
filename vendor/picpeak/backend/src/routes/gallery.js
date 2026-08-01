@@ -652,18 +652,45 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, async (req, res) => 
       return res.status(403).json({ error: 'Photo not available' });
     }
 
-    // Update download count
-    await db('photos').where('id', photoId).increment('download_count', 1);
-    
-    // Log download
-    await db('access_logs').insert({
-      event_id: req.event.id,
-      ip_address: req.ip,
-      user_agent: req.headers['user-agent'],
-      action: 'download',
-      photo_id: photoId
-    });
-    
+    // --- vendor-defect fix: US-17 AC-17.5.3 (start) ---
+    // UD-1 part (3), see PICPEAK_UPSTREAM_DEFECTS.md: upstream ran the
+    // download_count increment and the access_logs insert here, before any
+    // attempt to resolve or send the file, so a 404 (or, pre-AC-17.5.2, the
+    // res.sendFile hang) was still recorded as a successful download.
+    // Record only once delivery is confirmed, and at most once per request:
+    // the response's `finish` event for the watermark/storage-stream
+    // branches below (attached only once each branch has committed to a
+    // real send), and res.sendFile's success callback for the
+    // external-photo branch. Never called from a failure branch.
+    let downloadRecorded = false;
+    const recordConfirmedDownload = () => {
+      if (downloadRecorded) return;
+      downloadRecorded = true;
+      db('photos').where('id', photoId).increment('download_count', 1).catch((countError) => {
+        logger.error('Failed to record download count', {
+          slug: req.params.slug,
+          photoId,
+          eventId: req.event.id,
+          error: countError.message,
+        });
+      });
+      db('access_logs').insert({
+        event_id: req.event.id,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent'],
+        action: 'download',
+        photo_id: photoId
+      }).catch((logError) => {
+        logger.error('Failed to record download access log', {
+          slug: req.params.slug,
+          photoId,
+          eventId: req.event.id,
+          error: logError.message,
+        });
+      });
+    };
+    // --- vendor-defect fix: US-17 AC-17.5.3 (end) ---
+
     // --- vendor-defect fix: US-17 AC-17.5.2 (start) ---
     // Upstream always resolved this route through resolvePhotoFilePath,
     // i.e. a local filesystem path — 404/500ing (or worse, hanging via
@@ -751,6 +778,9 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, async (req, res) => 
         'Content-Length': watermarkedBuffer.length
       });
 
+      // vendor-defect fix: US-17 AC-17.5.3 — record only once this response
+      // has actually finished sending; see the helper defined above.
+      res.once('finish', recordConfirmedDownload);
       res.send(watermarkedBuffer);
     } else if (storageKey) {
       // vendor-defect fix: US-17 AC-17.5.2 — stream from the storage
@@ -792,6 +822,14 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, async (req, res) => 
           res.destroy(streamError);
         }
       });
+      // vendor-defect fix: US-17 AC-17.5.3 — the storage stream's own 'end'
+      // event fires only once it has been fully, successfully read (it is
+      // mutually exclusive with 'error'), so the response 'finish' listener
+      // is attached only on that path — never in front of an error response
+      // that reuses the same `res`.
+      stream.on('end', () => {
+        res.once('finish', recordConfirmedDownload);
+      });
       stream.pipe(res);
     } else {
       // res.download() builds Content-Disposition itself but doesn't emit the
@@ -820,6 +858,12 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, async (req, res) => 
             const status = downloadError.code === 'ENOENT' ? 404 : 500;
             res.status(status).json({ error: 'Failed to download photo' });
           }
+        } else {
+          // vendor-defect fix: US-17 AC-17.5.3 — sendFile's own success
+          // branch (no error argument) is the confirmed-delivery signal for
+          // this path, so record here rather than on the response 'finish'
+          // event.
+          recordConfirmedDownload();
         }
       });
     }
