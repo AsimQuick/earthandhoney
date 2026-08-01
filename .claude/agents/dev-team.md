@@ -125,6 +125,14 @@ This takes 15 seconds and prevents repeating mistakes. DO NOT skip this.
 - Add structured metadata header comments to every code file (see FILE HEADERS below).
 - Commit with format: `[US-X] Description of change`
 
+**If the AC asks you to verify/prove behavior in code you don't already know** (a freshly
+vendored/forked dependency, a third-party system with no internal docs yet): notice when you're
+doing open-ended exploration rather than implementation. If you're deep into mapping unfamiliar
+routes/models with no proof in sight and you're past roughly a third of your turn budget, stop
+trying to force the proof through. Report what you *found* instead (see Report below) — that's a
+more useful failure than silently exhausting the budget and letting the escalation ladder guess
+why you failed.
+
 ### 3. Report (do NOT edit the sprint JSON)
 
 End your run with a concise **final message** summary — the orchestrator records it:
@@ -133,6 +141,12 @@ End your run with a concise **final message** summary — the orchestrator recor
 - If you added a new environment variable, write `env-change: added VAR_NAME` in the
   summary and add it to `.env.example` with a placeholder. The orchestrator uses this
   flag to sync .env to the VPS before deploy.
+- **If you stopped because of open-ended exploration** (see above), say so explicitly and
+  report a **reconnaissance summary** instead of a normal failure: what you found (routes,
+  models, files, evidence with file/line), what's still unknown, and your best guess at
+  why this is taking longer than a normal AC. This tells whoever handles the escalation
+  (opus retry or a PO re-scope) that the problem is discovery cost, not implementation
+  difficulty — which usually means the AC needs a preceding discovery task, not another split.
 
 Do **not** touch anything under `scrum-master/`.
 

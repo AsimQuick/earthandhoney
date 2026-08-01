@@ -55,6 +55,49 @@ Acceptance criteria drive the entire testing pipeline. Each AC becomes exactly o
 **Think about downstream development:**
 When writing ACs for the current sprint, consider what the next sprint will build on. If a story creates an API that future stories will consume, include an AC that defines the contract (response shape, error codes). This ensures Tier 2 seam tests get written, protecting future work.
 
+### Audits, verification, and unfamiliar/vendored systems — the three shapes
+
+Some ACs aren't "build a feature" — they're "prove/record/verify" tasks. These have a failure mode
+none of the rules above catch: the dev agent can burn its full budget, escalate through opus, get
+split by you, and the newest smallest leaf *still* fails, because the AC was never really splittable
+— every split just produces a smaller version of the same open-ended task. This has already happened
+on this project (US-17, sprint-3: `AC-17.4` split 5+ times, ~$150 spent, still failing). Recognize
+which shape you're writing **before** you write it:
+
+- **Closed-set audit (safe)** — "inventory every X" where X is an explicitly enumerated, already-known
+  set. `AC-14.1` did this right: *"Every item delivered in sprint-1 (US-1…US-6) and sprint-2
+  (US-7…US-9) appears exactly once."* The dev agent can literally check items off a list you handed
+  it. **Rule: always name the closed set in the AC text itself** — a sprint range, a file list, a
+  fixed enum — never leave "every X" open to the dev agent's own judgment of what counts as complete.
+
+- **Open-ended exhaustiveness proof (risky — rewrite it)** — "prove you found everything," "record
+  every instance," "state what was searched so a reader can see this is a whole surface and not a
+  sample," with no closed set given. There's no terminus, so splitting it just produces N smaller
+  unbounded searches. **Rule: never write this as a pass/fail exhaustiveness gate.** Instead write it
+  as a **time-boxed investigation with a concrete, bounded deliverable** — a named report file with a
+  required outline (findings, evidence per finding, explicit "not covered" section) — so "done" means
+  "the report exists and covers the required sections," not "you proved you searched everywhere."
+
+- **Behavior-proof against an unfamiliar/vendored system (risky — split it differently)** — this is
+  the subtler one, because the AC can look completely ordinary. `AC-17.1` ("A Project, Client, and
+  Gallery can be created and correctly associated") reads like a normal feature AC, but it was the
+  **first** AC in the project to verify behavior inside a freshly forked, undocumented third-party
+  codebase (PicPeak) — nobody had mapped its actual routes/models yet. The AC *looks* bounded (one
+  behavior, one proof), but the investigation cost to even locate the relevant code before you can
+  prove anything is unbounded, and that uncertainty is invisible in the AC text. **Rule: the first
+  time a sprint asks the dev team to verify behavior in a vendored/forked system it hasn't touched
+  before, write a separate, preceding discovery AC** for that feature area — "map PicPeak's
+  Project/Client/Gallery models and the routes that create/associate them; record findings in
+  `<vendor>_DISCOVERY.md`" — before the "prove it works" AC. Never bundle discovery and proof into
+  one AC when the codebase is unfamiliar; that's what makes the "how big is this really" uncertainty
+  invisible until the dev agent is already deep into a failing attempt.
+
+**When you're asked to split an AC that's already failed sonnet and opus:** check whether it matches
+the open-ended or vendor-discovery shape above *before* splitting it further. If it does, splitting
+again will not converge — rewrite it per the relevant rule instead (bounded investigation report, or
+a preceding discovery AC), even on the first split. Don't wait for a depth limit to force this; you
+should recognize the shape immediately.
+
 ---
 
 ## ROLE RESPONSIBILITIES
@@ -78,7 +121,17 @@ When writing ACs for the current sprint, consider what the next sprint will buil
 
 - When you need something from the human (API keys, credentials, external access, business judgment), create or update `scrum-master/po-requests.md`.
 - Format each request clearly: what is needed, why, and which story/sprint it blocks.
-- The orchestrator will detect this file and pause for human input.
+- **The very first line of the file must be a status verdict** — this is what the orchestrator
+  actually reads to decide whether to pause, not any wording later in the file:
+  - `STATUS: BLOCKING` — the **current sprint** cannot safely proceed without a human decision.
+  - `STATUS: CLEAR` — nothing currently blocks, even if the file still contains history, resolved
+    items, or explicitly non-blocking notes (e.g. "credentials confirmed but not yet
+    security-audited" is CLEAR if it doesn't stop this sprint, not BLOCKING).
+- Get this right **every time you touch the file** — including when you're only archiving an old
+  request or logging something for the record. The orchestrator trusts this single line, not the
+  presence of any particular word elsewhere in the document. Getting it wrong either stalls the
+  pipeline for nothing or lets it run past something that genuinely needed a human.
+- The orchestrator pauses for human input only when it reads `STATUS: BLOCKING` on that first line.
 
 ### Change Control
 

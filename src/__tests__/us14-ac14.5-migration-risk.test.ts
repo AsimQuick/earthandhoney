@@ -18,10 +18,21 @@ import path from 'path'
 const root = process.cwd()
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8')
 
+// Bounded at the FIRST top-level heading after `heading` — not at
+// `nextHeading` directly. Later stories (US-17) append their own `## `
+// sections ahead of the AC-14.6 recommendation block, which must stay the
+// document's last section; scanning all the way to `nextHeading` would
+// swallow those sections and mis-read their tables as AC-14.5 rows.
+// `nextHeading` is still asserted to follow, so the expected document
+// order is preserved.
 function extractSection(audit: string, heading: string, nextHeading: string): string {
   const start = audit.indexOf(heading)
   expect(start).toBeGreaterThanOrEqual(0)
-  const end = nextHeading ? audit.indexOf(nextHeading, start + heading.length) : -1
+  const after = start + heading.length
+  if (nextHeading) {
+    expect(audit.indexOf(nextHeading, after)).toBeGreaterThan(-1)
+  }
+  const end = audit.indexOf('\n## ', after)
   return audit.slice(start, end === -1 ? undefined : end)
 }
 
