@@ -230,7 +230,19 @@ related-story: US-14
          exact client-facing request that currently succeeds —
          `GET /api/gallery/:slug/photos` with a valid gallery token,
          returning `200` with the Gallery's real photo list.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2
+         AC-17.4.1.3 — records the pre-expiry photographer-facing baseline
+         AC-17.4.3 re-checks after expiry: one photographer-facing screen
+         (the Backstage admin Events List page) and the exact `GET
+         /api/admin/events` request backing it, its output for the
+         AC-17.1.3.1 Gallery, and the field carrying its live-versus-
+         expired state. Finds the pinned fork's admin API returns no
+         stored field named `status`/`state`/`is_expired` at all — only
+         the same raw `is_draft`, `is_archived`, `is_active`, `expires_at`
+         columns AC-17.4.1.1.1.2.3 already inventoried — and that the
+         green "Active" label the photographer actually sees is
+         synthesized entirely client-side, per request, from those four
+         raw fields.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3
 ---
 -->
 
@@ -3553,6 +3565,166 @@ against the same row, and the same request against the same route, whose
 `verifyGalleryAccess` gate is tied to the `is_active` flag the
 AC-17.4.1.1.2 scheduled sweep flips once this same `expires_at` value
 passes.
+
+## AC-17.4.1.3 — pre-expiry photographer-facing baseline
+
+`US-17` AC-17.4.1.3 records, while the AC-17.1.3.1 Gallery (`events.id =
+3`, slug `wedding-ac-17-1-3-1-verification-gallery-2026-09-01`) is still
+unexpired, one photographer-facing screen or endpoint that currently
+shows it as live: the exact screen or query, its output, and the field
+carrying the live-versus-expired state — recorded precisely enough for
+AC-17.4.3 to re-check verbatim after expiry. No new Gallery was created
+for this AC; no source file under `vendor/picpeak/` was modified.
+
+### The Gallery is still unexpired
+
+Re-confirmed live against the running Backstage
+(`docker compose --profile backstage`, per `BACKSTAGE_STARTUP.md`), signed
+in as the seeded administrator, on the same day AC-17.4.1.2 recorded its
+client-facing baseline:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -x \
+    -c "select id, slug, expires_at, is_active, is_archived, is_draft from events where id = 3;"
+
+-[ RECORD 1 ]---------------------------------------------------
+id          | 3
+slug        | wedding-ac-17-1-3-1-verification-gallery-2026-09-01
+expires_at  | 2026-10-01 00:00:00+00
+is_active   | t
+is_archived | f
+is_draft    | f
+```
+
+Run on 2026-08-01, 61 days ahead of `expires_at`, so the baseline below is
+genuinely pre-expiry.
+
+### The photographer-facing screen and its backing request
+
+The screen identified is the Backstage admin **Events List** page
+(`vendor/picpeak/frontend/src/pages/admin/EventsListPage.tsx`) — the
+screen a photographer lands on to see every Gallery's status at a glance,
+distinct from the client-/Customer-facing surfaces AC-17.4.1.1.1.2.3
+already scoped as "the Gallery path." It is backed by `GET
+/api/admin/events`, admin-authenticated and gated by
+`requirePermission('events.view')`
+(`vendor/picpeak/backend/src/routes/adminEvents.js:867`), the same
+`adminAuth`-gated list handler AC-17.4.1.1.1.2.3 already confirmed sits
+outside the Gallery path.
+
+Exercised live, signed in as the seeded administrator, with the same
+default filter (`status=all`) the page requests on load:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> \
+    "http://localhost:3100/api/admin/events?page=1&limit=20&status=all&sortBy=created_at&sortOrder=desc"
+
+HTTP/1.1 200 OK
+{"events":[ ... ],"pagination":{"page":1,"limit":20,"total":3,"totalPages":1}}
+```
+
+### The output, for the AC-17.1.3.1 Gallery specifically
+
+The `events` array entry for `id: 3`, exactly as this request returns it
+(unrelated fields omitted for brevity — nothing relevant to expiry state
+was omitted):
+
+```json
+{
+  "id": 3,
+  "slug": "wedding-ac-17-1-3-1-verification-gallery-2026-09-01",
+  "event_name": "AC-17.1.3.1 Verification Gallery",
+  "created_at": "2026-07-31T19:58:51.608Z",
+  "expires_at": "2026-10-01T00:00:00.000Z",
+  "is_active": true,
+  "is_archived": false,
+  "archived_at": null,
+  "is_draft": false,
+  "photo_count": 3,
+  "customer_name": "Ada Testclient",
+  "customer_email": "ac17-1-1-client@example.com"
+}
+```
+
+### The field carrying the live-versus-expired state
+
+The response above carries no field named `status`, `state`, `is_expired`,
+or anything similar — only the same raw `is_draft`, `is_archived`,
+`is_active`, and `expires_at` columns AC-17.4.1.1.1.2.3 already inventoried
+as the pinned fork's only stored expiry-adjacent data, passed straight
+through by `mapEventForApi`
+(`vendor/picpeak/backend/src/routes/adminEvents.js:215-236`) with no
+computed field added. The green "Active" badge the photographer actually
+sees on this screen is not one of those returned fields — it is
+synthesized entirely client-side, fresh on every render, by
+`getEventStatus()`:
+
+```
+vendor/picpeak/frontend/src/pages/admin/EventsListPage.tsx:263-275
+
+const getEventStatus = (event: Event) => {
+  if (event.is_draft) return { label: t('events.draft'), ... };
+  if (event.is_archived) return { label: t('events.archived'), ... };
+  if (!event.is_active) return { label: t('events.inactive'), ... };
+  if (!event.expires_at) return { label: t('events.active'), ... };
+  const days = differenceInDays(parseISO(event.expires_at), new Date());
+  if (days <= 0) return { label: t('events.expired'), ... };
+  if (days <= 7) return { label: t('events.daysLeft', { count: days }), ... };
+  return { label: t('events.active'), color: 'text-green-600 ...' };
+};
+```
+
+For this Gallery today — `is_draft: false`, `is_archived: false`,
+`is_active: true`, 61 days until `expires_at` — every guard clause falls
+through and the function reaches its final branch
+(`EventsListPage.tsx:274`), rendering the green `t('events.active')`
+("Active") label next to this Gallery's row. That label is the
+photographer-visible "shows it as live" signal this AC asks for, but it
+is a UI-layer interpretation of four raw fields, not an explicit state
+the upstream API itself returns or persists — a distinction this AC
+records rather than glossing over by describing the API response itself
+as carrying a "live" field.
+
+As a second, corroborating admin surface (not the screen this AC treats
+as primary, but confirming the same absence of a stored field): the
+single-event Admin Event Details page
+(`vendor/picpeak/frontend/src/pages/admin/EventDetailsPage.tsx`, backed by
+`GET /api/admin/events/3`, whose response carries the identical raw
+`is_active: true`/`is_archived: false`/`expires_at:
+"2026-10-01T00:00:00.000Z"` shape with no computed field either) goes
+further than the List page's fallback clause anticipates: it renders no
+badge or label of any kind for a Gallery this far from expiry. Its
+`isExpired`/`isExpiring` flags
+(`EventDetailsPage.tsx:571-574`, the same `expires_at`-vs-`now`
+computation as the List page's `getEventStatus`) are both `false` at 61
+days out, so the "Expiration Warning" card that would otherwise announce
+either state never renders at all
+(`EventDetailsPage.tsx:1057`, gated on `isExpired || isExpiring`); the
+only signal on that screen is the plain formatted date plus a "61 days
+left" count (`EventDetailsPage.tsx:1820-1830`) — exactly the "only a raw
+expiry date the photographer must interpret themselves" case this AC
+calls out to be recorded as the actual upstream shape, which is what this
+paragraph does for that screen, without treating it as this AC's primary
+answer.
+
+### Verdict
+
+AC-17.4.1.3 is satisfied: while the AC-17.1.3.1 Gallery is still
+unexpired (`expires_at = 2026-10-01 00:00:00+00`, confirmed live on
+2026-08-01), the Backstage admin Events List page — backed by `GET
+/api/admin/events?page=1&limit=20&status=all&sortBy=created_at&sortOrder=desc`
+— currently shows it with a green "Active" label. The exact output for
+this Gallery is recorded above, and the field carrying that state is
+recorded honestly as what it actually is: no stored or returned API field
+named `status`/`state`/`is_expired`, only the raw `is_draft`, `is_archived`,
+`is_active`, `expires_at` columns already inventoried by
+AC-17.4.1.1.1.2.3, fed through the frontend's `getEventStatus()`
+computation (`EventsListPage.tsx:263-275`) to produce the label a
+photographer sees. This is the surface AC-17.4.3 re-checks after
+expiry — the same request against the same route, whose computed label
+is expected to flip once `expirationChecker.js`'s scheduled sweep (per
+AC-17.4.1.1.2) flips `is_active` to `false` and this same `expires_at`
+value has passed.
 
 ## Recommendation and open questions (AC-14.6)
 
