@@ -90,7 +90,18 @@ related-story: US-14
          fork's expiry wording for admin sessions, guest tokens, and share
          links as ruled-out groups rather than leaving them unmentioned. No
          name is ruled out without the evidence cited.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2
+         AC-17.4.1.1.1.1.3 — states the candidate shortlist for the
+         Gallery's own expiry: every name in the AC-17.4.1.1.1.1.1.3 merged
+         inventory that AC-17.4.1.1.1.1.2 did not rule out, each with a
+         one-line reason and at least one file:line against the pinned
+         commit. Reconciles the candidate list against the ruled-out groups
+         so every one of the 35 merged-inventory entries appears exactly
+         once, either as a candidate or inside a ruled-out group; anything
+         that cannot yet be placed either way is listed as unresolved with
+         the reason rather than omitted. This shortlist is the output of
+         the AC-17.4.1.1.1.1.1.1 through AC-17.4.1.1.1.1.3 group of criteria
+         as a whole, handed to AC-17.4.1.1.1.2 to confirm from code.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3
 ---
 -->
 
@@ -1989,6 +2000,136 @@ guest tokens, and share links are each named explicitly, as this criterion
 requires. No name is ruled out on anything but the evidence cited above,
 and the coverage check confirms every one of the 35 merged-inventory
 entries is accounted for, with none left unmentioned.
+
+## AC-17.4.1.1.1.1.3 — the candidate shortlist, reconciled against the full inventory
+
+`US-17` AC-17.4.1.1.1.1.3 takes forward AC-17.4.1.1.1.1.1.3's 35-entry
+merged inventory and AC-17.4.1.1.1.1.2's ruled-out groups. Every name the
+merged inventory carries that AC-17.4.1.1.1.1.2 did not rule out is
+recorded below as a **candidate** for the Gallery's own expiry, each with
+a one-line reason and at least one file:line against the pinned commit
+(`eb263137b98935754155824de2a03848121304b6`). The candidate list is then
+reconciled against the ruled-out groups so that every one of the 35
+merged-inventory entries appears exactly once, either as a candidate or
+inside a ruled-out group — nothing the search surfaced is silently
+dropped — with anything that cannot yet be placed either way listed as
+unresolved, rather than omitted. This shortlist is the output of the
+AC-17.4.1.1.1.1.1.1–AC-17.4.1.1.1.1.3 group of criteria as a whole; it is
+what AC-17.4.1.1.1.2 confirms from code. It is a code-level finding: no
+live gallery was created or changed for it.
+
+### The candidate shortlist: 14 entries AC-17.4.1.1.1.1.2 did not rule out
+
+These are the same 14 entries AC-17.4.1.1.1.1.2 recorded as "staying
+aside" — restated here as this criterion's own deliverable, the
+candidate shortlist, rather than left as that section's contrast note.
+
+| Entry | Name(s) | Why it is a candidate for the Gallery's own expiry | Evidence (file:line) |
+|---|---|---|---|
+| E1 (`events` occurrence) | `expires_at` | The column itself governs whether the Gallery still grants client access. | `vendor/picpeak/backend/migrations/core/061_add_optional_date_expiration_settings.js:32`; `vendor/picpeak/backend/src/middleware/auth.js:179` |
+| E4 | `expiry_date` | Notification merge-field reporting the Gallery's own `expires_at` value in emails. | `vendor/picpeak/backend/src/routes/adminEvents.js:800,1080,1642,1710` |
+| E5 | `expiration_warning` | `template_key` for the "gallery expiring soon" email, fired off the Gallery's own `expires_at`. | `vendor/picpeak/backend/src/services/expirationChecker.js:36,78` |
+| E6 | `gallery_expired` / `galleryExpiredExists` | `template_key` for the "gallery has expired" email, fired off the same column. | `vendor/picpeak/backend/src/services/expirationChecker.js:144,149` |
+| E7 | `event_require_expiration` | Setting governing whether an event/Gallery's own `expires_at` is mandatory at creation. | `vendor/picpeak/backend/src/routes/adminEvents.js:79,104` |
+| E10 | `expiration_days` | Create-event request field that sets the Gallery's own `expires_at` at creation time. | `vendor/picpeak/backend/src/routes/adminEvents.js:376,446` |
+| E11 | `general_default_expiration_days` | Default value for E10's `expiration_days`. | `vendor/picpeak/backend/src/services/settingsService.js:148` |
+| E12 | `require_expiration` | API field exposing E7's policy per event. | `vendor/picpeak/backend/src/routes/adminEvents.js:88,104,115` |
+| E13 | `is_expired` | API field computed directly from the Gallery's own `expires_at`. | `vendor/picpeak/backend/src/routes/gallery.js:186` |
+| E16 | `GALLERY_EXPIRED` | Error code returned when the Gallery's own `expires_at` has passed. | `vendor/picpeak/backend/src/middleware/auth.js:182` |
+| E30 | `expiringEvents` | Dashboard count of Galleries whose own `expires_at` falls within 7 days. | `vendor/picpeak/backend/src/routes/adminDashboard.js:24` |
+| E31 | `expirationChecker` | Admin system-status field for the background job that acts on the Gallery's own `expires_at`. | `vendor/picpeak/backend/src/routes/adminSystem.js:264` |
+| E32 | `expiring` | `?status=expiring` list filter, same 7-day window as E30. | `vendor/picpeak/backend/src/routes/adminEvents.js:906` |
+| E33 | `event.expired` | Webhook fired when the Gallery's own `expires_at` is crossed. | `vendor/picpeak/backend/src/services/webhookService.js:17`; `vendor/picpeak/backend/src/services/expirationChecker.js:105` |
+
+E1 is listed once above, but only for its `events` occurrence — the
+column that gates client access. E1's nine other occurrences (across
+`api_tokens`, `admin_invitations`, `guest_verification_codes`,
+`customer_invitations`, `customer_password_resets`, `quote_action_tokens`,
+`contract_action_tokens`, `invoice_payment_check_tokens`, and
+`revoked_tokens`) are not candidates; they are ruled out under
+AC-17.4.1.1.1.1.2 and are reconciled below rather than silently folded
+into this table.
+
+### Reconciling the candidate list against the ruled-out groups
+
+Every one of the 35 AC-17.4.1.1.1.1.1.3 merged-inventory entries, and its
+disposition — candidate (this AC) or ruled out (AC-17.4.1.1.1.1.2, group
+named) — with no entry left off either list:
+
+| Entry | Disposition |
+|---|---|
+| E1 | **Split** — its `events.expires_at` occurrence is a candidate (above); its `api_tokens` and `admin_invitations` occurrences are ruled out under Admin sessions, its `guest_verification_codes` occurrence under Guest tokens, its `customer_invitations`/`customer_password_resets`/`quote_action_tokens`/`contract_action_tokens`/`invoice_payment_check_tokens` occurrences under Share links, and its `revoked_tokens` occurrence under Session-token revocation bookkeeping. |
+| E2 | Ruled out — Admin sessions. |
+| E3 | Ruled out — Business-document validity and status (quotes & contracts). |
+| E4 | **Candidate.** |
+| E5 | **Candidate.** |
+| E6 | **Candidate.** |
+| E7 | **Candidate.** |
+| E8 | Ruled out — Session-token revocation bookkeeping. |
+| E9 | Ruled out — Admin sessions, Gallery-access and customer-portal session tokens, Guest tokens, and Share links (one occurrence per group). |
+| E10 | **Candidate.** |
+| E11 | **Candidate.** |
+| E12 | **Candidate.** |
+| E13 | **Candidate.** |
+| E14 | Ruled out — HTTP cache-control header. |
+| E15 | Ruled out — Admin sessions, Gallery-access and customer-portal session tokens, and Share links (one occurrence per group). |
+| E16 | **Candidate.** |
+| E17 | Ruled out — Share links. |
+| E18 | Ruled out — Guest tokens. |
+| E19 | Ruled out — Admin sessions and Gallery-access and customer-portal session tokens. |
+| E20 | Ruled out — Admin sessions and Internal cache and housekeeping constants. |
+| E21 | Ruled out — Internal cache and housekeeping constants. |
+| E22 | Ruled out — Guest tokens. |
+| E23 | Ruled out — Internal cache and housekeeping constants. |
+| E24 | Ruled out — Gallery-access and customer-portal session tokens. |
+| E25 | Ruled out — Share links. |
+| E26 | Ruled out — Share links. |
+| E27 | Ruled out — Internal cache and housekeeping constants. |
+| E28 | Ruled out — Gallery-access and customer-portal session tokens. |
+| E29 | Ruled out — Internal cache and housekeeping constants. |
+| E30 | **Candidate.** |
+| E31 | **Candidate.** |
+| E32 | **Candidate.** |
+| E33 | **Candidate.** |
+| E34 | Ruled out — Business-document validity and status (quotes & contracts). |
+| E35 | Ruled out — Share links. |
+
+That is 14 candidate dispositions (E1's events occurrence, E4, E5, E6, E7,
+E10, E11, E12, E13, E16, E30, E31, E32, E33) plus 21 ruled-out
+dispositions (E1's nine other occurrences counted as part of E1's split,
+plus E2, E3, E8, E9, E14, E15, E17, E18, E19, E20, E21, E22, E23, E24,
+E25, E26, E27, E28, E29, E34, E35) — 14 + 21 = 35, matching the merged
+inventory's size exactly, with every entry appearing exactly once in this
+table (E1 appearing once, as a **Split** row that names both of its
+dispositions rather than being listed twice).
+
+### Unresolved entries: none
+
+Every one of the 35 merged-inventory entries is placed above, either as a
+candidate or inside a ruled-out group (or, for E1, both — explicitly
+recorded as a split rather than silently picking one side). No entry is
+left unplaced, so there is nothing to list as unresolved here.
+
+### Verdict
+
+AC-17.4.1.1.1.1.3 is satisfied: the 14 entries AC-17.4.1.1.1.1.2 did not
+rule out are recorded above as the candidate shortlist for the Gallery's
+own expiry, each with a one-line reason and at least one file:line
+citation against the pinned commit
+(`eb263137b98935754155824de2a03848121304b6`). The candidate list is
+reconciled against AC-17.4.1.1.1.1.2's eight ruled-out groups so that
+every one of the AC-17.4.1.1.1.1.1.3 merged inventory's 35 entries appears
+exactly once, either as a candidate or inside a ruled-out group, with
+E1's split occurrence recorded explicitly rather than left ambiguous.
+Nothing the AC-17.4.1.1.1.1.1.1 search surfaced is silently dropped, and
+no entry is left unresolved. This shortlist — E1's `events.expires_at`
+occurrence, `expiry_date`, `expiration_warning`, `gallery_expired`,
+`event_require_expiration`, `expiration_days`,
+`general_default_expiration_days`, `require_expiration`, `is_expired`,
+`GALLERY_EXPIRED`, `expiringEvents`, `expirationChecker`, `expiring`, and
+`event.expired` — is the output of the AC-17.4.1.1.1.1.1.1 through
+AC-17.4.1.1.1.1.3 group of criteria as a whole, and is what
+AC-17.4.1.1.1.2 confirms from code.
 
 ## Recommendation and open questions (AC-14.6)
 
