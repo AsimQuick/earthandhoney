@@ -2014,6 +2014,25 @@ requires. No name is ruled out on anything but the evidence cited above,
 and the coverage check confirms every one of the 35 merged-inventory
 entries is accounted for, with none left unmentioned.
 
+### Later addition to this ruled-out list, by AC-17.4.1.1.1.2.1
+
+The ruled-out list begun above is not closed at eight groups. This note
+is left here so a reader working from this list finds the whole of it,
+rather than stopping at the eight groups this criterion produced.
+AC-17.4.1.1.1.2.1, settling the AC-17.4.1.1.1.1.3 candidate shortlist
+from application code, found that one entry this criterion left aside as
+expressing the Gallery's own lifetime — `expirationChecker` — is not the
+gallery-lifetime field: its only occurrence
+(`vendor/picpeak/backend/src/routes/adminSystem.js:264`) is a hardcoded
+status literal that never reads or derives from `events.expires_at`. It
+is therefore moved out of the aside list and into a ninth group of this
+same ruled-out list, **Hardcoded system-status labels**, recorded in the
+AC-17.4.1.1.1.2.1 section below with its evidence. The counts stated
+above (14 aside, 21 ruled out) are this criterion's own record and are
+left as they stood. After AC-17.4.1.1.1.2.1's correction the same 35
+merged-inventory entries divide as 13 confirmed and 22 ruled out, which
+that section reconciles entry by entry against the 14-entry shortlist.
+
 ## AC-17.4.1.1.1.1.3 — the candidate shortlist, reconciled against the full inventory
 
 `US-17` AC-17.4.1.1.1.1.3 takes forward AC-17.4.1.1.1.1.1.3's 35-entry

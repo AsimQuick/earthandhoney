@@ -109,6 +109,50 @@ describe('AC-17.4.1.1.1.2.1: shortlist settled — confirmed set and corrected r
     })
   })
 
+  // The AC requires E31 be moved into the ruled-out list *begun in
+  // AC-17.4.1.1.1.1.2*, so that list must lead a reader to the ninth
+  // group rather than reading as closed at the eight groups it produced.
+  describe('the ruled-out list stays one list: AC-17.4.1.1.1.1.2 points forward to the ninth group', () => {
+    const earlierStart = doc.indexOf('## AC-17.4.1.1.1.1.2 ')
+    const earlierEnd = doc.indexOf('\n## ', earlierStart + 3)
+    const earlier = earlierStart === -1 ? '' : doc.slice(earlierStart, earlierEnd)
+    const earlierFlat = earlier.replace(/\s+/g, ' ')
+
+    it('the AC-17.4.1.1.1.1.2 section carries a forward pointer to this AC', () => {
+      expect(earlier).toContain('### Later addition to this ruled-out list, by AC-17.4.1.1.1.2.1')
+    })
+
+    it('the pointer names the ninth group and the entry moved into it', () => {
+      expect(earlierFlat).toMatch(/ninth group of this same ruled-out list, \*\*Hardcoded system-status labels\*\*/)
+      expect(earlierFlat).toMatch(/`expirationChecker` — is not the gallery-lifetime field/)
+    })
+
+    it('the pointer cites the file:line that settled the move', () => {
+      expect(earlier).toContain('vendor/picpeak/backend/src/routes/adminSystem.js:264')
+    })
+
+    it('the pointer leaves the earlier criterion\'s own 14-aside/21-ruled-out counts standing', () => {
+      expect(earlierFlat).toMatch(/14 entries/)
+      expect(earlierFlat).toMatch(/21 entries/)
+      expect(earlierFlat).toMatch(/13 confirmed and 22 ruled out/)
+    })
+
+    it('adds no ninth **Governs:** statement to the earlier section (its eight groups are unchanged)', () => {
+      expect((earlier.match(/\*\*Governs:\*\*/g) ?? []).length).toBe(8)
+    })
+
+    it('adds no E31 row to any ruled-out group table in the earlier section', () => {
+      const groups = earlier.slice(earlier.indexOf('### Ruled-out group: Admin sessions'))
+      const leadCells = [...groups.matchAll(/^\|([^|]*)\|/gm)].map((m) => m[1])
+      expect(leadCells.some((c) => /\bE31\b/.test(c))).toBe(false)
+    })
+
+    it('13 confirmed + 22 ruled out accounts for all 35 merged-inventory entries', () => {
+      expect(CONFIRMED.length).toBe(13)
+      expect(13 + 22).toBe(35)
+    })
+  })
+
   describe('reconciliation: all 14 shortlist entries placed exactly once', () => {
     it('has a dedicated reconciliation table', () => {
       expect(section).toContain(
