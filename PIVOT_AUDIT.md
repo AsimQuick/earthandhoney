@@ -222,7 +222,15 @@ related-story: US-14
          upstream's archive trigger is purely elapsed time against
          `expires_at`, not the PRD diagram's implied download-completion
          trigger.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3
+         AC-17.4.1.2 — records the pre-expiry client-facing baseline
+         AC-17.4.2 re-runs after expiry: the AC-17.1.3.1 Gallery's stored
+         `events.expires_at` value read directly from the running
+         Backstage PostgreSQL via the verbatim query AC-17.4.1.1.1.3(c)
+         gave (`2026-10-01 00:00:00+00`, still in the future), and one
+         exact client-facing request that currently succeeds —
+         `GET /api/gallery/:slug/photos` with a valid gallery token,
+         returning `200` with the Gallery's real photo list.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2
 ---
 -->
 
@@ -3436,6 +3444,115 @@ Each difference is recorded as the actual upstream shape with the
 file:line evidence already established by the two preceding criteria; no
 new code search was run, no live Backstage was exercised, and no change
 was made under `vendor/picpeak/` to close any of them.
+
+## AC-17.4.1.2 — pre-expiry client-facing baseline
+
+`US-17` AC-17.4.1.2 records, while the AC-17.1.3.1 Gallery (`events.id =
+3`, slug `wedding-ac-17-1-3-1-verification-gallery-2026-09-01`) is still
+unexpired, its stored expiry value read directly from PostgreSQL using
+the column AC-17.4.1.1.1.3 identified, and one exact client-facing
+request that currently succeeds — recorded precisely enough for AC-17.4.2
+to repeat verbatim after expiry. No new Gallery was created for this AC;
+no source file under `vendor/picpeak/` was modified.
+
+### The Gallery is still unexpired
+
+Read straight out of the running Backstage's own Postgres
+(`docker compose --profile backstage`, per `BACKSTAGE_STARTUP.md`):
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -x \
+    -c "select id, slug, expires_at, is_active, is_draft from events where id = 3;"
+
+-[ RECORD 1 ]---------------------------------------------------
+id         | 3
+slug       | wedding-ac-17-1-3-1-verification-gallery-2026-09-01
+expires_at | 2026-10-01 00:00:00+00
+is_active  | t
+is_draft   | f
+```
+
+Run on 2026-08-01, ahead of the `2026-10-01` `expires_at` value, so the
+baseline below is genuinely pre-expiry, not recorded after the fact.
+
+### (a) Stored expiry value, read directly from PostgreSQL with the AC-17.4.1.1.1.3 column
+
+AC-17.4.1.1.1.3(c) gave the exact query this criterion runs, unchanged
+except for substituting the AC-17.1.3.1 Gallery's id for the `$1`
+placeholder:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "SELECT expires_at FROM events WHERE id = 3;"
+
+       expires_at
+------------------------
+ 2026-10-01 00:00:00+00
+(1 row)
+```
+
+The value matches the row read back in full above:
+`events.expires_at = 2026-10-01 00:00:00+00`.
+
+### (b) One exact client-facing request that currently succeeds
+
+The request AC-17.4.2 re-runs after expiry is
+`GET /api/gallery/:slug/photos`
+(`vendor/picpeak/backend/src/routes/gallery.js:216`, mounted at
+`vendor/picpeak/backend/server.js:635` —
+`app.use('/api/gallery', galleryRoutes)`), guarded by the
+`verifyGalleryAccess` middleware
+(`vendor/picpeak/backend/src/middleware/gallery.js:20`), which only
+returns the Gallery when its query finds a matching row with
+`is_active: formatBoolean(true)`
+(`vendor/picpeak/backend/src/middleware/gallery.js:36`) — the flag
+AC-17.4.1.1.2's scheduled `expirationChecker.js` sweep flips to `false`
+once `expires_at` passes (`expirationChecker.js:97`, restated under
+AC-17.4.1.1.3), which is what AC-17.4.2 exercises this same request
+against.
+
+A valid gallery token was obtained first, the same way AC-17.3 obtained
+one, against the same AC-17.1.3.1 Gallery and password:
+
+```
+$ curl -s -i -c <gallery-cookie-jar> -X POST http://localhost:3100/api/auth/gallery/verify \
+    -H "Content-Type: application/json" \
+    -d '{"slug":"wedding-ac-17-1-3-1-verification-gallery-2026-09-01","password":"Verify-Pass-123"}'
+
+HTTP/1.1 200 OK
+Set-Cookie: gallery_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; Max-Age=86400; Path=/; HttpOnly; SameSite=Lax
+```
+
+The request itself, as issued, exactly as AC-17.4.2 repeats it:
+
+```
+$ curl -s -i -b <gallery-cookie-jar> http://localhost:3100/api/gallery/wedding-ac-17-1-3-1-verification-gallery-2026-09-01/photos
+
+HTTP/1.1 200 OK
+{"event":{"id":3,"event_name":"AC-17.1.3.1 Verification Gallery","event_type":"wedding","event_date":"2026-09-01T00:00:00.000Z", ... ,"expires_at":"2026-10-01T00:00:00.000Z", ... },"categories":[],"photos":[{"id":3, ... },{"id":2, ... },{"id":1, ... }]}
+```
+
+Status `200 OK`, with the Gallery's own `event.id: 3` and
+`expires_at: "2026-10-01T00:00:00.000Z"` echoed back, and all three
+photos from the AC-17.2 batch upload (`id` 3, 2, 1) — the same three ids
+AC-17.3 recorded — returned in the `photos` array, showing the Gallery is
+genuinely being served rather than an empty or error shape.
+
+### Verdict
+
+AC-17.4.1.2 is satisfied: while the AC-17.1.3.1 Gallery is still
+unexpired (`expires_at = 2026-10-01 00:00:00+00`, confirmed live on
+2026-08-01), its stored expiry value was read directly from PostgreSQL
+with the exact `SELECT expires_at FROM events WHERE id = 3;` query
+AC-17.4.1.1.1.3 identified, and one exact client-facing request —
+`GET /api/gallery/wedding-ac-17-1-3-1-verification-gallery-2026-09-01/photos`
+with a valid gallery token — currently succeeds, returning `200` with the
+Gallery's real event data and photo list. Both are recorded precisely
+enough for AC-17.4.2 to repeat verbatim after expiry: the same query
+against the same row, and the same request against the same route, whose
+`verifyGalleryAccess` gate is tied to the `is_active` flag the
+AC-17.4.1.1.2 scheduled sweep flips once this same `expires_at` value
+passes.
 
 ## Recommendation and open questions (AC-14.6)
 
