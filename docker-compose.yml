@@ -140,6 +140,21 @@ services:
       backstage-backend:
         condition: service_healthy
 
+  # AC-17.6: capture-inbox mail catcher for Backstage's operational gallery
+  # emails (gallery_created, gallery_expired, archive_complete, ...). The
+  # vendored fork's own compose (vendor/picpeak/docker-compose.yml) already
+  # ships this exact service — mirrored here rather than run standalone so it
+  # shares this stack's network and the "backstage" profile lifecycle.
+  # Hostname "mailhog" is not arbitrary: migrations/core/001_init.js seeds
+  # email_configs.smtp_host to `process.env.SMTP_HOST || 'mailhog'`, so a
+  # freshly-migrated backstage-db already points at this exact service name.
+  mailhog:
+    image: mailhog/mailhog:latest
+    profiles: ["backstage"]
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+
 volumes:
   pgdata:
   backstage_pgdata:

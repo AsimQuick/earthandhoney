@@ -307,7 +307,22 @@ related-story: US-14
          `UPSTREAM_SYNC.md` §4, and a submission-ready upstream report held
          in `.github/upstream-issues/` as `prepared, not submitted` with
          exactly what is needed to submit it named.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3, 17.5.1, 17.5.2, 17.5.3
+         AC-17.6 — stands up the capture-inbox this pinned fork already
+         expects (`email_configs.smtp_host` defaults to the literal
+         `mailhog` at first migration, per
+         `migrations/core/001_init.js:146`) as a `mailhog` service in this
+         project's own `docker-compose.yml`, fixes the resulting SMTP port
+         (465, leaked from the Next.js app's own `SMTP_PORT` env var
+         through the two services' shared `.env`, instead of MailHog's
+         1025) through the admin-facing `/api/admin/email/config` route
+         upstream already provides, and proves — live, twice — that a real
+         operational `gallery_created` email (queued by the ordinary
+         create/resend paths, not a synthetic test message) reaches
+         `pending` and then `sent` with a `sent_at` timestamp, that the
+         message is actually captured by MailHog, and that both states are
+         visible through the admin-facing `GET /api/admin/email/queue`
+         feed upstream already provides.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3, 17.5.1, 17.5.2, 17.5.3, 17.6
 ---
 -->
 
@@ -5446,6 +5461,331 @@ named explicitly. The AC-17.5.2 pinning suite is extended in place to 14
 tests covering the ordering claims, with the register entries and the
 source-level ordering claims pinned by a further 53 tests in this project's
 own suite.
+
+## AC-17.6 — an operational gallery email sent through Backstage's own email system to a capture inbox, its queued/sent state visible
+
+Unlike AC-17.5.x, this AC needed no fork patch. Upstream's email system —
+`email_configs`/`email_templates`/`email_queue` (Postgres tables), the
+transporter + queue processor in
+`vendor/picpeak/backend/src/services/emailProcessor.js`, and the
+admin-facing routes in `vendor/picpeak/backend/src/routes/adminEmail.js`
+(mounted at `/email` by `vendor/picpeak/backend/src/routes/admin.js:20`,
+itself mounted at `/api/admin` by
+`vendor/picpeak/backend/server.js:638`) — works exactly as delivered. What
+was missing was infrastructure this project's own `docker-compose.yml`
+never provisioned: a capture inbox for the SMTP host the pinned fork
+already expects, and a correct port for it.
+
+### The capture inbox the fork already expects
+
+`vendor/picpeak/backend/migrations/core/001_init.js:146-147` seeds the
+one-row `email_configs` table, on first migration, from environment
+variables with fallbacks:
+
+```js
+smtp_host: process.env.SMTP_HOST || 'mailhog',
+smtp_port: process.env.SMTP_PORT || 1025,
+```
+
+The hostname `mailhog` is not this project's choice — it is upstream's own
+default, and `vendor/picpeak/docker-compose.yml:101-109` ships a matching
+`mailhog/mailhog` service in the fork's own (unused, since this project
+runs Backstage through the root `docker-compose.yml` per US-16) compose
+file. Reading `backstage-db` directly confirmed the default had in fact
+been applied, seemingly during an earlier AC's first boot:
+
+```
+$ docker exec earthandhoney-backstage-db-1 psql -U backstage -d backstage \
+    -c "select id, smtp_host, smtp_port, smtp_secure, from_email, from_name from email_configs;"
+ id | smtp_host | smtp_port | smtp_secure |         from_email          |   from_name
+----+-----------+-----------+-------------+-----------------------------+---------------
+  1 | mailhog   |       465 | f           | noreply@photo-sharing.local | Photo Sharing
+```
+
+`smtp_host` is the expected `mailhog` default, but `smtp_port` is `465` —
+neither the `1025` fallback nor a value anyone configured for MailHog. The
+cause is environment leakage, not a fork defect: this project's `.env` is
+shared between the Next.js app and `backstage-backend` via the same
+`env_file:` (`docker-compose.yml`, `backstage-backend` service), and it
+sets `SMTP_PORT=465` for the Next.js app's own (unrelated) Gmail
+configuration — the two apps' env vars happen to collide on this one name,
+even though every other SMTP variable name differs (`SMTP_SERVER` vs.
+`SMTP_HOST`, `SMTP_USERNAME` vs. `SMTP_USER`). `process.env.SMTP_HOST` was
+never set (the Next.js app uses `SMTP_SERVER`), so that fallback did apply;
+`process.env.SMTP_PORT` was set, to the wrong app's value, so its fallback
+did not. No `mailhog` container had ever been started, so the two failures
+compounded — nothing was capturing mail regardless of port.
+
+### The infrastructure that had been missing
+
+1. **A `mailhog` service.** Added to this project's own
+   `docker-compose.yml` under the `backstage` profile (`docker-compose.yml`,
+   the `mailhog` service, image `mailhog/mailhog:latest`, ports
+   `${MAILHOG_SMTP_PORT:-1025}:1025` and `${MAILHOG_UI_PORT:-8025}:8025`),
+   mirroring `vendor/picpeak/docker-compose.yml:101-109` rather than running
+   it standalone, so it shares this stack's network (and so the
+   `backstage-backend` container's built-in DNS resolves the hostname
+   `mailhog` to it) and the same profile lifecycle as the rest of Backstage.
+   No vendored file was touched — Fork Discipline's "fix it in our own
+   compose, not upstream's" applies here exactly as it did for the
+   `backend` nginx alias in AC-16.3.
+2. **The correct port**, set the way an operator actually would — through
+   upstream's own admin-facing config route, not a database write:
+
+   ```
+   $ curl -s -c cookies.txt -X POST http://localhost:3101/api/auth/admin/login \
+       -H 'Content-Type: application/json' \
+       -d '{"username":"admin","password":"change-me-in-production"}'
+   HTTP/1.1 200 OK
+   Set-Cookie: admin_token=eyJhbGciOiJIUzI1NiIs...; HttpOnly; SameSite=Lax
+   {"user":{"id":1,"username":"admin", ...}}
+
+   $ curl -s -b cookies.txt -X POST http://localhost:3101/api/admin/email/config \
+       -H 'Content-Type: application/json' \
+       -d '{"smtp_host":"mailhog","smtp_port":1025,"smtp_secure":false,
+            "smtp_user":"","smtp_pass":"","from_email":"noreply@photo-sharing.local",
+            "from_name":"Photo Sharing","tls_reject_unauthorized":true}'
+   {"message":"Email configuration updated successfully"}
+   ```
+
+   `POST /api/admin/email/config` (`adminEmail.js:40`) refreshes the cached
+   transporter on save (`adminEmail.js:104-105`, calling
+   `initializeTransporter(true)` in `emailProcessor.js:22`), so the fix took
+   effect without a container restart. `POST /api/admin/email/test`
+   (`adminEmail.js:122`) confirmed the corrected connection immediately
+   afterward: `{"message":"Test email sent successfully"}`, and that exact
+   message was independently found sitting in MailHog's own inbox (below).
+
+Login route: `router.post('/admin/login', ...)`,
+`vendor/picpeak/backend/src/routes/auth.js:36`, mounted at `/api/auth` by
+`vendor/picpeak/backend/server.js:631`.
+
+### An operational gallery email, not a synthetic one
+
+The email proven here is `gallery_created` — queued by the ordinary
+gallery-creation and resend paths, the same template the AC-17.1.3.1
+Gallery (`events.id = 3`, reused again per this story's own convention —
+no new Gallery was created for this AC) had already queued for its
+recipient `ac17-1-1-client@example.com` back when it was first created,
+before any capture inbox existed for it to reach. Reading `backstage-db`
+before the fix confirmed four such rows sitting `pending` across the
+Gallery-verification events this story's earlier ACs created (`events.id`
+3, 7, 8, 9), each queued by the direct `email_queue` insert in the
+create-event route (`vendor/picpeak/backend/src/routes/adminEvents.js:790,
+812-820`, gated on `if (customerEmail && !isDraft)`) — none of them
+synthetic test messages, and none of them created for this AC.
+
+### Queued state, visible before the fix
+
+```
+$ curl -s -b cookies.txt \
+    'http://localhost:3101/api/admin/email/queue?emailType=gallery_created'
+{"items":[
+  {"id":18,"recipientEmail":"ac17-1-1-client@example.com","emailType":"gallery_created",
+   "status":"pending","sentAt":null,"eventId":9,"eventName":"AC-17.5.1 Verification Gallery"},
+  {"id":17, ..."status":"pending","sentAt":null,"eventId":8,"eventName":"AC-17.5 Download Verification Gallery"},
+  {"id":10, ..."status":"pending","sentAt":null,"eventId":7,"eventName":"AC-17.4 Expiry Verification Gallery"},
+  {"id":1,  ..."status":"pending","sentAt":null,"eventId":3,"eventName":"AC-17.1.3.1 Verification Gallery"}
+],"pagination":{"total":4,"page":1,"pageSize":25,"totalPages":1}}
+```
+
+This is `GET /api/admin/email/queue` (`adminEmail.js:286`) — the
+"Read-only 'Sent emails' feed" upstream already built for exactly this
+visibility requirement, joined to `events` so each row names its gallery.
+
+### Sent state, visible after the fix, proven live and read straight from Postgres
+
+With the corrected config in place, the four pending `gallery_created` rows
+were delivered by upstream's **ordinary background queue processor**, with no
+admin intervention at all — the plainest possible operational path.
+`startEmailQueueProcessor` (`emailProcessor.js:1029`, started at
+`vendor/picpeak/backend/server.js:838`) runs `processEmailQueue` immediately
+and then every 60 seconds; because `POST /config` refreshes the *cached*
+transporter in place (`adminEmail.js:104-105`), the very next tick picked the
+rows up without a container restart. Upstream's own activity log pins the
+ordering:
+
+```
+$ docker exec earthandhoney-backstage-db-1 psql -U backstage -d backstage \
+    -c "select id, activity_type, metadata, created_at from activity_logs where activity_type like 'email%' order by created_at;"
+ id |    activity_type     |               metadata              |          created_at
+----+----------------------+-------------------------------------+-------------------------------
+ 43 | email_config_updated | {"smtp_host":"mailhog", ...}        | 2026-08-02 00:08:01.35126+00
+ 44 | email_queue_flushed  | {"processed":6,"sent":0,"failed":6} | 2026-08-02 00:08:05.135523+00
+ 45 | email_resent         | {"email_type":"gallery_created",...}| 2026-08-02 00:09:14.224434+00
+ 46 | email_queue_flushed  | {"processed":7,"sent":1,"failed":6} | 2026-08-02 00:09:19.561119+00
+```
+
+The config fix landed at `00:08:01.351`, and all four `gallery_created` rows
+carry a `sent_at` between `00:08:03.032` and `00:08:03.264` — two seconds
+after the fix, and two seconds *before* any manual flush was run.
+
+The "flush now" escape hatch upstream also provides (`POST /flush-queue`,
+`adminEmail.js:264`) was then exercised anyway, at `00:08:05`:
+
+```
+$ curl -s -b cookies.txt -X POST http://localhost:3101/api/admin/email/flush-queue
+{"message":"Email queue flushed","processed":6,"sent":0,"failed":6}
+```
+
+Its `"sent":0` is **not** a `gallery_created` failure, and this is worth
+stating plainly because the raw number invites the opposite reading: by
+`00:08:05` there were no pending `gallery_created` rows left for the flush to
+send — the background processor had already delivered all four. Every one of
+the six rows the flush did process is a `gallery_expired`/`archive_complete`
+row whose template turned out not to exist in this database's
+`email_templates` table (`error_message`: `"Email template 'gallery_expired'
+not found"` / `"... 'archive_complete' not found"`) — a genuine gap, noted
+here for honesty per AC-17.9 but out of this AC's scope: it blocks two
+*other* email types, not `gallery_created`, and needs no fork patch to
+observe. Read straight out of `backstage-db`, not trusted from the HTTP
+response alone:
+
+```
+$ docker exec earthandhoney-backstage-db-1 psql -U backstage -d backstage \
+    -c "select id, email_type, status, retry_count, error_message from email_queue order by id;"
+ id |    email_type    | status  | retry_count |                error_message
+----+------------------+---------+-------------+---------------------------------------------
+  1 | gallery_created  | sent    |           0 |
+ 10 | gallery_created  | sent    |           0 |
+ 11 | gallery_expired  | pending |           2 | Email template 'gallery_expired' not found
+ 12 | gallery_expired  | pending |           2 | Email template 'gallery_expired' not found
+ 13 | archive_complete | pending |           2 | Email template 'archive_complete' not found
+ 14 | gallery_expired  | pending |           2 | Email template 'gallery_expired' not found
+ 15 | gallery_expired  | pending |           2 | Email template 'gallery_expired' not found
+ 16 | archive_complete | pending |           2 | Email template 'archive_complete' not found
+ 17 | gallery_created  | sent    |           0 |
+ 18 | gallery_created  | sent    |           0 |
+(10 rows)
+```
+
+Those six settle rather than retrying forever: automatic runs filter on
+`retry_count < 3` (`emailProcessor.js:811`), while a manual flush
+deliberately bypasses both that cap and the schedule
+(`emailProcessor.js:815-818`, `ignoreSchedule: true`) so an admin can force a
+retry right after fixing SMTP. That is why the six sit at `retry_count = 4`
+today — two automatic attempts plus the two manual flushes below — and stop
+climbing, while no automatic run ever touches them again.
+
+The same admin-facing feed used above now shows the queued-to-sent
+transition for the canonical row, `id = 1` (event 3, the AC-17.1.3.1
+Gallery):
+
+```
+$ curl -s -b cookies.txt \
+    'http://localhost:3101/api/admin/email/queue?emailType=gallery_created'
+{"items":[
+  ...,
+  {"id":1,"recipientEmail":"ac17-1-1-client@example.com","emailType":"gallery_created",
+   "status":"sent","createdAt":"2026-07-31T20:57:28.059Z",
+   "sentAt":"2026-08-02T00:08:03.032Z","errorMessage":null,"retryCount":0,
+   "eventId":3,"eventName":"AC-17.1.3.1 Verification Gallery"}
+]}
+```
+
+matching the direct Postgres read of the same row:
+
+```
+$ docker exec earthandhoney-backstage-db-1 psql -U backstage -d backstage \
+    -c "select id, event_id, recipient_email, email_type, status, created_at, sent_at from email_queue where id=1;"
+ id | event_id |       recipient_email       |   email_type    | status |         created_at         |          sent_at
+----+----------+-----------------------------+-----------------+--------+----------------------------+----------------------------
+  1 |        3 | ac17-1-1-client@example.com | gallery_created | sent   | 2026-07-31 20:57:28.059+00 | 2026-08-02 00:08:03.032+00
+```
+
+### Independently confirmed captured by MailHog
+
+Not inferred from the `sent` status alone — MailHog's own message store was
+read directly:
+
+```
+$ curl -s http://localhost:8025/api/v2/messages
+{"total":5, "items":[
+  {"Content":{"Headers":{"To":["proof-capture@example.com"],
+    "Subject":["Test Email - Photo Sharing Platform"]}}},
+  {"Content":{"Headers":{"To":["ac17-1-1-client@example.com"],
+    "Subject":["Your Photo Gallery is Ready!"]},
+   "Body":"...Your photo gallery \"AC-17.1.3.1 Verification Gallery\" has been created...
+    <li>Gallery Link: /gallery/wedding-ac-17-1-3-1-verification-gallery-2026-...</li>..."},
+   "From":{"Mailbox":"noreply","Domain":"photo-sharing.local"}},
+  ... three more "Your Photo Gallery is Ready!" messages, one per remaining
+      `gallery_created` row (events 7, 8, 9) ...
+]}
+```
+
+Five messages: the connection-test email from the config fix, plus the
+four `gallery_created` rows just moved to `sent`. The message body for the
+event-3 row names that exact Gallery and its exact slug
+(`wedding-ac-17-1-3-1-verification-gallery-2026-09-01`), so this is not a
+coincidental match on subject line alone — it is the same email the
+`sent`, `id = 1` queue row records having sent.
+
+### Shown to reproduce, not to be a one-off
+
+The whole cycle was re-run against a fresh, independently-queued email
+rather than relying on the four rows that happened to be sitting in the
+queue already:
+
+```
+$ curl -s -b cookies.txt -X POST http://localhost:3101/api/admin/events/3/resend-email \
+    -H 'Content-Type: application/json' -d '{}'
+{"success":true,"message":"Creation email has been queued for sending"}
+```
+
+This is `POST /:id/resend-email`
+(`vendor/picpeak/backend/src/routes/adminEvents.js:1658`), which calls
+`queueEmail(id, recipientEmail, 'gallery_created', ...)` at
+`adminEvents.js:1702` — the shared `queueEmail` helper
+(`emailProcessor.js:959`), a second, independent operational trigger for
+the same email type. Immediately after, a new `pending` row (`id = 19`)
+was visible in Postgres; a second flush moved it to `sent`, and MailHog's
+message count rose from five to six:
+
+```
+$ docker exec earthandhoney-backstage-db-1 psql -U backstage -d backstage \
+    -c "select id, event_id, email_type, status, sent_at from email_queue where id=19;"
+ id | event_id |   email_type    | status |          sent_at
+----+----------+-----------------+--------+----------------------------
+ 19 |        3 | gallery_created | sent   | 2026-08-02 00:09:19.553+00
+
+$ curl -s -b cookies.txt -X POST http://localhost:3101/api/admin/email/flush-queue
+{"message":"Email queue flushed","processed":7,"sent":1,"failed":6}
+
+$ curl -s http://localhost:8025/api/v2/messages | python3 -c "import json,sys; print(json.load(sys.stdin)['total'])"
+6
+```
+
+Here the flush itself did the sending: `processed:7` is the six
+template-missing rows plus row `19`, and `sent:1` is row `19` — its
+`sent_at` of `00:09:19.553` lands 8ms before the flush's own activity-log
+entry at `00:09:19.561`. Unlike the first four rows, this one did not wait
+for a background tick.
+
+The `failed:6` on this second flush is the same six
+`gallery_expired`/`archive_complete` rows retried (their `retry_count`
+climbing to `4`) plus nothing new — no `gallery_created` row ever failed, on
+either flush or on any background run.
+
+### Verdict
+
+AC-17.6 is satisfied. At least one operational gallery email —
+`gallery_created`, queued by upstream's own create/resend paths for the
+real, reused AC-17.1.3.1 Gallery, not a synthetic message minted for this
+AC — was sent through Backstage's own email system (`email_configs` +
+`emailProcessor.js` + `email_queue`) to a capture inbox (MailHog, added to
+this project's `docker-compose.yml` at the exact hostname the pinned
+fork's own migration already expected), and its queued state and then its
+sent state (with `sent_at` populated) were both visible through upstream's
+own admin-facing `GET /api/admin/email/queue` feed — cross-checked against
+a direct Postgres read and against MailHog's own captured message store
+each time. The whole cycle reproduced on an independently-queued second
+email. No vendored file was modified; only this project's own
+`docker-compose.yml` (a new `mailhog` service under the `backstage`
+profile) and the running instance's own admin-configurable email settings
+changed. The `gallery_expired`/`archive_complete` template gap surfaced as
+a side effect is recorded here for honesty per AC-17.9 and left for that
+AC's own write-up rather than patched here, since it does not bear on this
+AC's own scope.
 
 ## Recommendation and open questions (AC-14.6)
 
