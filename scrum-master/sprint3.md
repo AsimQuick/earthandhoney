@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/7 stories | 61/70 ACs
-**Last Updated:** 2026-08-02T06:30:53+00:00
+**Last Updated:** 2026-08-02T06:41:55+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -854,6 +854,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-20.8:** `.env.example` is updated with the placeholder Stripe variable names in the convention taken from the reference project, each with a comment explaining what it is and which mode it must match.
   - Dev: implemented
 - [ ] **AC-20.9:** The report records the boundary of what "port faithfully" does and does not cover: the reference project is a one-shot checkout flow containing no saved payment method, no off-session charge, and no retry or dunning logic, so none of that is inherited. It states that V1 ships a payment schedule whose installments are each paid manually against a real ledger invoice, that automatic recurring card charges are deferred to V1.1 and must then be built on that same schedule, and that a subscription product must never be used because it would place an authoritative billing schedule outside the ledger.
+  - Dev: implemented
 
 **Dev Team Status:** not-started
 **Dev Team Notes:**
@@ -917,6 +918,13 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
     Variable names and placeholder values (`change-me-in-production`) were left as-is — they were already present (added in US-16) and already match the flat, no-suffix convention `STRIPE_PORT_REPORT.md` recorded in AC-20.2/20.4. Only the per-variable comments were added/changed.
   
   - **New test**: `src/__tests__/us20-ac20.8-env-example-stripe-vars.test.ts` — 15 test cases verifying: all five vars present with non-empty placeholders, no `_TEST`/`_LIVE`/`_SANDBOX` suffix, exactly one secret/publishable key, each var has its own comment mentioning "mode," the secret/publishable key comment …
+  AC-20.9 implemented (local checks green): Committed as `fc30567`.
+  
+  **Summary:**
+  - `STRIPE_PORT_REPORT.md` — added sections 16 ("The boundary of 'port faithfully' (AC-20.9)") and 17 ("Method (AC-20.9)"), plus updated front-matter (`related-ac` now includes 20.8, 20.9). Section 16 documents, with grep evidence against the reference project's tracked source, that no saved payment method, off-session charge, or retry/dunning logic exists to inherit; states V1 ships a manually-paid installment schedule against real ledger invoices; states V1.1 must build automatic recurring charges on that same schedule; and states why a Stripe `Subscription` product must never be used (it would place an authoritative billing schedule outside the ledger).
+  - `src/__tests__/us20-ac20.9-stripe-port-report-faithful-port-boundary.test.ts` — new test file, 9 tests, all asserting the required content is present in the report (section headers, boundary claims, V1/V1.1 schedule language, subscription prohibition, metadata header).
+  
+  Verified: 9/9 new tests pass; full suite 102 suites / 2570 tests pass. No dependency changes, so no `package-lock.json` update needed. No changes made under `scrum-master/`.
 
 **Tester Status:** approved
 **Tester Notes:**
