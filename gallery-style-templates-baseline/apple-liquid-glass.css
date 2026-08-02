@@ -1,0 +1,325 @@
+/*
+ * PicPeak Custom CSS Template: Apple Liquid Glass
+ * Authentic iOS 26 / macOS Tahoe Liquid Glass Design
+ */
+
+/* ===== Apple System Fonts ===== */
+.gallery-page,
+.gallery-page *,
+.gallery-sidebar,
+.gallery-sidebar * {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+               "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== CSS Variables ===== */
+:root {
+  --glass-blur: 20px;
+  --glass-blur-heavy: 40px;
+  --glass-saturation: 180%;
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-bg-medium: rgba(255, 255, 255, 0.18);
+  --glass-bg-solid: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-border-light: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  --glass-inset: inset 0 1px 1px rgba(255, 255, 255, 0.4),
+                 inset 0 -1px 1px rgba(0, 0, 0, 0.05);
+  --gallery-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --gallery-text: #1a1a2e;
+  --gallery-text-light: #ffffff;
+  --gallery-accent: #667eea;
+  --gallery-radius: 20px;
+  --gallery-radius-sm: 12px;
+}
+
+/* ===== Page Background ===== */
+.gallery-page {
+  background: var(--gallery-gradient) !important;
+  background-attachment: fixed !important;
+  min-height: 100vh;
+}
+
+.gallery-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 600px 400px at 15% 85%, rgba(255, 255, 255, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse 500px 350px at 85% 15%, rgba(255, 255, 255, 0.15) 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== TOP BAR / HEADER - Liquid Glass ===== */
+.gallery-page .gallery-header,
+.gallery-page header {
+  background: var(--glass-bg-medium) !important;
+  backdrop-filter: blur(var(--glass-blur-heavy)) saturate(var(--glass-saturation)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy)) saturate(var(--glass-saturation)) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-shadow), var(--glass-inset) !important;
+}
+
+.gallery-page .gallery-header > div {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* ===== SIDEBAR - Liquid Glass ===== */
+.gallery-sidebar {
+  background: var(--glass-bg-medium) !important;
+  backdrop-filter: blur(var(--glass-blur-heavy)) saturate(var(--glass-saturation)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy)) saturate(var(--glass-saturation)) !important;
+  border-right: 1px solid var(--glass-border) !important;
+  box-shadow: 4px 0 32px rgba(31, 38, 135, 0.1), var(--glass-inset) !important;
+}
+
+.gallery-sidebar h2,
+.gallery-sidebar h3 {
+  color: var(--gallery-text) !important;
+  font-weight: 600 !important;
+}
+
+/* ===== HERO LAYOUT - Transform to Glass Title Box ===== */
+/* Target the hero wrapper */
+.gallery-page .relative.-mt-6 {
+  margin-top: 0 !important;
+}
+
+/* Target the hero section (first child with h-[60vh]) */
+.gallery-page .relative.-mt-6 > .relative:first-child {
+  height: auto !important;
+  min-height: auto !important;
+  margin: 0 !important;
+  padding: 2rem !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  background: transparent !important;
+}
+
+/* Hide the hero background image */
+.gallery-page .relative.-mt-6 > .relative:first-child > img,
+.gallery-page .relative.-mt-6 > .relative:first-child > canvas {
+  display: none !important;
+}
+
+/* Hide the dark overlay */
+.gallery-page .relative.-mt-6 > .relative:first-child > .absolute.inset-0.bg-black {
+  display: none !important;
+}
+
+/* Style the content area as glass title box */
+.gallery-page .relative.-mt-6 > .relative:first-child > .absolute.inset-0.flex {
+  position: relative !important;
+  inset: auto !important;
+  background: var(--glass-bg-medium) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
+  border: 1px solid var(--glass-border-light) !important;
+  border-radius: var(--gallery-radius) !important;
+  padding: 2rem 3rem !important;
+  box-shadow: var(--glass-shadow), var(--glass-inset) !important;
+  max-width: 600px !important;
+  width: auto !important;
+}
+
+/* Hide logo in glass title box */
+.gallery-page .relative.-mt-6 > .relative:first-child .mb-6 {
+  display: none !important;
+}
+
+/* Style title text */
+.gallery-page .relative.-mt-6 > .relative:first-child h1 {
+  color: var(--gallery-text) !important;
+  text-shadow: none !important;
+  font-weight: 700 !important;
+  font-size: 2.25rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+/* Style date text */
+.gallery-page .relative.-mt-6 > .relative:first-child .text-white\/90 {
+  color: var(--gallery-text) !important;
+  opacity: 0.8;
+}
+
+/* Hide scroll down button */
+.gallery-page .relative.-mt-6 > .relative:first-child > .absolute.bottom-8,
+.gallery-page .relative.-mt-6 > .relative:first-child > button.absolute {
+  display: none !important;
+}
+
+/* ===== PHOTO GRID ===== */
+.gallery-page .photo-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  gap: 1.25rem !important;
+  padding: 1rem !important;
+}
+
+/* ===== PHOTO CARDS - Liquid Glass ===== */
+.gallery-page .photo-card {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--gallery-radius) !important;
+  overflow: hidden !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), var(--glass-inset) !important;
+}
+
+.gallery-page .photo-card:hover {
+  transform: translateY(-6px) scale(1.02) !important;
+  box-shadow: 0 20px 40px rgba(102, 126, 234, 0.25),
+              0 8px 16px rgba(0, 0, 0, 0.1),
+              var(--glass-inset) !important;
+  border-color: var(--glass-border-light) !important;
+}
+
+.gallery-page .photo-card img {
+  transition: transform 0.4s ease !important;
+}
+
+.gallery-page .photo-card:hover img {
+  transform: scale(1.05) !important;
+}
+
+/* ===== BUTTONS - Glass Pill Style ===== */
+.gallery-page button,
+.gallery-page [role="button"],
+.gallery-sidebar button {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(12px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(150%) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 9999px !important;
+  color: var(--gallery-text) !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+}
+
+.gallery-page button:hover,
+.gallery-page [role="button"]:hover,
+.gallery-sidebar button:hover {
+  background: var(--glass-bg-medium) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2) !important;
+}
+
+.gallery-page button[class*="bg-primary"],
+.gallery-page .gallery-btn-download {
+  background: linear-gradient(135deg, var(--gallery-accent) 0%, #764ba2 100%) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* ===== INPUT FIELDS ===== */
+.gallery-page input,
+.gallery-page select,
+.gallery-sidebar input,
+.gallery-sidebar select {
+  background: rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--gallery-radius-sm) !important;
+  color: var(--gallery-text) !important;
+}
+
+/* Input placeholder text - make it visible */
+.gallery-page input::placeholder,
+.gallery-sidebar input::placeholder {
+  color: rgba(26, 26, 46, 0.6) !important;
+  opacity: 1 !important;
+}
+
+/* Input focus state */
+.gallery-page input:focus,
+.gallery-sidebar input:focus {
+  background: rgba(255, 255, 255, 0.35) !important;
+  border-color: var(--glass-border-light) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+}
+
+/* ===== FOOTER ===== */
+.gallery-page .gallery-footer,
+.gallery-page footer {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) !important;
+  border-top: 1px solid var(--glass-border) !important;
+}
+
+/* ===== LIGHTBOX ===== */
+.gallery-page [class*="fixed"][class*="inset-0"][class*="z-50"] {
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(30px) !important;
+  -webkit-backdrop-filter: blur(30px) !important;
+}
+
+/* ===== SCROLLBAR ===== */
+.gallery-page ::-webkit-scrollbar,
+.gallery-sidebar ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.gallery-page ::-webkit-scrollbar-track,
+.gallery-sidebar ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.gallery-page ::-webkit-scrollbar-thumb,
+.gallery-sidebar ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  :root {
+    --gallery-radius: 16px;
+    --glass-blur: 16px;
+  }
+
+  .gallery-page .relative.-mt-6 > .relative:first-child > .absolute.inset-0.flex {
+    padding: 1.5rem 2rem !important;
+    max-width: 90% !important;
+  }
+
+  .gallery-page .relative.-mt-6 > .relative:first-child h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .gallery-page .photo-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+@media (prefers-reduced-motion: reduce) {
+  .gallery-page .photo-card,
+  .gallery-page button {
+    transition: none !important;
+  }
+
+  .gallery-page .photo-card:hover {
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .gallery-page .photo-card,
+  .gallery-page button,
+  .gallery-sidebar {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+  }
+}
