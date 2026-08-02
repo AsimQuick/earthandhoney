@@ -4,13 +4,14 @@ file: MEDIA_REUSE_ADR.md
 project: earthandhoney
 purpose: AC-19.1 — states, on evidence from the running fork, how tightly an
          image is currently bound to a single gallery, and whether one stored
-         original can already be referenced by more than one gallery. This
-         document will grow to record the rest of US-19's media-reuse
-         decision (AC-19.2/19.3) in later commits; this entry answers only
-         AC-19.1's evidence question.
+         original can already be referenced by more than one gallery.
+         AC-19.2 — building on that evidence, chooses exactly one path
+         forward for media reuse and records the reasons, the risks, and
+         what would have to be true to revisit the decision. This document
+         will grow further to record AC-19.3's guarantees in a later commit.
 created-by: dev-team
 related-story: US-19
-related-ac: 19.1
+related-ac: 19.1, 19.2
 ---
 -->
 
@@ -144,3 +145,131 @@ running fork, enforced independently at three layers that all agree:
 gallery. Reusing an image across two galleries today would require
 uploading and storing the bytes a second time as a wholly separate `photos`
 row and a wholly separate file, under the second gallery's own event.
+
+## AC-19.2 — Decision: the path forward
+
+### Candidate paths considered
+
+1. **Keep the upstream binding for V1, with a safe promotion workflow.**
+   Leave `photos.event_id` exactly as AC-19.1 found it — an exclusive,
+   required foreign key with no join table — and add a "promote to
+   portfolio" action that copies a client photo's bytes into a second,
+   photographer-owned event that acts as the public portfolio.
+2. **Introduce a reusable media-asset and gallery-item layer through new
+   migrations.** Add fork-owned tables — a `media_assets` table that owns
+   one row per stored original (independent of any single event) and a
+   `gallery_items` join table that maps a `media_asset` into one or more
+   events with its own per-event sort order, caption, and visibility — as
+   new, additive migrations on top of the vendored upstream schema.
+3. **An equivalent low-risk model** not covered by (1) or (2) — e.g.
+   hard-linking files at the storage layer while keeping `photos` rows
+   separate, or a database view.
+
+### Decision: option 2 — a reusable `media_assets` / `gallery_items` layer, added as new fork-owned migrations
+
+This ADR commits to **option 2**. `photos`, `photo_categories`, and every
+existing upstream route and service keep working exactly as AC-19.1 found
+them — nothing already shipped is touched. The new layer is additive:
+`media_assets` records one row per stored original, and `gallery_items`
+records that a given `media_asset` appears in a given event, with its own
+ordering and metadata. A client gallery's photos get a `media_asset` row at
+upload time; promoting one photo into the public portfolio means inserting
+one new `gallery_items` row that points the existing `media_asset` at the
+portfolio event — never re-uploading or re-storing the bytes, and never
+touching the client gallery's own event or its other photos.
+
+### Reasons
+
+- **Option 1 cannot satisfy the no-duplicate-original guarantee this
+  decision is accountable to.** AC-19.1 already established, at three
+  independent layers (schema FK, the `updatePhoto` guard, and the
+  event-slug-namespaced storage path with no content-addressing or dedup),
+  that there is no supported route to attach an existing `photos` row to a
+  second event. A "safe promotion workflow" built on top of that binding
+  therefore has only one implementation available: copy the bytes into the
+  target event and create a second `photos` row. That is a real second copy
+  of the original on disk/in R2 and a second row to keep in sync by hand —
+  exactly the outcome AC-19.3 requires this decision to avoid. Working
+  around the binding instead (e.g. patching `updatePhoto` to allow
+  `event_id` reassignment, or manually reparenting a photo's storage key)
+  would mean forking upstream's own invariant, which contradicts Fork
+  Discipline and adds a new conflict-prone patch to `UPSTREAM_SYNC.md` §2
+  for no benefit over option 2.
+- **Option 2 is additive, not a modification of anything already shipped.**
+  It only adds new tables via new migration files with higher numbers than
+  anything vendored — it does not alter `photos`, `photo_categories`, or any
+  already-shipped upstream migration. `UPSTREAM_SYNC.md` §3 already
+  anticipates and names this exact situation ("the sprint that introduces
+  the first extension migration") as the fork's expected, supported way to
+  extend the schema, so this is the intended escape hatch, not a novel risk.
+- **Option 2 directly enables the rest of AC-19.3's requirements with no
+  further structural change:** per-gallery ordering/metadata overrides live
+  on `gallery_items`, not on the shared `media_asset`, so two events can
+  show the same image with different captions or positions; a promotion is
+  exactly one new `gallery_items` row scoped to one `media_asset` and one
+  target event, so it can never expose any other row in the source private
+  gallery — there is no bulk or gallery-level share, only a single,
+  deliberate, item-level join.
+- **Option 3 (hard links / DB views) was rejected** because Cloudflare R2 is
+  an S3-compatible object store, not a filesystem — object storage has no
+  hard-link primitive, so that variant of option 3 is not implementable
+  as stated. A read-only DB view over `photos` cannot express a *new*
+  event-to-photo association at all (a view only reshapes existing rows),
+  so it cannot support promotion into a different event's gallery in the
+  first place. No variant of option 3 was found that both avoids storing
+  the original twice and does not simply re-derive option 2's join table
+  under a different name.
+
+### Risks
+
+- **Two sources of truth during the transition.** Until every upload path
+  writes a `media_asset` row alongside its `photos` row, some photos exist
+  only in the old exclusive model. Risk: a photo uploaded before the new
+  layer exists cannot be promoted until it is backfilled. Mitigation: the
+  migration that introduces `media_assets` must backfill one row per
+  existing `photos` row before any promotion feature ships.
+- **New schema surface increases future sync risk.** `UPSTREAM_SYNC.md` §2
+  already flags "database migration files" as the highest-risk conflict
+  category; adding fork-owned tables grows that surface. Mitigation: this
+  decision must be logged as a `deviation` entry in `FORK_CHANGELOG.md` when
+  the migration lands, and the new migration file added to
+  `UPSTREAM_SYNC.md` §2 by name, exactly as that document's own process
+  requires.
+- **New integration work the simpler option 1 would not need.** The
+  Frontstage/Backstage boundary (`PAYLOAD_PICPEAK_API_CONTRACT.md`) and any
+  admin UI for promotion need new endpoints to read and write
+  `gallery_items`; option 1 could have reused the existing upload endpoint
+  with no new API surface. This is accepted as the cost of meeting
+  AC-19.3's guarantees, not treated as free.
+- **Migration correctness risk is on this fork, not upstream.** Because
+  `media_assets`/`gallery_items` are fork-owned, any bug in them (e.g. an
+  orphaned `gallery_items` row after a `media_asset` delete) is this
+  project's to detect and fix; upstream will never patch it. Mitigation:
+  the migration must declare a foreign key with `onDelete('CASCADE')` from
+  `gallery_items.media_asset_id` to `media_assets.id`, mirroring the
+  cascade discipline AC-19.1 found upstream already uses for
+  `photos.event_id`.
+
+### What would have to be true to revisit this decision
+
+- **Upstream ships a native cross-event media-reuse mechanism** that this
+  fork later pulls in through `PICPEAK_UPSTREAM.md` §3's update-evaluation
+  process. If a future pinned commit gives `photos` its own many-to-many
+  join to events, the fork-owned `media_assets`/`gallery_items` layer
+  becomes redundant and should be retired in favour of the upstream-native
+  one, per `UPSTREAM_SYNC.md` §4's drop-rather-than-merge pattern for
+  patches upstream has since obsoleted.
+- **Promotion turns out to be needed rarely or never.** This decision
+  accepts real migration and integration cost specifically to satisfy
+  AC-19.3's no-duplicate-original guarantee. If actual usage shows the
+  photographer promotes only a handful of images a year, the storage
+  savings option 2 buys may not be worth the added schema and sync-risk
+  surface, and a simple, manually-tracked copy (option 1) should be
+  reconsidered.
+- **The no-duplicate-original guarantee is relaxed or dropped from scope.**
+  This decision is chosen *because* AC-19.3 requires no original to be
+  stored twice. If that requirement is ever removed or weakened (e.g.
+  because storage cost is judged negligible for this project's expected
+  photo volume), option 1's simpler copy-on-promote model becomes viable
+  again and should be re-evaluated against option 2 on cost/complexity
+  alone.
