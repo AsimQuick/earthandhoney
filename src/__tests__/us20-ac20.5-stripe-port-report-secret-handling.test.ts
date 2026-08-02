@@ -21,6 +21,20 @@ import { execFileSync } from 'child_process'
 const root = process.cwd()
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8')
 
+// The `git` binary itself is not present in the `web` Docker container (the
+// Dockerfile is `node:20-alpine` with no `git` package installed), so a
+// check that shells out to it can only run where `git` is actually
+// reachable — otherwise it fails not because `.env` is tracked, but because
+// the environment can't run `git` at all. Mirrors the itIfReachable gate
+// used for the reference-project path checks in AC-20.1.
+let gitAvailable = true
+try {
+  execFileSync('git', ['--version'])
+} catch {
+  gitAvailable = false
+}
+const itIfGitAvailable = gitAvailable ? it : it.skip
+
 describe('AC-20.5: Stripe port report — secret-handling shape', () => {
   let report: string
 
@@ -101,7 +115,7 @@ describe('AC-20.5: Stripe port report — secret-handling shape', () => {
       expect(gitignore).toMatch(/^\.env$/m)
     })
 
-    it('this project\'s .env is not itself tracked/committed', () => {
+    itIfGitAvailable('this project\'s .env is not itself tracked/committed', () => {
       const tracked = execFileSync('git', ['ls-files', '.env'], {
         cwd: root,
         encoding: 'utf8',
