@@ -7,9 +7,13 @@ purpose: AC-18.2 — specify the boundary between the Frontstage application
          call is for, how it authenticates, what identifiers cross the
          boundary, what happens on failure or timeout, and what the
          Frontstage is allowed to cache and for how long.
+         AC-18.3 — state that the Frontstage never reads the Backstage
+         database directly, that no cross-database join exists anywhere
+         in application code, and that cross-system relationships are
+         expressed as stored external identifiers.
 created-by: dev-team
 related-story: US-18
-related-ac: 18.2
+related-ac: 18.2, 18.3
 ---
 -->
 
@@ -26,15 +30,15 @@ once built — the Project Room); Backstage is the vendored PicPeak fork
 authoritative system for gallery & media data and for storage.
 
 This document is being built across `US-18`'s ACs, each adding one
-required piece; this AC (18.2) is the general **call catalog** — every
-call this AC's evidence found crossing the boundary today, with its
+required piece; `AC-18.2` added the general **call catalog** below —
+every call that AC's evidence found crossing the boundary, with its
 direction, purpose, auth, identifiers, failure/timeout behavior, and
-Frontstage cache allowance. It deliberately does **not** yet state: the
-no-cross-database-join rule (`AC-18.3`), the three named flows a future
-sprint depends on (`AC-18.4`), which Backstage surfaces get disabled
-(`AC-18.5`), or the user-facing terminology mapping (`AC-18.6`) — those
-are separate ACs of this same story and are recorded when their own AC
-runs, not pre-empted here.
+Frontstage cache allowance. `AC-18.3` (below, "No cross-database access")
+adds the no-cross-database-join rule. It deliberately does **not** yet
+state: the three named flows a future sprint depends on (`AC-18.4`),
+which Backstage surfaces get disabled (`AC-18.5`), or the user-facing
+terminology mapping (`AC-18.6`) — those are separate ACs of this same
+story and are recorded when their own AC runs, not pre-empted here.
 
 All evidence below is either a direct read of the pinned fork's source
 (`vendor/picpeak/backend/...`) or a live-verified finding already recorded
@@ -89,3 +93,66 @@ calling mechanism that does not exist in the pinned fork. Closing it
 (extending the `v1` API's scope, or another mechanism) is a decision for
 whichever AC or follow-on story implements the inquiry-conversion flow —
 this document does not invent one on that AC's behalf.
+
+## No cross-database access
+
+The Frontstage **never reads the Backstage database directly**, and **no cross-database join exists anywhere in application code**. Every row in
+the call catalog above crosses the boundary over HTTP — a REST call
+(rows 1–4) or a webhook delivery (row 5) — never a database connection,
+and every relationship between a Frontstage record and a Backstage
+record is expressed as a **stored external identifier** (a Backstage
+`slug`, event/gallery `id`, or `share_token`, captured in a Frontstage
+field or cache entry — see `SYSTEM_OWNERSHIP.md`'s "display only"
+language), not a foreign key a query could join across.
+
+This is not merely a stated intention; it is a structural fact of this
+project's infrastructure, verifiable independently of application code:
+
+- **Two separate Postgres instances, not two databases on one server.**
+  `docker-compose.yml` runs Frontstage's Payload backend against the
+  `db` service and Backstage's PicPeak backend against a distinct
+  `backstage-db` service, each with its own container, its own named
+  volume (`pgdata` vs. `backstage_pgdata`), and its own credentials
+  (`POSTGRES_*` vs. `BACKSTAGE_DB_*`). The compose file's own comment
+  states the intent directly: *"A dedicated Postgres instance, kept
+  separate from the `db` service above ..., so the two systems' schemas
+  and lifecycles never collide."* Two separate server processes with no
+  shared network path a query could traverse make a cross-database
+  `JOIN` a physical impossibility, not just a coding convention
+  (`docker-compose.yml`, `backstage-db` and `db` service definitions;
+  cross-checked by `us16-ac16.1-backstage-docker-services.test.ts`,
+  which already asserts `compose.services['backstage-db']).not.toBe(
+  compose.services['db'])`).
+- **Frontstage's only database credential points at its own database.**
+  `src/payload.config.ts` configures Payload's `postgresAdapter` with a
+  single `connectionString: process.env.DATABASE_URL`, and `.env.example`
+  sets `DATABASE_URL=postgresql://postgres:postgres@db:5432/earthandhoney`
+  — the `db` host, never `backstage-db`. No file under `src/` imports the
+  `pg` driver directly, opens a second connection pool, or references
+  `backstage-db`/`BACKSTAGE_DB_*` outside test comments describing a
+  tester's own direct-to-`psql` verification queries (used only to
+  independently confirm what Backstage's API returned, e.g.
+  `us17-ac17.1.2-project-client-link.test.ts`, `us17-ac17.3-gallery-password-protection.test.ts`
+  — a verification technique, not application code, and not something a
+  running Frontstage request path ever does).
+- **The API contract above never returns raw rows, only identifiers and
+  display data.** Rows 1–2's Frontstage-cacheable fields (title, theme,
+  toggles, photo URLs, item counts) are response bodies from Backstage's
+  own HTTP API, already filtered to what a viewer may see — not a
+  database read Frontstage could join against something else. The
+  identifiers that do cross (`slug`, `id`, `share_token`, the gallery JWT)
+  are exactly the "stored external identifiers" this rule refers to: a
+  Frontstage record may store a Backstage `slug`/`id` as a plain field
+  value to look up later via the API (row 1/3), but nothing in this
+  codebase's schema declares a foreign-key relationship into
+  `backstage-db`'s tables, because no ORM or query layer in `src/` is
+  configured to reach that database at all.
+
+Consequently, the row-4 gap (`Client`/`Project` creation, above) cannot
+be closed by adding a database-level join or shared-schema shortcut
+either — any future flow that needs a Frontstage inquiry to become a
+Backstage client/project must do so by calling a Backstage API (extending
+row 3's Bearer-token surface, or another HTTP mechanism) and storing the
+Backstage-assigned id it gets back, the same external-identifier pattern
+already used elsewhere in this contract. `AC-18.4` is where that specific
+flow is designed; this section only fixes the rule it must follow.
