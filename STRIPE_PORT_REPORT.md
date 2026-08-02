@@ -11,7 +11,7 @@ purpose: AC-20.1 records every file read directly in the reference project
          (20.3-20.9) add further sections to this same report.
 created-by: dev-team
 related-story: US-20
-related-ac: 20.1, 20.2, 20.3, 20.4, 20.5
+related-ac: 20.1, 20.2, 20.3, 20.4, 20.5, 20.6
 ---
 -->
 
@@ -372,3 +372,191 @@ is listed there. The this-project half draws on this project's own
 first time for this AC, and on the already-resolved VPS decision in
 `scrum-master/po-requests.md` item 2. No secret value was read from, or
 copied out of, any `.env` file in either project.
+
+## 12. Behaviours preserved and dropped when the payment flow is built (AC-20.6)
+
+This section states, for each of the six behaviours this AC names, what
+"preserved" concretely means for this project, grounded either in what
+section 2's file-by-file inspection actually found in the reference
+project or — where the reference project turns out not to have the
+behaviour at all — in Stripe's own documented SDK contract and this
+project's already-settled architecture (AC-20.7). It then lists the
+behaviours deliberately not carried over, with the reason each was
+dropped, and closes with the language/framework boundary that governs
+how "faithful" is read throughout this whole report.
+
+### Preserved
+
+1. **Server-side payment creation.** Section 2, row 1's `POST
+   /create-payment-intent` builds the Stripe `PaymentIntent` entirely
+   in `main.py` — amount, currency, and metadata are all set by server
+   code (lines 586-608, re-read for this AC); the client's JSON body
+   supplies only `email` and `email_addon`, never an amount or a
+   Stripe-object shape to create. Preserved unchanged: this project's
+   payment-creation route must construct the Stripe object representing
+   the charge entirely on the server. The client only ever triggers the
+   request and later confirms the client secret it is handed back —
+   it never assembles or sends the parameters Stripe uses to create the
+   charge.
+2. **The route layout.** Section 2, row 1 shows a payment flow split
+   across distinct, single-purpose routes: one that creates the payable
+   object (`/create-payment-intent`), one that finalises and reconciles
+   after the redirect back (`/success`), and one that manages an
+   existing paid state (`/account/cancel-subscription`) — not one
+   handler doing all three. Preserved as that same separation of
+   concerns, translated to this project's own routing mechanism (Next.js
+   Route Handlers and/or Server Actions under the App Router, not Flask
+   `@app.route` decorators or Jinja2-rendered pages) rather than as
+   identical URL paths.
+3. **Webhook signature verification.** Re-checked directly for this AC:
+   `main.py`'s full route table (every `@app.route` decorator, 14
+   matches) contains no webhook endpoint, and `grep -rn -i
+   "webhook|construct_event|stripe-signature|idempot"` across the
+   reference project's tracked source (`.py`, `.html`, `.js`, `.yml`,
+   `.md`, excluding the `.venv` dependency tree) turns up no
+   implementation — only `README.md` lines 135-137 and 237 listing
+   "Configure Webhooks (Optional but recommended)" and "Configure Stripe
+   webhooks for production URL" as manual, never-built setup steps.
+   The reference project does not verify a webhook signature anywhere,
+   so this behaviour is not being read out of its code. It is preserved
+   because it is Stripe's own documented SDK contract — every webhook
+   request must have its signature checked against the raw request body
+   and the webhook signing secret (the Node SDK's
+   `stripe.webhooks.constructEvent`, the same guarantee Python's
+   `stripe.Webhook.construct_event` gives, which the reference project
+   simply never called) — combined with this project's already-settled
+   architecture (AC-20.7): the webhook is the verified source that
+   reconciles payment into the ledger, so an unverified request must
+   never be trusted as if it were one.
+4. **Repeat-event protection.** Also absent from the reference project
+   for the same reason as item 3 — there is no webhook handler to
+   protect. Preserved because Stripe documents webhook delivery as
+   at-least-once, not exactly-once: the same event can arrive more than
+   once. Per AC-20.7's settled architecture, the webhook is what
+   advances the ledger and the project milestone, so processing one
+   Stripe event twice must not reconcile the same payment twice. The
+   required mechanism is recording each processed event's `id` and
+   skipping any event whose `id` has already been handled, before
+   whatever reconciliation work that event triggers runs a second time.
+5. **Success and cancel handling.** Section 2, row 1 and the direct
+   re-read of `main.py` lines 655-759 for this AC show `GET /success`
+   does real work, not a trusting redirect: it takes the
+   `payment_intent` id off the query string, calls
+   `stripe.PaymentIntent.retrieve` to re-fetch the object from Stripe,
+   and only proceeds to create subscriptions and send the activation
+   email after checking `intent.status == 'succeeded'` on that
+   server-fetched object (line 680) — the redirect itself is never
+   treated as proof. That half is preserved unchanged: this project's
+   success handling must likewise re-fetch and re-check payment state
+   from Stripe before treating anything as paid, matching the "a browser
+   redirect is never proof of payment" rule this report's AC-20.7
+   section restates. The other half is not something to copy, because
+   it does not exist to copy: the reference project has no pre-payment
+   cancel/abandon path at all — its only "cancel" is
+   `/account/cancel-subscription` (section 2, row 1), a
+   post-purchase self-service Subscription cancellation, which is a
+   different event entirely from a customer backing out of checkout
+   before paying. This AC's own text still requires cancel handling for
+   this project's build, so that half is preserved as a requirement
+   stated by the AC, not as reference-project logic — a customer who
+   leaves without completing payment must land on a distinct, explicit
+   non-paid outcome, the same way `/success` already lands on a
+   distinct, explicit paid outcome.
+6. **The authoritative amount is fetched from Stripe, never trusted from
+   the browser.** `main.py` lines 586-588 (re-read for this AC): `dev_price
+   = stripe.Price.retrieve(STRIPE_PRICEDEV_ID)` then `dev_amount =
+   dev_price.unit_amount` — the amount handed to
+   `stripe.PaymentIntent.create` comes from a server-side Stripe lookup
+   of the configured Price object, not from anything in `data =
+   request.get_json()` (which supplies only `email` and `email_addon`,
+   confirmed by the same read). Preserved unchanged, and already
+   restated as the key-pairing-relevant fact in section 6: this
+   project's payment-creation route must derive the charge amount the
+   same way — a server-side Stripe lookup of the configured priced-item
+   identifier — and must never accept a numeric amount field from the
+   request body.
+
+### Deliberately not carried over
+
+- **Recurring `Subscription` creation in `POST /success`** (the
+  maintenance and email-addon subscriptions, `billing_cycle_anchor`
+  30-day delay, `proration_behavior='none'`, section 2 row 1, lines
+  700-731). Not carried over: AC-20.9 already settles that this
+  project's V1 ships a payment schedule paid manually against a real
+  ledger invoice, not Stripe `Subscription` objects, and that a
+  subscription product must never be used here because it would place
+  an authoritative billing schedule outside the ledger.
+- **`/account/cancel-subscription` and its `stripe.Subscription.delete`
+  flow** (section 2, row 1, lines 972-1024). Not carried over, for the
+  same reason as above: with no Stripe Subscriptions in this project's
+  flow, there is nothing of that kind to let a client self-service
+  cancel.
+- **Session-stashed email-addon choice via `POST
+  /update-payment-intent`** (`session['pending_email_addon']`, section
+  2 row 1, lines 629-652). Not carried over: this mechanism exists only
+  to carry techno's specific second product (an optional email add-on
+  subscription) across the confirmation step. This project's pricing
+  and packages are a different, already-modelled domain (the Packages
+  collection named in `CLAUDE.md`'s CMS pillar), so there is no
+  equivalent add-on choice to stash.
+- **Flask-Login accounts, password update, and the `/activate` /
+  `/account` pages built around the payment** (section 2, row 1's route
+  table; `/activate`, `/account`, `/account/update-password`,
+  `/logout`). Not carried over: this is techno's own customer-account
+  system layered on top of the payment, not Stripe integration
+  behaviour, and this project's client/session identity model is
+  decided elsewhere, not reintroduced from this reference here.
+- **SQLite persistence and the `gunicorn`/systemd single-process
+  deployment shape** (section 2, rows 8-9). Not carried over: this is
+  application-hosting shape, not payment logic, and this project's own
+  Docker/VPS deployment convention is already recorded in sections 10-11
+  (AC-20.5) independently of the Stripe port.
+- **The `data-stripe-key` Jinja2 template attribute mechanism** for
+  handing the publishable key to the browser (section 2, row 2). Not a
+  dropped behaviour so much as a mechanism with no counterpart to carry
+  over literally: Next.js has no server-rendered Jinja2 template layer.
+  The equivalent — reading the publishable key on the server and
+  passing it into a Client Component — is the faithful translation of
+  the same underlying rule (the secret key never reaches the browser;
+  only the publishable key does), covered under the language/framework
+  boundary below, not listed as a drop.
+
+### The language/framework boundary
+
+The reference project is a Flask (Python 3.11) application rendering
+Jinja2 templates with vanilla JavaScript (section 1, section 2 rows 1-5,
+10). This project is Next.js/TypeScript on the App Router (`CLAUDE.md`'s
+technology stack). Nothing in section 1's reference-project code can be
+copied line-for-line into this project and run — different language,
+different framework, different routing and templating model entirely.
+"Port faithfully," in this report and in the payment flow this report
+specifies, therefore means: preserve each behaviour's *logic* (what is
+checked, in what order, against what server-fetched source of truth) and
+its *required-field structure* (which Stripe fields are read, which are
+validated, which are re-verified before being trusted) — not its Python
+syntax, its Flask route decorators, or its Jinja2 markup. Where a
+preserved behaviour (webhook signature verification, repeat-event
+protection, the cancel half of success/cancel handling) has no working
+precedent in the reference project's own code, as items 3-5 above make
+explicit, this project's requirement for it is grounded in Stripe's own
+documented SDK contract and this project's already-settled architecture
+(AC-20.7), not in anything read out of `techno`.
+
+## 13. Method (AC-20.6)
+
+`main.py`'s full set of `@app.route` decorators (14 matches) was
+re-enumerated to confirm none is a webhook endpoint, and `grep -rn -i
+"webhook|construct_event|stripe-signature|idempot"` was run across the
+reference project's tracked source (`*.py .html .js .yml .md`,
+`.venv` excluded) to confirm no signature-verification or
+duplicate-event-handling code exists anywhere in the project, not only
+in `main.py` — the only matches were `README.md`'s two mentions of an
+optional, never-built webhook setup step (lines 135-137, 237), already
+covered by section 2, row 11. `main.py` lines 575-628
+(`create-payment-intent`) and 655-759 (`success`) were re-read in full
+to confirm, directly against the code, which fields the client actually
+sends (`email`, `email_addon` — never an amount), how the charge amount
+is derived (`stripe.Price.retrieve(...).unit_amount`), and that
+`/success` re-fetches and re-checks `intent.status` from Stripe before
+finalising anything. No files beyond those already listed in section 2
+were opened for this AC.
