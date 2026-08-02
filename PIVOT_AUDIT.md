@@ -351,7 +351,22 @@ related-story: US-14
          `scrum-master/po-requests.md` rather than decided silently, without
          editing that file directly since it is owned outside this AC's
          scope.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3, 17.5.1, 17.5.2, 17.5.3, 17.6, 17.7, 17.9
+         AC-17.10 — verifies PicPeak's native contract-signing capability
+         against the pinned commit with file:line evidence for each of the
+         seven elements `scrum-master/po-requests.md` item 7 assumed (typed
+         name, consent checkbox, drawn signature, signer IP + timestamp, a
+         frozen contract-content snapshot, a SHA-256 integrity hash, and an
+         audit page baked into the delivered PDF). Confirms six elements
+         exactly as assumed. Finds the seventh — the audit page — does NOT
+         work as assumed: the pinned fork renders the audit trail as a
+         separate sibling PDF (a second email attachment), never merged
+         into the delivered signed-contract PDF, by the fork's own explicit
+         design comments. Writes this up honestly rather than patching
+         around it, and states that it is to be raised in
+         `scrum-master/po-requests.md` as reopening item 7's
+         contract-signing decision, without editing that file directly
+         since it is owned outside this AC's scope.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3, 17.5.1, 17.5.2, 17.5.3, 17.6, 17.7, 17.9, 17.10
 ---
 -->
 
@@ -6164,6 +6179,252 @@ here, the same routing mechanism AC-14.6 already established for this audit.
 `po-requests.md` is owned outside this AC's scope (see `CLAUDE.md`'s
 Docker/ownership rules), so this document records the findings and their
 routing rather than editing that file directly.
+
+## AC-17.10 — PicPeak's native contract-signing capability, verified against the pinned commit
+
+`po-requests.md` item 7 confirmed, conditionally, that V1 uses "PicPeak's
+own native contract-signing capability (typed name, consent checkbox, drawn
+signature, signer IP + timestamp, a frozen snapshot of the signed contract,
+a SHA-256 integrity hash, and an audit page baked into the delivered PDF)"
+in place of an external e-sign vendor or manual-upload fallback, explicitly
+conditioned on `US-17` AC-17.10 verifying the capability genuinely exists at
+the pinned commit (`eb263137b98935754155824de2a03848121304b6`,
+`PICPEAK_UPSTREAM.md`) before any Project Room story depends on it. This
+section is that verification, method: static file:line evidence read
+directly from the pinned commit's source (no live Backstage reproduction —
+every element below is either request-validated input, a database write, or
+a rendering code path, none of which needs a running instance to establish
+what the code does; the sign flow itself was already reproduced live for an
+unrelated route in AC-17.5.1–17.5.3's proofs, using the same
+`vendor/picpeak/backend/src` tree pinned here).
+
+The surface: `vendor/picpeak/backend/src/routes/publicContracts.js`
+(`POST /:token/sign`, no auth — the emailed link is the only secret) calls
+`contractService.recordCustomerSignature`
+(`vendor/picpeak/backend/src/services/contractService.js:1061`), which is
+also documented in that file's own header comment
+(`contractService.js:16–21`) as: "Customer opens `/contract/:token` and...
+types name, optionally draws a signature on canvas, ticks 'I have read and
+agree', submits → `recordCustomerSignature` stamps the signature into a
+re-rendered PDF and the system emails the admin." The React page is
+`vendor/picpeak/frontend/src/pages/public/ContractResponsePage.tsx`.
+
+### 1. Typed name capture — confirmed as assumed
+
+- Frontend: a controlled text input bound to `name` state
+  (`ContractResponsePage.tsx:91` `const [name, setName] = useState('')`,
+  `:411–417` the `<input type="text" value={name} onChange={...}
+  autoComplete="name" />` under the "Your full name" label, `:186–188`
+  client-side `if (!name.trim())` guard before submit).
+- Backend: `publicContracts.js:208` `body('name').isString().isLength({
+  min: 1, max: 255 })` request validation; `contractService.js:1070–1072`
+  re-checks `if (!name || !String(name).trim())` and throws
+  `NAME_REQUIRED` — the server, not just the browser, is the source of
+  truth. The typed value is persisted verbatim:
+  `contractService.js:1115` `signed_customer_name: String(name).trim()`,
+  written to the `contracts.signed_customer_name` column
+  (`vendor/picpeak/backend/migrations/core/107_crm_consolidated.js:1267`
+  `table.string('signed_customer_name', 255)`).
+
+### 2. Consent checkbox — confirmed as assumed
+
+- Frontend: `ContractResponsePage.tsx:92` `const [accepted, setAccepted] =
+  useState(false)`, `:442–455` an `<input type="checkbox" checked={accepted}
+  onChange={...} />` labelled "I have read this contract and agree to be
+  bound by its terms.", `:182–185` a client-side `if (!accepted)` guard.
+- Backend: `publicContracts.js:209` `body('accepted').isBoolean()`;
+  `contractService.js:1067–1069`
+  `if (accepted !== true) throw new AppError('You must confirm that you
+  have read and agree to the terms.', 400, 'TOS_REQUIRED')` — an
+  unchecked box cannot reach the signature-recording transaction
+  regardless of what the client sends.
+
+### 3. Drawn signature — confirmed as assumed
+
+- Frontend: `ContractResponsePage.tsx:22` imports the `signature_pad`
+  library; `:426–429` a `<canvas ref={canvasRef}>` under "Draw your
+  signature"; `:128–139` initialises `new SignaturePad(canvas, {...})`;
+  `:144–160` exports the canvas as a downscaled PNG data URL
+  (`downscaleSignature`, `:48–65`) and posts it as `signatureDataUrl`.
+  The admin-configurable `crm_contracts_require_drawn_signature` setting
+  makes the canvas mandatory rather than optional (`:193–195`,
+  `:422–424`).
+- Backend: `contractService.js:1078–1084` re-enforces the same
+  require-drawn-signature setting server-side ("the public sign page also
+  enforces this client-side, but the server is the source of truth"); the
+  data URL is validated and decoded to a PNG/JPEG file by
+  `persistSignatureImage` (`contractService.js:300–335`, format check at
+  `:308–311`, size cap at `:298,302–317`) and stored under
+  `storage/business-docs/contract/signatures/<contractId>/`
+  (`:319–332`); `contractService.js:1100–1102` calls it for the customer
+  role and sets `signaturePath`. The PNG is then stamped onto the
+  delivered PDF via `pdfStampService.stampSignature`
+  (`vendor/picpeak/backend/src/services/pdfStampService.js:86–189`),
+  invoked at `contractService.js:1158–1168`.
+
+### 4. Signer IP address and timestamp — confirmed as assumed
+
+- IP: `vendor/picpeak/backend/src/utils/clientIp.js:30–33`
+  `function clientIpForAudit(req) { return req.ip || null; }` — the file's
+  own header (`:6–11`) documents why: reading `X-Forwarded-For` directly
+  used to let a direct, non-proxied POST spoof the audit IP, "which
+  defeats the legal-evidence promise of the contract feature"; `req.ip`
+  alone, populated only through Express's `trust proxy` setting, is the
+  fix. Called at the route layer, `publicContracts.js:220`
+  `const ip = clientIpForAudit(req);`, then threaded into
+  `recordCustomerSignature({ ..., ip })` (`publicContracts.js:222–228`).
+  Persisted at `contractService.js:1109` (`maybeStoreIp`, gated by the
+  `crm_contracts_store_ip` privacy setting) and written to
+  `signed_customer_ip` at `contractService.js:1116`
+  (column: `107_crm_consolidated.js:1268`
+  `table.string('signed_customer_ip', 45)`).
+- Timestamp: `contractService.js:1104` `const now = new Date();`, written
+  to `signed_by_customer_at` at `contractService.js:1114` and echoed back
+  to the caller at `:1236` `return { status: 'signed_by_customer',
+  signedAt: now };`.
+
+### 5. Frozen snapshot of the signed contract contents — confirmed as assumed
+
+`contractService.js:957–989` (`sendContract`, fired once, when the admin
+sends — not at signing time, since the contract's wording must already be
+fixed before the customer ever sees it): "Snapshot every included block's
+body into the inclusion row so future block edits don't mutate the sent
+contract" (`:978–979`), then a transaction (`:980–989`) that writes
+`body_text_snapshot: inc.block_body_text || null` and
+`body_text_de_snapshot: inc.block_body_text_de || null` onto each
+`contract_block_inclusions` row for every included block. Every
+subsequent read — the public view (`contractService.js`'s block reader,
+also read by `publicContracts.js`'s `publicContractView`,
+`publicContracts.js:87–96` explicitly prefers `body_text_snapshot` over
+the live block body) and the PDF render — uses the frozen snapshot, not
+the live `contract_blocks` library row, so an admin editing the source
+block later cannot retroactively alter what a customer already agreed to.
+
+### 6. SHA-256 integrity hash — confirmed as assumed
+
+`contractService.js:243–245` `sha256OfBuffer` (`crypto.createHash('sha256')
+...digest('hex')`), used by `persistContractPdf`
+(`contractService.js:267–285`) which returns `{ filePath, sha256 }` for
+every PDF it writes to disk. The unsigned PDF's hash is captured at send
+time (`contractService.js:996` `const { filePath: pdfPath, sha256:
+pdfSha256 } = await persistContractPdf(...)`) and stored in
+`contracts.pdf_sha256`; the customer-signed PDF's hash is captured
+immediately after stamping (`contractService.js:1169–1177`, storing
+`signed_pdf_sha256`). Both columns exist as
+`table.string('pdf_sha256', 64)` / `table.string('signed_pdf_sha256', 64)`
+(`107_crm_consolidated.js:1249–1250`). The hash is not merely written and
+forgotten: `publicContracts.js:136–140` surfaces both hashes on the public
+contract view "so the customer can re-hash their downloaded copy and
+confirm it matches what we issued", and a dedicated integrity-check
+helper re-hashes the on-disk file and compares
+(`contractService.js:2223–2262`, `checkLeg`).
+
+### 7. Audit page baked into the delivered PDF — does NOT work as assumed
+
+This is the one element that does not match `po-requests.md` item 7's
+wording. The pinned fork does not bake the audit trail (timestamps, IPs,
+hashes, signer names) into the delivered signed-contract PDF as a page.
+Instead it renders a **separate, sibling PDF** — an "audit certificate" —
+and ships it as a second email attachment alongside the signed contract,
+never merged into the same document. This is not an omission found by
+searching for a missing feature; it is the pinned fork's own explicitly
+documented design decision, stated in comments at three independent call
+sites:
+
+- `vendor/picpeak/backend/src/services/pdfStampService.js:13–22` (file
+  header): "The audit certificate (timestamps, IPs, hashes) is a
+  **separate sibling document** — not embedded in the signed contract PDF
+  — so the operator can verify each independently."
+- `vendor/picpeak/backend/src/services/pdfService.js:2086–2090` (at the
+  point in the unsigned-PDF renderer where the signature page is added):
+  "Audit data (timestamps, IPs, hashes) is rendered as a **SEPARATE
+  'audit certificate' PDF** by pdfStampService — not embedded here — so
+  the contract PDF stays purely representational and the audit trail is
+  a sibling document that can be verified independently."
+- `vendor/picpeak/backend/src/services/contractService.js:409–414`
+  (`persistAuditCertificate`'s own doc comment): "Generate the audit
+  certificate PDF, write it to disk under the same year directory as the
+  contract PDFs (suffix `audit`), and return its file path."
+
+The implementation matches every one of those comments exactly, with no
+gap between what the comments claim and what the code does:
+`pdfStampService.renderAuditCertificate`
+(`pdfStampService.js:218–321`) builds an independent PDFKit document
+(its own `Title`, e.g. `"C-2026-0001_audit_certificate"`,
+`pdfStampService.js:230`) containing the contract number, issue date, the
+customer/admin signer name + ISO timestamp + IP sections, and the
+unsigned/signed SHA-256 hashes (`:277–308`) — i.e. every field the
+delivered contract PDF's own signature page leaves blank. `contractService
+.js:416–436` (`persistAuditCertificate`) writes that buffer to its own
+file, `<contractNumber>_audit_<timestamp>.pdf`, alongside but distinct
+from `<contractNumber>_<timestamp>.pdf` (the contract) and
+`<contractNumber>_signed-by-customer_<timestamp>.pdf` /
+`_fully-signed_<timestamp>.pdf` (the stamped contract). It is then pushed
+onto the *same* email's `attachments` array as a second entry, never into
+the contract PDF's own byte stream — three independent call sites confirm
+this: `contractService.js:1392–1409` (customer-signature admin
+notification / countersign flow), `:1508–1529` (fully-signed dual-party
+email), and `:2032–2061` (re-render/resend recovery path) — every one
+builds `attachments = [{ ...signed contract... }]` first, then
+conditionally `attachments.push({ ...auditCertPath... })` as a distinct
+list entry. The public, token-scoped download route
+(`publicContracts.js:316–359`, `GET /:token/pdf`) only ever streams
+`contract.signed_pdf_path || contract.pdf_path` — the audit certificate
+has no public download route of its own at all, and is never reachable
+from the same file the customer can fetch by that link.
+
+**Why this differs from what was assumed, concretely:** `po-requests.md`
+item 7 lists "an audit page baked into the delivered PDF" as one
+capability alongside the other six, implying the delivered signed-contract
+PDF is itself the single, self-contained audit-evidencing document — the
+same mental model the PRD's Adobe Acrobat Sign baseline
+(`PRD.md:816–840`, "Signed PDF stored") and DocuSign/HelloSign-style
+e-sign products generally use, where the audit trail is a page (or set of
+pages) appended to the one file a court or counter-party would be handed.
+What the pinned fork actually ships is two files: a signed contract PDF
+that carries only the visual signature stamps (name, drawn image, date —
+`pdfStampService.js:144–184`), and a second, separately-hashed PDF that
+carries the IP/timestamp/hash evidence. Anyone who receives only the
+signed contract PDF — for example by fetching `GET /:token/pdf`, or by the
+admin forwarding just that one attachment — does not receive the audit
+evidence at all unless the audit certificate is deliberately also
+retrieved or forwarded. This is a materially different distribution and
+tamper-evidence model, not a cosmetic difference in where the audit
+information happens to sit inside one PDF.
+
+### Verdict
+
+Six of the seven elements `po-requests.md` item 7 named are confirmed
+exactly as assumed, each with file:line evidence above: typed name
+capture, a consent checkbox, a drawn signature, signer IP address and
+timestamp, a frozen snapshot of the signed contract contents, and a
+SHA-256 integrity hash. The seventh, "an audit page baked into the
+delivered PDF," does not hold: the pinned fork deliberately ships the
+audit trail as a separate sibling PDF attached alongside, never merged
+into, the delivered signed-contract PDF. Per AC-17.10, this is written up
+honestly here rather than patched around, quietly worked around, or
+silently backfilled by falling back to an external e-signature vendor or
+a manual-upload process — no such fallback is introduced by this AC.
+
+### Routed to the Product Owner
+
+Per AC-17.10, this finding is to be added to `scrum-master/po-requests.md`
+as reopening item 7's contract-signing decision — six of seven elements
+hold, but the "audit page baked into the delivered PDF" clause of that
+decision does not describe the pinned fork's actual behaviour, and the
+decision's own conditional language ("this decision reopens rather than
+silently substituting a workaround") is what AC-17.10 exists to act on.
+This does not mean V1 must drop PicPeak's native signing capability — the
+sibling-document model still delivers typed name capture, a consent
+checkbox, a drawn signature, signer IP + timestamp, a frozen contract
+snapshot, and a SHA-256 hash for both files, i.e. as strong an audit trail
+as the assumed one, just distributed across two documents instead of one —
+but that is a Product Owner call (accept the two-document model as
+delivered, or treat "baked into the delivered PDF" as a hard requirement
+and scope a follow-on story to merge the two), not one this document
+decides silently. `po-requests.md` is owned outside this AC's scope (see
+`CLAUDE.md`'s Docker/ownership rules), so this document records the
+finding and its routing rather than editing that file directly.
 
 ## Recommendation and open questions (AC-14.6)
 
