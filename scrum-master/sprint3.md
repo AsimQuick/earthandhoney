@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/7 stories | 61/70 ACs
-**Last Updated:** 2026-08-02T05:25:42+00:00
+**Last Updated:** 2026-08-02T05:31:45+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -840,6 +840,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-20.1:** The Stripe implementation in the reference project at `/Users/asim/NoIcloud/techno` is read directly — its payment routes, its server and client split, its templates, its environment example, and its deployment workflow — and `STRIPE_PORT_REPORT.md` lists every file inspected.
   - Dev: implemented
 - [ ] **AC-20.2:** The report records the reference project's environment-variable convention exactly as found: flat names with no test or live suffix, a secret key, a publishable key, and one identifier per priced item, with the operating mode determined solely by which coherent set of values is loaded.
+  - Dev: implemented
 - [ ] **AC-20.3:** The report states the key-pairing rule in unambiguous terms — the secret key, the publishable key, and every priced-item identifier must all belong to the same Stripe mode — and explains why a mismatched pair fails, since this is the specific mistake made previously on this project.
 - [ ] **AC-20.4:** A start-up validation is specified that refuses to start, or fails loudly with an actionable message, when the loaded Stripe values are not all from the same mode or when any required value is missing. The specification says what is checked, when it runs, and what the operator sees.
 - [ ] **AC-20.5:** The report records the reference project's secret-handling shape and confirms it will be mirrored here: local values in an uncommitted environment file, deployed values in repository secrets whose names match the environment variable names exactly, and the deployment step writing the environment file on the server. No secret value appears in the report or in any committed file.
@@ -855,6 +856,11 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   **Implementation summary:**
   
   - **`STRIPE_PORT_REPORT.md`** (new, repo root) — records the direct read of the Stripe implementation in the reference project at `/Users/asim/NoIcloud/techno` (a Flask/Python app). A "Files inspected" section lists all 12 files read, each tagged with which required area it covers (payment routes / server-client split / templates / environment example / deployment workflow) and a summary of findings: `main.py`'s five Stripe routes (`/checkout`, `/create-payment-intent`, `/update-payment-intent`, `/success`, `/account/cancel-subscription`), the client/server split between `main.py` (Stripe SDK, secret key) and `static/scripts.js` (Stripe.js, publishable key only), the three templates involved (`checkout.html`, `success.html`, `account.html`), `.env.example`'s flat Stripe variable convention, and `.github/workflows/main.yml`'s secret-writing deploy flow to a VPS via SSH + `docker compose`. Also records `docker-compose.yml`, `Dockerfile`, `requirements.txt`, `README.md`, and notes `email_functions_sprint3.py` was read and ruled out (no Stripe involvement). Flags an as-found inconsistency ( …
+  AC-20.2 implemented (local checks green): AC-20.2 implemented and committed on `feature/US-20`.
+  
+  **Summary:**
+  - `STRIPE_PORT_REPORT.md` — added section 4 ("Environment-variable convention (AC-20.2)") recording the reference project's convention exactly as found: flat names with no test/live suffix, one secret key (`STRIPE_SECRET_KEY`), one publishable key (`STRIPE_PUBLISHABLE_KEY`), and one identifier per priced item (three price IDs: `STRIPE_PRICEDEV_ID`, `STRIPE_PRICEMAINT_ID`, `STRIPE_PRICEEMAIL_ID`), and explicitly states the operating mode is a property of which coherent set of values is loaded, not a separate flag. Also renumbered the pre-existing AC-20.1 "Method" section to `3.` and added a matching `5. Method (AC-20.2)` section, and updated the front-matter metadata (`related-ac: 20.1, 20.2`).
+  - `src/__tests__/us20-ac20.2-stripe-port-report-env-convention.test.ts` — new test file, 14 tests, mirroring the AC-20.1 test's pattern (skips reference-project-path checks when unreachable). Verifies the section exists, all five Stripe var names are present, the "one secret key / one publishable key / one identifier per priced item" language is present, the mode-determination statement is present, and (when the reference pro …
 
 **Tester Status:** approved
 **Tester Notes:**
