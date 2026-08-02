@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/7 stories | 18/70 ACs
-**Last Updated:** 2026-08-02T00:26:52+00:00
+**Last Updated:** 2026-08-02T00:46:47+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -336,6 +336,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-17.6:** At least one operational gallery email is sent through the Backstage email system to a capture inbox or mail catcher, and its queued/sent state is visible.
   - Dev: implemented
 - [ ] **AC-17.7:** At least one Backstage webhook fires and is received by a listener that logs the payload, proving the outbound integration path we will later use to refresh Frontstage content.
+  - Dev: implemented
 - [ ] **AC-17.8:** The bundled gallery style templates render unmodified, and a copy of each original template file is preserved so future Earth & Honey variants can be diffed against the untouched baseline. `PICPEAK_PORT_LEDGER.md` records every template copied and where it is used.
 - [ ] **AC-17.9:** Findings are recorded honestly: anything that does not work as the PRD assumed is written up in `PIVOT_AUDIT.md` and raised to the Product Owner rather than quietly patched.
 - [ ] **AC-17.10:** PicPeak's native contract-signing capability is verified against the actual pinned commit, not assumed from documentation or memory: typed name capture, a consent checkbox, a drawn signature, signer IP address and timestamp, a frozen snapshot of the signed contract contents, a SHA-256 integrity hash, and an audit page baked into the delivered PDF. For each element, the evidence (file/line, or a reproduced signing flow) is recorded in `PIVOT_AUDIT.md`. If any element is missing or works differently than assumed in `CLAUDE.md`/PRD §29, this is written up honestly and raised in `scrum-master/po-requests.md` as reopening the contract-signing decision — no silent workaround, and no quiet fallback to an external e-sign vendor or manual upload.
@@ -646,6 +647,16 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   | `docker-compose.yml` | Adds a `mailhog` service under the `backstage` profile at the exact hostname the pinned fork's own migration already defaults to (`migrations/core/001_init.js:146` seeds `smtp_host` to `process.env.SMTP_HOST \|\| 'mailhog'`). Mirrors `vendor/picpeak/docker-compose.yml` rather than running standalone, so it shares the stack network and profile lifecycle. No vendored file touched. |
   | `PIVOT_AUDIT.md` | New `## AC-17.6` section recording the live proof, plus `17.6` added to the front-matter `related-ac` list. |
   | `src/__tests__/us17-ac17.6-operational-gallery-email-sent.test.ts` | 51 tests pinning the recorded evidence and independently re-verifying every file/line claim against the vendored fork and …
+  AC-17.7 implemented (local checks green): Full suite green after the fix. AC-17.7 is committed on `feature/US-17` (`73e7ca3`), working tree clean, nothing pushed.
+  
+  ## Implementation summary — US-17 AC-17.7
+  
+  The previous agent had completed the live proof but left it uncommitted; I verified its claims against live state rather than trusting the write-up, corrected two transcript fidelity defects, fixed a lint error, and committed.
+  
+  **Files changed (3):**
+  
+  - **`docker-compose.yml`** — adds the `webhook-receiver` service under the `backstage` profile, building the pinned fork's own vendored dev listener (`vendor/picpeak/dev/webhook-receiver`) unmodified. Documents why the bare Docker service hostname passes upstream's `validateExternalUrl` SSRF guard, so no `WEBHOOK_ALLOW_PRIVATE_URLS` override is needed.
+  - **`PIVOT_AUDIT.md`** — AC-17.7 evidence section: webhook registered through `POST /api/admin/webhooks`; `event.created` + `event.published` fired by two ordinary non-draft Gallery creates (deliberately *not* the synthetic `/:id/test` route); all four deliveries `success`/200 in the admin deliveries feed and cross-checked in Postgres; each payload logged by the receiver with its HMAC-SHA256 signature independently recompute …
 
 **Tester Status:** approved
 **Tester Notes:**
