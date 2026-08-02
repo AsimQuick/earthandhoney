@@ -322,7 +322,25 @@ related-story: US-14
          message is actually captured by MailHog, and that both states are
          visible through the admin-facing `GET /api/admin/email/queue`
          feed upstream already provides.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3, 17.5.1, 17.5.2, 17.5.3, 17.6
+         AC-17.7 — stands up the dev loopback listener the pinned fork's
+         own webhooks-roundtrip e2e spec already expects
+         (`vendor/picpeak/dev/webhook-receiver`) as a `webhook-receiver`
+         service in this project's own `docker-compose.yml`, registers a
+         real outbound webhook through the admin-facing
+         `POST /api/admin/webhooks` route upstream already provides, and
+         proves — live, twice, on two independently-created Galleries —
+         that upstream's own webhook delivery worker fires `event.created`
+         and `event.published` for an ordinary, non-draft Gallery create
+         (not the synthetic `/:id/test` endpoint), that the listener
+         receives and logs each payload with a valid HMAC-SHA256 signature,
+         and that the delivered/success state is visible through the
+         admin-facing `GET /api/admin/webhooks/:id/deliveries` feed
+         upstream already provides. Also records, for AC-17.9, an unrelated
+         local-storage permission gap in the Gallery-create route that
+         blocked the first attempt and needed a one-time operational fix —
+         the fourth occurrence of the same defect family AC-17.5.1/17.5.2
+         already named.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3, 17.5.1, 17.5.2, 17.5.3, 17.6, 17.7
 ---
 -->
 
@@ -5786,6 +5804,314 @@ changed. The `gallery_expired`/`archive_complete` template gap surfaced as
 a side effect is recorded here for honesty per AC-17.9 and left for that
 AC's own write-up rather than patched here, since it does not bear on this
 AC's own scope.
+
+## AC-17.7 — a Backstage webhook fired and received by a listener that logs the payload, proving the outbound integration path
+
+Like AC-17.6, this AC needed no fork patch. Upstream's outbound-webhook
+system — the `webhooks`/`webhook_deliveries` tables (migration
+`vendor/picpeak/backend/migrations/core/082_add_webhooks.js`), the signing
+and enqueue logic in
+`vendor/picpeak/backend/src/services/webhookService.js`, the poll-based
+delivery worker in
+`vendor/picpeak/backend/src/services/webhookDeliveryWorker.js` (started at
+`vendor/picpeak/backend/server.js:841-842`), and the admin-facing routes in
+`vendor/picpeak/backend/src/routes/adminWebhooks.js` (mounted directly at
+`/api/admin/webhooks` by `server.js:717`) — works exactly as delivered.
+What was missing, exactly as with AC-17.6, was a listener this project's
+own `docker-compose.yml` never provisioned.
+
+### The listener the fork already ships, for exactly this purpose
+
+`vendor/picpeak/dev/webhook-receiver/server.js` is a tiny, vendored,
+dev-only HTTP server: it accepts any POST, records method/URL/headers/body
+into an in-memory ring buffer, and logs one line per hit
+(`[webhook-receiver] <method> <url> sig=... type=...`) so `docker logs`
+shows a readable trace. `vendor/picpeak/tests/e2e/webhooks-roundtrip.spec.ts`
+documents it, in its own header comment, as the exact receiver its e2e
+webhook-roundtrip spec expects reachable at `webhook-receiver:8888` from
+inside Docker — this project runs the identical container, unmodified,
+rather than inventing a new listener.
+
+Added to this project's own `docker-compose.yml`, under the `backstage`
+profile, mirroring the `mailhog` service AC-17.6 already added the same
+way:
+
+```yaml
+webhook-receiver:
+  profiles: ["backstage"]
+  build:
+    context: ./vendor/picpeak/dev/webhook-receiver
+    dockerfile: Dockerfile
+  ports:
+    - "${WEBHOOK_RECEIVER_PORT:-7107}:8888"
+```
+
+No `WEBHOOK_ALLOW_PRIVATE_URLS` override was needed to register a webhook
+pointed at it: `validateExternalUrl`
+(`vendor/picpeak/backend/src/utils/networkValidation.js:85-95`) rejects
+only loopback/private-range IPs and hostnames ending in
+`.internal`/`.local`/`.localhost` — the bare Docker Compose service name
+`webhook-receiver` matches none of those checks, so it passes both the
+create-time and per-delivery validation upstream runs.
+
+```
+$ curl -s http://localhost:7107/health
+ok
+$ docker exec earthandhoney-backstage-backend-1 wget -q -O- http://webhook-receiver:8888/health
+ok
+```
+
+Both the host-mapped port and the Docker-network hostname the backend will
+actually POST to were confirmed reachable before registering anything.
+
+### An unrelated local-storage permission gap, hit and cleared before the create route would work
+
+The first attempt to create a Gallery to fire the webhooks against failed,
+live, with the same defect family AC-17.5.1/17.5.2/17.5.3 already named —
+a fourth occurrence, not a new one:
+
+```
+$ curl -s -i -b <seeded-admin-cookie-jar> -X POST http://localhost:3101/api/admin/events \
+    -H "Content-Type: application/json" -d '{ ... "is_draft": false }'
+
+HTTP/1.1 500 Internal Server Error
+{"error":"Failed to create event"}
+```
+
+with the backend log showing the identical `EACCES: permission denied,
+mkdir '/storage'` AC-17.5.1's write-up already traced to
+`adminEvents.js:609-612` unconditionally computing a local folder path
+(`process.env.STORAGE_PATH || path.join(__dirname, '../../../storage')`,
+i.e. `/storage`) regardless of `STORAGE_BACKEND=s3`, with no
+`STORAGE_PATH` env var set and no volume backing `/storage` in this
+project's `docker-compose.yml`. The one-time operational fix
+AC-17.5.1 already recorded was re-applied by hand — it does not persist
+across a `backstage-backend` container recreation, which is exactly what
+happened between that AC and this one:
+
+```
+$ docker compose --profile backstage exec -T backstage-backend sh -c 'mkdir -p /storage && chown -R nodejs:nodejs /storage'
+```
+
+No file under `vendor/picpeak/` was touched. This non-persistence (the fix
+must be re-applied after every `backstage-backend` recreation, e.g. the
+image rebuild this AC's own `webhook-receiver` service change triggered)
+is itself worth the Product Owner's attention under AC-17.9, on top of the
+underlying defect AC-17.5.1 already raised.
+
+### The webhook subscription, registered through the admin route upstream provides
+
+```
+$ curl -s -c cookies.txt -X POST http://localhost:3101/api/auth/admin/login \
+    -H 'Content-Type: application/json' \
+    -d '{"username":"admin","password":"change-me-in-production"}'
+HTTP/1.1 200 OK
+Set-Cookie: admin_token=eyJhbGciOiJIUzI1NiIs...; HttpOnly; SameSite=Lax
+
+$ curl -s -b cookies.txt -X POST http://localhost:3101/api/admin/webhooks \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"AC-17.7 verification listener","url":"http://webhook-receiver:8888/",
+         "events":["event.created","event.published"],"active":true}'
+{"id":15,"name":"AC-17.7 verification listener","url":"http://webhook-receiver:8888/",
+ "events":["event.created","event.published"],"active":true,"secret_preview":"p8PKotTk",
+ ...,"secret":"whsec_p8PKotTk0W0iJMFubi1xhb7XdV_jgNv_",
+ "notice":"Save this signing secret now — it will not be shown again."}
+```
+
+`POST /api/admin/webhooks` (`adminWebhooks.js:75-142`) — the plaintext
+signing secret is shown exactly once, per upstream's own design, and
+recorded here so the signature check below is independently reproducible
+against this specific run's evidence.
+
+### The event fired, deliberately not the synthetic test endpoint
+
+Upstream ships a `POST /:id/test` route
+(`adminWebhooks.js:236-281`) that enqueues a synthetic delivery — its own
+code comment states it bypasses subscription matching entirely. That route
+was **not** used to satisfy this AC, for the same reason AC-17.6 insisted
+on a real `gallery_created` email rather than a fabricated one: the point
+is to prove the *outbound integration path* a genuine lifecycle event
+takes, not that the admin UI's "send test event" button works.
+
+Instead, a new, real Gallery was created — the same supported interface
+(`POST /api/admin/events`) AC-17.1.3.1 and AC-17.5.1 already used — with
+`is_draft: false`, the create-and-publish-in-one-shot path:
+
+```
+$ curl -s -i -b cookies.txt -X POST http://localhost:3101/api/admin/events \
+    -H 'Content-Type: application/json' \
+    -d '{"event_type":"wedding","event_name":"AC-17.7 Webhook Verification Gallery",
+         "event_date":"2026-09-15","customer_name":"AC-17.7 Verification",
+         "customer_email":"ac17-7-webhook@example.com","admin_email":"admin@example.com",
+         "require_password":true,"password":"Webhook17point7!","expiration_days":30,
+         "is_draft":false}'
+
+HTTP/1.1 200 OK
+{"id":10,"slug":"wedding-ac-17-7-webhook-verification-gallery-2026-09-15",
+ "event_name":"AC-17.7 Webhook Verification Gallery", ..., "is_draft":false, ...}
+```
+
+`adminEvents.js:761-784` fires `event.created` unconditionally on create;
+`adminEvents.js:823-830` fires `event.published` in the same request
+specifically because `is_draft` was `false` — the "create-and-publish in
+one shot" branch the route's own comment names. Both calls enqueue rows
+into `webhook_deliveries` via `webhookService.fire()`
+(`webhookService.js:148-205`), which the already-running delivery worker
+(polling every `WEBHOOK_DELIVERY_INTERVAL_MS`, default 5000ms, per
+`webhookDeliveryWorker.js:7`) picks up on its own schedule — no manual
+trigger of the worker itself.
+
+### Delivered, success, visible through upstream's own admin feed
+
+```
+$ curl -s -b cookies.txt 'http://localhost:3101/api/admin/webhooks/15/deliveries'
+{"deliveries":[
+  {"id":16,"event_type":"event.published","attempt_count":1,"status":"success",
+   "response_status":200,"latency_ms":23,"completed_at":"2026-08-02T00:30:33.407Z"},
+  {"id":15,"event_type":"event.created","attempt_count":1,"status":"success",
+   "response_status":200,"latency_ms":22,"completed_at":"2026-08-02T00:30:33.406Z"}
+],"pagination":{"page":1,"limit":25,"total":2}}
+
+$ curl -s -b cookies.txt 'http://localhost:3101/api/admin/webhooks/15'
+{"id":15, ...,"last_success_at":"2026-08-02T00:30:33.410Z","last_failure_at":null}
+```
+
+This is `GET /:id/deliveries` (`adminWebhooks.js:284-327`) and
+`GET /:id` (`adminWebhooks.js:145-154`) — the deliveries page and webhook
+detail upstream already built for exactly this visibility requirement.
+Cross-checked directly against Postgres, not trusted from the HTTP
+response alone:
+
+```
+$ docker exec earthandhoney-backstage-db-1 psql -U backstage -d backstage \
+    -c "select id, webhook_id, event_type, status, attempt_count, response_status, created_at from webhook_deliveries where webhook_id=15 order by id;"
+ id | webhook_id |   event_type    | status  | attempt_count | response_status |         created_at
+----+------------+-----------------+---------+---------------+-----------------+----------------------------
+ 15 |         15 | event.created   | success |             1 |             200 | 2026-08-02 00:30:32.703+00
+ 16 |         15 | event.published | success |             1 |             200 | 2026-08-02 00:30:32.709+00
+```
+
+(Two rows at this point in the run — the second Gallery below had not been
+created yet. Both transcripts in this section were re-checked against live
+Postgres before commit; the timestamps and statuses below are psql's own
+rendering, including its trimming of trailing zeros in `00:30:58.64+00`.)
+
+### Independently confirmed captured by the listener, with a verified signature
+
+Not inferred from the `success` status alone — the receiver's own
+in-memory log was read directly:
+
+```
+$ curl -s http://localhost:7107/requests
+[
+  {"receivedAt":"2026-08-02T00:30:33.403Z","method":"POST","url":"/",
+   "headers":{"x-picpeak-signature":"4c79a2c1...219f557","x-picpeak-event":"event.created",
+              "x-picpeak-delivery":"0311ca02-198f-44d0-848c-bd22eb1d5a3b", ...},
+   "body":"{\"id\":\"0311ca02-...\",\"data\":{\"event\":{\"id\":10,
+            \"slug\":\"wedding-ac-17-7-webhook-verification-gallery-2026-09-15\",
+            \"event_name\":\"AC-17.7 Webhook Verification Gallery\", ...}},
+            \"type\":\"event.created\",\"created_at\":\"2026-08-02T00:30:32.703Z\"}"},
+  {"receivedAt":"2026-08-02T00:30:33.404Z", ...,"x-picpeak-event":"event.published", ...}
+]
+```
+
+Both entries name the exact Gallery just created (`id: 10`, the exact
+slug), so this is not a coincidental match — it is the same delivery the
+`success` rows above record having been sent. The `X-PicPeak-Signature`
+header (`webhookDeliveryWorker.js:15,123,132`) was independently
+recomputed against the plaintext secret returned at webhook-creation time
+and the exact received body, using the same HMAC-SHA256 primitive
+`webhookService.signPayload` exports (`webhookService.js:35-37`):
+
+```
+$ python3 -c "
+import hmac, hashlib
+secret = 'whsec_p8PKotTk0W0iJMFubi1xhb7XdV_jgNv_'
+body = '<exact body received above, byte for byte>'
+print(hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest())
+"
+4c79a2c17f2b458fa7c2f38d11dde66179be14bd924d57f34321962fe219f557
+```
+
+Matches the `X-PicPeak-Signature` header the listener actually received,
+byte for byte — proving the payload was neither forged nor tampered with
+in transit, not merely that *some* POST arrived.
+
+### Shown to reproduce, not to be a one-off
+
+A second, independently-created Gallery was used to re-run the whole cycle
+end to end, rather than relying on the one delivery pair that happened to
+land already:
+
+```
+$ curl -s -i -b cookies.txt -X POST http://localhost:3101/api/admin/events \
+    -H 'Content-Type: application/json' \
+    -d '{"event_type":"wedding","event_name":"AC-17.7 Webhook Verification Gallery Two",
+         "event_date":"2026-09-16","customer_name":"AC-17.7 Verification Two",
+         "customer_email":"ac17-7-webhook-2@example.com","admin_email":"admin@example.com",
+         "require_password":true,"password":"Webhook17point7Two!","expiration_days":30,
+         "is_draft":false}'
+HTTP/1.1 200 OK
+{"id":11,"slug":"wedding-ac-17-7-webhook-verification-gallery-two-2026-09-16", ...}
+
+$ docker exec earthandhoney-backstage-db-1 psql -U backstage -d backstage \
+    -c "select id, webhook_id, event_type, status, response_status, created_at from webhook_deliveries where webhook_id=15 order by id;"
+ id | webhook_id |   event_type    | status  | response_status |         created_at
+----+------------+-----------------+---------+-----------------+----------------------------
+ 15 |         15 | event.created   | success |             200 | 2026-08-02 00:30:32.703+00
+ 16 |         15 | event.published | success |             200 | 2026-08-02 00:30:32.709+00
+ 17 |         15 | event.created   | success |             200 | 2026-08-02 00:30:58.64+00
+ 18 |         15 | event.published | success |             200 | 2026-08-02 00:30:58.646+00
+(4 rows)
+
+$ curl -s http://localhost:7107/requests | python3 -c "
+import json,sys
+d = json.load(sys.stdin)
+print(len(d))
+for e in d:
+    b = json.loads(e['body'])
+    print(b['type'], b['data']['event']['id'])
+"
+4
+event.created 10
+event.published 10
+event.created 11
+event.published 11
+```
+
+Four deliveries total, all `success`, all captured by the listener with
+distinct Gallery ids (`10` and `11`) in the payload — the second run is a
+fresh, independent firing, not a re-read of the first.
+
+### Verdict
+
+AC-17.7 is satisfied. At least one Backstage webhook — in fact two event
+types (`event.created`, `event.published`), fired twice each by two
+independently-created, ordinary (non-draft) Galleries through the exact
+`POST /api/admin/events` route this story's own client-facing ACs already
+proved, not the synthetic `/:id/test` endpoint — was delivered by
+upstream's own webhook delivery worker to a listener
+(`vendor/picpeak/dev/webhook-receiver`, the fork's own dev tool, added to
+this project's `docker-compose.yml` as the `webhook-receiver` service
+under the `backstage` profile) that logged every request it received,
+including headers and raw body. Each logged payload's `X-PicPeak-Signature`
+was independently recomputed from the registered webhook's plaintext
+secret and matched byte for byte. The delivered/success state was visible
+through upstream's own admin-facing `GET /api/admin/webhooks/:id/deliveries`
+and `GET /api/admin/webhooks/:id` feeds, cross-checked against a direct
+Postgres read of `webhook_deliveries` each time. No vendored file was
+modified; only this project's own `docker-compose.yml` (a new
+`webhook-receiver` service) and the running instance's own
+admin-configurable webhook subscription changed. The local-storage
+permission gap that blocked the first Gallery-create attempt is the same
+defect AC-17.5.1 already named, re-encountered because its operational fix
+does not survive a `backstage-backend` container recreation — recorded
+here, for the Product Owner's attention under AC-17.9, as a fourth
+occurrence rather than a new defect. This proves the exact outbound
+integration path (`webhookService.fire()` → `webhook_deliveries` →
+`webhookDeliveryWorker` → signed HTTP POST) that a future Frontstage
+content-refresh listener will subscribe to in place of today's throwaway
+`webhook-receiver`.
 
 ## Recommendation and open questions (AC-14.6)
 
