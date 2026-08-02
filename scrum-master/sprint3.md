@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/7 stories | 61/70 ACs
-**Last Updated:** 2026-08-02T06:04:08+00:00
+**Last Updated:** 2026-08-02T06:15:55+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -848,6 +848,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-20.5:** The report records the reference project's secret-handling shape and confirms it will be mirrored here: local values in an uncommitted environment file, deployed values in repository secrets whose names match the environment variable names exactly, and the deployment step writing the environment file on the server. No secret value appears in the report or in any committed file.
   - Dev: implemented
 - [ ] **AC-20.6:** The report records which behaviours will be preserved when the payment flow is actually built — server-side payment creation, the route layout, webhook signature verification, repeat-event protection, success and cancel handling, and the rule that the authoritative amount is fetched from Stripe rather than trusted from the browser — and which behaviours are deliberately not carried over, with reasons. It is explicit that the reference project is a different language and framework, so faithful means matching logic and required-field structure, not copying lines.
+  - Dev: implemented
 - [ ] **AC-20.7:** The report states plainly that this payment path exists so the studio can charge its photography clients and is not subscription billing for a future software product, and it records the settled payment architecture rather than reopening it: the ported direct flow initiates payment, the ledger's own payment gateway stays disconnected, and the verified webhook reconciles the payment into the ledger and advances the project milestone. It states that exactly one webhook endpoint exists and that it lives in the fork backend where invoice status lives, that a browser redirect is never proof of payment, and that because the reference project is a different language the port crosses a language boundary and must be recorded in `FORK_CHANGELOG.md` as a deliberate deviation.
 - [ ] **AC-20.8:** `.env.example` is updated with the placeholder Stripe variable names in the convention taken from the reference project, each with a comment explaining what it is and which mode it must match.
 - [ ] **AC-20.9:** The report records the boundary of what "port faithfully" does and does not cover: the reference project is a one-shot checkout flow containing no saved payment method, no off-session charge, and no retry or dunning logic, so none of that is inherited. It states that V1 ships a payment schedule whose installments are each paid manually against a real ledger invoice, that automatic recurring card charges are deferred to V1.1 and must then be built on that same schedule, and that a subscription product must never be used because it would place an authoritative billing schedule outside the ledger.
@@ -883,6 +884,17 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   **Summary:**
   - `STRIPE_PORT_REPORT.md` — added section 10 (Secret-handling shape), recording the reference project's shape exactly as found (local `.env` gitignored/uncommitted, deploy secrets in GitHub Actions named identically to the env vars, `.github/workflows/main.yml` writing `.env` on the VPS via a heredoc of `${{ secrets.* }}` refs), then confirming all three parts will be mirrored here — citing this project's own `.gitignore` (already excludes `.env`/`.env.local`/`.env.*.local`), the resolved VPS target from `po-requests.md` item 2, and explicitly noting the current `deploy.yml` only does a CI-build placeholder copy today, not a real production deploy, so the mirroring is a specification for later, not an existing-implementation claim. States plainly no secret value appears in the report. Added section 11 (Method). Front matter extended to `related-ac: 20.1-20.5`.
   - `src/__tests__/us20-ac20.5-stripe-port-report-secret-handling.test.ts` (new, 15 tests) — verifies both halves of the section, the explicit non-overclaiming language, and scans the whole report plus this project's actual git-tracked state for any …
+  AC-20.6 implemented (local checks green): Committed to `feature/US-20` as `2c20a30`.
+  
+  ## Summary
+  
+  **AC-20.6 implemented** — not already satisfied; required new content since sections 1–11 of `STRIPE_PORT_REPORT.md` (from prior ACs) covered file inspection, env-var convention, key-pairing, start-up validation, and secret-handling, but not preserved/dropped payment-flow behaviours.
+  
+  **Files changed:**
+  - `STRIPE_PORT_REPORT.md` — added section 12 ("Behaviours preserved and dropped when the payment flow is built") and section 13 (Method), +189 lines. Frontmatter `related-ac` extended to include 20.6.
+  - `src/__tests__/us20-ac20.6-stripe-port-report-preserved-behaviours.test.ts` — new, 19 assertions.
+  
+  **Key finding driving the content:** direct re-inspection of the reference project (`/Users/asim/NoIcloud/techno/main.py`, all 14 `@app.route` decorators, plus a repo-wide grep excluding `.venv`) confirmed techno has **no webhook implementation at all** — only an unbuilt "optional" mention in its README. So the report is explicit that "webhook signature verification" and "repeat-event protection" aren't ported from reference-project code; they're required by Stripe's own SDK contract and this project's already-settled AC-20.7 recon …
 
 **Tester Status:** approved
 **Tester Notes:**
