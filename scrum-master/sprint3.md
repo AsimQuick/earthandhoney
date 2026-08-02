@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 4/7 stories | 50/70 ACs
-**Last Updated:** 2026-08-02T02:59:26+00:00
+**Last Updated:** 2026-08-02T03:09:31+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -706,6 +706,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-18.3:** The contract states that the Frontstage never reads the Backstage database directly and that no cross-database join exists anywhere in application code. Cross-system relationships are expressed as stored external identifiers.
   - Dev: implemented
 - [ ] **AC-18.4:** The contract covers the three flows the next sprint depends on: a Frontstage page displaying a public gallery by referencing its Backstage gallery identifier, a Frontstage inquiry being converted into a Backstage client and project, and a Backstage change triggering a Frontstage content refresh.
+  - Dev: implemented
 - [ ] **AC-18.5:** The document records which Backstage surfaces are to be disabled because they duplicate our chosen architecture — its public landing-page content management, its native quote/invoice/accounting screens, and any page-building capability — and how each will be disabled or hidden.
 - [ ] **AC-18.6:** A user-facing terminology mapping is recorded so internal names and the language the photographer sees never drift apart: the object PicPeak's own internal schema/UI calls an "Event" (its media-collection object) is presented to users as Gallery -- this is distinct from, and must not be confused with, this project's own controlled-vocabulary Event (a single dated occasion inside a Project, e.g. ceremony or reception) -- the customer account is called Client, the admin area is Backstage, and the customer portal is the Project Room.
 
@@ -733,6 +734,13 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   
   - `PAYLOAD_PICPEAK_API_CONTRACT.md` — added a "No cross-database access" section stating the Frontstage never reads the Backstage database directly, no cross-database join exists anywhere in application code, and cross-system relationships are expressed as stored external identifiers (slug/id/share_token). Backs this with three structural facts: two separate Postgres services in `docker-compose.yml` (`db` vs `backstage-db`) with distinct volumes/credentials, Payload's single `DATABASE_URL` pointing only at `db`, and no application file under `src/` opening a second DB connection or referencing `backstage-db`. Updated front matter (`related-ac: 18.2, 18.3`) and forward-referenced AC-18.4/18.5/18.6 so it doesn't pre-empt them.
   - `src/__tests__/us18-ac18.3-no-cross-database-access.test.ts` (new, 16 tests) — verifies the document's language/structure and independently ve …
+  AC-18.4 implemented (local checks green): Committed as `17e22c7` on `feature/US-18`. Not pushed, per instructions.
+  
+  **Implementation summary — AC-18.4:**
+  
+  - **`PAYLOAD_PICPEAK_API_CONTRACT.md`** — added a new `## The three flows the next sprint depends on (AC-18.4)` section (front matter updated to `related-ac: 18.2, 18.3, 18.4`):
+    - **Flow A** (gallery display): Frontstage stores a Backstage gallery `slug` as a stored external identifier, calls the existing call-catalog rows 1–2 (`GET /api/gallery/:slug/info`, `/photos`), renders via the existing Gallery Engine — no new gallery system introduced.
+    - **Flow B** (inquiry → client/project): closes the "row 4 gap" AC-18.3 recorded but left open, with a concrete design decision — extend the pinned fork's own `v1` Bearer-token API family (row 3's pattern) with new `POST /api/v1/customers` / `POST /api/v1/projects` routes that delegate to the same `customerAccountsService.createDirect()` / `projectService.createProject()` the existing admin-cookie routes already call, rather than reusing cookie auth or a new mechanism. States failure handling (non-idempotent, no silent retry) and marks the new routes as a Fork Discipline-compliant deviation for `FORK_CHANGELOG.md` when a later …
 
 **Tester Status:** approved
 **Tester Notes:**
