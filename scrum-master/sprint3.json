@@ -25,7 +25,7 @@
     "Coverage threshold met \u2014 the existing CI coverage gate is not lowered to pass",
     "Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)"
   ],
-  "last_updated": "2026-08-02T06:41:55+00:00",
+  "last_updated": "2026-08-02T06:48:57+00:00",
   "stories": [
     {
       "id": "US-14",
@@ -551,71 +551,71 @@
     {
       "id": "US-20",
       "title": "Extract the proven Stripe key-pairing and environment convention from the reference project",
-      "status": "in-progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [],
       "acceptance_criteria": [
         {
           "id": "20.1",
           "text": "The Stripe implementation in the reference project at `/Users/asim/NoIcloud/techno` is read directly \u2014 its payment routes, its server and client split, its templates, its environment example, and its deployment workflow \u2014 and `STRIPE_PORT_REPORT.md` lists every file inspected.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "20.2",
           "text": "The report records the reference project's environment-variable convention exactly as found: flat names with no test or live suffix, a secret key, a publishable key, and one identifier per priced item, with the operating mode determined solely by which coherent set of values is loaded.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "20.3",
           "text": "The report states the key-pairing rule in unambiguous terms \u2014 the secret key, the publishable key, and every priced-item identifier must all belong to the same Stripe mode \u2014 and explains why a mismatched pair fails, since this is the specific mistake made previously on this project.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "20.4",
           "text": "A start-up validation is specified that refuses to start, or fails loudly with an actionable message, when the loaded Stripe values are not all from the same mode or when any required value is missing. The specification says what is checked, when it runs, and what the operator sees.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "20.5",
           "text": "The report records the reference project's secret-handling shape and confirms it will be mirrored here: local values in an uncommitted environment file, deployed values in repository secrets whose names match the environment variable names exactly, and the deployment step writing the environment file on the server. No secret value appears in the report or in any committed file.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "20.6",
           "text": "The report records which behaviours will be preserved when the payment flow is actually built \u2014 server-side payment creation, the route layout, webhook signature verification, repeat-event protection, success and cancel handling, and the rule that the authoritative amount is fetched from Stripe rather than trusted from the browser \u2014 and which behaviours are deliberately not carried over, with reasons. It is explicit that the reference project is a different language and framework, so faithful means matching logic and required-field structure, not copying lines.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "20.7",
           "text": "The report states plainly that this payment path exists so the studio can charge its photography clients and is not subscription billing for a future software product, and it records the settled payment architecture rather than reopening it: the ported direct flow initiates payment, the ledger's own payment gateway stays disconnected, and the verified webhook reconciles the payment into the ledger and advances the project milestone. It states that exactly one webhook endpoint exists and that it lives in the fork backend where invoice status lives, that a browser redirect is never proof of payment, and that because the reference project is a different language the port crosses a language boundary and must be recorded in `FORK_CHANGELOG.md` as a deliberate deviation.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "20.8",
           "text": "`.env.example` is updated with the placeholder Stripe variable names in the convention taken from the reference project, each with a comment explaining what it is and which mode it must match.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "20.9",
           "text": "The report records the boundary of what \"port faithfully\" does and does not cover: the reference project is a one-shot checkout flow containing no saved payment method, no off-session charge, and no retry or dunning logic, so none of that is inherited. It states that V1 ships a payment schedule whose installments are each paid manually against a real ledger invoice, that automatic recurring card charges are deferred to V1.1 and must then be built on that same schedule, and that a subscription product must never be used because it would place an authoritative billing schedule outside the ledger.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         }
       ],
