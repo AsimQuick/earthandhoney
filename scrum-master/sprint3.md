@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 4/7 stories | 50/70 ACs
-**Last Updated:** 2026-08-02T02:33:53+00:00
+**Last Updated:** 2026-08-02T02:47:45+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -702,6 +702,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-18.1:** `SYSTEM_OWNERSHIP.md` exists and, for every domain in the ownership table in `CLAUDE.md`, names the single authoritative system, what the other systems may cache for display only, and what they are forbidden to write.
   - Dev: implemented
 - [ ] **AC-18.2:** `PAYLOAD_PICPEAK_API_CONTRACT.md` exists and specifies the boundary between the Frontstage application and the Backstage: which direction each call travels, what each call is for, how it authenticates, what identifiers cross the boundary, what happens on failure or timeout, and what the Frontstage is allowed to cache and for how long.
+  - Dev: implemented
 - [ ] **AC-18.3:** The contract states that the Frontstage never reads the Backstage database directly and that no cross-database join exists anywhere in application code. Cross-system relationships are expressed as stored external identifiers.
 - [ ] **AC-18.4:** The contract covers the three flows the next sprint depends on: a Frontstage page displaying a public gallery by referencing its Backstage gallery identifier, a Frontstage inquiry being converted into a Backstage client and project, and a Backstage change triggering a Frontstage content refresh.
 - [ ] **AC-18.5:** The document records which Backstage surfaces are to be disabled because they duplicate our chosen architecture — its public landing-page content management, its native quote/invoice/accounting screens, and any page-building capability — and how each will be disabled or hidden.
@@ -717,6 +718,12 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   
   - **`SYSTEM_OWNERSHIP.md`** (new, repo root) — for every domain in CLAUDE.md's Technology Stack section (the "ownership table," per the reading already established in AC-14.3/`PIVOT_AUDIT.md`), states the single authoritative system, what other systems may cache for display only, and what they are forbidden to write. Covers 7 domains: CMS non-gallery content (Payload), Gallery & media data (PicPeak/Backstage), Storage/R2 (PicPeak/Backstage), Auth (Better Auth), Email (Resend), Payments (Invoice Ninja, restating CLAUDE.md's own line), and Contracts. Includes a scoping section explaining which Technology Stack lines are/aren't ownership domains, and explicitly flags CLAUDE.md's `Contracts: Adobe Acrobat Sign` line as stale against `po-requests.md` item 7 and AC-17.10's verified findings — without editing CLAUDE.md or po-requests.md itself (both out of scope per Project Conventions).
   - **`src/__tests__/us18-ac18.1-system-ownership.test.ts`** (new, 20 tests) — verifies the document exists with the required metadata header, cites its reading of "ownership table," has a 7-row …
+  AC-18.2 implemented (local checks green): Committed as `afc94fc`.
+  
+  **Implementation summary — AC-18.2**
+  
+  - `PAYLOAD_PICPEAK_API_CONTRACT.md` (new, repo root): the general call catalog for the Frontstage↔Backstage boundary. A 5-row table (rows 1–3, 5 are Frontstage→Backstage / Backstage→Frontstage calls; row 4 documents a gap) covering direction, purpose, auth mechanism, crossing identifiers, failure/timeout behavior, and cache allowance for: `GET /api/gallery/:slug/info`, the password-verify→`photos` flow, the `v1/events` service-to-service family, the `adminCustomers`/`adminProjects` gap, and the outbound webhook delivery mechanism. Closes with a cache-allowance section tying the TTL to US-6's existing `revalidate = 60` ISR convention, and an explicit note on the row-4 (Client/Project creation) gap rather than inventing a calling mechanism that doesn't exist in the pinned fork. Defers AC-18.3/18.4/18.5/18.6 by name instead of pre-empting them.
+  - `src/__tests__/us18-ac18.2-payload-picpeak-api-contract.test.ts` (new): 23 tests verifying the doc exists, carries the required metadata header, uses Frontstage/Backstage terms consistently with `SYSTEM_OWNERSHIP.md`, has a well-formed 8-column call-catalog table covering both dir …
 
 **Tester Status:** approved
 **Tester Notes:**
