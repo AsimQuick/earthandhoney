@@ -1,8 +1,8 @@
 # Sprint 3
 
 **Phase:** planning
-**Progress:** 5/7 stories | 56/70 ACs
-**Last Updated:** 2026-08-02T04:58:37+00:00
+**Progress:** 6/7 stories | 61/70 ACs
+**Last Updated:** 2026-08-02T05:05:29+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -767,19 +767,19 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 ---
 
 ### US-19: Decide and record the media-reuse model, and audit the existing R2 setup
-**Status:** in-progress | **Priority:** high
+**Status:** done | **Priority:** high
 
 #### Acceptance Criteria
-- [ ] **AC-19.1:** `MEDIA_REUSE_ADR.md` states, on evidence from the running fork, how tightly an image is currently bound to a single gallery, and whether one stored original can already be referenced by more than one gallery.
-  - Dev: implemented
-- [ ] **AC-19.2:** The decision record chooses exactly one path forward — keep the upstream binding for V1 with a safe promotion workflow, introduce a reusable media-asset and gallery-item layer through new migrations, or an equivalent low-risk model — and states the reasons, the risks, and what would have to be true to revisit the decision.
-  - Dev: implemented
-- [ ] **AC-19.3:** The chosen model guarantees that no original binary is stored twice, that per-gallery ordering and metadata overrides remain possible, that selected client images can be promoted into a public portfolio gallery deliberately, and that promoting one image can never expose the rest of a private gallery.
-  - Dev: implemented
-- [ ] **AC-19.4:** `R2_STORAGE_AND_DELIVERY_ADR.md` records the audit of the existing R2 setup: which bucket is in use, whether its permissions are least-privilege, whether browser upload access is correctly restricted, what lifecycle rules exist, and which paths are public versus private.
-  - Dev: implemented
-- [ ] **AC-19.5:** `R2_STORAGE_AND_DELIVERY_ADR.md` opens with the delivery-path decision explicitly marked UNDECIDED and lists the candidate paths to be benchmarked in the next sprint — serving through the Backstage, direct time-limited links, public delivery through a content-network domain, an edge authorisation layer, and a hybrid — together with the measurements that will decide it and the performance targets the decision is accountable to (no image-caused layout shift, mobile-first performance near ninety on representative public pages, largest-contentful-paint around two and a half seconds or better on a realistic mobile profile, and public pages never requesting full-resolution originals unnecessarily). No agent may choose a path by preference before that benchmark exists.
-  - Dev: implemented
+- [x] **AC-19.1:** `MEDIA_REUSE_ADR.md` states, on evidence from the running fork, how tightly an image is currently bound to a single gallery, and whether one stored original can already be referenced by more than one gallery.
+  - Dev: done
+- [x] **AC-19.2:** The decision record chooses exactly one path forward — keep the upstream binding for V1 with a safe promotion workflow, introduce a reusable media-asset and gallery-item layer through new migrations, or an equivalent low-risk model — and states the reasons, the risks, and what would have to be true to revisit the decision.
+  - Dev: done
+- [x] **AC-19.3:** The chosen model guarantees that no original binary is stored twice, that per-gallery ordering and metadata overrides remain possible, that selected client images can be promoted into a public portfolio gallery deliberately, and that promoting one image can never expose the rest of a private gallery.
+  - Dev: done
+- [x] **AC-19.4:** `R2_STORAGE_AND_DELIVERY_ADR.md` records the audit of the existing R2 setup: which bucket is in use, whether its permissions are least-privilege, whether browser upload access is correctly restricted, what lifecycle rules exist, and which paths are public versus private.
+  - Dev: done
+- [x] **AC-19.5:** `R2_STORAGE_AND_DELIVERY_ADR.md` opens with the delivery-path decision explicitly marked UNDECIDED and lists the candidate paths to be benchmarked in the next sprint — serving through the Backstage, direct time-limited links, public delivery through a content-network domain, an edge authorisation layer, and a hybrid — together with the measurements that will decide it and the performance targets the decision is accountable to (no image-caused layout shift, mobile-first performance near ninety on representative public pages, largest-contentful-paint around two and a half seconds or better on a realistic mobile profile, and public pages never requesting full-resolution originals unnecessarily). No agent may choose a path by preference before that benchmark exists.
+  - Dev: done
 
 **Dependencies:** US-17
 

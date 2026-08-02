@@ -25,7 +25,7 @@
     "Coverage threshold met \u2014 the existing CI coverage gate is not lowered to pass",
     "Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)"
   ],
-  "last_updated": "2026-08-02T04:58:37+00:00",
+  "last_updated": "2026-08-02T05:05:29+00:00",
   "stories": [
     {
       "id": "US-14",
@@ -500,7 +500,7 @@
     {
       "id": "US-19",
       "title": "Decide and record the media-reuse model, and audit the existing R2 setup",
-      "status": "in-progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "US-17"
@@ -509,36 +509,36 @@
         {
           "id": "19.1",
           "text": "`MEDIA_REUSE_ADR.md` states, on evidence from the running fork, how tightly an image is currently bound to a single gallery, and whether one stored original can already be referenced by more than one gallery.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "19.2",
           "text": "The decision record chooses exactly one path forward \u2014 keep the upstream binding for V1 with a safe promotion workflow, introduce a reusable media-asset and gallery-item layer through new migrations, or an equivalent low-risk model \u2014 and states the reasons, the risks, and what would have to be true to revisit the decision.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "19.3",
           "text": "The chosen model guarantees that no original binary is stored twice, that per-gallery ordering and metadata overrides remain possible, that selected client images can be promoted into a public portfolio gallery deliberately, and that promoting one image can never expose the rest of a private gallery.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "19.4",
           "text": "`R2_STORAGE_AND_DELIVERY_ADR.md` records the audit of the existing R2 setup: which bucket is in use, whether its permissions are least-privilege, whether browser upload access is correctly restricted, what lifecycle rules exist, and which paths are public versus private.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "19.5",
           "text": "`R2_STORAGE_AND_DELIVERY_ADR.md` opens with the delivery-path decision explicitly marked UNDECIDED and lists the candidate paths to be benchmarked in the next sprint \u2014 serving through the Backstage, direct time-limited links, public delivery through a content-network domain, an edge authorisation layer, and a hybrid \u2014 together with the measurements that will decide it and the performance targets the decision is accountable to (no image-caused layout shift, mobile-first performance near ninety on representative public pages, largest-contentful-paint around two and a half seconds or better on a realistic mobile profile, and public pages never requesting full-resolution originals unnecessarily). No agent may choose a path by preference before that benchmark exists.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         }
       ],
