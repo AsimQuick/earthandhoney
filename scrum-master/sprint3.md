@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 4/7 stories | 50/70 ACs
-**Last Updated:** 2026-08-02T02:47:45+00:00
+**Last Updated:** 2026-08-02T02:59:26+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -704,6 +704,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-18.2:** `PAYLOAD_PICPEAK_API_CONTRACT.md` exists and specifies the boundary between the Frontstage application and the Backstage: which direction each call travels, what each call is for, how it authenticates, what identifiers cross the boundary, what happens on failure or timeout, and what the Frontstage is allowed to cache and for how long.
   - Dev: implemented
 - [ ] **AC-18.3:** The contract states that the Frontstage never reads the Backstage database directly and that no cross-database join exists anywhere in application code. Cross-system relationships are expressed as stored external identifiers.
+  - Dev: implemented
 - [ ] **AC-18.4:** The contract covers the three flows the next sprint depends on: a Frontstage page displaying a public gallery by referencing its Backstage gallery identifier, a Frontstage inquiry being converted into a Backstage client and project, and a Backstage change triggering a Frontstage content refresh.
 - [ ] **AC-18.5:** The document records which Backstage surfaces are to be disabled because they duplicate our chosen architecture — its public landing-page content management, its native quote/invoice/accounting screens, and any page-building capability — and how each will be disabled or hidden.
 - [ ] **AC-18.6:** A user-facing terminology mapping is recorded so internal names and the language the photographer sees never drift apart: the object PicPeak's own internal schema/UI calls an "Event" (its media-collection object) is presented to users as Gallery -- this is distinct from, and must not be confused with, this project's own controlled-vocabulary Event (a single dated occasion inside a Project, e.g. ceremony or reception) -- the customer account is called Client, the admin area is Backstage, and the customer portal is the Project Room.
@@ -724,6 +725,14 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   
   - `PAYLOAD_PICPEAK_API_CONTRACT.md` (new, repo root): the general call catalog for the Frontstage↔Backstage boundary. A 5-row table (rows 1–3, 5 are Frontstage→Backstage / Backstage→Frontstage calls; row 4 documents a gap) covering direction, purpose, auth mechanism, crossing identifiers, failure/timeout behavior, and cache allowance for: `GET /api/gallery/:slug/info`, the password-verify→`photos` flow, the `v1/events` service-to-service family, the `adminCustomers`/`adminProjects` gap, and the outbound webhook delivery mechanism. Closes with a cache-allowance section tying the TTL to US-6's existing `revalidate = 60` ISR convention, and an explicit note on the row-4 (Client/Project creation) gap rather than inventing a calling mechanism that doesn't exist in the pinned fork. Defers AC-18.3/18.4/18.5/18.6 by name instead of pre-empting them.
   - `src/__tests__/us18-ac18.2-payload-picpeak-api-contract.test.ts` (new): 23 tests verifying the doc exists, carries the required metadata header, uses Frontstage/Backstage terms consistently with `SYSTEM_OWNERSHIP.md`, has a well-formed 8-column call-catalog table covering both dir …
+  AC-18.3 implemented (local checks green): Committed as `fe3fb3e` on `feature/US-18`. Working tree is clean; not pushing per instructions.
+  
+  **Implementation summary:**
+  
+  Closed the gap the Tester identified: the AC-18.3 content and its test existed only as uncommitted working-tree changes, so a fresh checkout of the branch didn't satisfy the AC. Committed both:
+  
+  - `PAYLOAD_PICPEAK_API_CONTRACT.md` — added a "No cross-database access" section stating the Frontstage never reads the Backstage database directly, no cross-database join exists anywhere in application code, and cross-system relationships are expressed as stored external identifiers (slug/id/share_token). Backs this with three structural facts: two separate Postgres services in `docker-compose.yml` (`db` vs `backstage-db`) with distinct volumes/credentials, Payload's single `DATABASE_URL` pointing only at `db`, and no application file under `src/` opening a second DB connection or referencing `backstage-db`. Updated front matter (`related-ac: 18.2, 18.3`) and forward-referenced AC-18.4/18.5/18.6 so it doesn't pre-empt them.
+  - `src/__tests__/us18-ac18.3-no-cross-database-access.test.ts` (new, 16 tests) — verifies the document's language/structure and independently ve …
 
 **Tester Status:** approved
 **Tester Notes:**
