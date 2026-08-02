@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 5/7 stories | 56/70 ACs
-**Last Updated:** 2026-08-02T04:41:16+00:00
+**Last Updated:** 2026-08-02T04:52:54+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -777,6 +777,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-19.3:** The chosen model guarantees that no original binary is stored twice, that per-gallery ordering and metadata overrides remain possible, that selected client images can be promoted into a public portfolio gallery deliberately, and that promoting one image can never expose the rest of a private gallery.
   - Dev: implemented
 - [ ] **AC-19.4:** `R2_STORAGE_AND_DELIVERY_ADR.md` records the audit of the existing R2 setup: which bucket is in use, whether its permissions are least-privilege, whether browser upload access is correctly restricted, what lifecycle rules exist, and which paths are public versus private.
+  - Dev: implemented
 - [ ] **AC-19.5:** `R2_STORAGE_AND_DELIVERY_ADR.md` opens with the delivery-path decision explicitly marked UNDECIDED and lists the candidate paths to be benchmarked in the next sprint — serving through the Backstage, direct time-limited links, public delivery through a content-network domain, an edge authorisation layer, and a hybrid — together with the measurements that will decide it and the performance targets the decision is accountable to (no image-caused layout shift, mobile-first performance near ninety on representative public pages, largest-contentful-paint around two and a half seconds or better on a realistic mobile profile, and public pages never requesting full-resolution originals unnecessarily). No agent may choose a path by preference before that benchmark exists.
 
 **Dependencies:** US-17
@@ -802,6 +803,19 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `src/__tests__/us19-ac19.3-media-reuse-guarantees.test.ts` (new, 26 tests) — verifies all four guarantee sections exist with the required schema detail and independently re-verifies every cited line against the real vendored fork source.
   
   **Verification:** full suite 91 suites / 2361 tests passing, coverage 98.49% stmts. No dependency changes, so no `package-lock.json` up …
+  AC-19.4 implemented (local checks green): ## Summary
+  
+  **AC-19.4 implemented** — commit `799b10e` on `feature/US-19`.
+  
+  **Files changed:**
+  - `R2_STORAGE_AND_DELIVERY_ADR.md` (new) — records the R2 setup audit
+  - `src/__tests__/us19-ac19.4-r2-storage-audit-adr.test.ts` (new) — 28 tests
+  
+  **Audit method:** Real R2 credentials were present in the local `.env` (per `po-requests.md` item 1, resolved 2026-07-30, which explicitly names this AC as where they get security-audited). I ran read-only `aws s3api` calls directly against the live bucket — `list-buckets`, `list-objects-v2`, `get-bucket-lifecycle-configuration`, `get-bucket-cors` — following the same live-evidence precedent `PIVOT_AUDIT.md` already established against this bucket. No write/delete calls were made.
+  
+  **Findings recorded in the ADR:**
+  1. **Bucket in use** — single bucket `earthandhoney`; live `ListBuckets` confirms no second bucket exists; live listing shows all objects live under `backstage/`, confirming Payload's parallel `s3Storage` config has never written an object (dormant in practice, not just by ownership decision).
+  2. **Least privilege** — code only ever needs object-level R/W/list/delete/copy; live `ListBuckets` returning only one bucket is evidence the …
 
 **Tester Status:** approved
 **Tester Notes:**
