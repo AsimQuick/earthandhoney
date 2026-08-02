@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/7 stories | 18/70 ACs
-**Last Updated:** 2026-08-02T00:58:12+00:00
+**Last Updated:** 2026-08-02T01:11:37+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -340,6 +340,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-17.8:** The bundled gallery style templates render unmodified, and a copy of each original template file is preserved so future Earth & Honey variants can be diffed against the untouched baseline. `PICPEAK_PORT_LEDGER.md` records every template copied and where it is used.
   - Dev: implemented
 - [ ] **AC-17.9:** Findings are recorded honestly: anything that does not work as the PRD assumed is written up in `PIVOT_AUDIT.md` and raised to the Product Owner rather than quietly patched.
+  - Dev: implemented
 - [ ] **AC-17.10:** PicPeak's native contract-signing capability is verified against the actual pinned commit, not assumed from documentation or memory: typed name capture, a consent checkbox, a drawn signature, signer IP address and timestamp, a frozen snapshot of the signed contract contents, a SHA-256 integrity hash, and an audit page baked into the delivered PDF. For each element, the evidence (file/line, or a reproduced signing flow) is recorded in `PIVOT_AUDIT.md`. If any element is missing or works differently than assumed in `CLAUDE.md`/PRD §29, this is written up honestly and raised in `scrum-master/po-requests.md` as reopening the contract-signing decision — no silent workaround, and no quiet fallback to an external e-sign vendor or manual upload.
 
 **Dependencies:** US-16
@@ -669,6 +670,12 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `src/lib/galleryStyleTemplateBaseline.ts` — single-source-of-truth manifest (name, slot, source migration path/export, baseline file path).
   - `PICPEAK_PORT_LEDGER.md` — records all three templates, their pinned-source location and line ranges, their baseline copies, and the full render path they're used through (storage in `css_templates`/`events.css_template_id`, public `GET /:slug/css-template` route, client fetch+injection via `useGalleryCustomCss`/`GalleryView.tsx`, admin editing via `CssTemplateEditor.tsx`).
   - `src/__tests__/us17-ac17. …
+  AC-17.9 implemented (local checks green): **Implementation summary — AC-17.9**
+  
+  AC-17.9 requires that anything AC-17.1–17.8 found not working as the PRD assumed be written up honestly in `PIVOT_AUDIT.md` and raised to the Product Owner rather than quietly patched. Across those eight ACs, nine such findings were already recorded in place, each tagged "raised... under AC-17.9." This AC's deliverable consolidates them into a single register, following the exact precedent AC-14.6 already set for the same document in sprint 2.
+  
+  **Files changed:**
+  - `PIVOT_AUDIT.md` — new `## AC-17.9 — findings recorded honestly, consolidated for the Product Owner` section, inserted after AC-17.7's verdict and before `## Recommendation and open questions (AC-14.6)` (which must stay the document's final section — an existing AC-14.6 test enforces that). Contains a 9-row finding register (F1–F9: PRD assumption vs. actual, basis citation, patched-in-fork y/n), a note that only F8 (the openly-registered UD-1 single-photo-download workaround) was ever patched, and a routing statement pointing all nine to `scrum-master/po-requests.md` for Product Owner attention — without editing that file, since it's owned outside this AC's scope. Front-matter header …
 
 **Tester Status:** approved
 **Tester Notes:**
