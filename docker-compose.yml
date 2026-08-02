@@ -140,6 +140,42 @@ services:
       backstage-backend:
         condition: service_healthy
 
+  # AC-17.6: capture-inbox mail catcher for Backstage's operational gallery
+  # emails (gallery_created, gallery_expired, archive_complete, ...). The
+  # vendored fork's own compose (vendor/picpeak/docker-compose.yml) already
+  # ships this exact service — mirrored here rather than run standalone so it
+  # shares this stack's network and the "backstage" profile lifecycle.
+  # Hostname "mailhog" is not arbitrary: migrations/core/001_init.js seeds
+  # email_configs.smtp_host to `process.env.SMTP_HOST || 'mailhog'`, so a
+  # freshly-migrated backstage-db already points at this exact service name.
+  mailhog:
+    image: mailhog/mailhog:latest
+    profiles: ["backstage"]
+    ports:
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+
+  # AC-17.7: listener for Backstage's outbound webhooks (event.created,
+  # event.published, event.expired, event.archived, photo.uploaded,
+  # photo.deleted). The vendored fork ships this exact tiny logger at
+  # vendor/picpeak/dev/webhook-receiver — its own webhooks-roundtrip e2e spec
+  # (vendor/picpeak/tests/e2e/webhooks-roundtrip.spec.ts) documents it as the
+  # dev-loopback target for exactly this proof — mirrored here, unmodified,
+  # rather than run standalone, so it shares this stack's network and the
+  # "backstage" profile lifecycle. Hostname "webhook-receiver" is not blocked
+  # by the pinned fork's own validateExternalUrl SSRF guard
+  # (backend/src/utils/networkValidation.js), which only rejects
+  # loopback/private-range IPs and *.internal/*.local/*.localhost hostnames —
+  # so no WEBHOOK_ALLOW_PRIVATE_URLS override is needed to register a webhook
+  # pointed at it.
+  webhook-receiver:
+    profiles: ["backstage"]
+    build:
+      context: ./vendor/picpeak/dev/webhook-receiver
+      dockerfile: Dockerfile
+    ports:
+      - "${WEBHOOK_RECEIVER_PORT:-7107}:8888"
+
 volumes:
   pgdata:
   backstage_pgdata:

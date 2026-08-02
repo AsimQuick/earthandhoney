@@ -235,8 +235,13 @@ describe('AC-17.2: a batch of real images can be uploaded and processed', () => 
       )
 
       const galleryLines = read('vendor/picpeak/backend/src/routes/gallery.js').split('\n')
-      expect(galleryLines[1383]).toContain('const heroPath = await ensureHeroImage(photo);')
-      expect(galleryLines[1484]).toContain('ensurePreviewImage(photo)')
+      // Indices track the vendored file as it stands on this branch: the
+      // AC-17.5.2 and AC-17.5.3 fork patches to the single-photo download
+      // route above these lines shifted everything below it (+44 lines in
+      // total). The cited lines in the audit prose are the pinned-upstream
+      // numbers and are re-anchored to these in the AC-17.2 addendum there.
+      expect(galleryLines[1530]).toContain('const heroPath = await ensureHeroImage(photo);')
+      expect(galleryLines[1631]).toContain('ensurePreviewImage(photo)')
 
       const adminThumbLines = read('vendor/picpeak/backend/src/routes/adminThumbnails.js').split('\n')
       expect(adminThumbLines[199]).toContain("router.post('/regenerate-previews'")

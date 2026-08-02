@@ -128,8 +128,8 @@ describe('AC-17.3: gallery password protection refuses without, grants with, the
       expect(auth[183]).toContain("router.post('/gallery/verify'")
 
       const gallery = read('vendor/picpeak/backend/src/routes/gallery.js').split('\n')
-      expect(gallery[215]).toContain("router.get('/:slug/photos'")
-      expect(gallery[215]).toContain('verifyGalleryAccess')
+      expect(gallery[217]).toContain("router.get('/:slug/photos'")
+      expect(gallery[217]).toContain('verifyGalleryAccess')
 
       const server = read('vendor/picpeak/backend/server.js').split('\n')
       expect(server[630]).toContain("app.use('/api/auth', authRoutes)")

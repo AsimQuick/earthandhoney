@@ -11,7 +11,9 @@ const { resolveGuest } = require('../middleware/guestAuth');
 const { generateGuestIdentifier } = require('../middleware/feedbackRateLimit');
 const secureImageService = require('../services/secureImageService');
 const logger = require('../utils/logger');
-const { resolvePhotoFilePath } = require('../services/photoResolver');
+// resolvePhotoStorageKey added for US-17 AC-17.5.2 — see the patched
+// download route below.
+const { resolvePhotoFilePath, resolvePhotoStorageKey } = require('../services/photoResolver');
 const { getEventShareToken, resolveShareIdentifier, buildShareLinkVariants } = require('../services/shareLinkService');
 const { handleAsync } = require('../utils/routeHelpers');
 const { NotFoundError } = require('../utils/errors');
@@ -650,23 +652,61 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, async (req, res) => 
       return res.status(403).json({ error: 'Photo not available' });
     }
 
-    // Update download count
-    await db('photos').where('id', photoId).increment('download_count', 1);
-    
-    // Log download
-    await db('access_logs').insert({
-      event_id: req.event.id,
-      ip_address: req.ip,
-      user_agent: req.headers['user-agent'],
-      action: 'download',
-      photo_id: photoId
-    });
-    
-    let filePath;
+    // --- vendor-defect fix: US-17 AC-17.5.3 (start) ---
+    // UD-1 part (3), see PICPEAK_UPSTREAM_DEFECTS.md: upstream ran the
+    // download_count increment and the access_logs insert here, before any
+    // attempt to resolve or send the file, so a 404 (or, pre-AC-17.5.2, the
+    // res.sendFile hang) was still recorded as a successful download.
+    // Record only once delivery is confirmed, and at most once per request:
+    // the response's `finish` event for the watermark/storage-stream
+    // branches below (attached only once each branch has committed to a
+    // real send), and res.sendFile's success callback for the
+    // external-photo branch. Never called from a failure branch.
+    let downloadRecorded = false;
+    const recordConfirmedDownload = () => {
+      if (downloadRecorded) return;
+      downloadRecorded = true;
+      db('photos').where('id', photoId).increment('download_count', 1).catch((countError) => {
+        logger.error('Failed to record download count', {
+          slug: req.params.slug,
+          photoId,
+          eventId: req.event.id,
+          error: countError.message,
+        });
+      });
+      db('access_logs').insert({
+        event_id: req.event.id,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent'],
+        action: 'download',
+        photo_id: photoId
+      }).catch((logError) => {
+        logger.error('Failed to record download access log', {
+          slug: req.params.slug,
+          photoId,
+          eventId: req.event.id,
+          error: logError.message,
+        });
+      });
+    };
+    // --- vendor-defect fix: US-17 AC-17.5.3 (end) ---
+
+    // --- vendor-defect fix: US-17 AC-17.5.2 (start) ---
+    // Upstream always resolved this route through resolvePhotoFilePath,
+    // i.e. a local filesystem path — 404/500ing (or worse, hanging via
+    // res.sendFile, see below) on S3/R2 deployments where managed photos
+    // don't live on the container's local disk. Resolve through the
+    // storage backend for managed photos, the way protectedImages.js
+    // (lines 105-130) already does; resolvePhotoFilePath survives only
+    // for photos with no storage key (external/reference photos).
+    let storageKey = null;
+    let filePath = null;
+    let storageStat = null;
+
     try {
-      filePath = resolvePhotoFilePath(req.event, photo);
+      storageKey = resolvePhotoStorageKey(req.event, photo);
     } catch (resolveError) {
-      logger.error('Failed to resolve photo path for download', {
+      logger.error('Failed to resolve photo storage key for download', {
         slug: req.params.slug,
         photoId,
         eventId: req.event.id,
@@ -674,7 +714,35 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, async (req, res) => 
       });
       return res.status(404).json({ error: 'Photo file not found' });
     }
-    
+
+    const storage = getStorage();
+
+    if (storageKey) {
+      storageStat = await storage.stat(storageKey);
+      if (!storageStat) {
+        logger.error('Photo not found in storage backend for download', {
+          slug: req.params.slug,
+          photoId,
+          eventId: req.event.id,
+          storageKey,
+        });
+        return res.status(404).json({ error: 'Photo file not found' });
+      }
+    } else {
+      try {
+        filePath = resolvePhotoFilePath(req.event, photo);
+      } catch (resolveError) {
+        logger.error('Failed to resolve photo path for download', {
+          slug: req.params.slug,
+          photoId,
+          eventId: req.event.id,
+          error: resolveError.message,
+        });
+        return res.status(404).json({ error: 'Photo file not found' });
+      }
+    }
+    // --- vendor-defect fix: US-17 AC-17.5.2 (end) ---
+
     // Get watermark settings - apply if global setting OR event-level setting is enabled
     const watermarkSettings = await watermarkService.getWatermarkSettings();
     const eventWatermarkEnabled = req.event.watermark_downloads === true || req.event.watermark_downloads === 1;
@@ -695,7 +763,14 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, async (req, res) => 
         enabled: true,
         text: req.event.watermark_text || watermarkSettings?.text || 'Protected'
       };
-      const watermarkedBuffer = await watermarkService.applyWatermark(filePath, effectiveSettings);
+      // vendor-defect fix: US-17 AC-17.5.2 — watermarkService.applyWatermark
+      // takes a local path, not a buffer/stream. For storage-backed photos
+      // (S3/R2), materialize a tmp local copy first, matching the
+      // withLocalCopy pattern in protectedImages.js:292-293.
+      const watermarkedBuffer = storageKey
+        ? await withLocalCopy(storageKey, (localPath) =>
+          watermarkService.applyWatermark(localPath, effectiveSettings))
+        : await watermarkService.applyWatermark(filePath, effectiveSettings);
 
       res.set({
         'Content-Type': photo.mime_type || 'image/jpeg',
@@ -703,7 +778,59 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, async (req, res) => 
         'Content-Length': watermarkedBuffer.length
       });
 
+      // vendor-defect fix: US-17 AC-17.5.3 — record only once this response
+      // has actually finished sending; see the helper defined above.
+      res.once('finish', recordConfirmedDownload);
       res.send(watermarkedBuffer);
+    } else if (storageKey) {
+      // vendor-defect fix: US-17 AC-17.5.2 — stream from the storage
+      // backend (LocalFs or S3/R2) rather than assuming a local fs path.
+      // Content-Length comes from the same stat() used to confirm the
+      // object exists above.
+      res.set({
+        'Content-Type': photo.mime_type || 'image/jpeg',
+        'Content-Disposition': contentDisposition,
+        'Content-Length': storageStat.size,
+      });
+      let stream;
+      try {
+        stream = await storage.get(storageKey);
+      } catch (streamOpenError) {
+        logger.error('Failed to open storage stream for download', {
+          slug: req.params.slug,
+          photoId,
+          eventId: req.event.id,
+          storageKey,
+          error: streamOpenError.message,
+        });
+        if (!res.headersSent) {
+          return res.status(500).json({ error: 'Failed to download photo' });
+        }
+        return res.destroy(streamOpenError);
+      }
+      stream.on('error', (streamError) => {
+        logger.error('Error streaming gallery download from storage', {
+          slug: req.params.slug,
+          photoId,
+          eventId: req.event.id,
+          storageKey,
+          error: streamError.message,
+        });
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Failed to download photo' });
+        } else {
+          res.destroy(streamError);
+        }
+      });
+      // vendor-defect fix: US-17 AC-17.5.3 — the storage stream's own 'end'
+      // event fires only once it has been fully, successfully read (it is
+      // mutually exclusive with 'error'), so the response 'finish' listener
+      // is attached only on that path — never in front of an error response
+      // that reuses the same `res`.
+      stream.on('end', () => {
+        res.once('finish', recordConfirmedDownload);
+      });
+      stream.pipe(res);
     } else {
       // res.download() builds Content-Disposition itself but doesn't emit the
       // RFC 5987 filename* parameter, so unicode camera filenames would lose
@@ -721,6 +848,22 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, async (req, res) => 
             eventId: req.event.id,
             error: downloadError.message,
           });
+          // vendor-defect fix: US-17 AC-17.5.2 — upstream only logged this
+          // error, leaving the request to hang forever with no response.
+          // Answer instead: 404 for a missing file, 500 for anything else,
+          // or destroy the connection if a partial file was already sent.
+          if (res.headersSent) {
+            res.destroy(downloadError);
+          } else {
+            const status = downloadError.code === 'ENOENT' ? 404 : 500;
+            res.status(status).json({ error: 'Failed to download photo' });
+          }
+        } else {
+          // vendor-defect fix: US-17 AC-17.5.3 — sendFile's own success
+          // branch (no error argument) is the confirmed-delivery signal for
+          // this path, so record here rather than on the response 'finish'
+          // event.
+          recordConfirmedDownload();
         }
       });
     }
@@ -731,7 +874,11 @@ router.get('/:slug/download/:photoId', verifyGalleryAccess, async (req, res) => 
       eventId: req.event?.id,
       error: error.message,
     });
-    res.status(500).json({ error: 'Failed to download photo' });
+    if (res.headersSent) {
+      res.destroy(error);
+    } else {
+      res.status(500).json({ error: 'Failed to download photo' });
+    }
   }
 });
 

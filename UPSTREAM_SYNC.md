@@ -90,3 +90,32 @@ using that real migration, before the deviation is also logged in
 
 - **Recorded:** 2026-07-31
 - **Recorded by:** dev-team (US-16, AC-16.6)
+
+## 4. Drop-rather-than-merge: vendor-defect patches
+
+Not every entry in `FORK_CHANGELOG.md` should survive a sync. §1's merge
+strategy preserves fork commits by default, which is right for a *deliberate*
+deviation (pointing storage at our R2 bucket, say) — those are permanent and
+must survive every future update. It is wrong for a patch that exists only
+because upstream is broken: once upstream fixes the bug, carrying our
+workaround forward means maintaining a second, divergent fix forever.
+
+**Patches listed below are flagged drop-rather-than-merge.** At every sync,
+before resolving conflicts in the files they touch, check each patch's drop
+condition in `PICPEAK_UPSTREAM_DEFECTS.md`. If the condition is met at the new
+pin, **delete the patch rather than merging it forward**, and record the
+deletion as a new `FORK_CHANGELOG.md` entry. If the condition is not met, the
+patch is carried unchanged and stays flagged here.
+
+| Patch | Files it touches (within the fork tree) | Register entry | Drop when |
+|---|---|---|---|
+| Single-photo gallery download: storage-backend resolution, responding failure paths, and recording the download only on a confirmed send (US-17 AC-17.5.2 / AC-17.5.3; `FORK_CHANGELOG.md` `2026-08-01` `deviation`) | `backend/src/routes/gallery.js` (`GET /:slug/download/:photoId`); `backend/src/__tests__/galleryDownload.storageBackend.test.js` | **UD-1** in `PICPEAK_UPSTREAM_DEFECTS.md` | The pin moves to an upstream commit in which this route resolves managed photos through `getStorage()`, its failure paths send a response, **and** the `download_count`/`access_logs` writes happen only after a confirmed send. All three, at that commit — a partial upstream fix means the patch is reduced, not dropped. |
+
+`backend/src/routes/gallery.js` is, by virtue of the above, now also a
+conflict-prone file for the purposes of §2 — it carries a fork patch that any
+upstream change to the same route will collide with. It is deliberately not
+added to §2's table, because §2 lists files this fork expects to deviate at
+*permanently*; this one is expected to stop deviating.
+
+- **Recorded:** 2026-08-01
+- **Recorded by:** dev-team (US-17, AC-17.5.3)
