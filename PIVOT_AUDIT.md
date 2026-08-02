@@ -340,7 +340,18 @@ related-story: US-14
          blocked the first attempt and needed a one-time operational fix —
          the fourth occurrence of the same defect family AC-17.5.1/17.5.2
          already named.
-related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3, 17.5.1, 17.5.2, 17.5.3, 17.6, 17.7
+         AC-17.9 — consolidates the nine findings AC-17.1 through AC-17.8
+         already recorded in place into one register (PRD assumption vs.
+         actual upstream behaviour, basis, and whether the fork patched
+         it), confirms only the openly-registered UD-1 single-photo
+         download workaround was ever patched — everything else is a
+         recorded fact about pinned-upstream behaviour, not a defect this
+         project's code could fix — and states, per AC-14.6's own routing
+         pattern, that all nine are to be added to
+         `scrum-master/po-requests.md` rather than decided silently, without
+         editing that file directly since it is owned outside this AC's
+         scope.
+related-ac: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 17.1.1, 17.1.2, 17.1.3.1, 17.1.3.2, 17.1.3.3, 17.2, 17.3, 17.4.1.1.1.1.1.1, 17.4.1.1.1.1.1.2, 17.4.1.1.1.1.1.3, 17.4.1.1.1.1.2, 17.4.1.1.1.1.3, 17.4.1.1.1.2.1, 17.4.1.1.1.2.2.1, 17.4.1.1.1.2.2.2, 17.4.1.1.1.2.2.3, 17.4.1.1.1.2.3, 17.4.1.1.1.3, 17.4.1.1.2, 17.4.1.1.3, 17.4.1.2, 17.4.1.3, 17.4.2, 17.4.3, 17.5.1, 17.5.2, 17.5.3, 17.6, 17.7, 17.9
 ---
 -->
 
@@ -6112,6 +6123,47 @@ integration path (`webhookService.fire()` → `webhook_deliveries` →
 `webhookDeliveryWorker` → signed HTTP POST) that a future Frontstage
 content-refresh listener will subscribe to in place of today's throwaway
 `webhook-receiver`.
+
+## AC-17.9 — findings recorded honestly, consolidated for the Product Owner
+
+`US-17` AC-17.9 requires that anything AC-17.1 through AC-17.8 found that does
+not work as the PRD assumed is written up honestly and raised to the Product
+Owner rather than quietly patched. Every finding below was already recorded
+in place, in the AC section where it was found — this section adds no new
+material, it consolidates what is already written above into one register,
+the same pattern AC-14.6 already used to close the sprint-2 pivot audit.
+
+### Consolidated finding register
+
+| Finding | PRD assumption vs. actual upstream behaviour | Basis | Patched in the fork? |
+|---|---|---|---|
+| **F1** — A Gallery created inside a Project does not inherit the Project's Client — the link must be assigned explicitly through the admin edit route. | The PRD's Project→Gallery→Client hierarchy reads as automatic; upstream only writes `event_customer_assignments` when the create/edit request body explicitly carries `customer_account_ids`. | AC-17.1.3.3, "Finding: the Gallery→Client link is NOT inherited from the Project" | No — a real gap in a workflow assumption, not a fork defect to fix. |
+| **F2** — `PUT /api/admin/events/:id` returns `500` when `customer_account_ids` is the only field sent; it must be sent alongside other event fields. | The admin edit route is assumed to accept a partial update for any single field. | AC-17.1.3.3, "Finding: `PUT /api/admin/events/:id` 500s when `customer_account_ids` is the only field sent"| No — recorded as upstream's actual validation behaviour. |
+| **F3** — Upload processing produces only one derivative (thumbnail) eagerly; the preview and hero tiers exist and work correctly but are not produced until something explicitly requests them. | The AC-17.2 wording ("the expected derivative sizes are produced") reads as all tiers being produced by processing itself. | AC-17.2, "Derivative sizes: one is eager, two more exist but are lazy" | No — Fork Discipline forbids editing the vendored processing path for a behaviour, not a defect. |
+| **F4** — The `photos` table has no `aspect_ratio` column; aspect ratio is always a derived value (`width / height`), never persisted. | AC-17.2 literally lists "aspect ratio" among the fields "stored image records include." | AC-17.2, "Stored image record fields, checked against this AC's list" | No — a genuine gap against the AC's literal wording, not a defect. |
+| **F5** — Up to roughly an hour of lag exists between a Gallery's `expires_at` passing and the hourly `expirationChecker` sweep actually denying client access; the endpoint that sets `expires_at` gives no indication that enforcement is still pending. | AC-17.4's plain-language standard ("past its expiry, the gallery no longer grants client access") reads as immediate. | AC-17.4.2, "The real gap this AC finds: enforcement lag between the two named interfaces" | No — a real gap in the scheduled-process model, not a fork defect. |
+| **F6** — A recurring local-filesystem-only storage assumption breaks three separate upstream routes under this deployment's S3 backend: the single-photo download route (`gallery.js:631`), the archive-restore route (`POST /api/admin/archives/:id/restore`, 404s because it resolves the archive on local disk), and the Gallery-create route's local folder creation (`EACCES: permission denied, mkdir '/storage'`). | `STORAGE_BACKEND=s3` is assumed to be honoured uniformly across every route that touches stored files. | AC-17.4.3 (archive-restore); AC-17.5.1 (Gallery-create `/storage` gap); AC-17.5.2/17.5.3 (single-photo download, F8 below); AC-17.7 ("fourth occurrence") | No, except for the single-photo download route (F8 below) — the other two occurrences are recorded, not patched, as out of scope for the ACs that hit them. |
+| **F7** — The Gallery-create route's `/storage` permission fix is operational, not a source change, and does not survive a `backstage-backend` container recreation — it had to be reapplied by hand a second time (AC-17.7) after first being applied under AC-17.5.1. | An operational fix is implicitly assumed to be a one-time cost. | AC-17.5.1, "An unrelated local-storage permission gap"; AC-17.7, "An unrelated local-storage permission gap, hit and cleared before the create route would work" | No — not a source-level fix, so there is nothing in the fork to make it persist. |
+| **F8** — The single-photo download route (UD-1) is patched in the fork — openly registered, not quietly — but its upstream bug report is only `prepared, not submitted`: filing it requires a human decision to publish under a personal GitHub identity. | Registering a vendor-defect workaround is assumed to include filing the upstream report as part of the same automated step. | AC-17.5.3, "The upstream report: `prepared, not submitted`" | Yes, but openly: `FORK_CHANGELOG.md`, `PICPEAK_UPSTREAM_DEFECTS.md` (`UD-1`), `UPSTREAM_SYNC.md` §4, and `.github/upstream-issues/UD-1-gallery-single-download.md` all record it, with an explicit drop condition — the opposite of a quiet patch. |
+| **F9** — The `gallery_expired` and `archive_complete` email templates do not exist in `email_templates`, so those two email types stay `pending` and retry to exhaustion; `gallery_created` is unaffected. | Every email type the schema's `email_type` enum names is assumed to have a matching template row. | AC-17.6, "the six rows the flush did process is a `gallery_expired`/`archive_complete` row whose template turned out not to exist" | No — recorded as out of scope for AC-17.6, left for whichever future AC owns those email types. |
+
+### None of the above was decided silently
+
+F8 is the only finding in the fork itself, and it is registered through
+four separate, dated artifacts precisely so it cannot become a permanent,
+undocumented deviation by accident (per Fork Discipline). F1–F7 and F9 are
+recorded facts about the pinned upstream's actual behaviour, not defects this
+project's code could fix without violating Fork Discipline — each is written
+up in place, above, rather than worked around or assumed away.
+
+### Routed to the Product Owner
+
+Per AC-17.9, F1–F9 above are to be added to `scrum-master/po-requests.md`
+as explicit findings for Product Owner attention rather than decided silently
+here, the same routing mechanism AC-14.6 already established for this audit.
+`po-requests.md` is owned outside this AC's scope (see `CLAUDE.md`'s
+Docker/ownership rules), so this document records the findings and their
+routing rather than editing that file directly.
 
 ## Recommendation and open questions (AC-14.6)
 
