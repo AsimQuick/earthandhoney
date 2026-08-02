@@ -16,9 +16,16 @@ purpose: AC-18.2 — specify the boundary between the Frontstage application
          public landing-page content management, its native
          quote/invoice/accounting screens, and any page-building
          capability), and how each will be disabled or hidden.
+         AC-18.6 — record a user-facing terminology mapping so internal
+         names and the language the photographer sees never drift apart:
+         PicPeak's own internal "Event" object is presented to users as
+         Gallery, distinct from this project's own controlled-vocabulary
+         Event (a dated occasion inside a Project); the customer account
+         is Client, the admin area is Backstage, and the customer portal
+         is the Project Room.
 created-by: dev-team
 related-story: US-18
-related-ac: 18.2, 18.3, 18.4, 18.5
+related-ac: 18.2, 18.3, 18.4, 18.5, 18.6
 ---
 -->
 
@@ -43,10 +50,10 @@ rule ("No cross-database access", below). `AC-18.4` adds "The three flows
 the next sprint depends on", walking the call-catalog rows into concrete
 end-to-end sequences and closing the row-4 gap with a named design
 decision. `AC-18.5` adds "Backstage surfaces to disable", recording which
-duplicated Backstage capabilities are turned off and how. It deliberately
-does **not** yet state the user-facing terminology mapping (`AC-18.6`) —
-that is a separate AC of this same story and is recorded when its own AC
-runs, not pre-empted here.
+duplicated Backstage capabilities are turned off and how. `AC-18.6` adds
+"User-facing terminology mapping", recording the internal-name-to-
+user-facing-word pairing this document and every future story must keep
+in sync.
 
 All evidence below is either a direct read of the pinned fork's source
 (`vendor/picpeak/backend/...`) or a live-verified finding already recorded
@@ -478,3 +485,33 @@ finding rather than leaving it silently unaddressed.
 | Bills/Invoices | Yes | `bills` flag (default `false`, forced off when `quotes` is off) + `requireBillsFlag` 403 + `RequireFeature` + nav hiding | Disabled by default |
 | Tax report | Yes | `taxReport` flag (default `false`, forced off when `bills` is off) | Disabled by default |
 | Page builder | No | N/A — audited, not present | Nothing to disable |
+
+## User-facing terminology mapping (AC-18.6)
+
+Every row above and every future Frontstage/Backstage story reads and
+writes code against PicPeak's internal names (table/column names, route
+paths, i18n keys) while the photographer and their clients only ever see
+the user-facing word. This section is the single place that pairing is
+recorded, so a future story cannot silently rename one side without the
+other drifting out of sync.
+
+| Internal name (schema / code / route) | System it lives in | User-facing word | Evidence |
+|---|---|---|---|
+| PicPeak's `Event` object — `events` table, `event_id`/`eventId` columns, `useGalleryAuth().event`, the `/api/v1/events` and `/api/customer/events/:slug` route families, `navigation.events` nav label ("Events") | Backstage | **Gallery** | The public-facing route is `/gallery/:slug`, rendered by `GalleryPage.tsx`/`GalleryView`, not `/event/:slug`; the admin's own per-row action button is labelled via the i18n key `events.viewGallery` → *"View Gallery"* (`EventsListPage.tsx:572`, `en.json`); the customer dashboard's own code comment states the intent directly — *"list of every **gallery** the admin has granted"* and *"which **gallery** did they upload yesterday?"* (`CustomerDashboardPage.tsx:2,46`) — describing the same underlying `Event` rows the `customer-events` query fetches (`CustomerDashboardPage.tsx:59-60`). |
+| This project's own **Event** — a single dated occasion inside a Project (e.g. ceremony, reception) | Frontstage (a controlled-vocabulary term for a modeling concept; no Frontstage collection implements it yet) | **Event** — same word, deliberately not renamed | Defined by this AC's own text (`sprint3.json`, story US-18, AC-18.6) as distinct from, and not to be confused with, PicPeak's internal `Event` object directly above. **This is the one row in this table where the internal name and the user-facing word are already identical on purpose** — the risk this AC guards against is not a missing translation, it is a future implementer reading "Event" in Backstage's code and assuming it means this row instead of the row above. Any code or document that uses the bare word "Event" without stating which of these two rows it means is a defect against this AC. |
+| PicPeak's `customer_account` / `Customer` record (`adminCustomers.js`, `customerAccountsService`, row 4 of the call catalog above) | Backstage | **Client** | `POST /api/admin/customers` and its `AC-18.4` Flow-B-proposed sibling `POST /api/v1/customers` are the routes that create this record; `SYSTEM_OWNERSHIP.md`'s own ownership table already uses "Client" as the user-facing word for it. |
+| PicPeak's admin UI as a whole — everything under `frontend/src/pages/admin/`, mounted at `/admin/*` | Backstage (the vendored fork itself, as `SYSTEM_OWNERSHIP.md` and this document's own "Scope" section already name it) | **Backstage** | Already the term this entire document is written in; this row records it in the mapping table for completeness rather than introducing it here. |
+| PicPeak's customer-facing UI — everything under `frontend/src/pages/customer/`, mounted at `/customer/*` (login, dashboard, per-gallery access, contracts, quotes/bills where enabled) | Backstage-hosted, but presented to the client, not the photographer | **Project Room** | This document's own "Scope of this document" section already names the Project Room as the customer-facing counterpart to Backstage; `scrum-master/po-requests.md` item 9 confirms it as "Backstage/Project Room (PicPeak fork templates)" — i.e. the Project Room is PicPeak's own customer UI under its user-facing name, not a second system Frontstage builds separately. |
+
+**The rule this table enforces:** any UI copy, commit message, code comment,
+or future document written for this project uses the user-facing word in
+the right-hand column when addressing the photographer or a client, and
+the internal name in the middle column only inside code that actually
+touches PicPeak's schema/routes. The one exception is this project's own
+Event (row 2), which keeps its bare word in both contexts — precisely
+because it is a different concept from PicPeak's `Event`, not a
+synonym for it, so no translation step ever applies to it. A future PR
+that writes "Event" in Frontstage-facing copy without stating which row
+it means, or that surfaces PicPeak's `events`/`Events` wording verbatim
+in a Frontstage page instead of "Gallery", is a defect against this
+table.
