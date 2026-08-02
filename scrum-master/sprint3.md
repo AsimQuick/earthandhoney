@@ -1,8 +1,8 @@
 # Sprint 3
 
-**Phase:** planning
+**Phase:** complete
 **Progress:** 7/7 stories | 70/70 ACs
-**Last Updated:** 2026-08-02T06:48:57+00:00
+**Last Updated:** 2026-08-02T07:03:11+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -90,9 +90,9 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `src/__tests__/us14-ac14.6-recommendation-open-questions.test.ts` (new, 7 tests): asserts the section is the document's final section, the recommendation table covers Replace/Keep/Retire verdicts with a cited basis per row, at least 3 numbered open questions exist, and the section references `scrum-master/po-requests.md` for routing rather than deciding silently.
   - `src/__tests__/us14-ac14.5-migration-risk.test.ts`: bounded its section-extraction end heading to the new AC-14.6 heading (previously read to end-of-file, which broke once AC-14.6's table added new "Migrate"/"Galleries" rows …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements validated for testability. All 6 ACs bind to a concrete, checkable artifact (PIVOT_AUDIT.md sections) with enumerable pass/fail conditions (every sprint-1/2 item appears exactly once, orphaned env vars named and dispositioned, duplicate-feature risks mapped to the CLAUDE.md ownership table, licence flags recorded, migration risk stated per data category, open questions routed to po-requests.md). No vague or unmeasurable wording found. Approved as written.
+  Final quality gate: PASS. PR #57 merged 2026-07-30T22:39:43Z; gh pr checks 57 shows smoke=pass, test=pass. All 6 ACs (14.1-14.6) implemented with concrete evidence in PIVOT_AUDIT.md (inventory, superseded-artifact/orphaned-config tables, duplicate-ownership map, licence audit, migration-risk section, recommendation + open-questions routed to po-requests.md), each with a dedicated Jest test asserting the document content rather than just its existence. No code/model changes in this story (documentation-only pivot audit). DoD met: PR merged, CI green, every AC closed with recorded evidence, nothing routed to po-requests.md was silently decided.
 
 ---
 
@@ -167,9 +167,9 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `src/lib/picpeakMigrationManifest.ts` — git blob SHA-1 of all 127 files under `backend/migrations/` exactly as shipped at the pinned commit.
   - `src/lib/picpeakMigrationIntegrity.ts` — `gitBlobSha()`, injectable-IO `verifyMigrationsUnmodified()`, and `verifyVendoredMigrations()` which recompute hashes from disk and report `modified` / `missing` violations. Any edit to a migration, down to whitespace, cha …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements validated for testability. Each AC has an explicit verification method (read the licence file directly, compare fork migrations against pinned upstream, record commit/hash/date in named files) rather than relying on assertion. AC-15.1's stop condition (non-MIT licence -> po-requests.md) and AC-15.2's blocking-finding condition are both binary and checkable. Approved as written.
+  Final quality gate: PASS. PR #58 merged 2026-07-31T08:03:09Z; gh pr checks 58 shows smoke=pass, test=pass. All 6 ACs (15.1-15.6) implemented: PicPeak upstream licence verified by reading the actual LICENSE file (MIT, stop-condition not triggered), a single commit identified carrying all four required capabilities, PICPEAK_UPSTREAM.md/THIRD_PARTY_NOTICES.md/FORK_CHANGELOG.md/UPSTREAM_SYNC.md all created and populated, and the fork vendored under vendor/picpeak/ with a SHA-1 manifest proving no already-shipped upstream migration was modified (AC-15.6 -- satisfies the DoD's 'no already-shipped upstream migration modified' item directly). DoD met: PR merged, CI green, every claim verified against the pinned code rather than documentation alone.
 
 ---
 
@@ -252,26 +252,9 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   
   Committed as `1b54e42` on `feature/US-16`. Not pushed, per instructions — the orchestrator will re-run local checks and push.
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  US-16 CI diagnosis: This confirms the diagnosis. My findings:
-  
-  ## Diagnosis: environment/integration gap, not a code bug — AC-16.4 vs. the coverage gate
-  
-  **What's failing:** the `test` job's "Run tests with coverage" step, which runs with a hard-coded `--coverageThreshold='{"global":{"branches":80,"functions":80,"lines":80}}'` gate (`.github/workflows/ci.yml:69`).
-  
-  **Root cause:** three pre-existing "live round-trip" test files (`us2-ac2.3-media-variant-urls`, `us2-ac2.4-alt-text-required`, `us3-ac3.3-admin-ui-image-management` — just touched by this branch's latest commit, `75fa311`) contain a guard:
-  
-  ```ts
-  function hasLiveR2Config(): boolean {
-    const endpoint = process.env.R2_ENDPOINT || ''
-    return endpoint.length > 0 && !endpoint.includes('change-me-in-production')
-  }
-  ```
-  
-  They only execute their real upload/round-trip bodies (which exercise a meaningful slice of the R2/S3-adapter and auth code paths) when `R2_ENDPOINT` is a *real* value. Otherwise they early-`return` and contribute almost nothing to coverage.
-  
-  - **Locally**, this dev's `.env` has real R2 credentials (recorded in `sprint3.json`'s `available_configuration` note), so `hasLiveR2Config()` is true, the live bodies actually run, and the …
+  Final quality gate: PASS. PR #59 merged 2026-07-31T19:11:08Z; gh pr checks 59 shows smoke=pass, test=pass on the merged head. Note for the record: an earlier iteration of this branch failed CI on a test-guard bug (a live-R2-credential assertion firing against CI's placeholder .env rather than skipping) -- correctly diagnosed and fixed in commit 1b54e42 before merge; current CI is green with no open follow-up. All 6 ACs (16.1-16.6) implemented: Backstage/db/worker run as docker-compose services addressed by hostname, Postgres migrations proven clean on an empty DB, the existing R2 bucket reused via S3-compatible settings (no parallel bucket), .env.example documents every Backstage var with placeholders, a recorded end-to-end admin-login run, and AC-16.6's migration-idempotency proof (fresh install + no-op re-run) with the extension-migration upgrade proof explicitly and correctly deferred (recorded in UPSTREAM_SYNC.md, not silently dropped). DoD met.
 
 ---
 
@@ -689,9 +672,9 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   **Files changed:**
   - `PIVOT_AUDIT.md` — new `## AC-17.10` section (inserted before the `AC-14.6` closing section, matching AC-17.9's established pattern) with …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements validated for testability. All 10 ACs specify a concrete, reproducible action and an observable result (create/associate records, upload and check derivative/metadata fields, password gate on/off, expiry state change visible, client download via client route, queued/sent email state, logged webhook payload, template-diff preservation, honest write-up routed to PIVOT_AUDIT.md/po-requests.md). AC-17.10 in particular requires file/line or reproduced-flow evidence per signing element and an explicit reopen-the-decision path if any element is missing -- this is the strongest AC in the sprint and needs no changes. Approved as written.
+  Final quality gate: PASS, with one open routing item flagged for the PO. PR #60 merged 2026-08-02T02:09:49Z; gh pr checks 60 shows smoke=pass, test=pass. This story grew from 1 to 32 acceptance criteria via a long, well-documented chain of AC splits (recorded in po_sprint_notes) driven by dev-session turn-cap limits on audit-shaped/exhaustive-search criteria, not by requirements defects -- each split preserved scope and inherited the original Tester approval, and the sprint total (70 ACs) matches sprint3.md. All 32 ACs show dev_status=done with file/line or live-reproduction evidence in PIVOT_AUDIT.md. A genuine vendor defect was found (single-image gallery download hangs against S3/R2 storage because gallery.js:631 never uses the storage backend, unlike its sibling download-all/download-selected routes) -- disposition decided by the Project Lead per po-requests.md item 11 (patch the fork narrowly + report upstream), implemented across AC-17.5.1-17.5.3 and openly registered in FORK_CHANGELOG.md/PICPEAK_UPSTREAM_DEFECTS.md/UPSTREAM_SYNC.md -- not a silent workaround. AC-17.9 consolidates nine additional honest findings (F1-F9) where the pinned upstream behaves differently than the PRD assumed (e.g. Client not auto-inherited from Project, no aspect_ratio column, ~1hr expiry-enforcement lag). OPEN ITEM: AC-17.10 verified PicPeak's native contract-signing capability and found 6 of 7 elements confirmed, but the 7th ('an audit page baked into the delivered PDF') does not hold -- the fork ships the audit trail as a separate sibling PDF, never merged into the signed contract. The AC's own text requires this to be 'raised in scrum-master/po-requests.md as reopening the contract-signing decision.' As of this review, po-requests.md item 7 still reads 'Confirmed 2026-07-30, conditionally' with no reopening entry -- PIVOT_AUDIT.md documents the finding and states it 'is to be added' to po-requests.md, but the addition itself (a PO-owned file) has not happened. This does not block sprint-3 closure (nothing in sprint-3 depends on the contract-signing decision being re-settled, and the finding was NOT silently decided -- it was written up honestly), but it should not be lost: recommend the PO add the reopening entry to po-requests.md before any sprint-4 Project Room story relies on PicPeak's contract-signing capability as currently assumed. Aside from this routing gap, DoD is met: PR merged, CI green, no requirement was silently decided, defects were disclosed not hidden.
 
 ---
 
@@ -760,9 +743,9 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   
   Re-ran the suite: all 16 AC-18.6 tests pass. Full suite: 2286/2292 …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements validated for testability; all ACs bind to checkable document content. One minor wording defect was found and fixed directly (not a scope issue): AC-18.6 originally read 'the internal event concept is called Gallery,' which collides with this project's own controlled-vocabulary term 'Event' (scrum-master.md, a dated occasion inside a Project) -- an implementer reading the AC in isolation could not tell whether it meant PicPeak's internal object or our own Event concept. Reworded to explicitly name PicPeak's internal 'Event' object as the thing being relabelled, and to call out that it is not our own Event term. No scope change; approved as amended.
+  Final quality gate: PASS. PR #61 merged 2026-08-02T04:15:11Z; gh pr checks 61 shows smoke=pass, test=pass. All 6 ACs (18.1-18.6) implemented in PAYLOAD_PICPEAK_API_CONTRACT.md: system ownership (inheriting CLAUDE.md's Ledger Rule rows by reference), the Frontstage-to-Backstage API boundary, Backstage surfaces to disable audited against the pinned fork with named gaps/decisions deferred honestly rather than assumed, and terminology mapping. One wording defect was caught and fixed during requirements validation (AC-18.6's 'Gallery' collision with this project's own controlled-vocabulary 'Event' term) -- resolved before implementation, not a post-hoc patch. DoD met.
 
 ---
 
@@ -827,9 +810,9 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
     - Front-matter `purpose`/`related-ac` updated to cover both 19.4 and 19.5.
   - **`src/__tests__/us19-ac19.5-r2-delivery-path-undeci …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements validated for testability. AC-19.1/19.4 are evidence-gathering ACs against the running fork (binding, checkable) and AC-19.2/19.3 require selecting exactly one path with stated reasons/risks/revisit-conditions -- testable via document inspection. AC-19.5 correctly scopes this sprint's deliverable as an explicitly UNDECIDED delivery-path record with named candidates and measurement criteria, not a premature decision -- this is testable (does the doc open with UNDECIDED and list the five candidates and the four targets) and does not overreach sprint-3 scope. Approved as written.
+  Final quality gate: PASS. PR #62 merged 2026-08-02T05:05:27Z; gh pr checks 62 shows smoke=pass, test=pass. All 5 ACs (19.1-19.5) implemented: media-reuse guarantees verified against real eventService.js/db.js behaviour, and AC-19.4's R2 security audit was run read-only (list-buckets, list-objects-v2, get-bucket-lifecycle-configuration, get-bucket-cors) directly against the live bucket -- confirmed single-bucket usage, no second parallel store, and recorded least-privilege/lifecycle findings in R2_STORAGE_AND_DELIVERY_ADR.md. AC-19.5 correctly scopes this sprint's deliverable as an explicit UNDECIDED delivery-path record (five candidates, four measurement targets) rather than a premature decision -- appropriate given sprint-3's goal is de-risking, not building new pages. DoD met.
 
 ---
 
@@ -926,9 +909,9 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   
   Verified: 9/9 new tests pass; full suite 102 suites / 2570 tests pass. No dependency changes, so no `package-lock.json` update needed. No changes made under `scrum-master/`.
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements validated for testability. All 9 ACs are report-content requirements with a specific, enumerable checklist per AC (files inspected, exact env-var convention, key-pairing rule, start-up validation spec, secret-handling shape, preserved vs dropped behaviours, settled architecture restated rather than reopened, .env.example placeholders, and the explicit boundary of what 'port faithfully' excludes). AC-20.7's restatement of the settled payment architecture and AC-20.9's exclusion boundary are both testable as document-content checks, not implementation claims -- correctly scoped to a report-only story. Approved as written.
+  Final quality gate: PASS. PR #63 merged 2026-08-02T06:48:54Z; gh pr checks 63 shows smoke=pass, test=pass. All 9 ACs (20.1-20.9, grown from 7 via two PO amendments recorded in po_sprint_notes -- AC-20.7 restating the already-settled payment-initiation architecture, and AC-20.9 fixing a port-faithfully scope gap around saved-card/off-session/subscription behaviour -- both scope clarifications, not defects) are implemented in STRIPE_PORT_REPORT.md: the reference project's flat, mode-agnostic env-var and key-pairing convention is documented and reproduced in .env.example with per-variable comments, and the V1/V1.1 installment-schedule boundary (never a Stripe Subscription product) is explicitly recorded. DoD met.
 
 ---
 
