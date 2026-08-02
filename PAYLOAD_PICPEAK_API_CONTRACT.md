@@ -13,7 +13,7 @@ purpose: AC-18.2 — specify the boundary between the Frontstage application
          expressed as stored external identifiers.
 created-by: dev-team
 related-story: US-18
-related-ac: 18.2, 18.3
+related-ac: 18.2, 18.3, 18.4
 ---
 -->
 
@@ -33,12 +33,14 @@ This document is being built across `US-18`'s ACs, each adding one
 required piece; `AC-18.2` added the general **call catalog** below —
 every call that AC's evidence found crossing the boundary, with its
 direction, purpose, auth, identifiers, failure/timeout behavior, and
-Frontstage cache allowance. `AC-18.3` (below, "No cross-database access")
-adds the no-cross-database-join rule. It deliberately does **not** yet
-state: the three named flows a future sprint depends on (`AC-18.4`),
-which Backstage surfaces get disabled (`AC-18.5`), or the user-facing
-terminology mapping (`AC-18.6`) — those are separate ACs of this same
-story and are recorded when their own AC runs, not pre-empted here.
+Frontstage cache allowance. `AC-18.3` added the no-cross-database-join
+rule ("No cross-database access", below). `AC-18.4` adds "The three flows
+the next sprint depends on", walking the call-catalog rows into concrete
+end-to-end sequences and closing the row-4 gap with a named design
+decision. It deliberately does **not** yet state which Backstage surfaces
+get disabled (`AC-18.5`) or the user-facing terminology mapping
+(`AC-18.6`) — those are separate ACs of this same story and are recorded
+when their own AC runs, not pre-empted here.
 
 All evidence below is either a direct read of the pinned fork's source
 (`vendor/picpeak/backend/...`) or a live-verified finding already recorded
@@ -81,18 +83,155 @@ pattern this codebase already established for gallery-bearing routes in
 
 ## The row 4 gap, recorded rather than papered over
 
-`AC-18.4` (a separate AC of this story) is expected to describe a
-Frontstage-inquiry-to-Backstage-client-and-project flow. This AC's own
-evidence — a direct read of `adminCustomers.js` and `adminProjects.js` —
-found that the only two routes capable of creating those records require
-an interactive admin session cookie, not the Bearer-token
-service-to-service mechanism the pinned fork otherwise provides for
-exactly this kind of integration (row 3, `v1/events`). This document
-records that gap now, with file-level evidence, rather than assuming a
-calling mechanism that does not exist in the pinned fork. Closing it
-(extending the `v1` API's scope, or another mechanism) is a decision for
-whichever AC or follow-on story implements the inquiry-conversion flow —
-this document does not invent one on that AC's behalf.
+This AC's own evidence — a direct read of `adminCustomers.js` and
+`adminProjects.js` — found that the only two routes capable of creating
+those records require an interactive admin session cookie, not the
+Bearer-token service-to-service mechanism the pinned fork otherwise
+provides for exactly this kind of integration (row 3, `v1/events`). This
+document records that gap here, with file-level evidence, rather than
+assuming a calling mechanism that does not exist in the pinned fork.
+`AC-18.4` below ("Flow B") is where that gap gets closed with a named
+design decision, not invented silently on this section's behalf.
+
+## The three flows the next sprint depends on (AC-18.4)
+
+The call catalog above lists every individual call the pivot's evidence
+found; this section walks three of those calls into the concrete
+end-to-end sequences the next sprint's stories are written against. Each
+flow names which call-catalog row(s) it uses, what crosses the boundary
+in which direction, and how it fails.
+
+### Flow A — a Frontstage page displays a public gallery by referencing its Backstage gallery identifier
+
+1. A Frontstage content record (a Portfolio/Blog entry, or a Homepage
+   gallery block) stores a **Backstage gallery `slug`** in a plain field —
+   the stored external identifier `SYSTEM_OWNERSHIP.md` and the "No
+   cross-database access" section above both require. The photographer
+   sets this value from the Backstage admin UI when they publish a
+   gallery there; nothing in Frontstage assigns or generates it.
+2. At request/build/revalidation time, the Frontstage route calls **row
+   1** (`GET /api/gallery/:slug/info`) for display metadata (title,
+   theme, `requires_password`, toggles), then **row 2**
+   (`/api/auth/gallery/verify` + `GET /api/gallery/:slug/photos`) for the
+   photo list. Public portfolio/blog galleries are expected to carry
+   `requires_password: false`, so the verify handshake is a no-op for
+   this flow in practice — it still must be coded, because nothing in
+   the contract lets Frontstage assume that in advance per-gallery.
+3. The existing, reusable **Gallery Engine** (`US-1`…`US-6`) renders the
+   returned photo URLs/thumbnails — this flow introduces no second
+   gallery-rendering system, consistent with `CLAUDE.md`'s "one reusable
+   engine" pillar.
+4. Caching and failure behavior follow rows 1–2 and the "What the
+   Frontstage is allowed to cache" section above without modification:
+   the bounded 60-second safety net, immediate invalidation on a
+   verified webhook (Flow C, below), and the 404/timeout handling
+   already specified per row.
+5. **What crosses the boundary:** outbound, only the `slug` (and an
+   optional `share_token` for a non-public gallery reused in this same
+   flow). Inbound, display data only — never a Backstage database row.
+
+### Flow B — a Frontstage inquiry is converted into a Backstage client and project
+
+This is where the row-4 gap above gets closed. No route capable of
+service-to-service Client/Project creation exists in the pinned fork
+today, so this section is a **design decision for the implementing
+story**, not a description of code that already runs — that distinction
+is deliberate and is not glossed over.
+
+**Decision: extend the fork's own `v1` automation family (row 3), not
+the admin-cookie routes.** Row 3 already establishes the pinned fork's
+sanctioned pattern for exactly this kind of integration — Bearer API
+token, `apiTokenAuth` + `requireApiScope`, `admin` scope for
+record-creating calls. The lowest-risk close of the gap is two new
+routes following that same pattern rather than reusing
+`adminCustomers.js`/`adminProjects.js`'s cookie-based auth or inventing a
+third auth mechanism:
+
+- `POST /api/v1/customers` — same request/response shape as
+  `adminCustomers.js`'s existing `POST /api/admin/customers` (an
+  `email` plus an optional `prefill` object requiring at least one
+  human-readable name field), mounted under `apiTokenAuth` +
+  `requireApiScope('admin')` instead of `adminAuth`. Delegates to the
+  same `customerAccountsService.createDirect()` the admin route already
+  calls, so no new business logic is written — only a new authenticated
+  entry point into logic that already exists and is already tested.
+- `POST /api/v1/projects` — same shape as `adminProjects.js`'s
+  `POST /api/admin/projects` (`name` + optional `customerAccountId`),
+  same auth swap, same delegation to the existing `projectService.createProject()`.
+
+Because these are **new** routes, not edits to an already-shipped
+upstream migration or route, adding them is a Fork Discipline-compliant
+deviation (`FORK_CHANGELOG.md` records it when the implementing story
+actually writes the code — not here, since this AC's deliverable is the
+contract, not the implementation).
+
+**Flow steps:**
+
+1. A visitor submits a Frontstage inquiry (the contact form —
+   Name, Email or Phone, Photography Type, Preferred Date, Message,
+   per `CLAUDE.md`'s Pillar 5). Frontstage stores it as a **Lead**, a
+   Frontstage-owned record; nothing about a Lead is Backstage's concern
+   yet.
+2. When the photographer qualifies the Lead (a Frontstage-side action —
+   this document does not assume auto-conversion), Frontstage calls the
+   new `POST /api/v1/customers` with the Lead's `email` and a `prefill`
+   built from its name/phone fields, and receives back a Backstage
+   `customer_account.id`.
+3. Frontstage then calls the new `POST /api/v1/projects` with a `name`
+   (e.g. derived from the Lead's photography type/date) and that
+   `customerAccountId`, and receives back a Backstage `project.id`.
+4. Both ids are written onto the Frontstage Lead/Client record as
+   **stored external identifiers** — never a foreign key into
+   `backstage-db`, consistent with "No cross-database access" below.
+5. **On failure or timeout:** neither call is idempotent (no
+   caller-supplied idempotency key exists on this route family, the same
+   limitation row 3 already states for the sibling `v1/events` routes).
+   A failed conversion must surface to the photographer as a retry
+   action, not an automatic silent retry — a blind retry against a
+   create endpoint risks a duplicate customer/project pair. If step 2
+   succeeds and step 3 fails, the Lead record must persist the
+   `customer_account.id` it already has rather than discard it, so a
+   retry only re-attempts the project-creation half.
+6. **What crosses the boundary:** outbound, the Lead's identity fields
+   (email, name, phone) and a project name — never a Backstage
+   credential or admin session. Inbound, only the two integer ids.
+
+### Flow C — a Backstage change triggers a Frontstage content refresh
+
+1. A change happens in Backstage — the photographer publishes a gallery,
+   or uploads/deletes a photo in one already published.
+2. Backstage's webhook worker fires the matching event
+   (`event.published`, `photo.uploaded`, `photo.deleted`, etc. — the
+   fixed catalog row 5 already lists) as a signed `POST` to Frontstage's
+   registered receiver URL, per row 5's auth (`X-PicPeak-Signature`
+   HMAC-SHA256) and retry policy.
+3. Frontstage's receiver (a route the implementing story adds; none
+   exists yet) recomputes and verifies the signature before trusting
+   the payload — row 5's rule, restated here because this is the flow
+   that depends on it — then extracts the changed gallery's Backstage
+   `id`/`slug` from the JSON body.
+4. It maps that identifier to the Frontstage page(s) that reference it
+   (Flow A, step 1's stored `slug` field) and calls the existing
+   on-demand revalidation mechanism this codebase already built in
+   `US-6` (`src/lib/galleryRevalidation.ts`,
+   `getGalleryBearingPaths()`) — re-keyed by the implementing story from
+   the Payload-gallery-title lookup it uses today to a Backstage
+   `slug`/`id` lookup, since the source of truth it maps *from* has
+   changed with the pivot, not its role.
+5. The receiver returns `2xx` quickly (row 5's requirement) after
+   queuing/performing the revalidation, not after Backstage's own work
+   finishes.
+6. **Bounded staleness even if the webhook is lost:** the same
+   60-second safety-net cap "What the Frontstage is allowed to cache"
+   already states means a dropped or permanently-failed delivery (row
+   5's five-attempt-then-`failed` policy) cannot leave a public gallery
+   page stale for longer than that pre-existing bound — this flow does
+   not introduce a new staleness ceiling, it reuses the one already
+   committed to.
+7. **What crosses the boundary:** outbound (Backstage → Frontstage,
+   the one reversed-direction row in the catalog), the event `type`,
+   the changed gallery's `id`/`slug`, and the delivery id — never
+   photo binary data or a database row.
 
 ## No cross-database access
 
