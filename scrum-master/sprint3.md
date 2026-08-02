@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/7 stories | 61/70 ACs
-**Last Updated:** 2026-08-02T06:15:55+00:00
+**Last Updated:** 2026-08-02T06:25:08+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -850,6 +850,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-20.6:** The report records which behaviours will be preserved when the payment flow is actually built — server-side payment creation, the route layout, webhook signature verification, repeat-event protection, success and cancel handling, and the rule that the authoritative amount is fetched from Stripe rather than trusted from the browser — and which behaviours are deliberately not carried over, with reasons. It is explicit that the reference project is a different language and framework, so faithful means matching logic and required-field structure, not copying lines.
   - Dev: implemented
 - [ ] **AC-20.7:** The report states plainly that this payment path exists so the studio can charge its photography clients and is not subscription billing for a future software product, and it records the settled payment architecture rather than reopening it: the ported direct flow initiates payment, the ledger's own payment gateway stays disconnected, and the verified webhook reconciles the payment into the ledger and advances the project milestone. It states that exactly one webhook endpoint exists and that it lives in the fork backend where invoice status lives, that a browser redirect is never proof of payment, and that because the reference project is a different language the port crosses a language boundary and must be recorded in `FORK_CHANGELOG.md` as a deliberate deviation.
+  - Dev: implemented
 - [ ] **AC-20.8:** `.env.example` is updated with the placeholder Stripe variable names in the convention taken from the reference project, each with a comment explaining what it is and which mode it must match.
 - [ ] **AC-20.9:** The report records the boundary of what "port faithfully" does and does not cover: the reference project is a one-shot checkout flow containing no saved payment method, no off-session charge, and no retry or dunning logic, so none of that is inherited. It states that V1 ships a payment schedule whose installments are each paid manually against a real ledger invoice, that automatic recurring card charges are deferred to V1.1 and must then be built on that same schedule, and that a subscription product must never be used because it would place an authoritative billing schedule outside the ledger.
 
@@ -895,6 +896,14 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `src/__tests__/us20-ac20.6-stripe-port-report-preserved-behaviours.test.ts` — new, 19 assertions.
   
   **Key finding driving the content:** direct re-inspection of the reference project (`/Users/asim/NoIcloud/techno/main.py`, all 14 `@app.route` decorators, plus a repo-wide grep excluding `.venv`) confirmed techno has **no webhook implementation at all** — only an unbuilt "optional" mention in its README. So the report is explicit that "webhook signature verification" and "repeat-event protection" aren't ported from reference-project code; they're required by Stripe's own SDK contract and this project's already-settled AC-20.7 recon …
+  AC-20.7 implemented (local checks green): Committed as `d880ebf`.
+  
+  ## Summary
+  
+  **AC-20.7** — Implemented, not already-satisfied.
+  
+  **Files changed:**
+  - `STRIPE_PORT_REPORT.md` — added section 14 ("This payment path's purpose, and the settled payment architecture, restated not reopened (AC-20.7)") and section 15 ("Method (AC-20.7)"), plus updated the `related-ac` metadata header to include 20.7. Section 14 states: this payment path charges the studio's own photography clients, not subscription billing for a future software product; restates the three-part settled architecture from `scrum-master/po-requests.md` (ported direct flow initiates payment; the ledger's own Invoice Ninja payment gateway stays disconnected; the verified webhook reconciles payment into `vendor/picpeak/backend`'s `invoices` table and advances the project milestone timeline in `projectService.js`); states exactly one webhook endpoint exists in the fork backend where invoice status lives, explicitly distinguishing it from PicPeak's own pre-existing *outbound* gallery-lifecycle webhook system (`adminWebhooks.js`); states a browser redirect is never proof of payment; and states that because building it crosses a Python→JavaScript language boundary into the …
 
 **Tester Status:** approved
 **Tester Notes:**
