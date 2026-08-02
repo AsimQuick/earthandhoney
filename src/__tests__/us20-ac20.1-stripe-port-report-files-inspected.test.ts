@@ -21,6 +21,16 @@ const root = process.cwd()
 const REFERENCE_PROJECT = '/Users/asim/NoIcloud/techno'
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8')
 
+// The reference project lives outside this repo, at a path on the host
+// machine that inspected it. It is never mounted into the `web` Docker
+// container (docker-compose.yml only mounts `.:/app`) and does not exist on
+// GitHub Actions runners, so checks that read from it can only run where the
+// path is actually reachable — otherwise every file lookup would fail not
+// because the report is wrong, but because the environment can't see the
+// reference project at all.
+const referenceProjectReachable = fs.existsSync(REFERENCE_PROJECT)
+const itIfReachable = referenceProjectReachable ? it : it.skip
+
 const REQUIRED_INSPECTED_FILES = [
   'main.py',
   'templates/checkout.html',
@@ -57,7 +67,7 @@ describe('AC-20.1: Stripe port report — files inspected', () => {
     expect(report).toContain(file)
   })
 
-  it('every file it says it inspected actually exists in the reference project', () => {
+  itIfReachable('every file it says it inspected actually exists in the reference project', () => {
     for (const file of REQUIRED_INSPECTED_FILES) {
       const fullPath = path.join(REFERENCE_PROJECT, file)
       expect(fs.existsSync(fullPath)).toBe(true)
@@ -83,7 +93,7 @@ describe('AC-20.1: Stripe port report — files inspected', () => {
     expect(report).toMatch(/account\.html/)
   })
 
-  it('covers the environment example — names the actual Stripe variables found in .env.example', () => {
+  itIfReachable('covers the environment example — names the actual Stripe variables found in .env.example', () => {
     const envExample = fs.readFileSync(path.join(REFERENCE_PROJECT, '.env.example'), 'utf8')
     const stripeVars = envExample
       .split('\n')
