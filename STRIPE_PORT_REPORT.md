@@ -11,7 +11,7 @@ purpose: AC-20.1 records every file read directly in the reference project
          (20.3-20.9) add further sections to this same report.
 created-by: dev-team
 related-story: US-20
-related-ac: 20.1, 20.2, 20.3, 20.4
+related-ac: 20.1, 20.2, 20.3, 20.4, 20.5
 ---
 -->
 
@@ -279,3 +279,96 @@ for this AC: the reference project was already established in section 8
 to have no start-up validation of any kind, so there is nothing further
 to read there — this section specifies new behaviour for this project
 rather than recording existing behaviour from the reference project.
+
+## 10. Secret-handling shape (AC-20.5)
+
+**As found in the reference project.** Section 2 (rows 6-7) already
+established the two files this shape comes from. Read again with only
+the secret-handling question in mind, the reference project's shape has
+three parts:
+
+1. **Local values live in an uncommitted environment file.** The
+   reference project's `.env` holds the real secret key, publishable
+   key, and price IDs on disk, and its `.gitignore` lists `.env`
+   explicitly — the file exists on every developer's and the server's
+   machine, but never enters the repository's history. `.env.example`
+   (section 2, row 6) is the committed, values-free counterpart that
+   documents which variables exist.
+2. **Deployed values live in repository secrets, named to match
+   exactly.** Section 2 row 7's `.github/workflows/main.yml` reads
+   every Stripe (and non-Stripe) value it needs as `${{ secrets.<NAME>
+   }}`, and in every case `<NAME>` is character-for-character the same
+   as the environment-variable name the application reads with
+   `os.getenv(...)` — `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`,
+   `STRIPE_PRICEMAINT_ID`, `STRIPE_PRICEEMAIL_ID`, `STRIPE_PRICEDEV_ID`.
+   There is no renaming, prefixing, or indirection between a GitHub
+   Actions secret name and the variable name the running application
+   looks up.
+3. **The deployment step writes the environment file on the server.**
+   The same workflow step SSHes into the VPS and, before the container
+   is rebuilt, runs `cat > .env << EOF … EOF` with every line reading
+   one `${{ secrets.* }}` reference (section 2 row 7, lines 29-46 of
+   `main.py`'s companion workflow file) — the `.env` file on the
+   server is generated fresh on every deploy from GitHub's secret
+   store, not hand-edited or carried over between releases, and
+   `docker-compose.yml`'s `env_file: .env` (section 2, row 8) is what
+   makes the container read it.
+
+**Confirmed: this shape will be mirrored here.** All three parts
+already exist, or are already decided, for this project, independent of
+this AC:
+
+1. **Local values in an uncommitted environment file.** This project's
+   own `.gitignore` already lists `.env`, `.env.local`, and
+   `.env.*.local` (verified directly in the file, lines 8-10) —
+   the same uncommitted-local-file shape, already in place, not
+   something this AC needs to add. `.env.example` — updated with the
+   Stripe placeholder names in AC-20.8 — remains this project's
+   committed, values-free counterpart, exactly as in the reference
+   project.
+2. **Deployed values in repository secrets whose names match the
+   environment-variable names exactly.** When the Stripe payment flow
+   is built and deployed, each Stripe variable this project's
+   `.env.example` documents (`STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`,
+   and one price-ID variable per priced item this project sells, per
+   section 4's convention) must be stored as a GitHub Actions
+   repository secret under that exact same name — no renaming or
+   prefixing — so the deploy step can reference it as
+   `${{ secrets.<EXACT_ENV_VAR_NAME> }}`, identical to row 7's pattern.
+3. **The deployment step writes the environment file on the server.**
+   This project's production deploy target is the shared VPS resolved
+   in `scrum-master/po-requests.md` item 2 (`root@140.82.43.36`,
+   `/root/earthandhoney/`). The production deploy workflow — built
+   later, when the payment flow itself ships, not by this report-only
+   story — must write a fresh `.env` file on that server from the
+   repository secrets on every deploy, the same way section 2 row 7's
+   workflow does, so the running containers there read Stripe
+   configuration the same way `docker-compose.yml`'s `env_file: .env`
+   already does in the reference project. This project's current
+   `.github/workflows/deploy.yml` does not yet do this — today it only
+   builds the app inside CI via `cp .env.example .env` (a placeholder
+   file for the build step, not a production deploy) — because the
+   production deploy step has not been built yet; this section records
+   the shape that step must follow when it is, it does not claim the
+   step already exists.
+
+**No secret value appears in this report or in any committed file.**
+Every value named above — in this section and throughout this report —
+is a variable name, a file path, a mode-prefix pattern (`sk_test_`,
+`pk_live_`, etc.), or a description of *where* a value lives, never a
+value itself. This report was written without opening the reference
+project's actual `.env` (only its `.gitignore` and `.env.example`, per
+row 6, were read), and this project's own `.env` (also `.gitignore`-d,
+per point 1 above) was not created or altered by this AC.
+
+## 11. Method (AC-20.5)
+
+The reference-project half of this section draws only on files already
+read for AC-20.1 (section 2, rows 6-8: `.env.example`,
+`.github/workflows/main.yml`, `docker-compose.yml`) plus that project's
+`.gitignore`, opened for the first time for this AC to confirm `.env`
+is listed there. The this-project half draws on this project's own
+`.gitignore` and `.github/workflows/deploy.yml`, both opened for the
+first time for this AC, and on the already-resolved VPS decision in
+`scrum-master/po-requests.md` item 2. No secret value was read from, or
+copied out of, any `.env` file in either project.
