@@ -11,7 +11,7 @@ purpose: AC-20.1 records every file read directly in the reference project
          (20.3-20.9) add further sections to this same report.
 created-by: dev-team
 related-story: US-20
-related-ac: 20.1, 20.2, 20.3
+related-ac: 20.1, 20.2, 20.3, 20.4
 ---
 -->
 
@@ -178,3 +178,104 @@ Live mode data (customers, payment methods, products, and prices) are
 kept in fully separate partitions per account, which is why an object
 created in one mode is unreachable from a key belonging to the other,
 rather than merely rejected on a permissions check.
+
+## 8. Start-up validation specification (AC-20.4)
+
+The reference project has no such check at all (section 2, row 1 — the
+five Stripe variables are read with a bare `os.getenv()` and used
+wherever they are needed; a missing or mismatched value is only ever
+discovered the moment a Stripe API call touching it fails, which per
+section 6 can be after a customer has already entered card details).
+This section specifies, for this project, the check the reference
+project is missing — a design specification only; building it is part of
+implementing the payment flow itself (AC-20.6), not this port-and-record
+story.
+
+**What is checked.** A single validation routine runs three checks, in
+order, against the loaded environment:
+
+1. **Presence.** Every Stripe variable this project requires — the
+   secret key, the publishable key, and one identifier per priced item
+   this project sells (section 4's convention, carried over unchanged
+   from the reference project) — is present and non-empty. Any missing
+   or empty variable fails this check immediately; the remaining checks
+   do not run against a value that is not there.
+2. **Key-pair mode agreement.** The secret key and the publishable key
+   each carry their mode as a literal string prefix — `sk_test_`/
+   `sk_live_` on the secret key, `pk_test_`/`pk_live_` on the publishable
+   key (section 4). The two prefixes are compared directly, with no
+   Stripe API call needed: `sk_test_*` must pair with `pk_test_*`, and
+   `sk_live_*` must pair with `pk_live_*`. Any other combination fails.
+3. **Price-ID mode agreement.** A Price ID (`price_...`) carries no mode
+   marker in the string itself (unlike the two keys), so this check
+   cannot be done by string inspection. Instead, for each configured
+   priced-item identifier, the routine calls Stripe's price-retrieval
+   API using the loaded secret key. Per section 6, Stripe Test and Live
+   data are isolated partitions, so this call succeeding is itself the
+   proof that the price ID belongs to the secret key's mode; the call
+   failing with Stripe's "No such price" resource-missing error is the
+   proof that it does not (or that the ID is simply wrong — either way,
+   this project cannot safely charge against it, so both causes fail the
+   check identically). This is the only one of the three checks that
+   calls Stripe rather than inspecting local values.
+
+**When it runs.** Once, synchronously, at server start-up, before the
+process accepts its first request — not lazily on the first checkout
+attempt, and not repeated per-request. Concretely, this project is
+Next.js, so the check belongs in the `register()` function of an
+`instrumentation.ts` file at the project root: Next.js calls `register()`
+exactly once per server process, before any route, page, or Server
+Action can run, in both `next dev` and a production `next start`/deployed
+build, under the Node.js runtime (the same runtime the Stripe SDK
+requires — the check is skipped when `register()` runs under the Edge
+runtime, since Stripe is never loaded there). The check runs on every
+server boot, so a redeploy with a freshly-written `.env` (section 7 of
+this report, AC-20.5) is re-validated automatically without any extra
+step.
+
+**What the operator sees.**
+
+- **All three checks pass.** Start-up proceeds silently past this point
+  (at most a single confirmation line in the boot log, e.g. "Stripe
+  config OK: <mode> mode"); the operator sees nothing beyond the normal
+  server-ready output. No behaviour changes for the success path.
+- **Any check fails.** `register()` throws an `Error` synchronously.
+  Next.js treats an exception from `register()` as a boot failure: the
+  process does not finish starting and exits non-zero rather than coming
+  up in a half-configured state and silently accepting traffic that will
+  later fail against Stripe. The operator sees this as a crash on
+  deploy or on `next dev` start, not as a warning buried in later logs.
+  The thrown message is written to be actionable without needing to read
+  this report or the source again:
+  - **Presence failure** names every missing variable by its exact
+    environment-variable name (e.g. "`STRIPE_PUBLISHABLE_KEY` is not
+    set") and nothing else — never a value, since a variable that is
+    present but empty and a variable that is absent are reported the
+    same way.
+  - **Key-pair mismatch** names both variables involved and the mode
+    word (`test`/`live`) each one resolved to, e.g. "`STRIPE_SECRET_KEY`
+    is in live mode but `STRIPE_PUBLISHABLE_KEY` is in test mode — every
+    Stripe value must come from the same Dashboard mode," directly
+    instructing the fix rather than just naming the symptom.
+  - **Price-ID mismatch** names the failing variable and states that
+    Stripe rejected it as belonging to a different mode than the secret
+    key (or does not exist), e.g. "`STRIPE_PRICEMAINT_ID` was rejected
+    by Stripe as not found for the configured secret key's mode — it
+    must be a Price ID created in the same Dashboard mode (test or
+    live) as `STRIPE_SECRET_KEY`."
+  - In every case, the message never prints a secret value itself — only
+    variable names and the derived mode word — matching the DoD
+    requirement that no secret value is committed or surfaced anywhere.
+
+## 9. Method (AC-20.4)
+
+The specification above is grounded in section 4's convention (which
+values exist and how mode is encoded — or, for Price IDs, not encoded —
+in each) and section 6's isolated-partition failure mechanism (why an
+API call, not a string check, is the only reliable way to verify a Price
+ID's mode, and why a mismatch is a runtime rejection rather than a
+malformed value). No new files were inspected in the reference project
+for this AC: the reference project was already established in section 8
+to have no start-up validation of any kind, so there is nothing further
+to read there — this section specifies new behaviour for this project
+rather than recording existing behaviour from the reference project.
