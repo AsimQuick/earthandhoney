@@ -82,6 +82,129 @@ is to be specified for an already-released gallery.
 | 8 | **Lock design tokens before building any new Frontstage page?** | **Yes** — make it the first story of sprint 4. | **Confirmed 2026-07-30 — Yes.** |
 | 9 | **Starting point for those tokens** | Derive them from the US-8 photobuddy-derived shell already in the repo, then deliberately diverge toward Earth & Honey's own identity. | **Confirmed 2026-07-30 — derive from photobuddy, but modernize deliberately, not verbatim.** Recorded creative brief for the sprint-4 design-token story: photobuddy currently reads dated — replace its typefaces with **Fraunces** (display serif, headlines) paired with **Inter** (body/UI sans), both open-source/self-hostable with no licensing cost. Palette: near-black (not pure `#000`) as the primary ink color, a neutral grey scale for secondary/tertiary content and surfaces, no accent color beyond that near-black/grey range. The token set must be small and disciplined — a limited, named scale (not one-off values), built as small, composable components rather than page-specific styling, and designed with both Frontstage (Payload/Next.js) and Backstage/Project Room (PicPeak fork templates) as consumers from day one, consistent with Pillar 3 (deterministic beauty, no page-level CSS editing). This is direction, not a locked visual spec — the sprint-4 story should still produce real mockups for confirmation before broad rollout. |
 | 10 | **Real launch content** | Non-blocking. We can proceed on placeholder imagery and copy. When available, please supply real galleries, homepage copy, package/pricing information, and the Weddings / Engagements / Details content so placeholders are replaced before launch. | **informational** |
+| 11 | **Disposition of a verified vendor defect: single-image client download is broken against S3/R2 storage** (detail in the section immediately below) | Non-blocking today — it sits ~14 ACs downstream of the task in flight. It does need a decision before AC-17.5 is dispatched, because AC-17.5 as written cannot pass against this stack. Options and my recommendation are in the section below. | **RESOLVED 2026-08-01 — Project Lead decision: patch the vendored fork (route the single-image download through the storage backend the same way `protectedImages.js` already does; fix the swallowed error path to actually respond; move the `download_count`/`access_logs` writes to after a confirmed send) and report the defect to PicPeak upstream so the patch can eventually be dropped. Recorded directly on AC-17.5 in `sprint3.json` so the Dev Team has the disposition when it's dispatched.** |
+| 12 | **The dev-team 40-turn cap, not the requirements, is what has been failing US-17** (detail in the section immediately below) | Raise the per-session turn cap for the Dev Team from 40 to ~80 for audit-shaped criteria, or let a capped session commit its partial work so the next one resumes instead of restarting. This is a Project Lead setting and only you can change it. | **RESOLVED 2026-08-01 — Project Lead decision: raised `agent_max_turns.dev-team` from 40 to 80 in `gitops/config.json` (applies platform-wide). The partial-work-resume mechanism remains a good longer-term idea but was not implemented now.** |
+
+## The real cause of the US-17 stall: a 40-turn session cap (recorded 2026-08-01)
+
+AC-17.4.1.1.1.2.2.2 has now failed on six consecutive dev sessions, across both Sonnet and Opus, and
+has been split four times and rewritten once in response. Before rewriting it a second time I read the
+session logs in `logs/` rather than the criterion, and they contradict what all five of those earlier
+change records assumed.
+
+**Every single failure is the same one:** `"subtype": "error_max_turns"`, `"errors": ["Reached maximum
+number of turns (40)"]`. Not a token budget — `project-state.json` shows the session that failed at
+02:30 had used 19,434 of its 50,000 tokens. Not a timeout, not a model failing to understand the
+requirement, not an ambiguous acceptance criterion. **The sessions run out of tool calls.**
+
+This is not confined to one criterion. **Eleven of the last twelve dev sessions in this story ended at
+the turn cap**, at a combined cost of **$31.32 for zero committed work product**. The sessions in this
+story that did succeed closed at 19, 29, 34, 38 and 40 turns — the cap sits right on top of where the
+work actually lands, so any criterion that spends turns on discovery before it can begin writing
+overruns it.
+
+Two properties of this story make it worse:
+- **`PIVOT_AUDIT.md` is now 171 KB.** Every fresh session pays to read it before it can add a section.
+- **Failed sessions leave nothing behind.** The work product of eleven capped sessions was discarded,
+  so each attempt restarted from zero. Several earlier ACs in this story only passed because a *later*
+  session found an earlier one's uncommitted draft still in the working tree and finished it — that
+  is the pipeline's actual success mechanism, and it stopped working here.
+
+**What I have already done, so nothing is blocked on your answer.** I rewrote AC-17.4.1.1.1.2.2.2 a
+second time, attacking tool calls rather than word count: I ran the edit-path grep myself and wrote its
+fifteen call sites into the criterion as fixed scope, dropped the `server.js` read, the permission/gate
+column and the reachability finding (no downstream criterion consumes any of them), and stated
+explicitly that a documentation-only criterion owes no pinning test suite — a Dev Team convention that
+has been costing 25–105 tests per audit AC and which the Definition of Done does not require on a
+criterion that changes no source file. The criterion is now a read-a-given-list-and-fill-a-13-row-table
+task. It should fit inside 40 turns. **The splitting has stopped either way — it was never the problem.**
+
+**Why I am still raising it.** The rewrite fixes one criterion by hand. The same shape is still ahead in
+**AC-17.4.1.1.1.2.3** (read path), **AC-17.4.1.1.1.3** (schema/migration) and **AC-17.10** (contract
+signing, seven elements each needing file/line evidence) — and I cannot pre-run the search for all of
+them without becoming the Dev Team. My recommendation, in order of preference:
+
+1. **Raise the Dev Team turn cap to ~80 for this story.** Smallest change, directly addresses the
+   measured cause. At current rates a capped session already costs $2–4, so the cap is not saving money
+   — it is spending it on abandoned work.
+2. **Make a capped session commit its partial work before exiting.** Restores the resume-from-draft
+   mechanism that carried the earlier ACs, and is the more durable fix of the two.
+3. If neither is acceptable, tell me and I will keep pre-running searches into criteria by hand — but
+   that shifts investigation work into requirements, which is not where it belongs, and it will slow
+   sprint 3 down.
+
+## Verified defect — single-image gallery download hangs on S3/R2 storage (recorded 2026-08-01)
+
+I verified AC-17.5 ahead of pipeline order, live against the running Backstage stack (backstage-backend
+healthy on 3101, frontend on 3100), reusing the AC-17.3 gallery (`events.id = 3`, slug
+`wedding-ac-17-1-3-1-verification-gallery-2026-09-01`, published, `allow_downloads = true`, 3 visible
+photos). **This is recorded, not patched** — AC-17.9 requires findings like this to be reported
+honestly and raised rather than silently worked around. No sprint file, `PIVOT_AUDIT.md` section, or
+vendor source has been changed; AC-17.5 remains `not-started` and its own audit write-up stays the Dev
+Team's deliverable when the AC is actually dispatched.
+
+**⚠️ OPERATIONAL WARNING — READ BEFORE TOUCHING AC-17.5. The broken endpoint does not return an
+error; it HANGS FOREVER.** Any agent, script, or test that calls
+`GET /:slug/download/:photoId` **must** use a hard timeout (`curl --max-time 10`, an explicit HTTP
+client timeout, a Jest `testTimeout`). Without one it will sit on a socket that is never closed and
+burn its entire token/time budget waiting on a response that never arrives. This is the single most
+important practical fact in this entry.
+
+**What works:** client VIEW is fine. `POST /api/auth/gallery/verify` returned HTTP 200 with a token,
+and `GET /api/gallery/:slug/photos` returned all 3 photos.
+
+**What is broken:** client single-image DOWNLOAD.
+
+**Verified mechanism** (line numbers confirmed by reading the pinned fork):
+- Route `GET /:slug/download/:photoId` — `vendor/picpeak/backend/src/routes/gallery.js:631`.
+- It resolves the file via `resolvePhotoFilePath` (`gallery.js:667`), which returns a **local
+  filesystem path only** (`vendor/picpeak/backend/src/services/photoResolver.js`, `getStoragePath()`
+  → `STORAGE_PATH` or a local directory).
+- It streams with `res.sendFile(filePath, cb)` (`gallery.js:717`). The error callback
+  (`gallery.js:718-725`) **logs the error and never sends any response** — hence the hang instead of
+  a 404.
+- This stack runs `STORAGE_BACKEND: s3` (set in `docker-compose.yml` under `backstage-backend`, per
+  AC-16.3, pointing at Cloudflare R2). Photos live in R2; `/app/storage/events` inside the container
+  contains **zero files** (verified with `find`).
+- Empirical proof, from `/app/logs/error.log` in the backend container at `2026-08-01 05:05:09.354`:
+  `{"slug":"wedding-ac-17-1-3-1-verification-gallery-2026-09-01","photoId":"1","eventId":3,"error":"ENOENT: no such file or directory, stat '/app/storage/events/active/wedding-ac-17-1-3-1-verification-gallery-2026-09-01/AC-17.1.3.1_Verification_Galle_individual_0001.jpg'","level":"error","message":"Error streaming gallery download"}`
+
+**Aggravating factor 1 — the sibling routes are storage-aware; this one is not.** `download-all`
+(`gallery.js:836`) and `download-selected` (`gallery.js:969`) both use `resolvePhotoStorageKey`, and
+`vendor/picpeak/backend/src/routes/protectedImages.js` (~line 113) branches on the storage key and
+calls `storage.get(storageKey)`. `gallery.js` even imports `getStorage` at line 26 — the single-image
+path simply never uses it. This reads as an **upstream gap, not a misconfiguration on our side.**
+
+**Aggravating factor 2 — the side effects commit BEFORE the failure.** `photos.download_count` is
+incremented at `gallery.js:654` and an `access_logs` row with `action: 'download'` is inserted at
+`gallery.js:657`. Both confirmed in Postgres: photo id 1 went 0 → 1, and `access_logs` id 31 landed at
+`05:05:09.342` — 12ms *before* the ENOENT. **A download that delivered zero bytes is recorded as a
+successful download**, so neither the download counter nor the access log can be trusted as evidence
+of delivery.
+
+**Why this matters beyond one AC.** Client gallery delivery and download are core product, not an
+edge case: the PRD lifecycle runs Visitor → … → temporary Gallery Delivery → **Download** → Archive,
+and this touches CLAUDE.md Pillar 1 (gallery experience) and Pillar 6 (the session as the central
+business object linking contract → payment → gallery). **AC-17.5 cannot pass against this stack until
+this is resolved.**
+
+**My recommendation — a recommendation, not a decision; the call is yours:**
+1. **Patch the vendored fork** so the single-image route uses the storage backend the way
+   `protectedImages.js` already does, and make the error path actually respond. This is the smallest
+   change that restores core product behaviour — but it has to be weighed against our fork-discipline
+   convention ("fork, don't rebuild"; keep the delta from upstream small and legible), and it puts us
+   on the hook for maintaining the patch across rebases.
+2. **Report and/or pull upstream** — file it with PicPeak and take their fix. Correct long-term
+   hygiene and keeps the delta at zero, but the timing is outside our control and sprint 3 cannot
+   wait on it.
+3. **Rescope AC-17.5** — e.g. verify download via the storage-aware `download-all` /
+   `download-selected` paths for now and carry single-image download as an explicit known gap. Keeps
+   the sprint honest and moving, but ships a real hole in client delivery.
+
+I lean **1 + 2 together**: patch the fork now, narrowly and clearly commented as a vendor-defect
+patch, and report it upstream so the patch can eventually be dropped. If you would rather hold the
+fork pristine, then 3 — with the gap recorded, not quietly closed. Either way the operational warning
+above applies to whoever implements AC-17.5.
 
 ## Things I verified myself so you do not have to answer them
 
