@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 5/7 stories | 56/70 ACs
-**Last Updated:** 2026-08-02T04:23:38+00:00
+**Last Updated:** 2026-08-02T04:31:16+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -773,6 +773,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-19.1:** `MEDIA_REUSE_ADR.md` states, on evidence from the running fork, how tightly an image is currently bound to a single gallery, and whether one stored original can already be referenced by more than one gallery.
   - Dev: implemented
 - [ ] **AC-19.2:** The decision record chooses exactly one path forward — keep the upstream binding for V1 with a safe promotion workflow, introduce a reusable media-asset and gallery-item layer through new migrations, or an equivalent low-risk model — and states the reasons, the risks, and what would have to be true to revisit the decision.
+  - Dev: implemented
 - [ ] **AC-19.3:** The chosen model guarantees that no original binary is stored twice, that per-gallery ordering and metadata overrides remain possible, that selected client images can be promoted into a public portfolio gallery deliberately, and that promoting one image can never expose the rest of a private gallery.
 - [ ] **AC-19.4:** `R2_STORAGE_AND_DELIVERY_ADR.md` records the audit of the existing R2 setup: which bucket is in use, whether its permissions are least-privilege, whether browser upload access is correctly restricted, what lifecycle rules exist, and which paths are public versus private.
 - [ ] **AC-19.5:** `R2_STORAGE_AND_DELIVERY_ADR.md` opens with the delivery-path decision explicitly marked UNDECIDED and lists the candidate paths to be benchmarked in the next sprint — serving through the Backstage, direct time-limited links, public delivery through a content-network domain, an edge authorisation layer, and a hybrid — together with the measurements that will decide it and the performance targets the decision is accountable to (no image-caused layout shift, mobile-first performance near ninety on representative public pages, largest-contentful-paint around two and a half seconds or better on a realistic mobile profile, and public pages never requesting full-resolution originals unnecessarily). No agent may choose a path by preference before that benchmark exists.
@@ -786,6 +787,13 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   **Summary:**
   - **`MEDIA_REUSE_ADR.md`** (new, repo root): Answers AC-19.1 by auditing the *running* PicPeak/Backstage fork (per `SYSTEM_OWNERSHIP.md`'s ownership table — not the dormant Payload `Media`/`Galleries` collections). Finds an image is tightly and exclusively bound to a single gallery at three independent layers: schema (`photos.event_id` is a required FK to `events.id`, no join table), application (`photoService.updatePhoto` strips `event_id` from any update payload), and storage (files live at `events/active/{slug}/...` paths with no content-addressing/dedup, and event deletion cascades to a whole-folder `fs.rm`). Conclusion: **no**, one stored original cannot currently be referenced by more than one gallery.
   - **`src/__tests__/us19-ac19.1-media-reuse-adr.test.ts`** (new, 18 tests, all passing): Verifies the ADR exists with proper metadata header, states its conclusions explicitly, and cross-checks every code citation against the actual vendored PicPeak source (schema FK declaration, the `updatePhoto` guard, the storage-key resolver, absence of hash/dedup logic, and the cascade- …
+  AC-19.2 implemented (local checks green): AC-19.2 implemented and committed on `feature/US-19` (commit `9b545c2`).
+  
+  **Summary:**
+  - `MEDIA_REUSE_ADR.md`: added a new `## AC-19.2 — Decision: the path forward` section. Names all three candidate paths from the AC text, commits to exactly one — **option 2**, a reusable `media_assets`/`gallery_items` layer added as new, additive fork-owned migrations — and states:
+    - **Reasons**: option 1's only implementable promotion mechanism (copy bytes + second `photos` row) directly contradicts the no-duplicate-original guarantee this decision must support, per the AC-19.1 evidence (exclusive FK, `updatePhoto`'s `event_id` guard, no CAS/dedup); option 2 is additive and matches `UPSTREAM_SYNC.md` §3's own anticipated "first extension migration" path; option 3 (hard links / DB views) isn't implementable against S3-compatible R2 and can't express a new event association.
+    - **Risks**: transition-period two-sources-of-truth (needs a backfill), added migration/sync surface per `UPSTREAM_SYNC.md` §2, added integration work vs. option 1, fork-owned correctness risk (mitigated via `onDelete('CASCADE')`).
+    - **Revisit conditions**: upstream ships native cross-event reuse, promotion turns out to …
 
 **Tester Status:** approved
 **Tester Notes:**
