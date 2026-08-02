@@ -2,19 +2,76 @@
 ---
 file: R2_STORAGE_AND_DELIVERY_ADR.md
 project: earthandhoney
-purpose: AC-19.4 — records the audit of the existing Cloudflare R2 setup:
+purpose: AC-19.5 — opens this document with the delivery-path decision
+         explicitly marked UNDECIDED, listing the candidate paths to be
+         benchmarked next sprint, the measurements that will decide between
+         them, and the performance targets the decision is accountable to.
+         No path is chosen here by preference.
+         AC-19.4 — records the audit of the existing Cloudflare R2 setup:
          which bucket is in use, whether its permissions are least-privilege,
          whether browser upload access is correctly restricted, what
          lifecycle rules exist, and which paths are public versus private.
-         AC-19.5 (the delivery-path decision) is out of scope for this file
-         until that AC is dispatched; nothing below chooses a delivery path.
 created-by: dev-team
 related-story: US-19
-related-ac: 19.4
+related-ac: 19.4, 19.5
 ---
 -->
 
 # R2 Storage and Delivery ADR
+
+## Delivery path decision — UNDECIDED (AC-19.5)
+
+**Status: UNDECIDED.** No delivery path has been chosen. This decision is
+deferred to a benchmark planned for the next sprint, and no agent may choose
+a path by preference before that benchmark exists — the candidates below are
+listed to be measured, not ranked.
+
+### Candidate paths to be benchmarked
+
+1. **Serving through the Backstage** — the PicPeak/Backstage Express app
+   proxies every gallery-delivery request itself (as the token-gated
+   `protectedImages.js` route already does for protected client galleries),
+   R2 is never reached directly by a client.
+2. **Direct time-limited links** — the browser is handed a short-TTL
+   presigned R2 `getObject` URL (the mechanism `S3StorageBackend.signedUrl`
+   already implements for the zip-download and admin-backup flows) and
+   fetches the object straight from R2.
+3. **Public delivery through a content-network (CDN) domain** — a CDN
+   fronts the bucket (or a public/custom domain) for already-public
+   portfolio/blog imagery, caching at the edge instead of round-tripping to
+   origin per request.
+4. **An edge authorisation layer** — a Cloudflare Worker (or equivalent)
+   sits in front of R2, performs the authorisation check at the edge, and
+   only then serves (or redirects to) the object, combining the caching
+   benefit of a CDN path with the access control of an app-mediated one.
+5. **A hybrid** — some combination of the above by context, e.g. Backstage-
+   mediated serving for private/protected client galleries and CDN or edge
+   delivery for already-public portfolio/blog galleries.
+
+### Measurements that will decide it
+
+- Mobile-first Lighthouse performance score on representative public pages
+  (a portfolio gallery page and a blog gallery page), per candidate path.
+- Cumulative Layout Shift (CLS) attributable to images on those same pages,
+  per candidate path.
+- Largest Contentful Paint (LCP) under a realistic mobile throttling profile
+  (representative mid-tier mobile CPU/network conditions), per candidate
+  path.
+- Network payload audit of what resolution is actually requested by public
+  pages under each candidate path — whether a full-resolution original is
+  ever fetched where a thumbnail/medium derivative would do.
+
+### Performance targets the decision is accountable to
+
+- **No image-caused layout shift.**
+- **Mobile-first performance near ninety** on representative public pages.
+- **Largest Contentful Paint around two and a half seconds or better** on a
+  realistic mobile profile.
+- **Public pages never request full-resolution originals unnecessarily.**
+
+Whichever candidate path (or hybrid) is chosen next sprint must meet all
+four targets above on the measurements above; the choice is made from that
+evidence, not from preference recorded here.
 
 ## AC-19.4 — Audit of the existing R2 setup
 
