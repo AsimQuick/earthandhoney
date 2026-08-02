@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 5/7 stories | 56/70 ACs
-**Last Updated:** 2026-08-02T04:52:54+00:00
+**Last Updated:** 2026-08-02T04:58:37+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -779,6 +779,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-19.4:** `R2_STORAGE_AND_DELIVERY_ADR.md` records the audit of the existing R2 setup: which bucket is in use, whether its permissions are least-privilege, whether browser upload access is correctly restricted, what lifecycle rules exist, and which paths are public versus private.
   - Dev: implemented
 - [ ] **AC-19.5:** `R2_STORAGE_AND_DELIVERY_ADR.md` opens with the delivery-path decision explicitly marked UNDECIDED and lists the candidate paths to be benchmarked in the next sprint — serving through the Backstage, direct time-limited links, public delivery through a content-network domain, an edge authorisation layer, and a hybrid — together with the measurements that will decide it and the performance targets the decision is accountable to (no image-caused layout shift, mobile-first performance near ninety on representative public pages, largest-contentful-paint around two and a half seconds or better on a realistic mobile profile, and public pages never requesting full-resolution originals unnecessarily). No agent may choose a path by preference before that benchmark exists.
+  - Dev: implemented
 
 **Dependencies:** US-17
 
@@ -816,6 +817,15 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   **Findings recorded in the ADR:**
   1. **Bucket in use** — single bucket `earthandhoney`; live `ListBuckets` confirms no second bucket exists; live listing shows all objects live under `backstage/`, confirming Payload's parallel `s3Storage` config has never written an object (dormant in practice, not just by ownership decision).
   2. **Least privilege** — code only ever needs object-level R/W/list/delete/copy; live `ListBuckets` returning only one bucket is evidence the …
+  AC-19.5 implemented (local checks green): **Implementation summary — AC-19.5 (commit `b73a694` on `feature/US-19`):**
+  
+  - **`R2_STORAGE_AND_DELIVERY_ADR.md`** — inserted a new opening section, `## Delivery path decision — UNDECIDED (AC-19.5)`, positioned before the existing `## AC-19.4` audit section so the document now opens with it. Content:
+    - Explicit `**Status: UNDECIDED.**` statement, plus the rule that no agent may choose a path by preference before the benchmark exists.
+    - Five candidate paths: serving through the Backstage, direct time-limited links, public delivery through a CDN domain, an edge authorisation layer, and a hybrid — each grounded with a one-line tie to existing code (e.g. `protectedImages.js`, `S3StorageBackend.signedUrl`).
+    - Measurements section: Lighthouse mobile-first score, CLS, LCP under mobile throttling, and a network payload/resolution audit.
+    - Performance targets section: no image-caused layout shift, mobile-first score near ninety, LCP ~2.5s or better on a realistic mobile profile, and public pages never requesting full-resolution originals unnecessarily.
+    - Front-matter `purpose`/`related-ac` updated to cover both 19.4 and 19.5.
+  - **`src/__tests__/us19-ac19.5-r2-delivery-path-undeci …
 
 **Tester Status:** approved
 **Tester Notes:**
