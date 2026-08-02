@@ -7,11 +7,16 @@ purpose: AC-20.1 records every file read directly in the reference project
          implementation: payment routes, server/client split, templates,
          environment example, and deployment workflow. AC-20.2 adds the
          section recording the reference project's environment-variable
-         convention exactly as found. Later acceptance criteria in US-20
-         (20.3-20.9) add further sections to this same report.
+         convention exactly as found. AC-20.9 adds the section recording the
+         boundary of what "port faithfully" does and does not cover (no
+         saved payment method, no off-session charge, no retry/dunning
+         logic; V1's manually-paid installment schedule; V1.1's deferred
+         automatic recurring charges built on that same schedule; no
+         subscription product). Other acceptance criteria in US-20
+         (20.3-20.8) add further sections to this same report.
 created-by: dev-team
 related-story: US-20
-related-ac: 20.1, 20.2, 20.3, 20.4, 20.5, 20.6, 20.7
+related-ac: 20.1, 20.2, 20.3, 20.4, 20.5, 20.6, 20.7, 20.8, 20.9
 ---
 -->
 
@@ -717,3 +722,123 @@ repository-wide `grep -i stripe` across `vendor/picpeak/backend/src`
 returned no matches, confirming no Stripe code exists in the fork yet — this
 section specifies where it belongs when built, the same not-yet-built
 boundary already established for the start-up check in section 8.
+
+## 16. The boundary of "port faithfully" (AC-20.9)
+
+Sections 12 and 14 have already leaned on this boundary without stating it as
+its own section — section 12's "Deliberately not carried over" list drops the
+recurring-`Subscription` behaviours "for the same reason AC-20.9 already
+settles," and section 14 fixes V1's shape as "a manually-paid installment
+schedule against a real ledger invoice instead," citing this AC as the place
+that decision is recorded. This section is that record.
+
+**What the reference project is, precisely.** `main.py`'s route table (section
+2, row 1; re-enumerated for section 13's Method) is a **one-shot checkout
+flow**: `/checkout` renders a form, `POST /create-payment-intent` creates a
+single Stripe `PaymentIntent` for that visit (lines 575-628), and `GET
+/success` re-fetches and re-checks that one `PaymentIntent`'s status once
+(lines 655-759). Nothing in that route table, or anywhere else in the
+reference project, does any of the following — confirmed by
+`grep -rn -i "save.*payment.method|setup_intent|SetupIntent|off_session|off-
+session|dunning|retry|payment_method.*attach|customer.*attach"` across the
+reference project's tracked source (`*.py .html .js`, `.venv` excluded),
+which returned **zero matches**:
+
+- **No saved payment method.** No `stripe.PaymentMethod.attach`, no
+  `stripe.Customer` object a card is attached to, no `setup_future_usage`
+  parameter on the `PaymentIntent`. Every checkout collects card details
+  fresh; nothing is kept for later.
+- **No off-session charge.** No `SetupIntent`, no `off_session=True` argument
+  anywhere a `PaymentIntent` is created — the only charge-creation call the
+  reference project has is the one at `/create-payment-intent`, made
+  synchronously while the customer is present in their browser.
+- **No retry or dunning logic.** No scheduled re-attempt, no failed-payment
+  email sequence, no grace-period or past-due state machine. The two
+  `Subscription` objects it does create (section 12's "Deliberately not
+  carried over" list, lines 700-731) are handed to Stripe Billing, which
+  would own any dunning for them internally — the reference project's own
+  code contains none.
+
+Because none of that exists in the reference project, "port faithfully"
+(section 12's language/framework boundary: preserve logic and required-field
+structure, not lines) has nothing of that kind to inherit. A saved payment
+method, an off-session charge, and retry/dunning logic are therefore **not
+in scope for this port** — not because they were considered and dropped, as
+section 12's list covers, but because the thing this story ports from
+contains no version of them to begin with. Building any of them later is new
+work grounded in Stripe's own documented SDK contract, the same standing
+this report already applies to webhook signature verification and repeat-
+event protection in section 12.
+
+**V1's actual shape: a manually-paid installment schedule against a real
+ledger invoice.** `scrum-master/po-requests.md`'s "Finance architecture —
+settled 2026-07-30" section states plainly: *"installments ship in V1 as a
+manual-pay schedule, with automatic recurring card charges deferred to
+V1.1."* Concretely, that means each installment in a payment schedule is its
+own real invoice row in the ledger (Invoice Ninja, per section 14's "The
+ledger's own payment gateway stays disconnected" — `CLAUDE.md`'s "app
+displays status only, never recreates billing logic"), and each one is paid
+the same way section 14 already settles for a single payment: the ported
+one-shot `PaymentIntent` flow runs again for that installment, a human or
+the client triggers it, and the verified webhook reconciles that one
+`PaymentIntent`'s result into that one invoice's status. There is no
+mechanism that fires a charge on a schedule's behalf without that trigger —
+V1 has none, by the same absence this section's grep already confirmed in
+the reference project it is ported from.
+
+**V1.1: automatic recurring card charges, built on that same schedule.** The
+"deferred to V1.1" half of the settled sentence above is a scope boundary,
+not a design decision made now. When V1.1 builds automatic recurring
+charges, it must be built **on that same schedule** — the same installment
+rows in the same ledger invoices V1 already pays manually — rather than as a
+parallel or replacement mechanism. Concretely that means V1.1's job is to
+add automatic *initiation* (a saved payment method and an off-session charge
+per due installment, the two absences this section's grep confirmed the
+reference project has no precedent for, so V1.1 cannot port them from
+`techno` either) in front of the same reconciliation path V1 already has:
+the verified webhook still moves the same invoice through the same `status`
+column (section 14, point 3). V1.1 is deferred scope for a later story, not
+specified further here; this section fixes only the constraint that whatever
+gets built must sit on top of the schedule this report already establishes,
+not beside it.
+
+**Why a subscription product must never be used here.** Section 14 already
+states this payment path is not subscription billing for a future software
+product; this section states the mechanical reason a Stripe `Subscription`
+object specifically must never be used to implement the installment
+schedule, even in V1.1. A Stripe `Subscription` is Stripe's own billing
+schedule: it decides, inside Stripe, when the next `invoice.created` /
+`invoice.paid` cycle fires, and Stripe becomes the record of when installment
+N is due. That is a second, competing billing schedule the moment it exists
+alongside the ledger's own invoice rows — two systems that can each believe
+they hold the authoritative due date, amount, and count for the same
+booking. Section 14 already requires the opposite: Invoice Ninja is the
+ledger and the *only* place billing state lives ("no client portal and no
+client-facing surface; every surface is ours; Stripe alone moves money" —
+money movement, not schedule ownership). A `Subscription` object would move
+schedule ownership outside the ledger into Stripe's own billing engine,
+which is exactly the authoritative-billing-schedule-outside-the-ledger
+failure this section forbids. This is also why section 12 already declined
+to carry the reference project's two `Subscription`-creation behaviours
+forward (lines 700-731, 972-1024): they are `techno`'s own SaaS billing for
+its own product, the same subscription shape this section rules out for a
+different, independent reason here — not because the code doesn't port
+cleanly, but because the schedule it would create could never be made to
+live inside the ledger.
+
+## 17. Method (AC-20.9)
+
+`main.py`'s route table (already re-enumerated for section 13's Method) was
+read again against this AC's specific question — does any route save a
+payment method, charge off-session, or retry/dun a failed payment — rather
+than reused from memory. A `grep -rn -i` for
+`save.*payment.method|setup_intent|SetupIntent|off_session|off-
+session|dunning|retry|payment_method.*attach|customer.*attach` was run
+across the reference project's tracked source (`*.py .html .js`, `.venv`
+excluded) specifically for this AC and returned no matches, grounding "none
+of that is inherited" in a direct search rather than an inference from the
+route table alone. `scrum-master/po-requests.md`'s "Finance architecture —
+settled 2026-07-30" section was re-read for the exact "installments ship in
+V1 as a manual-pay schedule... automatic recurring card charges deferred to
+V1.1" sentence this section quotes. No files beyond those already listed in
+section 2 were opened for this AC.
