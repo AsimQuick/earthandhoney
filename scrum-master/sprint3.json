@@ -25,7 +25,7 @@
     "Coverage threshold met \u2014 the existing CI coverage gate is not lowered to pass",
     "Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)"
   ],
-  "last_updated": "2026-08-02T01:23:42+00:00",
+  "last_updated": "2026-08-02T02:09:55+00:00",
   "stories": [
     {
       "id": "US-14",
@@ -202,7 +202,7 @@
     {
       "id": "US-17",
       "title": "Prove the forked Backstage delivers the real photography flow before we build on it",
-      "status": "in-progress",
+      "status": "done",
       "priority": "critical",
       "dependencies": [
         "US-16"
@@ -211,225 +211,225 @@
         {
           "id": "17.1.1",
           "text": "A Client record can be created in the running Backstage through the interface upstream provides (admin UI or API), and it persists: after a container restart the same Client is still retrievable with the values it was created with. The exact creation route used (screen or endpoint) and the resulting database row are recorded in `PIVOT_AUDIT.md`.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.1.2",
           "text": "A Project record can be created in the running Backstage and linked to the Client created in AC-17.1.1. Reading the Project back shows the Client it belongs to, and the link is stored as a real foreign-key relationship in PostgreSQL, not a free-text field. If upstream models Projects and Clients differently than the PRD assumes, that is written up in `PIVOT_AUDIT.md` rather than worked around.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.1.3.1",
           "text": "A Gallery record can be created inside the Project from AC-17.1.2 through the interface upstream provides (admin UI or API), and it persists: reading the Gallery back returns it with the values it was created with. The exact creation route used (screen or endpoint), the resulting database row, and the column that carries the Project association are recorded in `PIVOT_AUDIT.md`. If upstream names or models the Gallery differently than the PRD assumes (for example as an event, a share, or a collection), that is written up in `PIVOT_AUDIT.md` rather than worked around.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.1.3.2",
           "text": "The Project-to-Gallery direction resolves: opening or querying the Project from AC-17.1.2 lists the Gallery created in AC-17.1.3.1. The exact query or screen used to prove this direction, and its output, are recorded in `PIVOT_AUDIT.md`.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.1.3.3",
           "text": "The Gallery-to-Project-to-Client direction resolves: opening or querying the Gallery from AC-17.1.3.1 identifies both its Project from AC-17.1.2 and the owning Client from AC-17.1.1. The exact query or screen used to prove this direction, and its output, are recorded in `PIVOT_AUDIT.md`. If the Client is only reachable by a second lookup through the Project rather than directly from the Gallery, that is recorded as the actual upstream shape rather than worked around.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.2",
           "text": "A batch of real images can be uploaded and processed. Every uploaded original is stored in R2 exactly once, the expected derivative sizes are produced, and stored image records include width, height, aspect ratio, format, file size, and processing state.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.3",
           "text": "Gallery protection works as delivered by upstream: a password-protected gallery refuses access without the password, and grants it with the password.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.1.1.1.1",
           "text": "The expiry search is defined and run against the pinned commit, and the commands are recorded so a reader can re-run them verbatim. `PIVOT_AUDIT.md` states the pinned commit and the set of search terms used \u2014 at minimum `expir`, `expires_at`, `expiry`, `ttl`, `valid_until`, `lifetime`, with any further term the auditor adds listed alongside them \u2014 and records the exact commands that ran those terms across the fork's backend source directory and its migration directory at that commit, including the directories searched and any file-type filter, written out so a reader can re-run them verbatim against the same commit and get the same result. For each recorded command the audit also records how many matching lines it returned, so the volume of output the two criteria that follow work from is fixed and checkable rather than open-ended. No names are extracted and nothing is classified at this criterion: the re-runnable commands and their recorded hit counts are the deliverable. This criterion is a code-level finding: no live gallery has to be created or changed for it.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.1.1.1.2",
           "text": "The migration-directory output of that search is reduced to a deduplicated list of names. Using only the commands recorded in AC-17.4.1.1.1.1.1.1, re-run against the same pinned commit, `PIVOT_AUDIT.md` records every distinct field, column, or setting name those commands surface inside the fork's migration directory, deduplicated so each name appears once. Names that differ only in spelling \u2014 a snake_case column and the camelCase form the fork uses for the same underlying value \u2014 are recorded together as a single entry naming both spellings rather than as two entries. The list states the recorded hit count it was reduced from, so the reduction from raw output to names is visible. Nothing is classified at this criterion and no name is dropped for looking irrelevant. This criterion is a code-level finding: no live gallery has to be created or changed for it.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.1.1.1.3",
           "text": "The backend-source output is reduced to names and merged with the migration list into the one inventory the criteria that follow divide. Using only the commands recorded in AC-17.4.1.1.1.1.1.1, `PIVOT_AUDIT.md` records every distinct field, column, or setting name those commands surface inside the fork's backend source directory, applying the same deduplication and the same one-entry-per-value treatment of camelCase and snake_case spellings as AC-17.4.1.1.1.1.1.2, and then merges that list with the migration-directory list into a single deduplicated inventory in which each underlying value appears exactly once, noting for each entry whether it was surfaced in the backend source, in the migrations, or in both. Every name recorded in AC-17.4.1.1.1.1.1.2 appears in the merged inventory, so nothing is lost between the two halves of the search. Nothing is classified at this criterion and no name is dropped for looking irrelevant: the merged inventory is the deliverable, and it is the list AC-17.4.1.1.1.1.2 and AC-17.4.1.1.1.1.3 divide between them. This criterion is a code-level finding: no live gallery has to be created or changed for it.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.1.1.2",
           "text": "The occurrences that are not about a Gallery's own expiry are named as ruled out, with evidence. Working from the merged inventory recorded in AC-17.4.1.1.1.1.1.3, `PIVOT_AUDIT.md` gathers every name that does not express a Gallery's own lifetime into named groups, and records each group as ruled out with a one-line reason saying what the value actually governs and at least one file and line against the pinned commit. The fork uses expiry wording for admin sessions, guest tokens and share links, and each of those is named explicitly as a ruled-out group rather than left unmentioned. A name is ruled out only on the evidence cited, never because it looked unpromising. This criterion is a code-level finding: no live gallery has to be created or changed for it.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.1.1.3",
           "text": "The candidate shortlist is stated and reconciled against the full inventory. Every name in the AC-17.4.1.1.1.1.1.3 merged inventory that AC-17.4.1.1.1.1.2 did not rule out is recorded in `PIVOT_AUDIT.md` as a candidate for the Gallery's own expiry, each with a one-line reason and at least one file and line against the pinned commit. The audit then reconciles the two lists and states that every name in the inventory appears exactly once, either as a candidate or inside a ruled-out group, so nothing the search surfaced is silently dropped; any name that cannot yet be placed either way is listed as unresolved with the reason rather than omitted. The shortlist recorded here is the output of this group of criteria as a whole, and it is what AC-17.4.1.1.1.2 confirms from code. This criterion is a code-level finding: no live gallery has to be created or changed for it.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.1.2.1",
           "text": "Each candidate on the shortlist is settled as confirmed or ruled out, with the evidence that settled it. Working from the candidate shortlist recorded in AC-17.4.1.1.1.1.3, `PIVOT_AUDIT.md` records a disposition for every entry on that shortlist against the pinned commit: either confirmed as participating in a Gallery's own expiry on the Gallery path, or not the gallery-lifetime field \u2014 in which case it is moved to the ruled-out list begun in AC-17.4.1.1.1.1.2, placed in a named group there, with the file and line that settled it. Every disposition carries a one-line reason and at least one file and line against the pinned commit, and is settled from application code rather than from documentation or assumption; a candidate is never confirmed or ruled out because it looked promising or unpromising. The audit then reconciles the two lists and states that every shortlist entry appears exactly once, either in the confirmed set or inside a ruled-out group, so the shortlist, the ruled-out list, and the confirmed set stay consistent; any entry that cannot yet be settled either way is listed as unresolved with the reason rather than omitted. No field's role and no set-or-read evidence is required at this criterion: the confirmed set and the corrected ruled-out list are the deliverable, and the confirmed set is what AC-17.4.1.1.1.2.2 and AC-17.4.1.1.1.2.3 evidence on the write and read paths. This criterion is a code-level finding: no live gallery has to be created or changed for it.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.1.2.2.1",
           "text": "The write path is evidenced for Gallery creation: where each confirmed field is set when a Gallery is created. For every field in the confirmed set recorded in AC-17.4.1.1.1.2.1, `PIVOT_AUDIT.md` records with file and line evidence against the pinned commit the code that writes or otherwise determines it on the Gallery creation path \u2014 the code that stores the value, and, where the value is computed rather than taken as given, the inputs and the code that compute it \u2014 and records the role each field plays on that path. Where a field in the confirmed set has no creation-path write, that is recorded here as no creation-path write found, together with the creation route or routes inspected to reach that; whether the absence is the field's actual upstream shape \u2014 derived, computed, or supplied as a default or a policy value rather than stored \u2014 is settled in AC-17.4.1.1.1.2.2.3 and is not decided here. Every field in the confirmed set appears exactly once in this record, so none is left unmentioned on the creation path. This criterion introduces no new candidates and moves nothing between the confirmed and ruled-out lists; where inspection here contradicts a disposition recorded in AC-17.4.1.1.1.2.1, the contradiction is recorded with the file and line that settled it and carried to AC-17.4.1.1.1.2.2.3, which corrects both lists. This criterion is a code-level finding: no live gallery has to be created or changed for it.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.1.2.2.2",
           "text": "The write path is evidenced for Gallery edits: where each confirmed field is set, extended, recomputed, or cleared once a Gallery already exists. The search that finds the edit path has already been run by the Product Owner and its result is given here as fixed scope, so that no session spends its budget rediscovering it. At the pinned commit, `grep -rn \"('events')\" --include=\"*.js\" vendor/picpeak/backend/src | grep -E \"\\.update\\(|\\.increment\\(|\\.del\\(\"` returns exactly these fifteen call sites, and they are the whole inspection list for this criterion (paths relative to `vendor/picpeak/backend/src/`): `routes/adminEvents.js:284`, `routes/adminEvents.js:1063`, `routes/events.js:346`, `routes/events.js:359`, `routes/events.js:383`, `routes/adminExternalMedia.js:178`, `services/downloadZipService.js:64`, `services/downloadZipService.js:225`, `services/downloadZipService.js:313`, `services/expirationChecker.js:97`, `services/eventService.js:448`, `services/eventService.js:459`, `services/eventService.js:478`, `services/archiveService.js:132`, `services/projectService.js:93`. The deliverable is one `## AC-17.4.1.1.1.2.2.2` section in `PIVOT_AUDIT.md`, against the pinned commit, containing one table and one count line and nothing else. The table has exactly one row per entry in the thirteen-entry confirmed set recorded in AC-17.4.1.1.1.2.1, in that set's order, and each row records either the call site or sites from the fifteen above that write or determine that entry \u2014 file and line, whether the value is set, extended, recomputed, or cleared, and the inputs and computing code where the value is computed rather than taken as given \u2014 or `no edit-path write found`, for which the fifteen sites above are the paths inspected and no further justification is owed. Where one entry is written from more than one of the fifteen sites, the additional sites go in that entry's own row rather than a new one, so the table stays thirteen rows. The count line states how many rows carry a write and how many carry `no edit-path write found`, and that the two add to thirteen. Nothing else is in scope, and adding any of it is a defect rather than thoroughness: no route mounting or registration check, no read of `vendor/picpeak/backend/server.js`, no permission or gate column, no reachability finding, no accounting of the fifteen sites themselves, no argument that the list is exhaustive, and no judgement about whether an absence is the field's actual upstream shape \u2014 that judgement is AC-17.4.1.1.1.2.2.3's deliverable. Evidence is read from application code rather than from documentation or assumption. This criterion introduces no new candidates and moves nothing between the confirmed and ruled-out lists; where reading one of the fifteen sites contradicts a disposition recorded in AC-17.4.1.1.1.2.1, the contradiction is recorded in one line with the file and line that settled it and carried to AC-17.4.1.1.1.2.2.3, which corrects both lists. This is a documentation-only, code-level criterion: no live gallery is created or changed, no source file is modified, and no new test suite is required for it \u2014 the audit section is the entire deliverable. It is time-boxed to a single dev session: if the box is reached with rows still open, those rows are written as `unresolved` with the sites inspected, the criterion is met by that honest record rather than by continuing, and the unresolved rows are carried into AC-17.4.1.1.1.2.2.3 as open items.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.1.2.2.3",
           "text": "Every confirmed field is given one write-path disposition, and the write-path record is reconciled and closed. Working from the evidence recorded in AC-17.4.1.1.1.2.2.1 and in AC-17.4.1.1.1.2.2.2, `PIVOT_AUDIT.md` records for every field in the confirmed set recorded in AC-17.4.1.1.1.2.1 exactly one write-path disposition \u2014 written when a Gallery is created, written when a Gallery is edited, written on both, or never written on the Gallery path \u2014 and states the resulting counts against the size of the confirmed set, so every field is accounted for and none is left without a write-path disposition. Where a confirmed field is never written on the Gallery path because it is derived, computed, or supplied as a default or a policy value rather than stored, that is recorded as the actual upstream shape with the file and line establishing it, rather than worked around or left blank. Any contradiction carried forward from AC-17.4.1.1.1.2.2.1 or AC-17.4.1.1.1.2.2.2, or found here, against a disposition recorded in AC-17.4.1.1.1.2.1 is settled with the file and line that settled it, and both the confirmed set and the ruled-out list begun in AC-17.4.1.1.1.1.2 are corrected in both places, so the shortlist, the ruled-out list, and the confirmed set stay consistent; apart from such an evidenced correction this criterion introduces no new candidates and moves nothing between the lists. Any row AC-17.4.1.1.1.2.2.2 recorded as unresolved is settled here with the file and line that settles it, or, if it still cannot be settled from code, is carried into the closed record as unresolved with what was inspected rather than omitted. The closed write-path record is what AC-17.4.1.1.1.2.3 pairs with the read path before stating the confirmed finding. This criterion is a code-level finding: no live gallery has to be created or changed for it.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.1.2.3",
           "text": "The read path is evidenced and the confirmed finding is stated. For every field in the confirmed set recorded in AC-17.4.1.1.1.2.1, `PIVOT_AUDIT.md` records with file and line evidence against the pinned commit the code that reads it on the Gallery path \u2014 where it is read when a Gallery is served, and where it is read when an access decision is made \u2014 stating for each read whether it gates access, only reports state, or does both. Where a confirmed field is never read on the Gallery path, that is recorded as the actual upstream shape with the evidence establishing it rather than worked around. The same consistency rule as AC-17.4.1.1.1.2.2.3 applies: nothing moves between the confirmed and ruled-out lists except with the file and line that settled it, recorded in both places. The audit then closes with the finding this group of criteria exists to produce \u2014 a plain statement of the field or fields the pinned fork uses to express a Gallery's own expiry, each with the role it plays \u2014 drawn only from the code evidence recorded in AC-17.4.1.1.1.2.1 through this criterion, not from documentation or assumption. That statement is the field or fields AC-17.4.1.1.1.3 identifies the PostgreSQL column for and AC-17.4.1.1.2 looks for a scheduled process against. This criterion is a code-level finding: no live gallery has to be created or changed for it.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.1.3",
           "text": "The PostgreSQL table and column that carry the Gallery's expiry value are identified from the schema that creates them, precisely enough for AC-17.4.1.2 to query the column verbatim. The scope of this criterion is fixed and its searches have already been run by the Product Owner, so that no session spends its budget rediscovering them. AC-17.4.1.1.1.2.3 closed with the finding that the pinned fork expresses a Gallery's own expiry with exactly one stored field, `events.expires_at`; the other twelve entries in the thirteen-entry confirmed set recorded in AC-17.4.1.1.1.2.1 are read-time derivations of it, creation-time inputs that shape it, or downstream consumers, and each already carries a recorded upstream shape in AC-17.4.1.1.1.2.2.3 or AC-17.4.1.1.1.2.3. This criterion re-derives none of that. At the pinned commit (`eb263137b98935754155824de2a03848121304b6`), the following two commands are the whole inspection list for this criterion, and their results below are given as fixed scope. (1) Column declarations for every name in the confirmed set: `grep -rInE \"table\\\\.[a-zA-Z]+\\\\('(expires_at|expiry_date|expiration_warning|gallery_expired|event_require_expiration|expiration_days|general_default_expiration_days|require_expiration|is_expired|expiring)'\" vendor/picpeak/backend/src/database/db.js vendor/picpeak/backend/migrations/` returns exactly these thirteen lines - `src/database/db.js:143`, `src/database/db.js:424`, `src/database/db.js:431`, `migrations/core/058_add_admin_invitations_table.js:37`, `migrations/core/078_add_guest_identity.js:65`, `migrations/core/081_add_api_tokens.js:26`, `migrations/core/090_add_customer_accounts.js:88`, `migrations/core/092_customer_features_branding_resets.js:98`, `migrations/core/107_crm_consolidated.js:897`, `migrations/core/107_crm_consolidated.js:1146`, `migrations/core/107_crm_consolidated.js:1358`, `migrations/legacy/017_add_token_revocation_tables.js:14`, `migrations/legacy/017_add_token_revocation_tables.js:21` (paths relative to `vendor/picpeak/backend/`). (2) Later alterations to the column on the `events` table: `grep -rIn \"ALTER TABLE events.*expires_at\" vendor/picpeak/backend/migrations/` returns exactly one line - `migrations/core/061_add_optional_date_expiration_settings.js:32`. Reading the schema definition that a declaration line sits inside, and the migration that executes that definition, is inside this scope; reading any file the two lists do not name is outside it. The deliverable is one `## AC-17.4.1.1.1.3` section in `PIVOT_AUDIT.md`, against the pinned commit, containing exactly the following four things and nothing else. (a) One schema record for the Gallery's stored expiry column: the table and column name; the file and line of the schema definition that creates the column, and the migration filename that executes that definition; the file and line of any later migration from list 2 that alters its type, nullability, or default; and the column's declared type, nullability, and default as the schema leaves them once every cited line has run. Where the creating definition and a later alteration disagree, the resulting state is what is recorded, with both lines cited and the disagreement stated in one line rather than smoothed over. (b) One table of exactly thirteen rows, one row per entry in the AC-17.4.1.1.1.2.1 confirmed set, in that set's order, each row recording either the table and column that carries that entry - with its declaration line from list 1 - or `no column of its own`, together with the one-line upstream shape already recorded for it in AC-17.4.1.1.1.2.2.3 or AC-17.4.1.1.1.2.3, restated rather than re-derived. A declaration line from list 1 that creates a same-named column on a table other than `events` is recorded as belonging to that other table and does not make the entry a column of the Gallery's. Where a confirmed field has no column of its own because it is derived or carried inside another value, that is recorded as the actual upstream shape rather than worked around. (c) One verbatim query line: the exact SQL AC-17.4.1.2 will run to read one Gallery's stored expiry value, written out in full with the table and column named, so that it can be copied and run without any further decision. (d) One count line stating how many of the thirteen rows carry a column and how many carry `no column of its own`, and that the two add to thirteen. Nothing else is in scope, and adding any of it is a defect rather than thoroughness: no re-derivation of the confirmed set or of any entry's role, no re-reading of the write or read paths, no inspection of any file the two lists above do not name, no argument that the searches are exhaustive, no account of the other columns on the `events` table, no comparison of the SQLite and PostgreSQL schema code paths beyond naming which path PostgreSQL takes, and no change to the confirmed or ruled-out lists. Evidence is read from the vendored schema and migration sources at the pinned commit rather than from documentation or assumption. The declared type, nullability, and default may additionally be confirmed against the running Backstage PostgreSQL from US-16 with a single `information_schema.columns` query; that check is optional, the schema sources are the required evidence, and where the live column and the schema sources disagree both are recorded with the disagreement stated plainly rather than reconciled away. This is a documentation-only, code-level criterion: no live gallery is created or changed, no source file is modified, and no new test suite is required for it - the audit section is the entire deliverable. It is time-boxed to a single dev session: if the box is reached with rows still open, those rows are written as `unresolved` with the lines inspected, the criterion is met by that honest record rather than by continuing, and the unresolved rows are carried into AC-17.4.1.2 as open items.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.2",
           "text": "The scheduled process that acts on the expiry field, and how it is triggered, are located in code. Any scheduled process in the pinned fork that acts on the field or fields confirmed in AC-17.4.1.1.1.2.1 and stated with its role in AC-17.4.1.1.1.2.3 is identified from code with file and line evidence against the pinned commit, together with how it is triggered \u2014 cron expression, timer interval, or on request \u2014 and the file and line where that trigger is registered or started. If the pinned fork has no scheduled process acting on those fields at all, that absence is itself the finding and is recorded with the evidence establishing it: where such a process would be registered, and what was searched to conclude it is not there. Recorded in `PIVOT_AUDIT.md`. This criterion is a code-level finding: no live gallery has to be created or changed for it.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.1.3",
           "text": "Upstream's expiry model is written up against what the PRD assumes. `PIVOT_AUDIT.md` states plainly how the pinned fork's expiry model, as found in AC-17.4.1.1.1.1.1.1 through AC-17.4.1.1.1.3 and AC-17.4.1.1.2, compares with the PRD's assumption. Where upstream expresses expiry differently \u2014 for example only as an archive or deactivation state, or with no scheduled process at all \u2014 the difference is written up as the actual upstream shape rather than worked around, and no fork patch is made to close it. Where the two agree, that is stated too, so the comparison is a recorded finding rather than a silence. This criterion draws only on the code evidence already recorded by the two preceding criteria; no new investigation and no live gallery are required.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.2",
           "text": "The pre-expiry client-facing baseline is recorded. While the Gallery from AC-17.1.3.1 is still unexpired, `PIVOT_AUDIT.md` records its stored expiry value read directly from PostgreSQL using the column identified in AC-17.4.1.1.1.3, and one exact client-facing request that currently succeeds \u2014 the request as issued, its status code, and enough of the response body to show the gallery is being served. This is the request AC-17.4.2 re-runs after expiry, so it is recorded precisely enough to be repeated verbatim.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.1.3",
           "text": "The pre-expiry photographer-facing baseline is recorded. While the Gallery from AC-17.1.3.1 is still unexpired, one photographer-facing screen or endpoint that currently shows it as live is identified and recorded in `PIVOT_AUDIT.md`: the exact screen or query, its output, and the field carrying the live-versus-expired state. If the only photographer-visible signal is a raw expiry date the photographer must interpret themselves rather than an explicit state, that is recorded as the actual upstream shape rather than worked around. This is the surface AC-17.4.3 re-checks after expiry, so it is recorded precisely enough to be repeated verbatim.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.2",
           "text": "Past its expiry, the gallery no longer grants client access. The Gallery from AC-17.1.3.1 is brought past its expiry through the interface upstream provides (admin screen, endpoint, or the scheduled expiration process), and the exact client-facing request recorded as succeeding in AC-17.4.1.2 is re-run and is now refused \u2014 with the status code and response body recorded in `PIVOT_AUDIT.md`. It is also recorded whether a client session or token issued before expiry is still accepted afterwards, since a session that outlives the expiry is a real gap rather than a detail. If upstream provides no supported route for setting an expiry in the past and the value has to be changed directly in the database, that is recorded as the actual upstream shape rather than presented as a supported flow. No fork patch and no workaround \u2014 any gap goes to `PIVOT_AUDIT.md` and `scrum-master/po-requests.md` per AC-17.9.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.4.3",
           "text": "The expired state is visible to the photographer. The photographer-facing screen or endpoint recorded in AC-17.4.1.3 is re-checked after the expiry proven in AC-17.4.2, and now reports the Gallery as expired \u2014 with the exact screen or query, its output, and the field carrying the state recorded in `PIVOT_AUDIT.md`. It is recorded whether that visibility is immediate or only appears once the scheduled expiration process runs; if a scheduled process is required, it is actually triggered and its output recorded, along with any side effect it performs (archiving, deactivation, or a queued notification). If the only photographer-visible signal is a raw expiry date the photographer must interpret themselves, or an email rather than a state in the interface, that is recorded as the actual upstream shape rather than worked around.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.5.1",
           "text": "The client-facing view, the archive download, and the download policy are proven live and recorded as they already stand, with no fork patch. Reusing the AC-17.1.3.1 Gallery (`events.id = 3`, slug `wedding-ac-17-1-3-1-verification-gallery-2026-09-01`, published, `allow_downloads = true`, 3 visible photos \u2014 chosen because it is active and unexpired, not the Gallery AC-17.4.2 left expired), `PIVOT_AUDIT.md` records three live results: the client obtaining a gallery token through `POST /api/auth/gallery/verify` and `GET /api/gallery/:slug/photos` returning all three photos; `GET /api/gallery/:slug/download-all` returning HTTP 200 and a valid zip, with its size and entry list recorded; and both download routes refusing with 403 once `allow_downloads` is flipped off, with the flag restored afterwards. It also records, from reading the pinned source only, the shape the two criteria that follow act on \u2014 that the archive route needs no patch because it already resolves through `resolvePhotoStorageKey`/`getStorage` (`vendor/picpeak/backend/src/routes/gallery.js:836`), whereas the single-photo route `GET /:slug/download/:photoId` (`gallery.js:631`) resolves through the local-filesystem-only `resolvePhotoFilePath` (`gallery.js:667`), streams with `res.sendFile` whose error callback only logs and never responds (`gallery.js:717-725`), and increments `download_count` (`gallery.js:654`) and inserts the `access_logs` row (`gallery.js:657`) before the send. Those line references and the storage-backend diagnosis are given here as fixed scope from the Product Owner's own verified run (po-requests.md, 2026-08-01) and are confirmed by reading, not re-derived by investigation. \u26a0\ufe0f Do not call `GET /:slug/download/:photoId` in this criterion: on this stack it does not error, it hangs forever, and any call to it anywhere in US-17 must carry a hard timeout (`curl --max-time 10` or an explicit client timeout). This criterion modifies no source file; the audit section is the entire deliverable and no new pinning test suite is required for it. Out of scope and owed to the criteria that follow: every change to vendored source, and every out-of-file record of the patch.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.5.2",
           "text": "The single-photo download route reads through the storage backend, and every failure path answers instead of hanging. In `vendor/picpeak/backend/src/routes/gallery.js`, the route `GET /:slug/download/:photoId` and no other route in the file is patched so that a photo carrying a storage key is resolved with `resolvePhotoStorageKey` and streamed out of `getStorage()` the way `vendor/picpeak/backend/src/routes/protectedImages.js:105-130` already does, with `Content-Length` taken from the same storage `stat`; `resolvePhotoFilePath` survives only for photos that have no storage key (external or reference photos), so that path is not regressed; and the watermark branch materialises a local copy before calling `watermarkService.applyWatermark`, which takes a path and not a buffer, so watermarked downloads work against S3/R2 too (`protectedImages.js:292-293` shows the `withLocalCopy` pattern). Every failure path sends a response rather than falling through: an absent storage object answers 404, a photo row whose path cannot be resolved answers 404, a stream error answers 500 or destroys the response if the headers are already out, and the `res.sendFile` error callback \u2014 the upstream hang itself \u2014 answers instead of only logging. Each changed region is marked in-file with a comment identifying it as a vendor-defect fix naming US-17 AC-17.5, so the patch stays legible against a future upstream rebase. Proven live against the running Backstage and recorded in `PIVOT_AUDIT.md`: a real photo from the AC-17.5.1 Gallery downloads 200 with real image bytes and a `filename*`-bearing `Content-Disposition`, and a photo row pointed at a storage object that does not exist answers 404 with a body, promptly rather than hanging, with the injected row cleaned up afterwards. \u26a0\ufe0f Every request to this endpoint, in the shell and in any test, must carry a hard timeout without exception \u2014 an unpatched or half-patched failure path hangs forever and will consume the whole session budget on a socket that never closes. A focused pinning test suite covers the claims this criterion makes about the patched source; it does not re-verify AC-17.5.1's live evidence. Out of scope and owed to AC-17.5.3: moving the `download_count` and `access_logs` writes, and every out-of-file record of the patch.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.5.3",
           "text": "A download is recorded only once it is confirmed sent, and the patch is registered so it can eventually be dropped. In the same route, the `download_count` increment (upstream `gallery.js:654`) and the `access_logs` insert (upstream `gallery.js:657`) are moved out of their pre-send position into a single guarded helper that fires only on a confirmed delivery \u2014 the response's `finish` event, and `res.sendFile`'s success branch for the external-photo path \u2014 and never from a failure branch; the two writes appear nowhere else in the route, and the changed region carries the same in-file vendor-defect comment convention as AC-17.5.2. Proven live and read straight from Postgres into `PIVOT_AUDIT.md`: the successful download from AC-17.5.2 still increments `download_count` and still writes one `access_logs` row with `action = 'download'`, while the 404 from AC-17.5.2 leaves `download_count` unchanged and writes no `access_logs` row at all \u2014 the pairing that shows the ordering bug is gone rather than merely moved. \u26a0\ufe0f Every request to this endpoint carries a hard timeout, per AC-17.5.2. The patch is then registered so it cannot become permanent by accident: a dated `deviation` entry in `FORK_CHANGELOG.md`; an entry in `PICPEAK_UPSTREAM_DEFECTS.md` giving the defect, its upstream location at the pinned commit, the fork patch, and the explicit condition under which the patch is dropped; a flag in `UPSTREAM_SYNC.md` marking it drop-rather-than-merge rather than a permanent deviation; and a submission-ready upstream report filed with PicPeak. If submitting that report needs an account or credential this project does not hold, it is written to `.github/upstream-issues/` and recorded as `prepared, not submitted` naming exactly what is needed to submit it, per AC-17.9 \u2014 an honest recorded state, never a silently open task. The AC-17.5.2 pinning suite is extended to cover the ordering claims and the register entries.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.6",
           "text": "At least one operational gallery email is sent through the Backstage email system to a capture inbox or mail catcher, and its queued/sent state is visible.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.7",
           "text": "At least one Backstage webhook fires and is received by a listener that logs the payload, proving the outbound integration path we will later use to refresh Frontstage content.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.8",
           "text": "The bundled gallery style templates render unmodified, and a copy of each original template file is preserved so future Earth & Honey variants can be diffed against the untouched baseline. `PICPEAK_PORT_LEDGER.md` records every template copied and where it is used.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.9",
           "text": "Findings are recorded honestly: anything that does not work as the PRD assumed is written up in `PIVOT_AUDIT.md` and raised to the Product Owner rather than quietly patched.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         },
         {
           "id": "17.10",
           "text": "PicPeak's native contract-signing capability is verified against the actual pinned commit, not assumed from documentation or memory: typed name capture, a consent checkbox, a drawn signature, signer IP address and timestamp, a frozen snapshot of the signed contract contents, a SHA-256 integrity hash, and an audit page baked into the delivered PDF. For each element, the evidence (file/line, or a reproduced signing flow) is recorded in `PIVOT_AUDIT.md`. If any element is missing or works differently than assumed in `CLAUDE.md`/PRD \u00a729, this is written up honestly and raised in `scrum-master/po-requests.md` as reopening the contract-signing decision \u2014 no silent workaround, and no quiet fallback to an external e-sign vendor or manual upload.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "approved"
         }
       ],
