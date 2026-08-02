@@ -11,7 +11,7 @@ purpose: AC-20.1 records every file read directly in the reference project
          (20.3-20.9) add further sections to this same report.
 created-by: dev-team
 related-story: US-20
-related-ac: 20.1, 20.2, 20.3, 20.4, 20.5, 20.6
+related-ac: 20.1, 20.2, 20.3, 20.4, 20.5, 20.6, 20.7
 ---
 -->
 
@@ -560,3 +560,160 @@ is derived (`stripe.Price.retrieve(...).unit_amount`), and that
 `/success` re-fetches and re-checks `intent.status` from Stripe before
 finalising anything. No files beyond those already listed in section 2
 were opened for this AC.
+
+## 14. This payment path's purpose, and the settled payment architecture, restated not reopened (AC-20.7)
+
+Sections 6, 8, and 12 have already leaned on "this project's already-settled
+architecture" without spelling it out. This section states it plainly, once,
+so every earlier cross-reference has somewhere to point. Nothing here is a
+new decision — every item below was already resolved in
+`scrum-master/po-requests.md` (items 3, 5, and 6, and the "Finance
+architecture — settled 2026-07-30" section) before this story existed. This
+section records that settlement; it does not reopen it, and building it is
+not part of this report-only story (same boundary as section 8's start-up
+check and section 10's deploy-workflow shape: specified here, built later).
+
+**What this payment path is for.** This payment path exists so the studio
+can charge its own photography clients — the fee for a booked session or
+package in the client lifecycle `CLAUDE.md` defines (Visitor → Lead →
+Booking → Contract → **Payment** → Session → Gallery Delivery). It is **not**
+subscription billing for a future software product. That distinction matters
+because the reference project's own two recurring `Subscription` objects
+(section 2, row 1; section 12's "Deliberately not carried over" list) *are*
+subscription billing — techno bills its own users for **its own SaaS
+maintenance and email-addon service**. Porting that mechanism here would
+misread what is being sold: this project has one photography client paying
+for one photography engagement, not a software vendor billing recurring
+seats. That is also why section 12 already declined to carry the
+`Subscription`-creation behaviour forward, and why AC-20.9 (out of scope
+here) fixes V1's shape as a manually-paid installment schedule against a real
+ledger invoice instead.
+
+**The settled architecture, restated.** `scrum-master/po-requests.md` item 6
+resolved "which system initiates payment" as: *"the ported direct Stripe
+flow, with the ledger gateway left disconnected and the verified webhook
+reconciling into the ledger. Exactly one payment path, one Pay button, one
+webhook endpoint (in the fork backend, where invoice status lives)."* Broken
+into its three parts:
+
+1. **The ported direct flow initiates payment.** The Stripe
+   payment-creation route this story ports from `main.py`'s
+   `POST /create-payment-intent` (section 2, row 1; section 12, item 1) is
+   the *only* place a charge is started. There is no second entry point:
+   one payment path, one Pay button, matching the reference project's own
+   shape of a single `/checkout` page driving a single creation route.
+2. **The ledger's own payment gateway stays disconnected.**
+   `scrum-master/po-requests.md` item 3 resolved that this project's Invoice
+   Ninja instance "runs **headless**: client portal disabled, **payment
+   gateway disconnected**, reached only by API." Invoice Ninja is the ledger
+   (`CLAUDE.md`'s technology stack: "Invoice Ninja (invoices, receipts,
+   balances — app displays status only, never recreates billing logic)");
+   it never talks to Stripe, never mounts its own checkout, and never
+   moves money itself. Money moves through Stripe alone, exactly as the
+   "Finance architecture — settled 2026-07-30" section of
+   `po-requests.md` puts it: *"Invoice Ninja becomes a headless API-only
+   ledger with no client portal and no client-facing surface; every
+   surface is ours; Stripe alone moves money."*
+3. **The verified webhook reconciles the payment into the ledger and
+   advances the project milestone.** Section 12, items 3-4 already require
+   this project's webhook handler to verify Stripe's signature
+   (`stripe.webhooks.constructEvent`/`stripe.Webhook.construct_event`'s
+   guarantee, never built in the reference project — section 2, row 11)
+   and to protect against Stripe's at-least-once redelivery before doing
+   anything else. What that verified event then does is write the paid
+   state into the ledger: the fork backend's `invoices` table tracks
+   payment state in its own `status` column (`vendor/picpeak/backend/src/
+   services/invoiceService.js` line 9, `"Statuses (invoices.status):"`,
+   and its use throughout, e.g. lines 437-438, 1928-1929), moving an
+   invoice out of `scheduled`/`sent`/`overdue` once payment is confirmed.
+   That same `invoices` row is what the fork's project cockpit reads to
+   build its milestone timeline: `getProjectOverview` in
+   `vendor/picpeak/backend/src/services/projectService.js` (lines 124-129,
+   165-172) pushes an `{ kind: 'invoice', label, date }` entry onto the
+   project's `milestones` array once the project has an invoice row to
+   read — the verified webhook writing a payment result into that same
+   `invoices` table is what "advances the project milestone" means
+   concretely: the ledger row the milestone timeline is built from moves
+   forward because the webhook, not a client action, wrote to it.
+
+**Exactly one webhook endpoint, and where it lives.**
+`scrum-master/po-requests.md` item 6's "one webhook endpoint (in the fork
+backend, where invoice status lives)" is a single, specific claim: the
+Stripe reconciliation webhook this project needs is not a Next.js API route
+alongside the payment-creation route from item 1 above — it is a route
+inside `vendor/picpeak/backend`, the same backend that owns the `invoices`
+table (`invoiceService.js`, confirmed above), because reconciling a payment
+means writing directly to the ledger row the webhook is confirming, not
+relaying that write across a second network hop. This is one endpoint,
+singular: `vendor/picpeak/backend` already has its own, unrelated webhook
+system — `vendor/picpeak/backend/src/routes/adminWebhooks.js`, backed by
+`webhookService.js` (its event catalogue: `event.created`, `event.published`,
+`event.expired`, and others, `webhookService.js` lines 13-19) and
+`webhookDeliveryWorker.js` — but that system is **outbound**: it delivers
+PicPeak's own gallery-lifecycle notifications *to* external subscribers. It
+is a different mechanism serving a different direction of traffic and is not
+counted against, nor to be confused with, the one **inbound** Stripe
+reconciliation webhook this section specifies. No inbound Stripe webhook
+route exists in `vendor/picpeak/backend` yet (confirmed by the same search
+that found no Stripe code there at all, section 2's method note below); this
+section specifies where the one that gets built belongs, not a route already
+present.
+
+**A browser redirect is never proof of payment.** Section 12, item 5
+already states this as the reason `/success` re-fetches and re-checks
+`intent.status` from Stripe rather than trusting that the customer's browser
+arrived at a success URL. It is restated here as its own explicit rule,
+independent of that behavioural item, because it is the reason the verified
+webhook — not the redirect — is the thing that reconciles payment into the
+ledger in point 3 above: a customer's browser landing on `/success` proves
+only that a redirect happened, which can be forged, replayed, or simply
+never followed (closed tab, lost connection) after a real payment succeeded.
+The webhook, arriving directly from Stripe and signature-verified, is the
+only event this architecture treats as proof a payment occurred; the
+redirect is UX only.
+
+**The language boundary this port crosses, and where that gets recorded.**
+The reference project is Flask/Python (section 1). The one webhook endpoint
+this section places "in the fork backend" is `vendor/picpeak/backend` — a
+Node.js/Express application, not Next.js/TypeScript and not Flask. Building
+that endpoint therefore ports the reference project's payment-creation and
+webhook logic across *two* language boundaries at once: Python → TypeScript
+for the Next.js side (already covered by section 12's "language/framework
+boundary"), and Python → JavaScript for the fork-backend side. Because the
+fork backend is vendored code tracked against an upstream pin (`FORK_
+CHANGELOG.md`, `PICPEAK_UPSTREAM.md`), adding Stripe payment-creation and
+webhook-reconciliation logic there is new functionality with no upstream
+counterpart — upstream PicPeak has no Stripe integration at all (confirmed
+by this section's own `grep -i stripe` across `vendor/picpeak/backend/src`,
+zero matches). That makes it a deviation from upstream in exactly the sense
+`FORK_CHANGELOG.md` exists to track, not merely an addition internal to this
+repository's own `src/` tree. When that work is actually built, it **must**
+be recorded in `FORK_CHANGELOG.md` as a `deviation` entry — dated, naming
+every file it touches inside `vendor/picpeak/backend` — the same mechanism
+already used for the AC-17.5 download-route patch and enforced by
+`validateChangelogEntry` in `src/lib/forkChangelog.ts` (a `deviation` entry
+that names no files is rejected). This report records that obligation; it
+does not discharge it, since the endpoint itself is not built by this
+report-only story.
+
+## 15. Method (AC-20.7)
+
+This section draws on `scrum-master/po-requests.md` — items 3, 5, and 6, and
+the "Finance architecture — settled 2026-07-30" section — read in full for
+this AC to confirm the payment architecture it restates was already settled
+before this story, not decided here. Three files inside
+`vendor/picpeak/backend` were opened for the first time in this report for
+this AC, to ground "the fork backend, where invoice status lives" and "one
+webhook endpoint" in the fork's actual code rather than in the requests
+document's own wording alone: `src/services/invoiceService.js` (confirming
+`invoices.status` is where payment/invoice state is tracked), `src/services/
+projectService.js` (confirming the `milestones` timeline the cockpit builds,
+and that an `invoice`-kind milestone is sourced from that same `invoices`
+data), and `src/routes/adminWebhooks.js` together with `src/services/
+webhookService.js` (confirming the fork's existing webhook system is an
+outbound gallery-lifecycle notifier, unrelated to and not double-counted
+against the one inbound Stripe webhook this section specifies). A
+repository-wide `grep -i stripe` across `vendor/picpeak/backend/src`
+returned no matches, confirming no Stripe code exists in the fork yet — this
+section specifies where it belongs when built, the same not-yet-built
+boundary already established for the start-up check in section 8.
