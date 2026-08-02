@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/7 stories | 18/70 ACs
-**Last Updated:** 2026-08-02T00:01:52+00:00
+**Last Updated:** 2026-08-02T00:26:52+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -334,6 +334,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-17.5.3:** A download is recorded only once it is confirmed sent, and the patch is registered so it can eventually be dropped. In the same route, the `download_count` increment (upstream `gallery.js:654`) and the `access_logs` insert (upstream `gallery.js:657`) are moved out of their pre-send position into a single guarded helper that fires only on a confirmed delivery — the response's `finish` event, and `res.sendFile`'s success branch for the external-photo path — and never from a failure branch; the two writes appear nowhere else in the route, and the changed region carries the same in-file vendor-defect comment convention as AC-17.5.2. Proven live and read straight from Postgres into `PIVOT_AUDIT.md`: the successful download from AC-17.5.2 still increments `download_count` and still writes one `access_logs` row with `action = 'download'`, while the 404 from AC-17.5.2 leaves `download_count` unchanged and writes no `access_logs` row at all — the pairing that shows the ordering bug is gone rather than merely moved. ⚠️ Every request to this endpoint carries a hard timeout, per AC-17.5.2. The patch is then registered so it cannot become permanent by accident: a dated `deviation` entry in `FORK_CHANGELOG.md`; an entry in `PICPEAK_UPSTREAM_DEFECTS.md` giving the defect, its upstream location at the pinned commit, the fork patch, and the explicit condition under which the patch is dropped; a flag in `UPSTREAM_SYNC.md` marking it drop-rather-than-merge rather than a permanent deviation; and a submission-ready upstream report filed with PicPeak. If submitting that report needs an account or credential this project does not hold, it is written to `.github/upstream-issues/` and recorded as `prepared, not submitted` naming exactly what is needed to submit it, per AC-17.9 — an honest recorded state, never a silently open task. The AC-17.5.2 pinning suite is extended to cover the ordering claims and the register entries.
   - Dev: implemented
 - [ ] **AC-17.6:** At least one operational gallery email is sent through the Backstage email system to a capture inbox or mail catcher, and its queued/sent state is visible.
+  - Dev: implemented
 - [ ] **AC-17.7:** At least one Backstage webhook fires and is received by a listener that logs the payload, proving the outbound integration path we will later use to refresh Frontstage content.
 - [ ] **AC-17.8:** The bundled gallery style templates render unmodified, and a copy of each original template file is preserved so future Earth & Honey variants can be diffed against the untouched baseline. `PICPEAK_PORT_LEDGER.md` records every template copied and where it is used.
 - [ ] **AC-17.9:** Findings are recorded honestly: anything that does not work as the PRD assumed is written up in `PIVOT_AUDIT.md` and raised to the Product Owner rather than quietly patched.
@@ -632,6 +633,19 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   
   **Register (so the patch can be dropped, not carried forever)**
   - `F …
+  AC-17.6 implemented (local checks green): Committed on `feature/US-17`, working tree clean, nothing pushed.
+  
+  ## Implementation summary — AC-17.6
+  
+  **Status: implemented** (not already-satisfied). The previous agent had left uncommitted partial work — a `mailhog` compose service, an audit write-up, and a test file with one failing test. I verified the live evidence, corrected a real error in the write-up, extended the tests, and committed as `278e58c`.
+  
+  ### Files changed
+  
+  | File | What it does |
+  |---|---|
+  | `docker-compose.yml` | Adds a `mailhog` service under the `backstage` profile at the exact hostname the pinned fork's own migration already defaults to (`migrations/core/001_init.js:146` seeds `smtp_host` to `process.env.SMTP_HOST \|\| 'mailhog'`). Mirrors `vendor/picpeak/docker-compose.yml` rather than running standalone, so it shares the stack network and profile lifecycle. No vendored file touched. |
+  | `PIVOT_AUDIT.md` | New `## AC-17.6` section recording the live proof, plus `17.6` added to the front-matter `related-ac` list. |
+  | `src/__tests__/us17-ac17.6-operational-gallery-email-sent.test.ts` | 51 tests pinning the recorded evidence and independently re-verifying every file/line claim against the vendored fork and …
 
 **Tester Status:** approved
 **Tester Notes:**
