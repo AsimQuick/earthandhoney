@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/7 stories | 61/70 ACs
-**Last Updated:** 2026-08-02T05:53:13+00:00
+**Last Updated:** 2026-08-02T06:04:08+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -846,6 +846,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-20.4:** A start-up validation is specified that refuses to start, or fails loudly with an actionable message, when the loaded Stripe values are not all from the same mode or when any required value is missing. The specification says what is checked, when it runs, and what the operator sees.
   - Dev: implemented
 - [ ] **AC-20.5:** The report records the reference project's secret-handling shape and confirms it will be mirrored here: local values in an uncommitted environment file, deployed values in repository secrets whose names match the environment variable names exactly, and the deployment step writing the environment file on the server. No secret value appears in the report or in any committed file.
+  - Dev: implemented
 - [ ] **AC-20.6:** The report records which behaviours will be preserved when the payment flow is actually built — server-side payment creation, the route layout, webhook signature verification, repeat-event protection, success and cancel handling, and the rule that the authoritative amount is fetched from Stripe rather than trusted from the browser — and which behaviours are deliberately not carried over, with reasons. It is explicit that the reference project is a different language and framework, so faithful means matching logic and required-field structure, not copying lines.
 - [ ] **AC-20.7:** The report states plainly that this payment path exists so the studio can charge its photography clients and is not subscription billing for a future software product, and it records the settled payment architecture rather than reopening it: the ported direct flow initiates payment, the ledger's own payment gateway stays disconnected, and the verified webhook reconciles the payment into the ledger and advances the project milestone. It states that exactly one webhook endpoint exists and that it lives in the fork backend where invoice status lives, that a browser redirect is never proof of payment, and that because the reference project is a different language the port crosses a language boundary and must be recorded in `FORK_CHANGELOG.md` as a deliberate deviation.
 - [ ] **AC-20.8:** `.env.example` is updated with the placeholder Stripe variable names in the convention taken from the reference project, each with a comment explaining what it is and which mode it must match.
@@ -877,6 +878,11 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
     - **When it runs**: once, synchronously, at server start-up, before the first request — specified as Next.js's `instrumentation.ts` `register()` hook, running on every boot (dev and production) under the Node runtime.
     - **What the operator sees**: silent on success; on failure, `register()` throws synchronously, the process exits non-zero rather than half-starting, and the message names the exact missing variable, or both variables + their resolved modes on a key-pair mismatch, or the failing price variable on a price-ID mismatch — never printing a secret value.
     - Front matter `related-ac …
+  AC-20.5 implemented (local checks green): AC-20.5 implemented and committed (`229a35f`) on `feature/US-20`.
+  
+  **Summary:**
+  - `STRIPE_PORT_REPORT.md` — added section 10 (Secret-handling shape), recording the reference project's shape exactly as found (local `.env` gitignored/uncommitted, deploy secrets in GitHub Actions named identically to the env vars, `.github/workflows/main.yml` writing `.env` on the VPS via a heredoc of `${{ secrets.* }}` refs), then confirming all three parts will be mirrored here — citing this project's own `.gitignore` (already excludes `.env`/`.env.local`/`.env.*.local`), the resolved VPS target from `po-requests.md` item 2, and explicitly noting the current `deploy.yml` only does a CI-build placeholder copy today, not a real production deploy, so the mirroring is a specification for later, not an existing-implementation claim. States plainly no secret value appears in the report. Added section 11 (Method). Front matter extended to `related-ac: 20.1-20.5`.
+  - `src/__tests__/us20-ac20.5-stripe-port-report-secret-handling.test.ts` (new, 15 tests) — verifies both halves of the section, the explicit non-overclaiming language, and scans the whole report plus this project's actual git-tracked state for any …
 
 **Tester Status:** approved
 **Tester Notes:**
