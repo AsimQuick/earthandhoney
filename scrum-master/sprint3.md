@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/7 stories | 18/70 ACs
-**Last Updated:** 2026-08-02T00:46:47+00:00
+**Last Updated:** 2026-08-02T00:58:12+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -338,6 +338,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-17.7:** At least one Backstage webhook fires and is received by a listener that logs the payload, proving the outbound integration path we will later use to refresh Frontstage content.
   - Dev: implemented
 - [ ] **AC-17.8:** The bundled gallery style templates render unmodified, and a copy of each original template file is preserved so future Earth & Honey variants can be diffed against the untouched baseline. `PICPEAK_PORT_LEDGER.md` records every template copied and where it is used.
+  - Dev: implemented
 - [ ] **AC-17.9:** Findings are recorded honestly: anything that does not work as the PRD assumed is written up in `PIVOT_AUDIT.md` and raised to the Product Owner rather than quietly patched.
 - [ ] **AC-17.10:** PicPeak's native contract-signing capability is verified against the actual pinned commit, not assumed from documentation or memory: typed name capture, a consent checkbox, a drawn signature, signer IP address and timestamp, a frozen snapshot of the signed contract contents, a SHA-256 integrity hash, and an audit page baked into the delivered PDF. For each element, the evidence (file/line, or a reproduced signing flow) is recorded in `PIVOT_AUDIT.md`. If any element is missing or works differently than assumed in `CLAUDE.md`/PRD §29, this is written up honestly and raised in `scrum-master/po-requests.md` as reopening the contract-signing decision — no silent workaround, and no quiet fallback to an external e-sign vendor or manual upload.
 
@@ -657,6 +658,17 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   
   - **`docker-compose.yml`** — adds the `webhook-receiver` service under the `backstage` profile, building the pinned fork's own vendored dev listener (`vendor/picpeak/dev/webhook-receiver`) unmodified. Documents why the bare Docker service hostname passes upstream's `validateExternalUrl` SSRF guard, so no `WEBHOOK_ALLOW_PRIVATE_URLS` override is needed.
   - **`PIVOT_AUDIT.md`** — AC-17.7 evidence section: webhook registered through `POST /api/admin/webhooks`; `event.created` + `event.published` fired by two ordinary non-draft Gallery creates (deliberately *not* the synthetic `/:id/test` route); all four deliveries `success`/200 in the admin deliveries feed and cross-checked in Postgres; each payload logged by the receiver with its HMAC-SHA256 signature independently recompute …
+  AC-17.8 implemented (local checks green): Committed on `feature/US-17` (not pushed).
+  
+  ## Summary
+  
+  **AC-17.8** implemented — the three bundled gallery style (CSS) templates upstream seeds (`Elegant Dark`, `Apple Liquid Glass`, `Liquid Glass Dark`, from `vendor/picpeak/backend/migrations/core/052_add_css_templates.js` and `053_add_liquid_glass_templates.js`) are now preserved as byte-identical baseline copies for future diffing.
+  
+  **Files changed:**
+  - `gallery-style-templates-baseline/{elegant-dark,apple-liquid-glass,liquid-glass-dark}.css` — exact, unmodified byte copies of each template's CSS, extracted by `require()`-ing the pinned migration modules directly (no manual transcription).
+  - `src/lib/galleryStyleTemplateBaseline.ts` — single-source-of-truth manifest (name, slot, source migration path/export, baseline file path).
+  - `PICPEAK_PORT_LEDGER.md` — records all three templates, their pinned-source location and line ranges, their baseline copies, and the full render path they're used through (storage in `css_templates`/`events.css_template_id`, public `GET /:slug/css-template` route, client fetch+injection via `useGalleryCustomCss`/`GalleryView.tsx`, admin editing via `CssTemplateEditor.tsx`).
+  - `src/__tests__/us17-ac17. …
 
 **Tester Status:** approved
 **Tester Notes:**
