@@ -11,9 +11,14 @@ purpose: AC-18.2 — specify the boundary between the Frontstage application
          database directly, that no cross-database join exists anywhere
          in application code, and that cross-system relationships are
          expressed as stored external identifiers.
+         AC-18.5 — record which Backstage surfaces are to be disabled
+         because they duplicate this project's chosen architecture (its
+         public landing-page content management, its native
+         quote/invoice/accounting screens, and any page-building
+         capability), and how each will be disabled or hidden.
 created-by: dev-team
 related-story: US-18
-related-ac: 18.2, 18.3, 18.4
+related-ac: 18.2, 18.3, 18.4, 18.5
 ---
 -->
 
@@ -37,10 +42,11 @@ Frontstage cache allowance. `AC-18.3` added the no-cross-database-join
 rule ("No cross-database access", below). `AC-18.4` adds "The three flows
 the next sprint depends on", walking the call-catalog rows into concrete
 end-to-end sequences and closing the row-4 gap with a named design
-decision. It deliberately does **not** yet state which Backstage surfaces
-get disabled (`AC-18.5`) or the user-facing terminology mapping
-(`AC-18.6`) — those are separate ACs of this same story and are recorded
-when their own AC runs, not pre-empted here.
+decision. `AC-18.5` adds "Backstage surfaces to disable", recording which
+duplicated Backstage capabilities are turned off and how. It deliberately
+does **not** yet state the user-facing terminology mapping (`AC-18.6`) —
+that is a separate AC of this same story and is recorded when its own AC
+runs, not pre-empted here.
 
 All evidence below is either a direct read of the pinned fork's source
 (`vendor/picpeak/backend/...`) or a live-verified finding already recorded
@@ -295,3 +301,180 @@ row 3's Bearer-token surface, or another HTTP mechanism) and storing the
 Backstage-assigned id it gets back, the same external-identifier pattern
 already used elsewhere in this contract. `AC-18.4` is where that specific
 flow is designed; this section only fixes the rule it must follow.
+
+## Backstage surfaces to disable (AC-18.5)
+
+`SYSTEM_OWNERSHIP.md`'s ownership table already forbids Backstage from
+duplicating two domains — *"Backstage/PicPeak must never create, edit, or
+store a record for [CMS — non-gallery business content]; it has no table
+or route for it and none should be added"* (`SYSTEM_OWNERSHIP.md:49`), and
+*"The app must never recreate billing logic or compute an authoritative
+balance itself"* for Payments (`SYSTEM_OWNERSHIP.md:54`). This section is
+the evidence check on that assumption: it audits the pinned fork
+(`eb263137b98935754155824de2a03848121304b6`, `PICPEAK_UPSTREAM.md`) for
+the three surface categories `CLAUDE.md`'s architecture already assigns
+elsewhere — public landing-page content management, native
+quote/invoice/accounting screens, and any page-building capability — and
+finds that, contrary to the "no table or route for it" assumption, the
+first two **do** exist in the vendored code today. Each is recorded below
+with file-level evidence and exactly how it is (or will be) disabled or
+hidden. The third category is audited and found not to exist at all.
+
+### 1. Public landing-page content management
+
+The fork ships two distinct surfaces reachable from the same admin
+screen (`frontend/src/pages/admin/CMSPage.tsx`, wired as the Settings →
+Content & Appearance → "CMS Pages" tab, `SettingsPage.tsx:211,410`) —
+only one of which actually overlaps `SYSTEM_OWNERSHIP.md`'s CMS row.
+
+**1a. Static "CMS Pages" (impressum/privacy/terms, footer-linked legal
+copy) — scoped out, left enabled.** Backed by the `cms_pages` table via
+`backend/src/routes/adminCMS.js` (`GET/PUT /pages/:slug`, mounted
+`/api/admin/cms/*` through `admin.js:12,25` → `server.js:638`) and a
+public read route (`backend/src/routes/publicCMS.js`, mounted
+`/api/public/pages/:slug` via `server.js:740`), gated only by the
+`cms.view`/`cms.edit` RBAC permissions (`permissions.js:51`), not a
+feature flag. `CLAUDE.md`'s CMS pillar names Payload's actual collection
+set — Media, Galleries, Portfolio, Blog, Homepage, Testimonials,
+Packages, FAQ — and none of them is a legal/impressum page type; nothing
+in that list is what `cms_pages` stores. This capability is therefore
+**not** a duplicate of anything Payload owns and is left enabled,
+recorded here as a deliberate scoping decision rather than an oversight.
+
+**1b. The "Public Site" raw HTML/CSS homepage editor — a genuine
+duplicate, disabled by the fork's own shipped default.** This is the
+actual overlap: PicPeak's admin literally authors the content served at
+the whole application's `GET /` route. The editor (`CMSPage.tsx:27-31`
+state, `:68-113` save/reset mutations) writes three settings —
+`general_public_site_enabled`, `general_public_site_html`,
+`general_public_site_custom_css` — through the generic
+`PUT /api/admin/settings/general` route (`adminSettings.js:776`,
+sanitized at `:781-816`), gated only by the `settings.edit` permission.
+`backend/src/services/publicSiteService.js:38-50`
+(`fetchPublicSiteSettings`) defaults `general_public_site_enabled` to
+`false` when no `app_settings` row overrides it, and
+`handlePublicSiteRequest` — the actual `GET /` handler, mounted twice
+depending on whether a built frontend bundle exists
+(`server.js:757,776`) — checks that flag first: *"if (!payload.enabled)
+... `res.redirect(302, '/admin/login')`"* (`server.js:350-353`), so the
+homepage renders nothing admin-authored while the setting is off.
+**Disabling mechanism:** the shipped default (`enabled: false`) already
+satisfies this AC without a code change; the operational rule this
+document records is that `general_public_site_enabled` must never be set
+to `true` via `PUT /api/admin/settings/general`. Unlike quote/invoice
+(below), this toggle is **not** wired into the fork's `feature_flags`
+system — `general_public_site_enabled`/`publicSite` is absent from
+`KNOWN_FLAGS` (`adminFeatureFlags.js:25-65`) — so there is no
+server-side 403 equivalent to `requireQuotesFlag`/`requireBillsFlag`
+backing the default, only the RBAC permission and the default value
+itself. This is recorded here as a gap, in the same spirit as the row-4
+gap above: the implementing story's hardening step is to add a new
+`publicSite` key to `KNOWN_FLAGS`/`DEFAULT_FLAGS` (default `false`,
+mirroring `quotes`/`bills`'s existing pattern exactly) and check it
+inside `handlePublicSiteRequest` before the `app_settings` value is even
+read, plus hide the "Public Site" panel in `CMSPage.tsx` behind that
+flag the same way `RequireFeature` gates the quotes UI (below) — a
+Fork-Discipline-compliant deviation recorded in `FORK_CHANGELOG.md` when
+that story writes the code, not here.
+
+### 2. Native quote/invoice/accounting screens
+
+A full native quotes → invoices → tax-report subsystem exists,
+independent of Stripe Checkout:
+
+| Surface | Route file | Mount | Flag |
+|---|---|---|---|
+| Quotes (admin) | `adminQuotes.js` | `/api/admin/quotes` (`server.js:703`) | `quotes` |
+| Quotes (customer, token-only) | `publicQuotes.js` | `/api/public/quotes` (`server.js:712`) | `quotes` |
+| Bills/Invoices (admin) | `adminInvoices.js` | `/api/admin/invoices` (`server.js:704`) | `bills` |
+| Tax report | `adminTaxReport.js` | `/api/admin/tax-report` (`server.js:709`) | `bills` (reused — the file's own header states *"Reuses the existing `bills` feature flag + `bills.view` permission"*) |
+
+`adminBusinessProfile.js` (`/api/admin/business-profile`,
+`server.js:702` — the issuer/bank-account block every quote/invoice PDF
+pulls from) and `adminDeals.js` (`/api/admin/deals`, `server.js:708` — a
+CRM sales pipeline) sit in the same admin area but are not named by this
+AC's "quote/invoice/accounting" wording and are left out of scope here.
+`adminContracts.js` (`/api/admin/contracts`, `server.js:705`) is
+deliberately **excluded** from this disable list: `SYSTEM_OWNERSHIP.md`'s
+Contracts row assigns PicPeak/Backstage as the *authoritative* signing
+system (the opposite direction from CMS/Payments), so `flags.contracts`
+must stay on, not off — called out explicitly so a reader doesn't assume
+every CRM flag gets the same treatment.
+
+**Disabling mechanism — already shipped, already the default, and
+enforced at four independent layers, not just one:**
+
+1. **Flag defaults.** `DEFAULT_FLAGS.quotes = false`,
+   `DEFAULT_FLAGS.bills = false`, `DEFAULT_FLAGS.taxReport = false`
+   (`adminFeatureFlags.js:78-79,84`), with dependency rules that force
+   the children off whenever the parent is off — `if (out.quotes ===
+   false) out.bills = false` and `if (out.bills === false)
+   out.taxReport = false` (`adminFeatureFlags.js:105,110`) — so a single
+   `quotes: false` (the shipped default) already cascades to disable
+   bills and the tax report too.
+2. **Server-side enforcement on the routes themselves, not just the
+   UI.** `adminQuotes.js`'s `requireQuotesFlag` middleware
+   (`adminQuotes.js:40-45`, applied via `router.use(requireQuotesFlag)`
+   at `:54`) returns `403 { code: 'QUOTES_DISABLED' }` for every request
+   under `/api/admin/quotes` while the flag is off; `adminInvoices.js`'s
+   `requireBillsFlag` (`adminInvoices.js:77-81`, applied at `:87`)
+   does the same with `403 { code: 'BILLS_DISABLED' }` for
+   `/api/admin/invoices`. A direct API call bypassing the admin UI is
+   refused, not merely hidden.
+3. **Frontend route hiding.** `frontend/src/App.tsx` wraps the quote and
+   bill route trees in `<Route element={<RequireFeature flag="quotes"
+   />}>` (`App.tsx:199`) and `flag="bills"` (`App.tsx:206`);
+   `RequireFeature` (`RequireFeature.tsx:18-24`) redirects to
+   `/admin/dashboard` whenever `flags[flag]` is false, so a stale
+   bookmark to `/admin/clients/quotes/...` never renders the page.
+4. **Nav hiding.** The single sidebar entry that leads to Quotes/Bills
+   at all — `/admin/clients` — is itself gated by `featureFlag:
+   'clients'` plus `featureFlagsAny: [..., 'quotes', 'bills',
+   'taxReport', ...]` (`AdminSidebar.tsx:84-93`); with every listed flag
+   at its off default, the derived `clients` flag evaluates `false`
+   (`applyDependencyRules`'s `out.clients = Boolean(... || out.quotes ||
+   out.bills || out.taxReport || ...)`) and the entry never renders at
+   all. (The Settings "CRM behaviour" tab still shows because
+   `flags.contracts` alone satisfies its `flags.quotes || flags.bills ||
+   flags.contracts` condition, `SettingsPage.tsx:238` — expected, since
+   Contracts stays enabled per the exclusion above, and noted here so
+   that visible tab isn't mistaken for a disabling failure.)
+
+**Operational rule this document records:** never set `quotes`, `bills`,
+or `taxReport` to `true` via `PUT /api/admin/feature-flags` — the
+pinned fork's shipped defaults already satisfy this AC without any code
+change.
+
+### 3. Page-building capability — audited, not present
+
+The pinned fork's backend and frontend were searched for a drag-and-drop
+or block-based page composer: `frontend/package.json` and
+`backend/package.json` carry no `react-dnd`, `@dnd-kit`, `grapesjs`,
+`craftjs`, `react-beautiful-dnd`, or similar dependency; a
+case-insensitive source search for
+`dnd-kit|react-dnd|grapesjs|craftjs|puck|page-builder|PageBuilder` across
+`vendor/picpeak/` returns only an unrelated file-upload dropzone comment
+(`frontend/src/components/admin/PhotoUpload.tsx:392`, *"accepts both
+click-to-pick and drag-and-drop"* — for photo uploads, not page layout).
+The only two content editors that exist are confirmed to be linear, not
+block-based: `CMSEditor.tsx` (used by 1a, above) imports `@tiptap/react`
++ `@tiptap/starter-kit` (`CMSEditor.tsx:2-3`), a rich-text WYSIWYG editor
+with no block/section model; the "Public Site" editor (1b, above) is a
+plain HTML/CSS textarea pair (`CMSPage.tsx`'s `publicSiteHtml`/
+`publicSiteCss` state is `string`, not a block array), sanitized and
+rendered as a preview, not composed visually. **Conclusion: no
+page-building capability exists in the pinned fork.** There is nothing
+to disable or hide for this category; this is recorded explicitly,
+mirroring `PICPEAK_CAPABILITY_AUDIT.md`'s practice of stating a negative
+finding rather than leaving it silently unaddressed.
+
+### Summary
+
+| Duplicated surface | Exists in fork? | Disabling mechanism | State today |
+|---|---|---|---|
+| Public Site homepage HTML/CSS editor (1b) | Yes | Shipped default `general_public_site_enabled: false`; `publicSite` feature-flag hardening is a recorded design decision for the implementing story | Disabled by default |
+| Static CMS Pages / impressum (1a) | Yes, but not a duplicate (see reasoning above) | N/A — out of scope | Left enabled |
+| Quotes | Yes | `quotes` flag (default `false`) + `requireQuotesFlag` 403 + `RequireFeature` + nav hiding | Disabled by default |
+| Bills/Invoices | Yes | `bills` flag (default `false`, forced off when `quotes` is off) + `requireBillsFlag` 403 + `RequireFeature` + nav hiding | Disabled by default |
+| Tax report | Yes | `taxReport` flag (default `false`, forced off when `bills` is off) | Disabled by default |
+| Page builder | No | N/A — audited, not present | Nothing to disable |
