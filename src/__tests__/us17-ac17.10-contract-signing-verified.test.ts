@@ -289,7 +289,7 @@ describe('AC-17.10: contract-signing capability verified against the pinned comm
       let gitStatus = ''
       try {
         gitStatus = execSync('git status --porcelain -- vendor/picpeak', { cwd: root, encoding: 'utf8' })
-      } catch (err) {
+      } catch {
         // If git itself is unavailable in this environment, this check
         // cannot run — the file:line content assertions above already
         // guard against a fabricated citation either way.
