@@ -7,11 +7,16 @@ purpose: AC-19.1 — states, on evidence from the running fork, how tightly an
          original can already be referenced by more than one gallery.
          AC-19.2 — building on that evidence, chooses exactly one path
          forward for media reuse and records the reasons, the risks, and
-         what would have to be true to revisit the decision. This document
-         will grow further to record AC-19.3's guarantees in a later commit.
+         what would have to be true to revisit the decision.
+         AC-19.3 — specifies, at schema and mechanism level, how the chosen
+         model guarantees no duplicate original storage, per-gallery
+         ordering/metadata overrides, deliberate promotion into a public
+         portfolio gallery, and that promoting one image can never expose
+         the rest of a private gallery. This document will grow further to
+         record the R2 audit under a separate file for AC-19.4/19.5.
 created-by: dev-team
 related-story: US-19
-related-ac: 19.1, 19.2
+related-ac: 19.1, 19.2, 19.3
 ---
 -->
 
@@ -273,3 +278,116 @@ touching the client gallery's own event or its other photos.
   photo volume), option 1's simpler copy-on-promote model becomes viable
   again and should be re-evaluated against option 2 on cost/complexity
   alone.
+
+## AC-19.3 — Guarantees the chosen model must provide
+
+This section specifies the `media_assets` / `gallery_items` layer at schema
+and mechanism level — the concrete shape the additive migration described in
+AC-19.2 must take — so each of AC-19.3's four required guarantees is
+enforced structurally, not left to a convention an implementer could get
+wrong. No migration is written yet: per AC-19.2's risks section, that lands
+in "the sprint that introduces the first extension migration" and is logged
+in `FORK_CHANGELOG.md` at that time. This is the specification that
+migration must satisfy.
+
+### The two new tables
+
+```
+media_assets                              gallery_items
+------------------------------------      ------------------------------------
+id              PK                        id                PK
+storage_key     TEXT UNIQUE NOT NULL      media_asset_id    FK -> media_assets.id
+checksum        TEXT UNIQUE NOT NULL         ON DELETE CASCADE
+size_bytes      INTEGER                   event_id          FK -> events.id
+uploaded_by     TEXT                        ON DELETE CASCADE
+uploaded_at     DATETIME                  sort_order        INTEGER NOT NULL
+source_event_id FK -> events.id           caption           TEXT
+  ON DELETE SET NULL                      title             TEXT
+                                           is_hero           BOOLEAN DEFAULT false
+                                           UNIQUE (media_asset_id, event_id)
+```
+
+`media_assets` owns exactly one row per stored original, independent of any
+event. `gallery_items` is the join table AC-19.2 committed to: one row per
+(media asset, event) pairing, carrying that pairing's own display state.
+`source_event_id` is provenance only (which event's upload created this
+asset) — it is deliberately not the mechanism any guarantee below relies on,
+because provenance is not access control.
+
+### Guarantee 1 — no original binary is stored twice
+
+`media_assets.checksum` (a content hash of the original bytes, e.g. sha256)
+and `media_assets.storage_key` both carry a `UNIQUE NOT NULL` constraint.
+The upload pipeline must look up `media_assets` by checksum before writing
+to storage; a match short-circuits to reusing the existing row instead of
+writing a second object to R2. This closes exactly the gap AC-19.1 found —
+today's fork has "no content-addressable storage (CAS) layer, and no
+hash/checksum-based deduplication anywhere in the upload pipeline."
+
+The promotion action (guarantee 3) reinforces this from the other side: it
+is defined as accepting an existing `media_asset_id`, never file bytes, and
+its only write is one `INSERT` into `gallery_items`. There is no code path
+from "promote" back into the upload pipeline or into `media_assets` at all,
+so promotion itself can never create a second copy of an original.
+
+### Guarantee 2 — per-gallery ordering and metadata overrides remain possible
+
+`sort_order`, `caption`, `title`, and `is_hero` live on `gallery_items`, not
+on `media_assets`. `media_assets` carries no per-gallery display field at
+all — the shared original has no single "canonical" order or caption to
+inherit. Because the same `media_asset_id` can appear in more than one
+`gallery_items` row (one per event it belongs to, enforced distinct by the
+`UNIQUE (media_asset_id, event_id)` constraint), each event's row holds its
+own independent order and metadata for that shared image: a photo can be
+first and captioned "Ceremony" in the client's private gallery and eleventh
+and captioned "Golden hour" in the public portfolio, with neither row
+touching the other.
+
+### Guarantee 3 — selected client images can be promoted into a public portfolio gallery, deliberately
+
+Promotion is exposed as exactly one explicit action —
+`promotePhoto(mediaAssetId, portfolioEventId)` — consistent with the `v1`
+Bearer-token admin API family `PAYLOAD_PICPEAK_API_CONTRACT.md`'s AC-18.4
+section already designs new routes on top of
+(`customerAccountsService.createDirect()` / `projectService.createProject()`
+being that section's precedent for extending the same family). Its only
+write is `INSERT INTO gallery_items (media_asset_id, event_id, ...) VALUES
+(?, portfolioEventId, ...)`. There is no bulk "promote gallery" call, no
+scheduled job, and no default that flips visibility automatically — a photo
+is in the public portfolio if and only if this action has been called once
+for its `media_asset_id`, naming that exact photo and that exact target
+event.
+
+The portfolio itself is an ordinary `events` row like any client gallery,
+distinguished only by its own access settings: it is created with
+`require_password = false` (the same real, already-existing column
+`eventService.js` reads and writes via `parseBooleanInput`/`formatBoolean` —
+see `vendor/picpeak/backend/src/services/eventService.js:165,190,249`),
+while every client event keeps its own `require_password = true` and
+`password_hash` untouched. Promotion never edits the source event's row.
+
+### Guarantee 4 — promoting one image can never expose the rest of a private gallery
+
+Access to any event's photos is gated per-event, by that event's own
+`password_hash` / `require_password` / `share_token`
+(`vendor/picpeak/backend/src/database/db.js:137,141,164`) — never by any
+property of `media_assets` or by a global visibility flag on the shared
+original. Visibility is therefore always asked as "does the caller hold
+*this event's* password/share token," never "is this image's underlying
+asset public anywhere."
+
+A promotion inserts exactly one `gallery_items` row scoped to
+`(mediaAssetId, portfolioEventId)`. It does not read, copy, or reference any
+other `gallery_items` row belonging to the source client event, and it
+cannot alter the source event's `password_hash`, `require_password`, or
+`share_token` — the promotion function's only parameters are the one photo's
+id and the one target event's id, so there is no argument shape that could
+name "the rest of the gallery." Consequently, learning that one image is
+visible in the public portfolio event yields no query path to any other
+photo's `gallery_items` row scoped to the private client `event_id`:
+fetching those still requires that private event's own password or share
+token, exactly as if the promoted photo had never been promoted at all. The
+`UNIQUE (media_asset_id, event_id)` constraint additionally rules out a
+promotion accidentally producing a second, overlapping association for the
+same asset within the same event that could confuse which row's visibility
+governs access.
