@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/7 stories | 61/70 ACs
-**Last Updated:** 2026-08-02T06:25:08+00:00
+**Last Updated:** 2026-08-02T06:30:53+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -852,6 +852,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-20.7:** The report states plainly that this payment path exists so the studio can charge its photography clients and is not subscription billing for a future software product, and it records the settled payment architecture rather than reopening it: the ported direct flow initiates payment, the ledger's own payment gateway stays disconnected, and the verified webhook reconciles the payment into the ledger and advances the project milestone. It states that exactly one webhook endpoint exists and that it lives in the fork backend where invoice status lives, that a browser redirect is never proof of payment, and that because the reference project is a different language the port crosses a language boundary and must be recorded in `FORK_CHANGELOG.md` as a deliberate deviation.
   - Dev: implemented
 - [ ] **AC-20.8:** `.env.example` is updated with the placeholder Stripe variable names in the convention taken from the reference project, each with a comment explaining what it is and which mode it must match.
+  - Dev: implemented
 - [ ] **AC-20.9:** The report records the boundary of what "port faithfully" does and does not cover: the reference project is a one-shot checkout flow containing no saved payment method, no off-session charge, and no retry or dunning logic, so none of that is inherited. It states that V1 ships a payment schedule whose installments are each paid manually against a real ledger invoice, that automatic recurring card charges are deferred to V1.1 and must then be built on that same schedule, and that a subscription product must never be used because it would place an authoritative billing schedule outside the ledger.
 
 **Dev Team Status:** not-started
@@ -904,6 +905,18 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   
   **Files changed:**
   - `STRIPE_PORT_REPORT.md` — added section 14 ("This payment path's purpose, and the settled payment architecture, restated not reopened (AC-20.7)") and section 15 ("Method (AC-20.7)"), plus updated the `related-ac` metadata header to include 20.7. Section 14 states: this payment path charges the studio's own photography clients, not subscription billing for a future software product; restates the three-part settled architecture from `scrum-master/po-requests.md` (ported direct flow initiates payment; the ledger's own Invoice Ninja payment gateway stays disconnected; the verified webhook reconciles payment into `vendor/picpeak/backend`'s `invoices` table and advances the project milestone timeline in `projectService.js`); states exactly one webhook endpoint exists in the fork backend where invoice status lives, explicitly distinguishing it from PicPeak's own pre-existing *outbound* gallery-lifecycle webhook system (`adminWebhooks.js`); states a browser redirect is never proof of payment; and states that because building it crosses a Python→JavaScript language boundary into the …
+  AC-20.8 implemented (local checks green): Committed as `9d57322`.
+  
+  **Summary — AC-20.8 implemented**
+  
+  - **`.env.example`**: Replaced the single shared block comment above the five Stripe vars with an individual comment per variable, each stating what the variable is and which Stripe mode it must match:
+    - `STRIPE_SECRET_KEY` — server-side only, `sk_test_`/`sk_live_` prefix
+    - `STRIPE_PUBLISHABLE_KEY` — browser-safe, `pk_test_`/`pk_live_` prefix, must match the secret key's mode
+    - `STRIPE_PRICEMAINT_ID`, `STRIPE_PRICEEMAIL_ID`, `STRIPE_PRICEDEV_ID` — each tied back to `STRIPE_SECRET_KEY`'s mode per the report's key-pairing rule (section 6)
+  
+    Variable names and placeholder values (`change-me-in-production`) were left as-is — they were already present (added in US-16) and already match the flat, no-suffix convention `STRIPE_PORT_REPORT.md` recorded in AC-20.2/20.4. Only the per-variable comments were added/changed.
+  
+  - **New test**: `src/__tests__/us20-ac20.8-env-example-stripe-vars.test.ts` — 15 test cases verifying: all five vars present with non-empty placeholders, no `_TEST`/`_LIVE`/`_SANDBOX` suffix, exactly one secret/publishable key, each var has its own comment mentioning "mode," the secret/publishable key comment …
 
 **Tester Status:** approved
 **Tester Notes:**
