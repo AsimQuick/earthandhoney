@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/7 stories | 61/70 ACs
-**Last Updated:** 2026-08-02T05:44:24+00:00
+**Last Updated:** 2026-08-02T05:53:13+00:00
 
 ## Sprint Goal
 De-risk the pivot before any feature is built on it. Produce an approved pivot map for the existing codebase, create a licence-compliant fork of the PicPeak Backstage pinned to a verified commit, prove that fork really delivers the photography flow (project, client, gallery, upload, protection, expiry, download, email, webhook) on PostgreSQL and the existing R2 bucket inside Docker, and settle the four decisions the next sprint cannot start without: system ownership, the Frontstage-to-Backstage API boundary, the media-reuse model, and the R2 delivery path. Separately, extract the proven Stripe environment and key-pairing convention from the reference project so the payment work later cannot repeat a known past failure. No new public pages are built this sprint.
@@ -844,6 +844,7 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
 - [ ] **AC-20.3:** The report states the key-pairing rule in unambiguous terms — the secret key, the publishable key, and every priced-item identifier must all belong to the same Stripe mode — and explains why a mismatched pair fails, since this is the specific mistake made previously on this project.
   - Dev: implemented
 - [ ] **AC-20.4:** A start-up validation is specified that refuses to start, or fails loudly with an actionable message, when the loaded Stripe values are not all from the same mode or when any required value is missing. The specification says what is checked, when it runs, and what the operator sees.
+  - Dev: implemented
 - [ ] **AC-20.5:** The report records the reference project's secret-handling shape and confirms it will be mirrored here: local values in an uncommitted environment file, deployed values in repository secrets whose names match the environment variable names exactly, and the deployment step writing the environment file on the server. No secret value appears in the report or in any committed file.
 - [ ] **AC-20.6:** The report records which behaviours will be preserved when the payment flow is actually built — server-side payment creation, the route layout, webhook signature verification, repeat-event protection, success and cancel handling, and the rule that the authoritative amount is fetched from Stripe rather than trusted from the browser — and which behaviours are deliberately not carried over, with reasons. It is explicit that the reference project is a different language and framework, so faithful means matching logic and required-field structure, not copying lines.
 - [ ] **AC-20.7:** The report states plainly that this payment path exists so the studio can charge its photography clients and is not subscription billing for a future software product, and it records the settled payment architecture rather than reopening it: the ported direct flow initiates payment, the ledger's own payment gateway stays disconnected, and the verified webhook reconciles the payment into the ledger and advances the project milestone. It states that exactly one webhook endpoint exists and that it lives in the fork backend where invoice status lives, that a browser redirect is never proof of payment, and that because the reference project is a different language the port crosses a language boundary and must be recorded in `FORK_CHANGELOG.md` as a deliberate deviation.
@@ -869,6 +870,13 @@ De-risk the pivot before any feature is built on it. Produce an approved pivot m
   - `src/__tests__/us20-ac20.3-stripe-port-report-key-pairing-rule.test.ts` (new, 10 tests) — verifies the section exists, names all three value types, states the same-mode rule, asserts the no-partial-mix language, checks the isolated-data-partition failure explanation, and the two concrete Stripe error names, ties it to AC-20.1's files, and validates the Method section and metadata header.
   
   Full suite: 96 suites / 2462 t …
+  AC-20.4 implemented (local checks green): **Implementation summary — AC-20.4**
+  
+  - `STRIPE_PORT_REPORT.md`: added Section 8 ("Start-up validation specification") and Section 9 ("Method"). Section 8 specifies the check the reference project lacks:
+    - **What is checked**: (1) presence of every required Stripe variable, (2) secret/publishable key mode agreement via `sk_test_`/`pk_test_` vs `sk_live_`/`pk_live_` string-prefix comparison, (3) price-ID mode agreement via a live Stripe price-retrieval API call (since Price IDs carry no mode marker in the string, unlike the keys — a "No such price" error or success is the only way to know).
+    - **When it runs**: once, synchronously, at server start-up, before the first request — specified as Next.js's `instrumentation.ts` `register()` hook, running on every boot (dev and production) under the Node runtime.
+    - **What the operator sees**: silent on success; on failure, `register()` throws synchronously, the process exits non-zero rather than half-starting, and the message names the exact missing variable, or both variables + their resolved modes on a key-pair mismatch, or the failing price variable on a price-ID mismatch — never printing a secret value.
+    - Front matter `related-ac …
 
 **Tester Status:** approved
 **Tester Notes:**
