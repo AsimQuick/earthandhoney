@@ -18,6 +18,7 @@
  */
 import fs from 'fs'
 import path from 'path'
+import { execSync } from 'child_process'
 
 const root = process.cwd()
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8')
@@ -182,7 +183,6 @@ describe('AC-18.2: PAYLOAD_PICPEAK_API_CONTRACT.md specifies the Frontstage/Back
 
   describe('does not silently edit files it is not scoped to change', () => {
     it('does not modify CLAUDE.md or scrum-master files', () => {
-      const { execSync } = require('child_process')
       let gitStatus = ''
       try {
         gitStatus = execSync('git status --porcelain -- CLAUDE.md scrum-master/', {
