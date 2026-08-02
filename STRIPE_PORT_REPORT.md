@@ -11,7 +11,7 @@ purpose: AC-20.1 records every file read directly in the reference project
          (20.3-20.9) add further sections to this same report.
 created-by: dev-team
 related-story: US-20
-related-ac: 20.1, 20.2
+related-ac: 20.1, 20.2, 20.3
 ---
 -->
 
@@ -111,3 +111,70 @@ directly against `main.py` lines 38-42 (the five `os.getenv(...)` calls
 that define the Stripe configuration) and `.env.example`'s Stripe-prefixed
 lines, with no reliance on the README's description of the Stripe setup in
 place of the source.
+
+## 6. The key-pairing rule (AC-20.3)
+
+Section 4 already established that a Stripe secret key, its publishable
+key, and each priced-item identifier each carry a mode of their own
+(`sk_test_...`/`sk_live_...`, `pk_test_...`/`pk_live_...`, and a Price ID
+created inside one or the other dashboard) rather than the application
+selecting a mode itself. This section states the rule that follows from
+that, in unambiguous terms, and explains why breaking it fails.
+
+**The rule.** The secret key, the publishable key, and every priced-item
+identifier loaded together at runtime must all belong to the same Stripe
+mode — all test, or all live. There is no partially-mixed combination that
+is valid. A secret key from one mode paired with a publishable key or a
+price ID from the other mode is a mismatched pair, regardless of which two
+of the three agree with each other.
+
+**Why a mismatched pair fails.** Stripe Test mode and Live mode are two
+completely separate, isolated data partitions under the same account —
+not a single catalog with a flag on each object. A `PaymentMethod`,
+`Product`, or `Price` created in one mode simply does not exist as a
+record in the other mode's partition; it is not a permissions restriction,
+it is a lookup that finds nothing. That produces two distinct, concrete
+failure paths for this project's flow (section 2, row 1 / row 5):
+
+- **Publishable key mode ≠ secret key mode.** `static/scripts.js` initialises
+  `Stripe(key)` in the browser using whichever publishable key was handed
+  down from the server (section 2, rows 2 and 5), and the Payment Element
+  it mounts creates its `PaymentMethod` in that key's mode. `main.py`'s
+  `POST /create-payment-intent` and `POST /update-payment-intent` routes
+  then act on that `PaymentIntent`/`PaymentMethod` using the server's
+  secret key. If the secret key is the other mode, the API call to
+  confirm or retrieve that object returns a Stripe "No such
+  PaymentMethod" / "No such PaymentIntent" resource-not-found error — the
+  object the browser just created is invisible to a secret key from the
+  other mode's partition. The customer's card details have already been
+  entered before this fails.
+- **Price-ID mode ≠ secret key mode.** `main.py`'s `GET /checkout` route
+  passes the price IDs (`STRIPE_PRICEMAINT_ID`, `STRIPE_PRICEEMAIL_ID`,
+  `STRIPE_PRICEDEV_ID`) to Stripe, and `POST /success` uses the secret key
+  to create the maintenance and email-addon `Subscription`s against those
+  same IDs. A Price object created in the Test dashboard has no
+  corresponding record in Live mode's catalog (and vice versa), so a
+  secret key from the non-matching mode calling `stripe.Price.retrieve`
+  or creating a `Subscription` against that ID returns a Stripe "No such
+  price" error.
+
+Both failures surface as a runtime API rejection, not a build-time or
+config-parse error — nothing about a `.env` file with a mismatched set of
+values is malformed by itself; every individual value is a real, valid
+Stripe identifier. The failure is only visible the moment two
+differently-moded values are asked to work together against Stripe's API,
+which is exactly what makes this mistake easy to introduce unnoticed (the
+application still starts, the checkout page still renders) and why
+AC-20.4 specifies a start-up check that catches the mismatch before a
+customer reaches it.
+
+## 7. Method (AC-20.3)
+
+The rule and failure mechanism above were derived from the same
+`main.py` routes and `static/scripts.js` block already read for AC-20.1
+(section 2, rows 1 and 5) — no new files were inspected. The failure
+modes are stated in terms of Stripe's documented behaviour that Test and
+Live mode data (customers, payment methods, products, and prices) are
+kept in fully separate partitions per account, which is why an object
+created in one mode is unreachable from a key belonging to the other,
+rather than merely rejected on a permissions check.
