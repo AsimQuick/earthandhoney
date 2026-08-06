@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 1/9 stories | 6/51 ACs
-**Last Updated:** 2026-08-06T22:48:43+00:00
+**Last Updated:** 2026-08-06T23:13:46+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -122,10 +122,11 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 ---
 
 ### US-22: Route the sprint-3 findings to the Product Owner: reopen the contract-signing decision and register F1–F9
-**Status:** draft | **Priority:** critical
+**Status:** in-progress | **Priority:** critical
 
 #### Acceptance Criteria
 - [ ] **AC-22.1:** `scrum-master/po-requests.md` item 7 (contract / e-signature provider for V1) is **reopened**. It currently reads "Confirmed 2026-07-30, conditionally" against a condition that has since failed: AC-17.10 verified 6 of 7 contract-signing elements at the pinned commit, and the 7th — *an audit page baked into the delivered PDF* — does **not** hold; the fork ships the audit trail as a separate sibling PDF, never merged into the signed contract. The reopening entry states which element failed, cites the `PIVOT_AUDIT.md` section and the fork file/line that proves it, changes the item's status to `REOPENED — awaiting decision`, and lists the options (accept the sibling-PDF audit trail as sufficient; patch the fork to merge the audit page; adopt an external provider, which the pivot currently forbids) with the Product Owner's recommendation. Sprint-3's own acceptance criterion AC-17.10 required this routing and it never happened.
+  - Dev: implemented
 - [ ] **AC-22.2:** The nine honest upstream findings **F1–F9** recorded in `PIVOT_AUDIT.md` — where the pinned fork behaves differently than the PRD assumed (including F1 a Gallery does not auto-inherit its Project's Client, F4 no `aspect_ratio` column, F5 roughly one hour of expiry-enforcement lag, F7 the `/storage` permission fix not surviving container recreation, F9 missing `gallery_expired`/`archive_complete` email templates) — are added to `po-requests.md` as PO findings. Each carries its finding id, a one-line statement, the PRD section it contradicts, and a proposed disposition: accept as-is, schedule fork work, or raise upstream. AC-17.9 required this routing; `PIVOT_AUDIT.md` states the findings "are to be added" and the addition never happened, because `po-requests.md` is outside an implementing AC's write scope.
 - [ ] **AC-22.3:** The reopened contract-signing status is propagated to every artifact an agent may be handed, so nothing in a later sprint inherits a known-false assumption: the restored `CLAUDE.md` Contracts entry and PRD §29 both carry a dated `REOPENED` marker naming the failed element and pointing at `po-requests.md` item 7, and `SYSTEM_OWNERSHIP.md`'s Contracts row is annotated the same way. F1 and F5 receive the same treatment where the PRD's Project/Gallery and expiry language assumes otherwise. This is Reminder 15 applied to a finding rather than to a sprint file.
 - [ ] **AC-22.4:** The prepared-but-unsubmitted upstream defect report for the single-image download hang (F8 / UD-1) is surfaced in `po-requests.md` as an explicit human action item: it names the on-disk path of the drafted report, states that publishing it needs a human GitHub identity, and records the consequence of not filing it — the fork patch registered in `FORK_CHANGELOG.md` as droppable "when upstream fixes it" can never actually be dropped. Retrospective action item 9.
@@ -134,6 +135,19 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 **Dependencies:** US-21
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-22.1 implemented (local checks green): Clean tree, all tests pass. Summary for the orchestrator:
+  
+  **AC-22.1 implemented.** Commit `d4faf16` on `feature/US-22`.
+  
+  **Files changed:**
+  - `scrum-master/po-requests.md` — item 7 (contract/e-signature provider for V1) reopened. Status changed from `**Confirmed 2026-07-30, conditionally.**` to `**REOPENED — awaiting decision (2026-08-07).**`. The entry:
+    - names the failed element: "an audit page baked into the delivered PDF"
+    - cites `PIVOT_AUDIT.md`'s "AC-17.10 — PicPeak's native contract-signing capability, verified against the pinned commit" section, subsection "7. Audit page baked into the delivered PDF — does NOT work as assumed"
+    - cites the fork evidence: `vendor/picpeak/backend/src/services/pdfStampService.js:13–22`, `pdfService.js:2086–2090`, `contractService.js:409–414`, and the public download route `publicContracts.js:316–359`
+    - lists all three options (accept sibling-PDF as sufficient / patch the fork to merge the audit page / adopt an external provider, forbidden by the pivot) with the PO's recommendation: accept (a) for V1, schedule (b) only if a lawyer's review says the merge matters
+    - retains the original 2026-07-30 confirmation text for history
+    - also …
 
 **Tester Status:** approved
 **Tester Notes:**

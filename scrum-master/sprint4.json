@@ -34,7 +34,7 @@
     "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
     "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (retrospective action item 3)"
   ],
-  "last_updated": "2026-08-06T22:48:43+00:00",
+  "last_updated": "2026-08-06T23:13:46+00:00",
   "stories": [
     {
       "id": "US-21",
@@ -95,7 +95,7 @@
     {
       "id": "US-22",
       "title": "Route the sprint-3 findings to the Product Owner: reopen the contract-signing decision and register F1\u2013F9",
-      "status": "draft",
+      "status": "in-progress",
       "priority": "critical",
       "dependencies": [
         "US-21"
@@ -105,7 +105,7 @@
           "id": "22.1",
           "text": "`scrum-master/po-requests.md` item 7 (contract / e-signature provider for V1) is **reopened**. It currently reads \"Confirmed 2026-07-30, conditionally\" against a condition that has since failed: AC-17.10 verified 6 of 7 contract-signing elements at the pinned commit, and the 7th \u2014 *an audit page baked into the delivered PDF* \u2014 does **not** hold; the fork ships the audit trail as a separate sibling PDF, never merged into the signed contract. The reopening entry states which element failed, cites the `PIVOT_AUDIT.md` section and the fork file/line that proves it, changes the item's status to `REOPENED \u2014 awaiting decision`, and lists the options (accept the sibling-PDF audit trail as sufficient; patch the fork to merge the audit page; adopt an external provider, which the pivot currently forbids) with the Product Owner's recommendation. Sprint-3's own acceptance criterion AC-17.10 required this routing and it never happened.",
           "checked": false,
-          "dev_status": "not-started",
+          "dev_status": "implemented",
           "tester_status": "not-started"
         },
         {
@@ -138,7 +138,7 @@
         }
       ],
       "dev_status": "not-started",
-      "dev_notes": "",
+      "dev_notes": "AC-22.1 implemented (local checks green): Clean tree, all tests pass. Summary for the orchestrator:\n\n**AC-22.1 implemented.** Commit `d4faf16` on `feature/US-22`.\n\n**Files changed:**\n- `scrum-master/po-requests.md` \u2014 item 7 (contract/e-signature provider for V1) reopened. Status changed from `**Confirmed 2026-07-30, conditionally.**` to `**REOPENED \u2014 awaiting decision (2026-08-07).**`. The entry:\n  - names the failed element: \"an audit page baked into the delivered PDF\"\n  - cites `PIVOT_AUDIT.md`'s \"AC-17.10 \u2014 PicPeak's native contract-signing capability, verified against the pinned commit\" section, subsection \"7. Audit page baked into the delivered PDF \u2014 does NOT work as assumed\"\n  - cites the fork evidence: `vendor/picpeak/backend/src/services/pdfStampService.js:13\u201322`, `pdfService.js:2086\u20132090`, `contractService.js:409\u2013414`, and the public download route `publicContracts.js:316\u2013359`\n  - lists all three options (accept sibling-PDF as sufficient / patch the fork to merge the audit page / adopt an external provider, forbidden by the pivot) with the PO's recommendation: accept (a) for V1, schedule (b) only if a lawyer's review says the merge matters\n  - retains the original 2026-07-30 confirmation text for history\n  - also \u2026",
       "tester_status": "approved",
       "tester_notes": "Requirements review pass. All 5 ACs are documentation-only (writes to po-requests.md / CLAUDE.md / PRD / SYSTEM_OWNERSHIP.md / BACKSTAGE_STARTUP.md) with content requirements specific enough to grep for (exact status strings, finding-id format, named fields per entry) \u2014 no pinning test suite needed, consistent with the sprint's own documentation-only-AC convention. AC-22.5 has a genuine either/or outcome (reproducible fix vs. documented manual step) but both branches carry their own concrete proof requirement, so it stays objectively verifiable rather than becoming a PO judgment call. No JSON edits required.",
       "issue": 65
