@@ -1,3 +1,24 @@
+---
+project: earthandhoney
+type: master
+created: 2026-07-18
+last-updated: 2026-08-07
+last-updated-by: product-owner
+current-sprint: sprint-4
+sprint-phase: planning
+pivot-date: 2026-07-30
+tech-stack:
+  backstage: PicPeak fork (pinned commit)
+  frontstage: Next.js App Router, TypeScript, React Server Components, Tailwind, shadcn/ui
+  cms: Payload CMS (Frontstage only)
+  database: PostgreSQL (one server, separate logical databases per system)
+  storage: Cloudflare R2
+  payments: Stripe (ported convention) — the only money path, one webhook endpoint
+  ledger: Invoice Ninja, headless (API only; portal disabled, gateway disconnected), own VPS/compose
+  email: SMTP via the Backstage email queue (default owner of all client-facing mail)
+  deployment: dedicated VPS, Docker Compose, single reverse proxy
+---
+
 # Scrum Master — earthandhoney
 
 ## Current Sprint: sprint-4 (Planning — ready for dev pickup, 2026-08-07)
@@ -116,6 +137,180 @@ Anything financial (PRD Phase 6) · Project cockpit and Project Room (Phase 3) �
 email matrix (Phase 7) · deployment and hardening (Phase 8) · the alt-text model benchmark · the form
 builder · the SEO assistant · and every standing non-goal — in particular any tax surface, any
 client-facing ledger surface, automatic recurring card charges, and WhatsApp lead capture.
+
+---
+
+## Product Backlog (post-pivot)
+
+Detailed acceptance criteria exist for the **current sprint only**. Sprint-4 candidates are
+one-liners here and get full criteria when sprint 3 closes. Ordering follows the PRD phase plan.
+
+### Sprint-4 candidates — Frontstage foundation (PRD Phase 2 completion + Phase 4 start)
+1. **Design-token lock-down** — establish and lock the shared token set before any new page is
+   built. *(Product Owner recommendation, **pending human confirmation** — see `po-requests.md`.)*
+2. Disable the duplicate Backstage surfaces identified in US-18 (its landing-page CMS, its native
+   billing screens, its page-building capability).
+3. Studio identity: a single `StudioProfile` owning business name, contact details, service areas,
+   social profiles, default social image, and default metadata patterns — no studio detail scattered
+   through code.
+4. Gallery Placement model: reference a Backstage gallery from a Frontstage page and render it.
+5. Retire or repurpose the superseded Payload gallery artifacts per the US-14 decision.
+6. Backstage change triggers a Frontstage content refresh via webhook.
+7. R2 delivery-path benchmark and decision (deferred from US-19).
+
+### Frontstage publishing (PRD Phase 4)
+8. Navigation: Weddings, Engagements, Details — configurable through structured fields.
+9. Homepage template: full-width slideshow hero placement, short introduction, selected galleries
+   or stories, primary inquiry form, footer.
+10. Deterministic **New Page** form and standard page template.
+11. **Details** template: minimal heading, full-width masonry placement, inquiry form.
+12. **Story** template: repeating section heading + text + gallery placement.
+13. Form builder + durable Inquiry records, notification, spam protection, source/campaign capture.
+14. SEO system: account-level fields, per-page/story SEO assistant, real metadata, structured data,
+    canonical URLs, sitemap and image-sitemap entries.
+
+### Gallery experience and darkroom (PRD Phase 5)
+15. Masonry specification: preserve every aspect ratio and the chosen order, never crop or stretch,
+    reserve space before load, responsive column counts.
+16. Slideshow specification: full-width, focal-point cover behaviour, controlled overlay and
+    vignette presets, preload current and next only.
+17. Shared fullscreen viewer: instant from a loaded image, zoom and pan, keyboard and touch,
+    background prefetch, no unauthorised original download.
+18. Copy the Backstage gallery style templates verbatim, then create Earth & Honey variants.
+19. Darkroom experience: contact sheet, multi-select and bulk actions, ordering, cover and focal
+    point, filters, draft/publish, activity log.
+20. New Gallery entry choice: Portfolio Gallery or Client Delivery Gallery, with the right fields
+    for each and Project prefill instead of retyping.
+21. Alt-text suggestion workflow: self-hosted caption model benchmarked for quality, speed, memory,
+    and licence; combined with trusted Project metadata; human approval required; never invents
+    identity, culture, relationships, or locations.
+
+### Project cockpit and Project Room (PRD Phase 3)
+22. Extend the Backstage Project via new migrations: events, venues, milestones, next action,
+    documents, integration status.
+23. Two entry paths: convert an Inquiry, or create a Project manually.
+24. Automatic Project setup: media area, Project Room access, default phase and milestones,
+    next-action calculation, document area, email merge context, activity timeline.
+25. Photographer Project cockpit with computed next action.
+26. Client-safe Project Room, with state conveyed by text and icon as well as colour.
+
+### Finance and payment (PRD Phase 6)
+27. Narrowed ledger spike: confirm the Invoice Ninja API covers invoice, credit-note, receipt, and
+    payment-schedule creation cleanly **with the portal disabled and the gateway disconnected**.
+    Stand it up in `docker-compose.yml` on our VPS. Produce `INVOICE_NINJA_INTEGRATION.md` written
+    around The Ledger Rule.
+28. Headless-ledger adapter: one server-side service, cross-system identifier mapping, verified
+    webhooks, idempotent handling, retries, scheduled reconciliation, display-only caches.
+29. Build the payment flow on the convention extracted in US-20: the ported direct Stripe flow, one
+    webhook endpoint in the fork backend, reconciled into the ledger. One payment path, one Pay
+    button, no duplicate ledger.
+30. Booking packet / quote workflow in the Project Room, with a manually prepared visual PDF
+    attachment. Quote approval is our surface, not the ledger's.
+31. Payment schedule / installments: a Project may carry dated amounts, each producing a real ledger
+    invoice with reminders and a Pay button. **Manual pay only in V1.**
+32. Payment-gated gallery access, standard case only (PRD §27.1): gallery ready → notification →
+    locked → client pays → verified webhook → recorded → unlocked. A later add-on invoice must never
+    relock an already released gallery. **No bespoke revocation/relocking logic is in scope.**
+33. Headless guards as testable criteria: ledger portal disabled, ledger gateway disconnected, no
+    client-facing link to the ledger, no tax UI anywhere.
+
+### Email, contracts, delivery (PRD Phase 7)
+34. Email ownership matrix implemented — one owner per email type; duplicate reminders are defects.
+35. Template editor, Project-level overrides, merge fields, preview, test send, history, pause.
+36. Reminder matrix with editable defaults that stop when their milestone completes.
+37. Contract flow: chosen e-sign provider **or** manual signed-PDF upload with audit entry
+    *(open decision — see `po-requests.md`)*.
+38. Private gallery lifecycle: draft, ready, sent, viewed, download-enabled, expired, archived,
+    purged — with noindex, revocable access, logging, and expiry reminders. Purge must never
+    destroy images still referenced by a public gallery.
+
+### Hardening and launch (PRD Phase 8)
+39. VPS deployment: Docker Compose, one reverse proxy, TLS, monitoring, backups with a **tested**
+    restore, deployment rollback, staging or protected preview. Produce `VPS_DEPLOYMENT.md`.
+40. Capacity check against real batch sizes: image processing memory, worker concurrency, archive
+    generation, simultaneous gallery visitors, R2 bandwidth, backup duration.
+41. Security review: least-privilege storage credentials, verified webhooks everywhere, rate limits
+    on login/forms/magic links/downloads, mail authentication records before production email,
+    audit logs for sends, payments, gallery unlocks, and destructive actions.
+42. Performance, accessibility, and mobile QA against the stated targets.
+
+### V2 — LumaForge (NOT in scope, captured only so it cannot leak into a sprint)
+- Photographer self-signup, subscription billing, plan controls
+- Tenant and custom-domain provisioning, shared or cell-based hosting
+- Multiple studios logging in through a shared product
+- Shared multi-tenant database conversion
+- A LumaForge public marketing site
+- `V2_TENANCY_ADR.md` — the one V2 artifact worth writing early, because it constrains V1 seams.
+  Scheduled after the Project cockpit exists, not before.
+
+### Explicit non-goals (do not build, do not backlog)
+Drag-and-drop page design · photo retouching or editing · generic e-commerce cart or catalogue ·
+permanent client hosting · automatic visual proposal-PDF generation · mass-generated location pages ·
+the Backstage's native accounting as the financial authority · rebuilding the forked gallery logic in
+Payload · rebuilding billing logic · building a signature platform from scratch ·
+WhatsApp lead-capture · Testimonials, Packages, or FAQ collections ·
+**any client-facing ledger surface (its portal, its client login, or a link to it)** ·
+**a tax / GST-HST / bookkeeping feature surface** ·
+**automatic recurring card charges in V1** ·
+**bespoke revocation or relocking of an already-released gallery**.
+
+---
+
+## Reminders (cross-sprint constraints)
+
+1. **Seven decisions may not be made by any agent alone** (PRD §5). Use `needs-decision` and
+   escalate: what of the codebase is retained; the Frontstage↔Backstage API boundary; media reuse
+   across galleries; the R2 delivery path; the contract-signing provider; VPS capacity for real batch
+   sizes; and any use of the ledger beyond its approved ownership rows, including letting it send a
+   given email type. *(Two former entries are settled as of 2026-07-30: Stripe is initiated by the
+   **ported direct flow** with the ledger gateway disconnected, and the ledger runs on **our VPS in
+   our `docker-compose.yml`**.)*
+2. **Never edit an already-shipped upstream migration.** Add new numbered migrations.
+3. **Copy upstream style templates verbatim first**, preserve the originals, then vary deliberately
+   and record it in `FORK_CHANGELOG.md` and `PICPEAK_PORT_LEDGER.md`.
+4. **One Postgres server, separate logical databases, no cross-database joins.** Cross-system
+   relationships are stored external identifiers, resolved over an API.
+5. **Stripe key pairing.** Secret key, publishable key, and every priced-item identifier must be from
+   the same Stripe mode. This has already failed once on this project. Validate at start-up.
+6. **`.env.example` is authoritative for every required variable.** Two sprint-1 defects hid behind
+   uncommitted local config. No secret is ever committed.
+7. **`retrospective.md` is updated incrementally during the sprint**, with a named owner — it was
+   the sole reason sprint 1 could not be cleanly signed off.
+8. **`public/photobuddy/` is inspiration and reusable code only.** It is not the design authority,
+   and the site does not have to match it.
+9. **Photo-driven, minimal friction.** Prefer big imagery and a simple contact form over elaborate
+   capture flows.
+10. **`project-state.json` belongs to the Project Lead.** No agent modifies it.
+11. **The Ledger Rule governs every finance question.** Records go to the headless ledger;
+    experiences are ours; Stripe alone moves money. The ledger's portal stays disabled, its gateway
+    stays disconnected, and no client-facing surface ever links to it. Cost may decide *how* we
+    implement something, never *where the truth lives*.
+12. **Tax is never product surface.** No tax breakdown UI, rate picker, registration-number field, or
+    settings screen, and no tax story in the backlog. If a tax line appears on a document it is
+    because the ledger was configured once in its own admin.
+13. **No automatic recurring card charges in V1.** Payment schedules exist; each installment is paid
+    manually. Saved cards, off-session SCA/3DS recovery, and dunning are V1.1.
+14. **Standard case only for payment gating** (PRD §27.1). Do not spec revocation or relocking of an
+    already-released gallery — that is a human business matter, not a system feature.
+15. **A direction change is not applied until the sprint JSON is updated.** The JSON is what the
+    orchestrator reads. Markdown alone does not stop an agent being handed retired work — this is
+    exactly what stalled the pipeline on 2026-07-30.
+16. **Documentation changes must be committed.** Uncommitted working-tree documentation has already
+    been destroyed once by a branch switch.
+
+## Required Product Owner deliverables (PRD §38)
+
+| Document | Sprint | Story |
+|---|---|---|
+| `PIVOT_AUDIT.md` | 3 | US-14 |
+| `PICPEAK_UPSTREAM.md`, `THIRD_PARTY_NOTICES.md`, `FORK_CHANGELOG.md`, `UPSTREAM_SYNC.md` | 3 | US-15 |
+| `PICPEAK_PORT_LEDGER.md` | 3 | US-17 |
+| `SYSTEM_OWNERSHIP.md`, `PAYLOAD_PICPEAK_API_CONTRACT.md` | 3 | US-18 |
+| `MEDIA_REUSE_ADR.md`, `R2_STORAGE_AND_DELIVERY_ADR.md` (delivery decision completed in sprint 4) | 3 | US-19 |
+| `STRIPE_PORT_REPORT.md` (convention now; payment behaviour appended when built) | 3 | US-20 |
+| `INVOICE_NINJA_INTEGRATION.md` (written around The Ledger Rule) | finance phase | backlog #27 |
+| `VPS_DEPLOYMENT.md` | launch phase | backlog #39 |
+| `V2_TENANCY_ADR.md` | after Project cockpit | V2 section |
 
 ---
 

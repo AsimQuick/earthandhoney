@@ -27,7 +27,7 @@ const DUPLICATE_RISKS = [
   'Two email senders',
 ]
 
-const VALID_OWNERS = ['PicPeak', 'Better Auth', 'Resend']
+const VALID_OWNERS = ['PicPeak']
 
 function extractSection(audit: string, heading: string, nextHeading: string): string {
   const start = audit.indexOf(heading)
@@ -92,16 +92,16 @@ describe('AC-14.3: PIVOT_AUDIT.md maps duplicate-feature risks to a single owner
     }
   })
 
-  it('auth and email risks are owned by the pre-existing CLAUDE.md Technology Stack owner', () => {
+  it('auth and email risks are owned by the current CLAUDE.md Technology Stack owner', () => {
     const authRow = rows.find((cells) => cells[1] === 'Two auth systems')
     const emailRow = rows.find((cells) => cells[1] === 'Two email senders')
-    expect(authRow![5]).toContain('Better Auth')
-    expect(emailRow![5]).toContain('Resend')
+    expect(authRow![5]).toContain('PicPeak')
+    expect(emailRow![5]).toContain('PicPeak')
   })
 
   it('the named owners match the technologies declared in CLAUDE.md Technology Stack', () => {
     const claudeMd = read('CLAUDE.md')
-    expect(claudeMd).toMatch(/Auth:\s*Better Auth/)
-    expect(claudeMd).toMatch(/Email:\s*Resend/)
+    expect(claudeMd).toMatch(/Auth:\*\*\s*PicPeak authentication and authorization/)
+    expect(claudeMd).toMatch(/Email:\*\*\s*SMTP via the PicPeak email queue/)
   })
 })
