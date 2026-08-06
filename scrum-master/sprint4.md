@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 0/9 stories | 0/51 ACs
-**Last Updated:** 2026-08-06T22:30:36+00:00
+**Last Updated:** 2026-08-06T22:36:53+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -56,6 +56,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-21.5:** `SYSTEM_OWNERSHIP.md`'s ownership table is corrected against the restored `CLAUDE.md`. Four rows are wrong because the document was written in sprint-3 against `main`'s stale pre-pivot `CLAUDE.md`: the **Auth** row names Better Auth (retired — PicPeak authentication owns it), the **Email — outbound sending** row names Resend (retired — the Backstage email queue is the default owner of all client-facing mail), the **CMS** row lists Testimonials/Packages/FAQ (retired from product scope), and the **Payments** row predates The Ledger Rule (Invoice Ninja is headless and holds records only, its portal disabled and its gateway disconnected; Stripe alone moves money; our balances are display-only caches). Each corrected row cites the line of the restored `CLAUDE.md` ownership table it now matches. A dated note at the top of the section states that these are restatements of decisions already approved on 2026-07-30, not new decisions, and names the stale-source root cause.
   - Dev: implemented
 - [ ] **AC-21.6:** A Jest guard test fails if any restored document silently loses its pivot direction again. It asserts: `scrum-master/PRD.md` contains `Headless Invoice Ninja` and `Product Owner Pivot Plan`; `CLAUDE.md` contains `The Three Surfaces`, `The Ledger Rule` and `Fork, don't rebuild`, and does **not** contain the retired strings `Better Auth`, `Resend`, `Adobe Acrobat Sign` outside a `Retired`/`retired` line; `scrum-master/scrum-master.md` contains `Product Backlog (post-pivot)`; and `SYSTEM_OWNERSHIP.md`'s Auth and Email rows do not name Better Auth or Resend as an authoritative system. This is the enforcement Reminder 16 asks for after the direction change was lost twice — once to a branch switch on 2026-07-30, and again by never reaching `main`.
+  - Dev: implemented
 
 **Dev Team Status:** not-started
 **Dev Team Notes:**
@@ -100,6 +101,19 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   Files changed:
   - `SYSTEM_OWNERSHIP.md`: Added a dated restatement note (2026-08-07) at the top of the `## Ownership table` section naming the stale-source root cause (document written in sprint-3 against `main`'s stale pre-pivot `CLAUDE.md`) and stating these are restatements of decisions approved 2026-07-30, not new decisions. Corrected the CMS row to drop the retired Testimonials/Packages/FAQ scope (previously missed by an earlier fix commit that only touched Auth/Email/Payments). Added explicit `CLAUDE.md:<line>` citations to all four rows (Auth → `CLAUDE.md:122`, Email → `CLAUDE.md:123`, CMS → `CLAUDE.md:118` and `CLAUDE.md:199`, Payments → `CLAUDE.md:105-108`, `124`, `125`, `44-81`) and updated the corresponding prose notes in "Notes and citations per domain" with the same citations.
   - `src/__tests__/us21-ac21.5-system-ownership-correction.test.ts` (new): 15 tests verifying the restatement note's date/language/root-cause, that Auth/Email no longer name Better Auth/Resend as authoritative, that CMS no longer lists Testimonials/Packages/FAQ and cites the retirement line, that Payments reflects The Ledger Rule with display-only-cache language …
+  AC-21.6 implemented (local checks green): Committed as `390f8de`.
+  
+  **Summary — AC-21.6 implemented**
+  
+  - **File added:** `src/__tests__/us21-ac21.6-pivot-direction-guard.test.ts` (11 tests, all passing)
+  - **What it does:** A standing Jest guard (not a one-time restore check like AC-21.1–21.5) that asserts:
+    - `scrum-master/PRD.md` contains `Headless Invoice Ninja` and `Product Owner Pivot Plan`
+    - `CLAUDE.md` contains `The Three Surfaces`, `The Ledger Rule`, `Fork, don't rebuild`, and does not contain `Better Auth`, `Resend`, or `Adobe Acrobat Sign` outside a line that is itself a retirement notice or falls under a heading containing "Retired" (handles both the inline `(Better Auth is retired)` case and the bulleted list under `## Retired From the Old Direction`)
+    - `scrum-master/scrum-master.md` contains `Product Backlog (post-pivot)`
+    - `SYSTEM_OWNERSHIP.md`'s Auth and Email table rows name PicPeak (not Better Auth/Resend) in the authoritative-system column
+  - **Test count:** 11 new tests, full suite run afterward: 2653 tests / 108 suites, all passing
+  - **Coverage:** no source code added, only a guard test reading existing docs — no coverage threshold impact
+  - **Deps:** none changed, no package-lock.json update needed
 
 **Tester Status:** approved
 **Tester Notes:**
