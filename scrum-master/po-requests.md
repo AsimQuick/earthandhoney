@@ -32,6 +32,25 @@ locally.
 
 ---
 
+## Sprint-4 planning — what I will need from you, and when (2026-08-07)
+
+**Nothing here blocks the start of sprint 4.** US-21 through US-23 can begin immediately. I am
+listing these now rather than surfacing them mid-sprint so you can see the whole ask at once. Each
+item names the story that will formally raise it.
+
+| # | What I need | Why | Blocks | When it bites |
+|---|---|---|---|---|
+| 13 | **Contract-signing decision, reopened.** Item 7 below still reads "Confirmed 2026-07-30, conditionally" — and the condition has now **failed**. AC-17.10 verified 6 of 7 elements at the pinned commit; the 7th, *an audit page baked into the delivered PDF*, does not hold — the fork ships the audit trail as a separate sibling PDF. Options: (a) accept the sibling PDF as sufficient, (b) patch the fork to merge the audit page in, (c) adopt an external provider, which the pivot currently forbids. **My recommendation: (a) for V1, (b) scheduled as fork work if a lawyer's review of the contract wording says the merged page matters.** | The decision is one of the seven no agent may make alone. A Project Room story that assumes the capability would inherit a known-false premise. | PRD Phase 3 (Project cockpit / Project Room, backlog items 22–26) — deliberately excluded from sprint 4 for exactly this reason | Sprint 5 planning. US-22 AC-22.1 files the formal reopening. |
+| 14 | **Sign-off on the design-token specimen.** US-23 AC-23.5 builds an internal `noindex` route showing the full token set — type scale in Fraunces + Inter, palette with computed contrast ratios, spacing, radii, gallery gaps, overlay/vignette presets over a real photograph. | Your own brief (item 9) says the token direction is "direction, not a locked visual spec — real mockups must be confirmed before broad rollout". Every later Frontstage page and the Project Room templates are built from whatever is locked here. | US-24, US-25 and all of PRD Phase 4 build on the tokens; changing them later is a repaint of every surface | Mid-sprint, once US-23 lands. A quick look at one page. |
+| 15 | **Cloudflare custom domain and/or Worker, for R2 delivery candidates 3 and 4.** US-29 benchmarks five candidate delivery paths. Candidates 1 and 2 (Backstage token-gated proxy; presigned R2 links) can be measured today — both mechanisms already exist in the pinned fork. Candidates 3 (CDN / custom-domain public delivery) and 4 (edge authorisation Worker) need infrastructure that **does not exist yet**. | The ADR forbids ranking paths by preference; unmeasured candidates get recorded as unmeasured with the blocking prerequisite named, never silently dropped. | Closing the deferred delivery decision *completely*. US-29 AC-29.6 lets it stay open honestly if no measured candidate meets all four targets. | Mid-sprint. If you would rather not stand up Cloudflare infrastructure now, say so and 3/4 are recorded as unmeasured — that is an acceptable outcome, not a failure. |
+| 16 | **A human GitHub identity to publish the upstream defect report** for the single-image download hang (F8 / UD-1). The report is drafted and sitting in the repository, unsubmitted. | Until it is filed, the fork patch registered in `FORK_CHANGELOG.md` as droppable "when upstream fixes it" can never actually be dropped — we carry it forever. | Nothing in sprint 4. It is debt, not a blocker. | Any time. US-22 AC-22.4 surfaces the drafted report's path. |
+| 17 | **SPF, DKIM and DMARC records for the sending domain.** Carried from item 4; still outstanding. | Production client-facing email runs through the Backstage email queue. Without these, mail lands in spam. | Production email only — no sprint-4 story sends real mail | Before launch (PRD Phase 8). Listed so it does not get lost. |
+
+_Item 10 (real launch content — galleries, homepage copy, package/pricing, Weddings / Engagements /
+Details) stays informational and non-blocking. Sprint 4 builds on placeholder imagery throughout._
+
+---
+
 ## ACTION REQUIRED — pipeline recovery (2026-07-30)
 
 The pipeline stalled today and I have cleaned up the backlog, but **one item still needs action outside my

@@ -1,6 +1,6 @@
 # Scrum Master — earthandhoney
 
-## Current Sprint: sprint-4 (Planning, 2026-08-02)
+## Current Sprint: sprint-4 (Planning — ready for dev pickup, 2026-08-07)
 
 > **The product is NOT feature-complete.** No `*_SPEC.md` feature-specification document exists
 > anywhere in this repository (verified by repo-wide search, excluding `node_modules/` and
@@ -12,14 +12,15 @@
 
 ---
 
-## Sprint-4 (Planning, 2026-08-02)
+## Sprint-4 (Planning, 2026-08-02 · tracker synced 2026-08-07)
 
 **Sprint Goal:** Make the post-pivot direction real on `main`, then lay the Frontstage foundation on
 top of the fork proven in sprint 3 — restore the authoritative pivot documentation, route the
 sprint-3 findings that never reached the Product Owner, complete PRD Phase 2 (ownership boundaries)
 and start Phase 4 (Frontstage publishing).
 
-Full plan: `scrum-master/sprint4.json` (machine-readable, authoritative).
+Full plan: `scrum-master/sprint4.json` (machine-readable, authoritative) · human-readable mirror:
+`scrum-master/sprint4.md` (generated from the JSON — do not edit directly, per Reminder 15).
 
 ### ⚠ Blocking finding surfaced during planning — the pivot never reached `main`
 
@@ -49,22 +50,50 @@ blocks every other sprint-4 story.**
 
 ### Stories
 
-| ID | Title | Priority | Depends on | Backlog |
-|----|-------|----------|------------|---------|
-| US-21 | Restore the authoritative post-pivot documentation onto `main` and correct the ownership record | critical | — | sprint-3 carry-over |
-| US-22 | Route the sprint-3 findings: reopen the contract-signing decision and register F1–F9 | critical | US-21 | sprint-3 carry-over |
-| US-23 | Design-token lock-down: the shared token set every Frontstage and Project Room surface is built from | critical | US-21 | #1 |
-| US-24 | Studio identity: one `StudioProfile` and the photographer's bounded branding controls | high | US-21, US-23 | #3 |
-| US-25 | Gallery Placement: a Frontstage page renders a Backstage gallery through the agreed API boundary | critical | US-21, US-23 | #4 |
-| US-26 | A Backstage change triggers a Frontstage content refresh through a verified webhook | high | US-25 | #6 |
-| US-27 | Disable the duplicate Backstage surfaces so every business function has exactly one owner | high | US-21 | #2 |
-| US-28 | Pivot execution: retire the superseded Frontstage gallery artifacts and the orphaned configuration | medium | US-25 | #5 |
-| US-29 | Benchmark the R2 delivery paths and close the deferred delivery decision with evidence | high | US-25 | #7 |
+| ID | Title | Priority | Depends on | Backlog | Issue |
+|----|-------|----------|------------|---------|-------|
+| US-21 | Restore the authoritative post-pivot documentation onto `main` and correct the ownership record | critical | — | sprint-3 carry-over | [#64](https://github.com/AsimQuick/earthandhoney/issues/64) |
+| US-22 | Route the sprint-3 findings: reopen the contract-signing decision and register F1–F9 | critical | US-21 | sprint-3 carry-over | [#65](https://github.com/AsimQuick/earthandhoney/issues/65) |
+| US-23 | Design-token lock-down: the shared token set every Frontstage and Project Room surface is built from | critical | US-21 | #1 | [#66](https://github.com/AsimQuick/earthandhoney/issues/66) |
+| US-24 | Studio identity: one `StudioProfile` and the photographer's bounded branding controls | high | US-21, US-23 | #3 | [#67](https://github.com/AsimQuick/earthandhoney/issues/67) |
+| US-25 | Gallery Placement: a Frontstage page renders a Backstage gallery through the agreed API boundary | critical | US-21, US-23 | #4 | [#68](https://github.com/AsimQuick/earthandhoney/issues/68) |
+| US-26 | A Backstage change triggers a Frontstage content refresh through a verified webhook | high | US-25 | #6 | [#69](https://github.com/AsimQuick/earthandhoney/issues/69) |
+| US-27 | Disable the duplicate Backstage surfaces so every business function has exactly one owner | high | US-21 | #2 | [#70](https://github.com/AsimQuick/earthandhoney/issues/70) |
+| US-28 | Pivot execution: retire the superseded Frontstage gallery artifacts and the orphaned configuration | medium | US-25 | #5 | [#71](https://github.com/AsimQuick/earthandhoney/issues/71) |
+| US-29 | Benchmark the R2 delivery paths and close the deferred delivery decision with evidence | high | US-25 | #7 | [#72](https://github.com/AsimQuick/earthandhoney/issues/72) |
 
 9 stories / 51 acceptance criteria, all `draft` and unstarted. US-21 is the single root. US-22, US-23
 and US-27 fan out from it in parallel; US-24 and US-25 need the tokens; US-26, US-28 and US-29 all
-need a Frontstage page that actually renders a Backstage gallery. The graph is acyclic. GitHub issues
-are not yet filed — regenerate them from `sprint4.json` so the tracker cannot disagree with the plan.
+need a Frontstage page that actually renders a Backstage gallery. The graph is acyclic.
+
+### Tracker sync — 2026-08-07
+
+Issues **#64–#72 generated directly from `sprint4.json`**, one per story, each carrying its full
+acceptance-criteria list and the fourteen-item sprint-4 definition of done, so the tracker cannot
+disagree with the plan (Reminder 15). Every issue body opens with the US-21 warning that `main`'s
+`PRD.md` and `CLAUDE.md` are still the retired Gallery-Engine direction — an agent handed only the
+issue must not build from them. The issue number is stored back on each story in `sprint4.json`.
+
+Two drifts were found and closed in the same pass:
+
+1. **Sprint-3 issues #50–#56 were still open** although all seven stories are `done`, merged across
+   PRs #57–#63 and signed off by the Tester on 2026-08-02. All seven are now closed with a comment
+   citing the review. An open issue for delivered work is the same class of tracker/plan divergence
+   that let retired sprint-2 work stay dispatchable.
+2. `sprint4.json`'s `last_updated` advanced to 2026-08-07 and the previously empty `issue` field on
+   each story is populated.
+
+**Plan re-validated against the schema at sync time — no change needed:** every story carries
+`status`, `priority`, `dependencies`, `dev_status`/`dev_notes`, `tester_status`/`tester_notes`; every
+AC carries `checked`, `dev_status`, `tester_status`; AC numbering matches its story throughout
+(US-23 → 23.1…23.7); all 51 ACs are `checked:false` and unstarted; all 9 stories are `draft`; every
+dependency resolves to a story in this sprint and the graph is acyclic with US-21 as the single root.
+
+**The blocking finding below was re-verified on 2026-08-07, not assumed:** commit `9624a07` is
+reachable only from `feature/US-9` and `origin/feature/US-9` (`git branch -a --contains`); `main`'s
+`PRD.md` is 937 lines opening on the retired Gallery-Engine positioning; `main`'s `CLAUDE.md` is 61
+lines; and `main`'s `sprint2.json` still reads `phase: planning` with US-9 `in-progress` and
+US-10…US-13 `draft`. It still holds.
 
 ### Why PRD Phase 3 is deliberately excluded
 
