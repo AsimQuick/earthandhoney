@@ -24,19 +24,40 @@ import path from 'path'
 
 const root = process.cwd()
 
-const sprint2 = JSON.parse(
+interface AcceptanceCriterion {
+  id: string
+  retired?: boolean
+  retired_reason?: string
+  text?: string
+  dev_status?: string
+}
+
+interface Story {
+  id: string
+  status?: string
+  dev_status?: string
+  retired_reason?: string
+  acceptance_criteria: AcceptanceCriterion[]
+}
+
+interface Sprint {
+  phase: string
+  stories: Story[]
+}
+
+const sprint2: Sprint = JSON.parse(
   fs.readFileSync(path.join(root, 'scrum-master', 'sprint2.json'), 'utf8')
 )
-const sprint3 = JSON.parse(
+const sprint3: Sprint = JSON.parse(
   fs.readFileSync(path.join(root, 'scrum-master', 'sprint3.json'), 'utf8')
 )
 
-function findStory(sprint: any, id: string) {
-  return sprint.stories.find((s: any) => s.id === id)
+function findStory(sprint: Sprint, id: string) {
+  return sprint.stories.find((s) => s.id === id)
 }
 
-function findAc(story: any, id: string) {
-  return story.acceptance_criteria.find((a: any) => a.id === id)
+function findAc(story: Story, id: string) {
+  return story.acceptance_criteria.find((a) => a.id === id)
 }
 
 describe('AC-21.4: sprint2.json is the closed post-pivot version from 9624a07', () => {
