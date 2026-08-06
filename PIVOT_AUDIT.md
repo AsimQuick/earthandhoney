@@ -6238,6 +6238,46 @@ here, the same routing mechanism AC-14.6 already established for this audit.
 Docker/ownership rules), so this document records the findings and their
 routing rather than editing that file directly.
 
+## AC-22.2 — F1–F9 finalized for routing to the Product Owner
+
+AC-17.9 (above, "findings recorded honestly, consolidated for the Product
+Owner") verified and recorded findings F1–F9 in its consolidated finding
+register, and closed with "F1–F9 above are to be added to
+`scrum-master/po-requests.md` as explicit findings for Product Owner
+attention." That addition never happened, for the same reason AC-14.6
+gives above: `po-requests.md` is owned outside an implementing AC's write
+scope, so no AC in the `US-17` chain could edit it directly.
+
+AC-22.2 closes that gap the same way AC-14.6 and AC-17.9 already did —
+by finishing the routable content here, in a document this AC *can* write,
+rather than editing `po-requests.md` directly. The register below is
+AC-17.9's F1–F9 table extended with the two fields the routing needs: the
+specific PRD section each finding contradicts, and a proposed disposition
+(accept as-is / schedule fork work / raise upstream). This is the complete,
+merge-ready content for `po-requests.md`; whoever holds write scope there
+(the Product Owner or the orchestrator) can transcribe it verbatim.
+
+### F1–F9, routed with PRD section and proposed disposition
+
+| Finding | One-line statement | PRD section it contradicts | Proposed disposition |
+|---|---|---|---|
+| **F1** | A Gallery created inside a Project does not inherit the Project's Client — the link must be assigned explicitly through the admin edit route. | §6.2 (Project connects "Client → … → Galleries" as one continuous chain) and §17.3 ("Where linked to a Project, prefill rather than retype: … customer name; customer email") | **Accept as-is** — a real gap in a workflow assumption, not a fork defect; Backstage must assign the client explicitly after gallery creation. |
+| **F2** | `PUT /api/admin/events/:id` returns `500` when `customer_account_ids` is the only field sent; it must be sent alongside other event fields. | §17.3 (same admin edit route used to link the client to the gallery) | **Accept as-is** — recorded as upstream's actual validation behaviour, not a defect to patch. |
+| **F3** | Upload processing produces only one derivative (thumbnail) eagerly; the preview and hero tiers exist and work correctly but are not produced until something explicitly requests them. | §19.2 (Storage Objectives lists contact-sheet thumbnail, masonry/grid, slideshow, fullscreen, and other derivatives together) | **Accept as-is** — Fork Discipline forbids editing the vendored processing path for a behaviour, not a defect. |
+| **F4** | The `photos` table has no `aspect_ratio` column; aspect ratio is always a derived value (`width / height`), never persisted. | §19.2 ("Store width, height, aspect ratio, format, size, processing state, and relevant metadata") | **Accept as-is** — a genuine gap against the PRD's literal wording, not a defect; the value is always available, just computed rather than stored. |
+| **F5** | Up to roughly an hour of lag exists between a Gallery's `expires_at` passing and the hourly `expirationChecker` sweep actually denying client access. | §28.1 (the ownership table's "Gallery expiry" row, owned by Backstage/PicPeak, marked "Automatic") and §30 ("expiring access" as a security requirement) | **Accept as-is** — a real gap in the scheduled-process model, not a fork defect; "automatic" does not mean "immediate." |
+| **F6** | A recurring local-filesystem-only storage assumption breaks three upstream routes under this deployment's S3 backend: single-photo download (patched, see F8), archive-restore (`POST /api/admin/archives/:id/restore`, 404s), and Gallery-create's local folder creation (`EACCES` on `/storage`). | §19.1 / §19.3 (R2 credentials are to be "mapped into PicPeak's S3-compatible storage configuration," treated as "proven secure functionality" across the pipeline) | **Schedule fork work** for the two unpatched occurrences (archive-restore, Gallery-create folder creation) — genuine breakage under our own S3 configuration, not just an assumption mismatch, so each should get a fork patch the way the single-photo download route (F8) already did. Not scheduled for sprint 4. |
+| **F7** | The Gallery-create route's `/storage` permission fix is operational, not a source change, and does not survive a `backstage-backend` container recreation — it has already had to be reapplied by hand twice. | §19.1 (storage configuration is assumed to be mapped once, not reapplied per container recreation) | **Schedule fork work** — needs a durable fix (entrypoint/init step or volume permission, or the F6 source-level fix above, which would remove the local `/storage` path entirely) rather than a recurring manual step. |
+| **F8** | The single-photo download route (UD-1) is patched in the fork, openly registered, but its upstream bug report is only prepared, not submitted — filing it requires a human GitHub identity. | §19.3 (PicPeak's S3-compatible path is to be "proven secure functionality") | **Raise upstream** — already tracked as `scrum-master/po-requests.md` item 16 and in `FORK_CHANGELOG.md` / `PICPEAK_UPSTREAM_DEFECTS.md` (`UD-1`); listed here only to close out the F1–F9 routing set, not a new ask. |
+| **F9** | The `gallery_expired` and `archive_complete` email templates do not exist in `email_templates`, so those two email types stay `pending` and retry to exhaustion; `gallery_created` is unaffected. | §28.1 (the email-ownership table lists "Gallery expiry" as an owned, automatic email type) | **Schedule fork work** — needs two new template rows (a new migration/seed, not an edit to a shipped migration, per Fork Discipline); left for whichever future AC owns those email types. |
+
+Basis for each finding remains AC-17.9's consolidated finding register
+above, which in turn cites the originating `US-17` AC section for each
+(AC-17.1.3.3, AC-17.2, AC-17.4.2/17.4.3, AC-17.5.1–17.5.3, AC-17.6,
+AC-17.7). This section adds only the PRD-section citation and the
+disposition category; it introduces no new fork behaviour and changes no
+finding's substance.
+
 ## AC-17.10 — PicPeak's native contract-signing capability, verified against the pinned commit
 
 `po-requests.md` item 7 confirmed, conditionally, that V1 uses "PicPeak's
@@ -6550,3 +6590,4 @@ Per AC-14.6, items 1–5 above are to be added to
 Owner decisions rather than left implicit in this audit; `po-requests.md`
 is owned outside this AC's scope, so this document records the questions
 and their routing rather than editing that file directly.
+
