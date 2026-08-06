@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 1/9 stories | 6/51 ACs
-**Last Updated:** 2026-08-06T23:35:44+00:00
+**Last Updated:** 2026-08-06T23:52:44+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -130,6 +130,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-22.2:** The nine honest upstream findings **F1–F9** recorded in `PIVOT_AUDIT.md` — where the pinned fork behaves differently than the PRD assumed (including F1 a Gallery does not auto-inherit its Project's Client, F4 no `aspect_ratio` column, F5 roughly one hour of expiry-enforcement lag, F7 the `/storage` permission fix not surviving container recreation, F9 missing `gallery_expired`/`archive_complete` email templates) — are added to `po-requests.md` as PO findings. Each carries its finding id, a one-line statement, the PRD section it contradicts, and a proposed disposition: accept as-is, schedule fork work, or raise upstream. AC-17.9 required this routing; `PIVOT_AUDIT.md` states the findings "are to be added" and the addition never happened, because `po-requests.md` is outside an implementing AC's write scope.
   - Dev: implemented
 - [ ] **AC-22.3:** The reopened contract-signing status is propagated to every artifact an agent may be handed, so nothing in a later sprint inherits a known-false assumption: the restored `CLAUDE.md` Contracts entry and PRD §29 both carry a dated `REOPENED` marker naming the failed element and pointing at `po-requests.md` item 7, and `SYSTEM_OWNERSHIP.md`'s Contracts row is annotated the same way. F1 and F5 receive the same treatment where the PRD's Project/Gallery and expiry language assumes otherwise. This is Reminder 15 applied to a finding rather than to a sprint file.
+  - Dev: implemented
 - [ ] **AC-22.4:** The prepared-but-unsubmitted upstream defect report for the single-image download hang (F8 / UD-1) is surfaced in `po-requests.md` as an explicit human action item: it names the on-disk path of the drafted report, states that publishing it needs a human GitHub identity, and records the consequence of not filing it — the fork patch registered in `FORK_CHANGELOG.md` as droppable "when upstream fixes it" can never actually be dropped. Retrospective action item 9.
 - [ ] **AC-22.5:** The F7 `/storage` permission fix survives container recreation, or is recorded as a known manual step. Either the fix is made reproducible in `docker-compose.yml` / an entrypoint so a `docker compose down -v && up` leaves the Backstage storage path writable with no hand intervention — proven by actually recreating the containers and re-running an upload — or, if that is not achievable without editing shipped upstream code, it is documented as a named manual step in `BACKSTAGE_STARTUP.md` with the symptom it produces when skipped. It has already had to be reapplied by hand once (AC-17.5.1 → AC-17.7). Retrospective action item 7.
 
@@ -157,6 +158,18 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   
   **Files changed:**
   - `PIVOT_AUDIT.md` — new `## AC-22.2` section (inserted between AC-17.9 and AC-17.10, preserving the existing invariant that AC-17.10 is immediately followed by the document-final AC-14.6 section) with a …
+  AC-22.3 implemented (local checks green): No coverage threshold configured — all tests pass. No dependency changes were made, so no `package-lock.json` update needed. Work is complete.
+  
+  ## Summary
+  
+  Implemented AC-22.3 on `feature/US-22` (commit `10de319`).
+  
+  **Files changed:**
+  - `CLAUDE.md` — Contracts entry (Technology Stack) now carries a dated `REOPENED (2026-08-07)` marker naming the failed AC-17.10 element (audit page baked into the delivered PDF) and pointing at `po-requests.md` item 7.
+  - `scrum-master/PRD.md` — dated `REOPENED` markers added in five places: §29 (Contracts and PDFs) for the contract-signing reopening; §6.2 and §17.3 for finding F1 (Gallery does not inherit its Project's Client); §28.1 and §30 for finding F5 (~1hr expiry-enforcement lag behind the "Automatic" label).
+  - `SYSTEM_OWNERSHIP.md` — Contracts row and its notes section annotated the same way, plus front matter updated to record AC-22.3.
+  - `PIVOT_AUDIT.md` — the AC-17.4.1.1.3 section's PRD.md line citations were re-pointed to the new line numbers (a second re-citation note documents why), since inserting the markers shifted everything below §6.2.
+  - `src/__tests__/us17-ac17.4.1.1.3-expiry-model-vs-prd.test.ts` — updated its pinned PRD.md line-nu …
 
 **Tester Status:** approved
 **Tester Notes:**
