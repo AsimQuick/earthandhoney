@@ -8,9 +8,10 @@
  *          already established), names the single authoritative system,
  *          what other systems may cache for display only, and what they
  *          are forbidden to write. Also verifies the document's Contracts
- *          row is reconciled against CLAUDE.md's stale literal text rather
- *          than silently copying it, and that this AC does not edit
- *          CLAUDE.md or scrum-master/po-requests.md itself.
+ *          row accurately restates CLAUDE.md's current open-decision
+ *          language (e-sign provider TBD) rather than inventing new
+ *          wording, and that this AC does not edit CLAUDE.md or
+ *          scrum-master/po-requests.md itself.
  * created-by: dev-team
  * related-story: US-18
  * related-ac: 18.1
@@ -80,8 +81,8 @@ describe('AC-18.1: SYSTEM_OWNERSHIP.md documents authoritative ownership per dom
     ['CMS — non-gallery business content', /Payload CMS/],
     ['Gallery & media data', /PicPeak/],
     ['Storage', /PicPeak/],
-    ['Auth', /Better Auth/],
-    ['Email', /Resend/],
+    ['Auth', /PicPeak/],
+    ['Email', /PicPeak/],
     ['Payments', /Invoice Ninja/],
     ['Contracts', /PicPeak/],
   ]
@@ -110,23 +111,24 @@ describe('AC-18.1: SYSTEM_OWNERSHIP.md documents authoritative ownership per dom
       expect(section).toMatch(/Two galleries[\s\S]*?\*\*PicPeak\*\*/)
     })
 
-    it('Auth and Email ownership matches the pre-existing CLAUDE.md Technology Stack owner (unchanged by the pivot)', () => {
-      expect(claudeMd).toMatch(/Auth:\s*Better Auth/)
-      expect(claudeMd).toMatch(/Email:\s*Resend/)
+    it('Auth and Email ownership matches the current CLAUDE.md Technology Stack owner (PicPeak, per the pivot retiring Better Auth/Resend)', () => {
+      expect(claudeMd).toMatch(/Auth:\*\*\s*PicPeak authentication and authorization/)
+      expect(claudeMd).toMatch(/Email:\*\*\s*SMTP via the PicPeak email queue/)
     })
 
     it('Payments row restates CLAUDE.md\'s own Payments line rather than inventing new wording', () => {
-      expect(claudeMd).toMatch(/Payments:.*Stripe Checkout.*Invoice Ninja/)
-      expect(claudeMd).toMatch(/app displays status only, never recreates billing logic/)
+      expect(claudeMd).toMatch(/Payments:.*Stripe, ported from/)
+      expect(claudeMd).toMatch(/reconciled into the ledger/)
     })
 
-    it('the Contracts row explicitly flags CLAUDE.md\'s literal text as stale rather than silently copying it', () => {
-      // CLAUDE.md's Technology Stack line still names Adobe Acrobat Sign —
-      // this is the exact stale text SYSTEM_OWNERSHIP.md must call out.
-      expect(claudeMd).toMatch(/Contracts:\s*Adobe Acrobat Sign/)
-      expect(doc).toMatch(/Adobe Acrobat Sign/)
-      expect(doc).toMatch(/stale/)
-      expect(doc).toMatch(/po-requests\.md.*item 7|item 7.*po-requests\.md/)
+    it('the Contracts row accurately restates CLAUDE.md\'s current open-decision language rather than flagging stale text', () => {
+      // CLAUDE.md's Technology Stack Contracts line is now current/correct
+      // (open decision, e-sign TBD, manual-upload fallback) — it no longer
+      // names Adobe Acrobat Sign, so there is nothing stale left to flag.
+      expect(claudeMd).toMatch(/Contracts:\*\*\s*open decision/)
+      expect(claudeMd).toMatch(/e-sign provider TBD/)
+      expect(doc).toMatch(/open decision/)
+      expect(doc).toMatch(/e-sign/)
     })
 
     it('the Contracts row cites AC-17.10\'s verification (done/approved) as the basis for the correction', () => {

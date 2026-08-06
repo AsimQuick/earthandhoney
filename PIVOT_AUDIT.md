@@ -500,24 +500,25 @@ owns would mean two systems doing the same job. This section names each
 duplicate-feature risk and assigns it a single authoritative owner,
 consistent with the per-concern ownership already fixed by CLAUDE.md's
 **Technology Stack** section (Storage: Cloudflare R2; CMS: Payload CMS;
-Auth: Better Auth; Email: Resend) plus the gallery-data ownership shift
-onto PicPeak that AC-14.1/AC-14.2 of this same audit already established.
+Auth: PicPeak authentication and authorization, Better Auth retired;
+Email: SMTP via the PicPeak email queue, Resend retired) plus the
+gallery-data ownership shift onto PicPeak that AC-14.1/AC-14.2 of this
+same audit already established.
 
 | # | Duplicate-feature risk | Current codebase side | PicPeak side | CLAUDE.md-designated owner | Single authoritative owner | Reason |
 |---|---|---|---|---|---|---|
 | R1  | Two upload paths | Payload-owned R2 upload path (`src/payload.config.ts` `s3Storage`, see Superseded artifacts row 3) | PicPeak's own ingest/upload path into its media store | Storage: Cloudflare R2 (bucket only — CLAUDE.md does not name an upload-path owner) | **PicPeak** | Rows 6/10/superseded-artifacts already establish PicPeak as the gallery media owner; a second upload path writing to the same class of assets is the exact duplicate this AC flags, so Payload's upload path stays dormant and is never invoked once PicPeak is live. |
 | R2  | Two media stores | Payload `Media` collection + Sharp derivative pipeline (rows 6–9, superseded-artifacts rows 1–2) | PicPeak's media/derivative store | Image processing: Sharp pipeline generating thumbnail/medium/large from originals stored in R2 (CLAUDE.md Product Pillar 2) — superseded for gallery images by the pivot itself | **PicPeak** | CLAUDE.md's Sharp/R2 pillar describes the pre-pivot design; AC-14.1/14.2 already reclassified the Payload Media/Sharp path as Replaced by PicPeak / Left dormant. Keeping both live would mean two authoritative sources for the same derivative URLs. |
 | R3  | Two galleries | Payload `Galleries` collection (row 11, superseded-artifacts row 1) | PicPeak's gallery data model | CMS: Payload CMS (collections list includes Galleries) — reassigned by the pivot | **PicPeak** | The pivot's core premise (per CLAUDE.md's Product Vision: "one reusable engine powers... No separate image systems") is a single gallery data owner; AC-14.1 already classifies the Payload `Galleries` collection as Replaced by PicPeak, so PicPeak is that single owner going forward. |
-| R4  | Two auth systems | Auth: Better Auth (CLAUDE.md Technology Stack) — governs photographer/admin login and the business dashboard | PicPeak ships its own built-in auth/access-control (e.g. gallery password/session protection) | **Auth: Better Auth** | **Better Auth**, for all photographer/admin/dashboard identity | CLAUDE.md's Technology Stack fixes Better Auth as the single auth owner for the business platform; nothing in AC-14.1/14.2 reassigns identity/auth away from it. PicPeak's built-in auth is scoped to gallery-viewer access (e.g. a client-facing gallery password) and must not be used for photographer/admin login, so the two systems serve different audiences rather than genuinely competing — but any overlap (e.g. PicPeak admin accounts) defaults to Better Auth as authoritative. |
-| R5  | Two email senders | Email: Resend (CLAUDE.md Technology Stack) | PicPeak ships its own outbound email (e.g. gallery-ready/delivery notifications) | **Email: Resend** | **Resend** | CLAUDE.md's Technology Stack fixes Resend as the single email-sending owner; PicPeak's built-in mailer is disabled/not configured, and any PicPeak event that needs to notify a client or the photographer is wired to trigger a Resend send rather than letting PicPeak dispatch its own email, so there is exactly one email sender in production. |
+| R4  | Two auth systems | Auth: previously Better Auth, now retired per CLAUDE.md Technology Stack | PicPeak ships its own built-in auth/access-control, covering both gallery-viewer access (password/session protection) and photographer/admin login | **Auth: PicPeak authentication and authorization (Better Auth is retired)** | **PicPeak** | CLAUDE.md's Technology Stack now retires Better Auth outright and names PicPeak's own authentication and authorization as the owner, consistent with Product Pillar 1 ("PicPeak is the Backstage foundation... We do not reimplement PicPeak's backend"). There is no remaining second identity system — PicPeak is authoritative for all photographer/admin/dashboard and gallery-viewer identity. |
+| R5  | Two email senders | Email: previously Resend, now retired per CLAUDE.md Technology Stack | PicPeak ships its own outbound email queue (gallery-ready/delivery notifications, password resets, etc.) | **Email: SMTP via the PicPeak email queue (Resend is retired)** | **PicPeak** | CLAUDE.md's Technology Stack now retires Resend outright and fixes the PicPeak email queue as the default owner of all client-facing email (see CLAUDE.md's "Email: pragmatic default, not a rigid rule" section: "PicPeak's email queue owns all client-facing email, financial included, so there is one sender identity, one brand, and one place the photographer edits templates"). There is exactly one email sender in production: PicPeak. |
 
-Risks 1–3 resolve to **PicPeak** because CLAUDE.md's stack entries for
+Risks 1–5 all resolve to **PicPeak** because CLAUDE.md's stack entries for
 storage/CMS describe the pre-pivot design and are the exact concerns
-AC-14.1/AC-14.2 already reassign to PicPeak. Risks 4–5 resolve to the
-**existing CLAUDE.md owner** (Better Auth, Resend) because the pivot
-never reassigns identity or outbound email — PicPeak's built-in
-equivalents for those two concerns must stay unused so no concern ever
-has two live owners at once.
+AC-14.1/AC-14.2 already reassign to PicPeak, and the Auth/Email entries
+have themselves been updated by the pivot to retire Better Auth and
+Resend in favor of PicPeak's own built-in auth and email queue. No
+concern in this table has two live owners at once.
 
 ## Dependency and licence audit (AC-14.4)
 
@@ -3441,37 +3442,72 @@ section to close any of the gaps it records — nothing under
 
 ### What the PRD assumes
 
-`scrum-master/PRD.md` says something about gallery expiry in exactly two
-places, and only two:
+**Re-citation note (2026-08-07).** The `scrum-master/PRD.md` restore
+(`US-21` AC-21.1) replaced the retired Gallery-Engine document this
+section originally cited with the pivot's real, much longer PRD. The old
+document's "Client Gallery Delivery" section 13 and its top-level
+diagram no longer exist at `PRD.md:9-27`/`PRD.md:863-901` — that content
+now survives only at `scrum-master/PRD-archive.md`, which is historical
+and out of scope for this AC. The citations below are re-pointed at the
+current, restored `scrum-master/PRD.md`'s real content, re-verified
+line-by-line against the live file, not assumed to still be at the old
+line numbers. The comparison's substance (below) is unchanged by this
+re-citation except where noted under difference 2.
 
-- The top-level client-relationship diagram near the start of the
-  document (`PRD.md:9-27`) — the same lifecycle CLAUDE.md's Product
-  Vision restates as "Visitor → Lead → Booking → Contract → Payment →
-  Session → temporary Gallery Delivery → Download → Archive" — names
-  `Gallery Delivery Window` (`PRD.md:22`) as its own sequential stage,
-  followed by `Download Completed` (`PRD.md:24`) and then `Archive`
-  (`PRD.md:26`) as the final stage of the whole client relationship.
-- Section 13, "Client Gallery Delivery" (`PRD.md:863`), which says the
-  same thing a second time, in more detail: a workflow diagram
-  (`PRD.md:874-890`) ending in **"Gallery archived"** as its terminal
-  step, immediately after "Client downloads photos" — again a sequential
-  pipeline (upload → link → view → download → archived), not naming a
-  scheduled background process or any intermediate state between
-  "downloaded" and "archived" — plus a flat "Gallery controls" list
-  (`PRD.md:897-900`): `private link`, `password protection`, `download
-  enabled`, `expiration window` — four items given as peers, with no
-  further detail on what "expiration window" stores, what enforces it,
-  or how it relates to the "Gallery archived" workflow step.
+`scrum-master/PRD.md` discusses gallery expiry/archiving pervasively —
+well beyond the two tight spots the old, now-archived document confined
+it to — but the shape it describes is the same lifecycle, restated in
+three places at comparable levels of detail:
+
+- The top-level Project workflow diagram in §6.2, "A Project connects"
+  (`PRD.md:186-201`) — the closest current analogue of the old top-level
+  client-relationship diagram — is a sequential arrow chain ending
+  `→ Delivery` (`PRD.md:199`) then `→ Expiry and closure` (`PRD.md:200`),
+  naming expiry as the Project's own terminal stage. The current document
+  compresses what the old one spelled out as three named stages ("Gallery
+  Delivery Window" / "Download Completed" / "Archive") into two, but the
+  shape — a Gallery/Project reaching an end-of-life stage as the final
+  sequential step of the client relationship — is the same.
+- §23.2's Project Milestones list (`PRD.md:1008-1027`) restates the same
+  lifecycle a second time, at the same level of detail the old workflow
+  diagram gave: `gallery released` (`PRD.md:1024`), `downloads completed`
+  (`PRD.md:1025`), and `gallery expired/archived` (`PRD.md:1026`) are
+  named as sequential milestones, immediately before `project closed`
+  (`PRD.md:1027`) — a delivery → download → expiry/archive → closure
+  order matching the old workflow diagram's shape exactly, just as a
+  milestone list rather than an arrow diagram.
+- Section 30, "Private Gallery Delivery and Retention" (`PRD.md:1434`),
+  is the current document's dedicated gallery-delivery/expiry section —
+  the closest analogue of the old section 13, "Client Gallery Delivery."
+  It gives a states list rather than an arrow workflow diagram
+  (`PRD.md:1436-1445`): `draft; ready; sent; viewed; download-enabled;
+  expired; archived; purged according to policy` — and a "Security
+  requirements" list (`PRD.md:1447-1458`) that includes `optional
+  password` (`PRD.md:1452`) and `expiring access` (`PRD.md:1453`) as two
+  of nine flat peer bullet items, with no further detail on what
+  "expiring access" stores, what enforces it, or how it relates to the
+  `expired`/`archived` states above.
 
 Nowhere else in `PRD.md` mentions expiry, archiving, or deactivation of a
-Gallery — confirmed by re-reading the whole document, not by a fresh
-keyword search re-run against the fork (that search is AC-17.4.1.1.1.1.1.1's
-territory, scoped to the fork's backend source, not the PRD). Both
-places the PRD does mention it agree with each other: a Gallery
-("Gallery Delivery Window" / "expiration window") reaches an "Archive" /
-"Gallery archived" end state as the next sequential stage after
-download, with no storage shape, no enforcement mechanism, and no
-trigger condition specified for either transition.
+Gallery in comparable structural detail — confirmed by re-reading the
+whole document, not by a fresh keyword search re-run against the fork
+(that search is AC-17.4.1.1.1.1.1.1's territory, scoped to the fork's
+backend source, not the PRD). A full `expir|archiv` sweep of the current
+document turns up roughly a dozen further, lighter mentions (e.g.
+`PRD.md:105`, `124`, `674`, `721`, `1380`, `1392`, `1408`, `1460`,
+`1612`, `1677-1678`, `1716`) — single words inside other capability
+lists, an email-ownership table row, or the "not a permanent
+photo-hosting service" principle statement (`PRD.md:1460`) — none adding
+a shape this AC's comparison depends on beyond what the three citations
+above already establish. §28.1's email-ownership table restates the same
+ownership as a single row, `Gallery expiry | Backstage/PicPeak |
+Automatic` (`PRD.md:1380`), without adding new detail on storage shape,
+enforcement mechanism, or trigger condition. All of these agree with
+each other and with the three citations above: a Gallery reaches an
+expiry/archive end state as a later sequential stage after
+delivery/download, automatically and owned by "Backstage/PicPeak," with
+no storage shape, no enforcement mechanism, and no trigger condition
+specified anywhere in `PRD.md`'s own text.
 
 ### What the pinned fork actually does, restated from AC-17.4.1.1.1.3 and AC-17.4.1.1.2
 
@@ -3508,20 +3544,26 @@ frontend, `GalleryPage.tsx:275`, gating on the derived `is_expired` flag.
 ### Where the two agree
 
 - **A Gallery-level expiry control exists, matching the PRD's
-  "expiration window".** The PRD names an expiry control per Gallery
-  (`PRD.md:900`); the pinned fork stores exactly one such value per
-  Gallery row, `events.expires_at` (AC-17.4.1.1.1.3). Neither side treats
-  expiry as a property of anything other than the Gallery/event itself.
+  "expiring access".** The PRD names an expiry control per gallery
+  (`PRD.md:1453`, restated as `gallery expiry` in the §28.1 ownership
+  table at `PRD.md:1380`); the pinned fork stores exactly one such value
+  per Gallery row, `events.expires_at` (AC-17.4.1.1.1.3). Neither side
+  treats expiry as a property of anything other than the Gallery/event
+  itself.
 - **Expiry culminates in an automatic archive, matching the PRD's
-  "Gallery archived" terminal step.** The PRD's workflow diagram ends in
-  "Gallery archived" (`PRD.md:890`) with no manual "archive" action named
-  among the Gallery controls list — archiving reads as an automatic
-  pipeline outcome, not something the photographer triggers by hand.
-  Upstream's `handleExpiredEvent` matches that shape exactly: the
-  scheduled cron sweep calls `archiveEvent(event)`
-  (`expirationChecker.js:156`) itself, with no admin action in the loop.
-  On this point the two agree, including on the automatic-not-manual
-  character of the transition.
+  "gallery expired/archived" milestone and "Automatic" ownership.** The
+  PRD's §23.2 milestone list places `gallery expired/archived`
+  (`PRD.md:1026`) immediately before `project closed` (`PRD.md:1027`),
+  and its §30 states list ends `expired; archived; purged according to
+  policy` (`PRD.md:1443-1445`) with no manual "archive" action named
+  among the Security requirements list — archiving reads as an automatic
+  pipeline outcome, not something the photographer triggers by hand,
+  which the §28.1 ownership table states outright: `Gallery expiry |
+  Backstage/PicPeak | Automatic` (`PRD.md:1380`). Upstream's
+  `handleExpiredEvent` matches that shape exactly: the scheduled cron
+  sweep calls `archiveEvent(event)` (`expirationChecker.js:156`) itself,
+  with no admin action in the loop. On this point the two agree,
+  including on the automatic-not-manual character of the transition.
 
 ### Where they differ
 
@@ -3534,12 +3576,13 @@ the pinned fork does have a dedicated stored expiry column
 narrower, and each is recorded here rather than closed with a fork
 patch:
 
-1. **"Expiration window" is listed as a peer of "password protection",
-   but the two are not enforced the same way.** The PRD's flat Gallery-
-   controls list (`PRD.md:897-900`) gives `password protection` and
-   `expiration window` equal billing, implying comparable enforcement.
-   AC-17.3 exercised password protection live and found it backend-
-   enforced by the actual mounted middleware: `GET
+1. **"Expiring access" is listed as a peer of "optional password", but
+   the two are not enforced the same way.** The PRD's flat Security
+   requirements list (`PRD.md:1447-1458`) gives `optional password`
+   (`PRD.md:1452`) and `expiring access` (`PRD.md:1453`) equal billing —
+   two bullets in the same nine-item list — implying comparable
+   enforcement. AC-17.3 exercised password protection live and found it
+   backend-enforced by the actual mounted middleware: `GET
    /api/gallery/:slug/photos` with no token returns `401 {"error":"No
    token provided"}` before any password is even considered
    (`middleware/gallery.js:62`, cited in AC-17.3). `expires_at` has no
@@ -3548,24 +3591,37 @@ patch:
    enforces the password never reads `expires_at`, and the login routes
    that issue a viewer's token never check it either; enforcement for an
    ordinary viewer exists only in the frontend. Where the PRD's listing
-   implies "expiration window" behaves like its sibling controls, the
-   code shows it is the one control among the four not enforced at the
-   layer the others are.
-2. **Upstream couples archiving with a separate deactivation flag the
-   PRD's single end state does not name.** The PRD's workflow names one
-   terminal state, "Gallery archived" (`PRD.md:890`). Upstream's
-   `handleExpiredEvent` sets two things on the same pass: `is_active:
-   false` (`expirationChecker.js:97`) and, separately, the archive action
-   (`:156`) — a deactivation flag and an archive action recorded as
-   distinct steps in the code, not one combined state. The PRD gives no
-   name to an intermediate "deactivated" state between "downloaded" and
-   "archived"; upstream's model has one.
+   implies "expiring access" behaves like its sibling security
+   requirements, the code shows it is one control among that list not
+   enforced at the layer the others are.
+2. **Upstream couples archiving with a separate deactivation flag, and
+   the two fire in the same pass — narrower than the PRD's states list
+   suggests, not absent from it.** Unlike the old, now-archived PRD text
+   (which named only a single terminal "Gallery archived" state), the
+   current PRD's §30 states list does name an intermediate `expired`
+   state distinct from `archived` (`PRD.md:1443-1444`) — closer to
+   upstream's two-step handling than the old text was, so this
+   difference is narrower than originally recorded, not eliminated.
+   Upstream's `handleExpiredEvent` sets `is_active: false`
+   (`expirationChecker.js:97`) and, separately, calls `archiveEvent`
+   (`:156`) — a deactivation flag and an archive action that are two
+   distinct code steps, but both fire on the very same cron tick, inside
+   the very same function call, with no independent trigger or elapsed
+   time between them. The PRD's list orders `expired` and `archived` as
+   if they were separately reached states (`PRD.md:1443-1445`, echoed by
+   the two-word milestone `gallery expired/archived` at `PRD.md:1026`,
+   which itself treats the pair as one combined milestone rather than two
+   sequential ones) but names no trigger, condition, or time gap between
+   them either way. The remaining gap is narrow: the PRD is agnostic
+   about whether "expired" and "archived" are simultaneous or sequential,
+   while upstream's code is unambiguous that they are simultaneous.
 3. **Upstream's archive trigger is elapsed time alone, not the PRD
-   diagram's implied download-completion trigger.** The PRD's workflow
-   diagram places "Gallery archived" immediately after "Client downloads
-   photos" (`PRD.md:886-890`), reading as a sequential, delivery-driven
-   transition. `checkExpirations()`'s queries filter only on
-   `expires_at` against the current time (`expirationChecker.js:46-50`,
+   milestone list's implied download-completion trigger.** The PRD's
+   §23.2 milestone list places `gallery expired/archived` (`PRD.md:1026`)
+   immediately after `downloads completed` (`PRD.md:1025`) and
+   `gallery released` (`PRD.md:1024`), reading as a sequential,
+   delivery-driven transition. `checkExpirations()`'s queries filter only
+   on `expires_at` against the current time (`expirationChecker.js:46-50`,
    restated under AC-17.4.1.1.2) — there is no query condition anywhere
    in that function referencing downloads, views, or any other client
    activity. A Gallery whose password was never even used still expires
@@ -3573,15 +3629,17 @@ patch:
    per AC-17.4.1.1.1.2.3's read-path finding, a client who already holds
    a token from before expiry is not blocked from continuing to view or
    download through the routes that never check `expires_at`. Upstream's
-   actual trigger is purely time-based, independent of the PRD
-   diagram's delivery-sequence framing in both directions.
+   actual trigger is purely time-based, independent of the PRD milestone
+   list's delivery-sequence framing in both directions.
 
 ### Verdict
 
 AC-17.4.1.1.3 is satisfied: this section states plainly, from the code
 evidence AC-17.4.1.1.1.1.1.1 through AC-17.4.1.1.1.3 and AC-17.4.1.1.2
-already recorded and `scrum-master/PRD.md` section 13's own text, where
-the pinned fork's expiry model agrees with the PRD's assumption (a
+already recorded and `scrum-master/PRD.md`'s own text (§6.2, §23.2, and
+§30, re-cited against the restored PRD per the 2026-08-07 re-citation
+note above), where the pinned fork's expiry model agrees with the PRD's
+assumption (a
 Gallery-level expiry control that culminates in an automatic archive)
 and where it differs (uneven enforcement relative to password
 protection, a separate deactivation flag the PRD does not name, and a
