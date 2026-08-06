@@ -87,43 +87,43 @@ describe('AC-17.4.1.1.3: the pinned fork\'s expiry model against the PRD\'s assu
 
   describe('the PRD quotes are genuine', () => {
     it('the top-level Project workflow diagram (§6.2) ends Delivery then Expiry and closure at the cited lines', () => {
-      expect(section).toContain('`PRD.md:186-201`')
-      expect(section).toContain('`PRD.md:199`')
-      expect(lineAt('scrum-master/PRD.md', 199)).toMatch(/→ Delivery/)
-      expect(section).toContain('`PRD.md:200`')
-      expect(lineAt('scrum-master/PRD.md', 200)).toMatch(/→ Expiry and closure/)
+      expect(section).toContain('`PRD.md:191-206`')
+      expect(section).toContain('`PRD.md:204`')
+      expect(lineAt('scrum-master/PRD.md', 204)).toMatch(/→ Delivery/)
+      expect(section).toContain('`PRD.md:205`')
+      expect(lineAt('scrum-master/PRD.md', 205)).toMatch(/→ Expiry and closure/)
     })
 
     it('the §23.2 milestones list names gallery released, downloads completed, and gallery expired/archived at the cited lines', () => {
-      expect(section).toContain('`PRD.md:1008-1027`')
-      expect(section).toContain('`PRD.md:1024`')
-      expect(lineAt('scrum-master/PRD.md', 1024)).toMatch(/gallery released/)
-      expect(section).toContain('`PRD.md:1025`')
-      expect(lineAt('scrum-master/PRD.md', 1025)).toMatch(/downloads completed/)
-      expect(section).toContain('`PRD.md:1026`')
-      expect(lineAt('scrum-master/PRD.md', 1026)).toMatch(/gallery expired\/archived/)
-      expect(section).toContain('`PRD.md:1027`')
-      expect(lineAt('scrum-master/PRD.md', 1027)).toMatch(/project closed/)
+      expect(section).toContain('`PRD.md:1019-1038`')
+      expect(section).toContain('`PRD.md:1035`')
+      expect(lineAt('scrum-master/PRD.md', 1035)).toMatch(/gallery released/)
+      expect(section).toContain('`PRD.md:1036`')
+      expect(lineAt('scrum-master/PRD.md', 1036)).toMatch(/downloads completed/)
+      expect(section).toContain('`PRD.md:1037`')
+      expect(lineAt('scrum-master/PRD.md', 1037)).toMatch(/gallery expired\/archived/)
+      expect(section).toContain('`PRD.md:1038`')
+      expect(lineAt('scrum-master/PRD.md', 1038)).toMatch(/project closed/)
     })
 
-    it('PRD.md:1434 is the §30 section header cited', () => {
-      expect(section).toContain('`PRD.md:1434`')
-      expect(lineAt('scrum-master/PRD.md', 1434)).toMatch(/# 30\. Private Gallery Delivery and Retention/)
+    it('PRD.md:1459 is the §30 section header cited', () => {
+      expect(section).toContain('`PRD.md:1459`')
+      expect(lineAt('scrum-master/PRD.md', 1459)).toMatch(/# 30\. Private Gallery Delivery and Retention/)
     })
 
     it('the §30 states list ends expired, archived, purged according to policy at the cited lines', () => {
-      expect(section).toContain('`PRD.md:1436-1445`')
-      expect(lineAt('scrum-master/PRD.md', 1443)).toMatch(/expired/)
-      expect(lineAt('scrum-master/PRD.md', 1444)).toMatch(/archived/)
-      expect(lineAt('scrum-master/PRD.md', 1445)).toMatch(/purged according to policy/)
+      expect(section).toContain('`PRD.md:1467-1476`')
+      expect(lineAt('scrum-master/PRD.md', 1474)).toMatch(/expired/)
+      expect(lineAt('scrum-master/PRD.md', 1475)).toMatch(/archived/)
+      expect(lineAt('scrum-master/PRD.md', 1476)).toMatch(/purged according to policy/)
     })
 
     it('the §30 Security requirements list at the cited lines names expiring access as a peer of optional password', () => {
-      expect(section).toContain('`PRD.md:1447-1458`')
-      expect(section).toContain('`PRD.md:1452`')
-      expect(lineAt('scrum-master/PRD.md', 1452)).toMatch(/optional password/)
-      expect(section).toContain('`PRD.md:1453`')
-      expect(lineAt('scrum-master/PRD.md', 1453)).toMatch(/expiring access/)
+      expect(section).toContain('`PRD.md:1478-1489`')
+      expect(section).toContain('`PRD.md:1483`')
+      expect(lineAt('scrum-master/PRD.md', 1483)).toMatch(/optional password/)
+      expect(section).toContain('`PRD.md:1484`')
+      expect(lineAt('scrum-master/PRD.md', 1484)).toMatch(/expiring access/)
     })
 
     // The old, now-archived PRD confined expiry/archiving to two tight
@@ -146,7 +146,7 @@ describe('AC-17.4.1.1.3: the pinned fork\'s expiry model against the PRD\'s assu
       // cited lines (e.g. `gallery released`, `optional password`) are
       // cited for sequential/peer context around an expiry citation, not
       // because the line itself contains the keyword.
-      const citedLines = [200, 1026, 1443, 1444, 1453]
+      const citedLines = [205, 1037, 1474, 1475, 1484]
       for (const n of citedLines) {
         expect(hits.has(n)).toBe(true)
       }

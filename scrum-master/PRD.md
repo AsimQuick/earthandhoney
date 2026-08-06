@@ -181,6 +181,11 @@ A Gallery is a first-class digital asset. It may:
 
 ## 6.2 Project First for Business Workflow
 
+> **REOPENED (2026-08-07) — finding F1.** The chain below reads as automatic end to end. It is not:
+> a Gallery created inside a Project does not inherit the Project's Client at the pinned PicPeak
+> commit — the link must be assigned explicitly through the admin edit route. Accepted as-is, not a
+> fork defect. See `PIVOT_AUDIT.md` finding F1 (AC-17.1.3.3 and the AC-22.2 F1–F9 routing table).
+
 The Project exists before the images.
 
 A Project connects:
@@ -707,6 +712,12 @@ Use and adapt PicPeak's proven Event form fields:
 - feedback setting.
 
 ## 17.3 Client Delivery Fields
+
+> **REOPENED (2026-08-07) — finding F1.** "Project" is listed below as a prefillable field, implying
+> the Project's Client also carries forward automatically. It does not: a Gallery does not inherit
+> its Project's Client at the pinned PicPeak commit — the link must be assigned explicitly through
+> the admin edit route. Accepted as-is, not a fork defect. See `PIVOT_AUDIT.md` finding F1
+> (AC-17.1.3.3 and the AC-22.2 F1–F9 routing table).
 
 Where linked to a Project, prefill rather than retype:
 
@@ -1365,6 +1376,12 @@ The photographer receives far more control over emails than over website layout.
 
 ## 28.1 Ownership
 
+> **REOPENED (2026-08-07) — finding F5.** The "Gallery expiry" row below reads "Automatic" as if
+> enforcement is immediate. It is not: up to roughly an hour of lag exists between a Gallery's
+> `expires_at` passing and the hourly `expirationChecker` sweep actually denying client access at the
+> pinned PicPeak commit. Accepted as-is, not a fork defect — "automatic" does not mean "immediate."
+> See `PIVOT_AUDIT.md` finding F5 (AC-17.4.2 and the AC-22.2 F1–F9 routing table).
+
 | Stage | Owning system | Default |
 |---|---|---|
 | Inquiry acknowledgement | Payload/Frontstage | Optional automatic |
@@ -1412,6 +1429,14 @@ Automations stop when their milestone is complete.
 
 # 29. Contracts and PDFs
 
+> **REOPENED (2026-08-07).** The requirements below read as a settled decision; they are not.
+> AC-17.10 verified PicPeak's native contract-signing capability — the leading V1 candidate —
+> against the pinned fork commit and found 6 of 7 assumed elements hold, but the 7th does not:
+> *an audit page baked into the delivered PDF* is not what the fork ships — it ships the audit
+> trail as a separate sibling PDF, never merged into the signed-contract PDF the client downloads.
+> The V1 provider choice (PicPeak native / external / manual) remains open. See
+> `scrum-master/po-requests.md` item 7.
+
 V1 contract requirements:
 
 - chosen external e-sign provider or approved manual upload flow;
@@ -1432,6 +1457,12 @@ PDF requirements:
 - stored delivered documents must remain immutable records of what the client received.
 
 # 30. Private Gallery Delivery and Retention
+
+> **REOPENED (2026-08-07) — finding F5.** "Expiring access" below reads as immediate. It is not: up
+> to roughly an hour of lag exists between a Gallery's `expires_at` passing and the hourly
+> `expirationChecker` sweep actually denying client access at the pinned PicPeak commit. Accepted
+> as-is, not a fork defect. See `PIVOT_AUDIT.md` finding F5 (AC-17.4.2 and the AC-22.2 F1–F9 routing
+> table).
 
 Private galleries support:
 

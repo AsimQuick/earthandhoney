@@ -3454,36 +3454,43 @@ line-by-line against the live file, not assumed to still be at the old
 line numbers. The comparison's substance (below) is unchanged by this
 re-citation except where noted under difference 2.
 
+**Second re-citation note (2026-08-07, AC-22.3).** `US-22` AC-22.3 inserted
+dated `REOPENED` markers into `PRD.md` §6.2, §17.3, §28.1, §29 and §30
+(findings F1 and F5, and the reopened contract-signing status), shifting
+every line number below §6.2. The citations below are re-pointed again to
+the post-AC-22.3 line numbers, re-verified line-by-line against the live
+file.
+
 `scrum-master/PRD.md` discusses gallery expiry/archiving pervasively —
 well beyond the two tight spots the old, now-archived document confined
 it to — but the shape it describes is the same lifecycle, restated in
 three places at comparable levels of detail:
 
 - The top-level Project workflow diagram in §6.2, "A Project connects"
-  (`PRD.md:186-201`) — the closest current analogue of the old top-level
+  (`PRD.md:191-206`) — the closest current analogue of the old top-level
   client-relationship diagram — is a sequential arrow chain ending
-  `→ Delivery` (`PRD.md:199`) then `→ Expiry and closure` (`PRD.md:200`),
+  `→ Delivery` (`PRD.md:204`) then `→ Expiry and closure` (`PRD.md:205`),
   naming expiry as the Project's own terminal stage. The current document
   compresses what the old one spelled out as three named stages ("Gallery
   Delivery Window" / "Download Completed" / "Archive") into two, but the
   shape — a Gallery/Project reaching an end-of-life stage as the final
   sequential step of the client relationship — is the same.
-- §23.2's Project Milestones list (`PRD.md:1008-1027`) restates the same
+- §23.2's Project Milestones list (`PRD.md:1019-1038`) restates the same
   lifecycle a second time, at the same level of detail the old workflow
-  diagram gave: `gallery released` (`PRD.md:1024`), `downloads completed`
-  (`PRD.md:1025`), and `gallery expired/archived` (`PRD.md:1026`) are
+  diagram gave: `gallery released` (`PRD.md:1035`), `downloads completed`
+  (`PRD.md:1036`), and `gallery expired/archived` (`PRD.md:1037`) are
   named as sequential milestones, immediately before `project closed`
-  (`PRD.md:1027`) — a delivery → download → expiry/archive → closure
+  (`PRD.md:1038`) — a delivery → download → expiry/archive → closure
   order matching the old workflow diagram's shape exactly, just as a
   milestone list rather than an arrow diagram.
-- Section 30, "Private Gallery Delivery and Retention" (`PRD.md:1434`),
+- Section 30, "Private Gallery Delivery and Retention" (`PRD.md:1459`),
   is the current document's dedicated gallery-delivery/expiry section —
   the closest analogue of the old section 13, "Client Gallery Delivery."
   It gives a states list rather than an arrow workflow diagram
-  (`PRD.md:1436-1445`): `draft; ready; sent; viewed; download-enabled;
+  (`PRD.md:1467-1476`): `draft; ready; sent; viewed; download-enabled;
   expired; archived; purged according to policy` — and a "Security
-  requirements" list (`PRD.md:1447-1458`) that includes `optional
-  password` (`PRD.md:1452`) and `expiring access` (`PRD.md:1453`) as two
+  requirements" list (`PRD.md:1478-1489`) that includes `optional
+  password` (`PRD.md:1483`) and `expiring access` (`PRD.md:1484`) as two
   of nine flat peer bullet items, with no further detail on what
   "expiring access" stores, what enforces it, or how it relates to the
   `expired`/`archived` states above.
@@ -3494,14 +3501,14 @@ whole document, not by a fresh keyword search re-run against the fork
 (that search is AC-17.4.1.1.1.1.1.1's territory, scoped to the fork's
 backend source, not the PRD). A full `expir|archiv` sweep of the current
 document turns up roughly a dozen further, lighter mentions (e.g.
-`PRD.md:105`, `124`, `674`, `721`, `1380`, `1392`, `1408`, `1460`,
-`1612`, `1677-1678`, `1716`) — single words inside other capability
+`PRD.md:105`, `124`, `679`, `732`, `1397`, `1409`, `1425`, `1491`,
+`1643`, `1708-1709`, `1747`) — single words inside other capability
 lists, an email-ownership table row, or the "not a permanent
-photo-hosting service" principle statement (`PRD.md:1460`) — none adding
+photo-hosting service" principle statement (`PRD.md:1491`) — none adding
 a shape this AC's comparison depends on beyond what the three citations
 above already establish. §28.1's email-ownership table restates the same
 ownership as a single row, `Gallery expiry | Backstage/PicPeak |
-Automatic` (`PRD.md:1380`), without adding new detail on storage shape,
+Automatic` (`PRD.md:1397`), without adding new detail on storage shape,
 enforcement mechanism, or trigger condition. All of these agree with
 each other and with the three citations above: a Gallery reaches an
 expiry/archive end state as a later sequential stage after
