@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 0/9 stories | 0/51 ACs
-**Last Updated:** 2026-08-07T00:00:00+00:00
+**Last Updated:** 2026-08-06T21:16:08+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -42,10 +42,11 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 ## User Stories
 
 ### US-21: Restore the authoritative post-pivot documentation onto `main` and correct the ownership record
-**Status:** draft | **Priority:** critical
+**Status:** in-progress | **Priority:** critical
 
 #### Acceptance Criteria
 - [ ] **AC-21.1:** `scrum-master/PRD.md` on `main` is the post-pivot PRD, not the retired Gallery-Engine PRD it currently holds. Restore it verbatim from commit `9624a07` (reachable on branch `feature/US-9`, path `scrum-master/PRD.md`, 1855 lines) and restore `scrum-master/PRD-archive.md` from the same commit. This is a restore, not a rewrite — no section is re-authored. Evidence: the restored `PRD.md` contains the headings `# 25. The Ledger: Headless Invoice Ninja`, `# 34. Product Owner Pivot Plan` with Phases 0–8, `# 35. V1 Acceptance Criteria` and `# 36. Explicit V1 Non-Goals`; `PRD-archive.md` exists and is marked historical-only. Record in the commit message that `main`'s pre-existing `PRD.md` (937 lines, dated 2026-07-19, Gallery-Engine direction) is the file being replaced.
+  - Dev: implemented
 - [ ] **AC-21.2:** `CLAUDE.md` on `main` is the post-pivot version (218 lines) restored verbatim from `9624a07`, replacing the retired Gallery-Engine version currently on `main` (61 lines, which still names Better Auth, Resend, Adobe Acrobat Sign, `Sessions` as the central business object, and Testimonials/Packages/FAQ). Evidence: the restored file contains the `PIVOT NOTICE (2026-07-30)` block, `## The Three Surfaces`, the eight Product Pillars beginning `Fork, don't rebuild`, `## The Ledger Rule`, `## Stripe Port Rule`, `## Fork Discipline (PicPeak)`, `## Decisions No Agent May Make Alone`, and `## Retired From the Old Direction (do not build)`.
 - [ ] **AC-21.3:** `scrum-master/scrum-master.md` carries the post-pivot **Product Backlog** (numbered items 1–42), the sixteen cross-sprint **Reminders**, and the **Required Product Owner deliverables** table — all restored from `9624a07`'s 486-line version — **merged with, not replacing**, the sprint-3 review section already present in the 179-line working-tree file. Evidence: the resulting file contains both `## Product Backlog (post-pivot)` with items 1–42 and `## Sprint-3 Review Summary`, and its front-matter `current-sprint` reads `sprint-4`.
 - [ ] **AC-21.4:** `scrum-master/sprint2.json` on `main` is the closed version from `9624a07`: `phase: complete`, US-7/US-8/US-9 `done` (AC-9.3 retired in place with its `[RETIRED — DO NOT IMPLEMENT]` prefix intact), and US-10…US-13 `retired` with their recorded reasons. `main` currently holds `phase: planning` with US-9 `in-progress` and US-10…US-13 still `draft`, so the orchestrator can still be handed retired WhatsApp / Testimonials / Packages / FAQ work — the exact failure Reminder 15 describes and which stalled the pipeline on 2026-07-30. Nothing is deleted; retirement is marked in place. Additionally, reconcile the stale story-level `dev_status: not-started` on all 7 sprint-3 stories in `sprint3.json` to `done`, since every one of their acceptance criteria already reads `dev_status: done` (retrospective action item 6).
@@ -53,6 +54,17 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-21.6:** A Jest guard test fails if any restored document silently loses its pivot direction again. It asserts: `scrum-master/PRD.md` contains `Headless Invoice Ninja` and `Product Owner Pivot Plan`; `CLAUDE.md` contains `The Three Surfaces`, `The Ledger Rule` and `Fork, don't rebuild`, and does **not** contain the retired strings `Better Auth`, `Resend`, `Adobe Acrobat Sign` outside a `Retired`/`retired` line; `scrum-master/scrum-master.md` contains `Product Backlog (post-pivot)`; and `SYSTEM_OWNERSHIP.md`'s Auth and Email rows do not name Better Auth or Resend as an authoritative system. This is the enforcement Reminder 16 asks for after the direction change was lost twice — once to a branch switch on 2026-07-30, and again by never reaching `main`.
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-21.1 already satisfied on the story branch (no new commit; Tester-verified): Already satisfied: commit `ca67857` on this branch already restored both files verbatim from `9624a07`.
+  
+  Verification:
+  - `git diff 9624a07:scrum-master/PRD.md scrum-master/PRD.md` → empty (byte-identical)
+  - `git diff 9624a07:scrum-master/PRD-archive.md scrum-master/PRD-archive.md` → empty (byte-identical)
+  - Required headings present at lines 1138, 1583, 1693, 1755: `# 25. The Ledger: Headless Invoice Ninja`, `# 34. Product Owner Pivot Plan`, `# 35. V1 Acceptance Criteria`, `# 36. Explicit V1 Non-Goals`
+  - `PRD-archive.md` exists (937 lines) and opens with the historical positioning content
+  - Working tree is clean — no divergence from the commit
+  
+  **ALREADY-SATISFIED.** No new commit made, per instructions I did not touch anything under `scrum-master/`.
 
 **Tester Status:** approved
 **Tester Notes:**
