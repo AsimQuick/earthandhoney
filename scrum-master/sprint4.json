@@ -34,55 +34,55 @@
     "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
     "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (retrospective action item 3)"
   ],
-  "last_updated": "2026-08-06T22:36:53+00:00",
+  "last_updated": "2026-08-06T22:48:43+00:00",
   "stories": [
     {
       "id": "US-21",
       "title": "Restore the authoritative post-pivot documentation onto `main` and correct the ownership record",
-      "status": "in-progress",
+      "status": "done",
       "priority": "critical",
       "dependencies": [],
       "acceptance_criteria": [
         {
           "id": "21.1",
           "text": "`scrum-master/PRD.md` on `main` is the post-pivot PRD, not the retired Gallery-Engine PRD it currently holds. Restore it verbatim from commit `9624a07` (reachable on branch `feature/US-9`, path `scrum-master/PRD.md`, 1855 lines) and restore `scrum-master/PRD-archive.md` from the same commit. This is a restore, not a rewrite \u2014 no section is re-authored. Evidence: the restored `PRD.md` contains the headings `# 25. The Ledger: Headless Invoice Ninja`, `# 34. Product Owner Pivot Plan` with Phases 0\u20138, `# 35. V1 Acceptance Criteria` and `# 36. Explicit V1 Non-Goals`; `PRD-archive.md` exists and is marked historical-only. Record in the commit message that `main`'s pre-existing `PRD.md` (937 lines, dated 2026-07-19, Gallery-Engine direction) is the file being replaced.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "21.2",
           "text": "`CLAUDE.md` on `main` is the post-pivot version (218 lines) restored verbatim from `9624a07`, replacing the retired Gallery-Engine version currently on `main` (61 lines, which still names Better Auth, Resend, Adobe Acrobat Sign, `Sessions` as the central business object, and Testimonials/Packages/FAQ). Evidence: the restored file contains the `PIVOT NOTICE (2026-07-30)` block, `## The Three Surfaces`, the eight Product Pillars beginning `Fork, don't rebuild`, `## The Ledger Rule`, `## Stripe Port Rule`, `## Fork Discipline (PicPeak)`, `## Decisions No Agent May Make Alone`, and `## Retired From the Old Direction (do not build)`.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "21.3",
           "text": "`scrum-master/scrum-master.md` carries the post-pivot **Product Backlog** (numbered items 1\u201342), the sixteen cross-sprint **Reminders**, and the **Required Product Owner deliverables** table \u2014 all restored from `9624a07`'s 486-line version \u2014 **merged with, not replacing**, the sprint-3 review section already present in the 179-line working-tree file. Evidence: the resulting file contains both `## Product Backlog (post-pivot)` with items 1\u201342 and `## Sprint-3 Review Summary`, and its front-matter `current-sprint` reads `sprint-4`.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "21.4",
           "text": "`scrum-master/sprint2.json` on `main` is the closed version from `9624a07`: `phase: complete`, US-7/US-8/US-9 `done` (AC-9.3 retired in place with its `[RETIRED \u2014 DO NOT IMPLEMENT]` prefix intact), and US-10\u2026US-13 `retired` with their recorded reasons. `main` currently holds `phase: planning` with US-9 `in-progress` and US-10\u2026US-13 still `draft`, so the orchestrator can still be handed retired WhatsApp / Testimonials / Packages / FAQ work \u2014 the exact failure Reminder 15 describes and which stalled the pipeline on 2026-07-30. Nothing is deleted; retirement is marked in place. Additionally, reconcile the stale story-level `dev_status: not-started` on all 7 sprint-3 stories in `sprint3.json` to `done`, since every one of their acceptance criteria already reads `dev_status: done` (retrospective action item 6).",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "21.5",
           "text": "`SYSTEM_OWNERSHIP.md`'s ownership table is corrected against the restored `CLAUDE.md`. Four rows are wrong because the document was written in sprint-3 against `main`'s stale pre-pivot `CLAUDE.md`: the **Auth** row names Better Auth (retired \u2014 PicPeak authentication owns it), the **Email \u2014 outbound sending** row names Resend (retired \u2014 the Backstage email queue is the default owner of all client-facing mail), the **CMS** row lists Testimonials/Packages/FAQ (retired from product scope), and the **Payments** row predates The Ledger Rule (Invoice Ninja is headless and holds records only, its portal disabled and its gateway disconnected; Stripe alone moves money; our balances are display-only caches). Each corrected row cites the line of the restored `CLAUDE.md` ownership table it now matches. A dated note at the top of the section states that these are restatements of decisions already approved on 2026-07-30, not new decisions, and names the stale-source root cause.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "21.6",
           "text": "A Jest guard test fails if any restored document silently loses its pivot direction again. It asserts: `scrum-master/PRD.md` contains `Headless Invoice Ninja` and `Product Owner Pivot Plan`; `CLAUDE.md` contains `The Three Surfaces`, `The Ledger Rule` and `Fork, don't rebuild`, and does **not** contain the retired strings `Better Auth`, `Resend`, `Adobe Acrobat Sign` outside a `Retired`/`retired` line; `scrum-master/scrum-master.md` contains `Product Backlog (post-pivot)`; and `SYSTEM_OWNERSHIP.md`'s Auth and Email rows do not name Better Auth or Resend as an authoritative system. This is the enforcement Reminder 16 asks for after the direction change was lost twice \u2014 once to a branch switch on 2026-07-30, and again by never reaching `main`.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         }
       ],
