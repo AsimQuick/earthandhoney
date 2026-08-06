@@ -52,12 +52,20 @@ const sprint3: Sprint = JSON.parse(
   fs.readFileSync(path.join(root, 'scrum-master', 'sprint3.json'), 'utf8')
 )
 
-function findStory(sprint: Sprint, id: string) {
-  return sprint.stories.find((s) => s.id === id)
+function findStory(sprint: Sprint, id: string): Story {
+  const story = sprint.stories.find((s) => s.id === id)
+  if (!story) {
+    throw new Error(`Story ${id} not found`)
+  }
+  return story
 }
 
-function findAc(story: Story, id: string) {
-  return story.acceptance_criteria.find((a) => a.id === id)
+function findAc(story: Story, id: string): AcceptanceCriterion {
+  const ac = story.acceptance_criteria.find((a) => a.id === id)
+  if (!ac) {
+    throw new Error(`AC ${id} not found on story ${story.id}`)
+  }
+  return ac
 }
 
 describe('AC-21.4: sprint2.json is the closed post-pivot version from 9624a07', () => {
@@ -79,8 +87,9 @@ describe('AC-21.4: sprint2.json is the closed post-pivot version from 9624a07', 
     const ac93 = findAc(us9, '9.3')
     expect(ac93.retired).toBe(true)
     expect(ac93.text).toMatch(/^\[RETIRED — DO NOT IMPLEMENT/)
-    expect(typeof ac93.retired_reason).toBe('string')
-    expect(ac93.retired_reason.length).toBeGreaterThan(0)
+    const ac93RetiredReason = ac93.retired_reason
+    expect(typeof ac93RetiredReason).toBe('string')
+    expect((ac93RetiredReason ?? '').length).toBeGreaterThan(0)
   })
 
   it.each(['US-10', 'US-11', 'US-12', 'US-13'])(
@@ -88,8 +97,9 @@ describe('AC-21.4: sprint2.json is the closed post-pivot version from 9624a07', 
     (id) => {
       const story = findStory(sprint2, id)
       expect(story.status).toBe('retired')
-      expect(typeof story.retired_reason).toBe('string')
-      expect(story.retired_reason.length).toBeGreaterThan(0)
+      const retiredReason = story.retired_reason
+      expect(typeof retiredReason).toBe('string')
+      expect((retiredReason ?? '').length).toBeGreaterThan(0)
     }
   )
 
