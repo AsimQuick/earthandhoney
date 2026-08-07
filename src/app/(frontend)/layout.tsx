@@ -18,6 +18,12 @@
  * updated-by: dev-team
  * related-story: US-23
  * related-ac: 23.2
+ * updated-by: dev-team
+ * related-story: US-24
+ * related-ac: 24.4
+ * updated-by: dev-team
+ * related-story: US-24
+ * related-ac: 24.5
  * ---
  */
 import type { Metadata } from "next";
@@ -25,6 +31,8 @@ import { Rubik } from "next/font/google";
 import { preload } from "react-dom";
 import "./globals.css";
 import { PublicShell } from "@/components/layout/PublicShell";
+import { getStudioProfile } from "@/lib/getStudioProfile";
+import { buildStudioStructuredData } from "@/lib/studioStructuredData";
 
 const rubik = Rubik({
   variable: "--font-rubik",
@@ -51,29 +59,54 @@ function preloadPrimaryFontWeights() {
   });
 }
 
-export const metadata: Metadata = {
-  title: {
-    default: "Earth & Honey Photography",
-    template: "%s | Earth & Honey Photography",
-  },
-  description:
-    "Earth & Honey Photography is a premium, gallery-first photography studio for weddings, portraits, and events — browse our galleries and book your session.",
-  icons: {
-    icon: "/favicon.ico",
-  },
-};
+// The site title/description/social image are studio details (PRD §21.1)
+// owned by the StudioProfile global, not hard-coded here (AC-24.4/24.5) —
+// generateMetadata is the async Next.js hook that lets a route's <head>
+// depend on that global. No `keywords` field is read or set here — PRD
+// §21.2 forbids a meta-keywords surface anywhere in the product (AC-24.5).
+export async function generateMetadata(): Promise<Metadata> {
+  const studioProfile = await getStudioProfile();
 
-export default function RootLayout({
+  return {
+    title: {
+      default: studioProfile.businessName,
+      template: studioProfile.defaultTitlePattern,
+    },
+    description: studioProfile.defaultMetaDescription,
+    openGraph: studioProfile.defaultSocialImage
+      ? {
+          images: [{ url: studioProfile.defaultSocialImage.url }],
+        }
+      : undefined,
+    icons: {
+      icon: "/favicon.ico",
+    },
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   preloadPrimaryFontWeights();
+  const studioProfile = await getStudioProfile();
+  // The JSON-LD LocalBusiness/ProfessionalService block (AC-24.5) is built
+  // from the same StudioProfile fields as the <head> above. It renders as a
+  // plain <script> in the document body — structured data does not need to
+  // live in <head> to be read by crawlers, and the Metadata API has no field
+  // for it.
+  const structuredData = buildStudioStructuredData(studioProfile);
 
   return (
     <html lang="en" className={`${rubik.variable} h-full antialiased`}>
       <body className="min-h-full">
-        <PublicShell>{children}</PublicShell>
+        <script
+          type="application/ld+json"
+          data-testid="studio-structured-data"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <PublicShell businessName={studioProfile.businessName}>{children}</PublicShell>
       </body>
     </html>
   );

@@ -27,7 +27,7 @@ const SHELL_PATH = 'src/components/layout/PublicShell.tsx'
 
 describe('AC-8.1: VerticalMenu renders the photobuddy left-menu chrome', () => {
   it('renders the logo, linking home', () => {
-    render(<VerticalMenu />)
+    render(<VerticalMenu businessName="Earth & Honey Studios" />)
 
     const menu = within(screen.getByTestId('vertical-menu'))
     const logo = menu.getByRole('img')
@@ -116,7 +116,7 @@ describe("AC-8.1: the (frontend) layout's shell composes the vertical menu, page
     const src = read(LAYOUT_PATH)
 
     expect(src).toMatch(/from ["']@\/components\/layout\/PublicShell["']/)
-    expect(src).toMatch(/<PublicShell>\{children\}<\/PublicShell>/)
+    expect(src).toMatch(/<PublicShell\s+businessName=\{studioProfile\.businessName\}>\{children\}<\/PublicShell>/)
   })
 
   it('PublicShell composes the VerticalMenu and SiteFooter chrome components', () => {
@@ -124,7 +124,7 @@ describe("AC-8.1: the (frontend) layout's shell composes the vertical menu, page
 
     expect(src).toMatch(/from ['"]\.\/VerticalMenu['"]/)
     expect(src).toMatch(/from ['"]\.\/SiteFooter['"]/)
-    expect(src).toMatch(/<VerticalMenu\s*\/>/)
+    expect(src).toMatch(/<VerticalMenu\s+businessName=\{businessName\}\s*\/>/)
     expect(src).toMatch(/<SiteFooter\s*\/>/)
   })
 })

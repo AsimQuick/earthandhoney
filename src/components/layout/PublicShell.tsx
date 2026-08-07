@@ -17,6 +17,9 @@
  * updated-by: dev-team
  * related-story: US-8
  * related-ac: 8.3
+ * updated-by: dev-team
+ * related-story: US-24
+ * related-ac: 24.4
  * ---
  */
 import { MobileMenuProvider } from './MobileMenuContext'
@@ -24,13 +27,20 @@ import { MobileMenuTrigger } from './MobileMenuTrigger'
 import { SiteFooter } from './SiteFooter'
 import { VerticalMenu } from './VerticalMenu'
 
-export function PublicShell({ children }: Readonly<{ children: React.ReactNode }>) {
+interface PublicShellProps {
+  children: React.ReactNode
+  // The studio's business name (StudioProfile, AC-24.4), threaded down to
+  // VerticalMenu rather than hard-coded here or in that client component.
+  businessName?: string
+}
+
+export function PublicShell({ children, businessName }: Readonly<PublicShellProps>) {
   return (
     <div className="photobuddy_fl_wrapper_all" data-testid="site-shell">
       <header className="photobuddy_fl_header" data-testid="site-header" />
       <div className="photobuddy_fl_content">
         <MobileMenuProvider>
-          <VerticalMenu />
+          <VerticalMenu businessName={businessName} />
           <div className="photobuddy_fl_content_in">
             <MobileMenuTrigger />
             {children}

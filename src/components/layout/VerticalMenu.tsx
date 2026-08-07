@@ -25,6 +25,9 @@
  * updated-by: dev-team
  * related-story: US-23
  * related-ac: 23.4
+ * updated-by: dev-team
+ * related-story: US-24
+ * related-ac: 24.4
  * ---
  */
 'use client'
@@ -33,6 +36,15 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { useMobileMenu } from './MobileMenuContext'
+
+// A generic, non-brand-specific fallback for when no `businessName` prop is
+// supplied (e.g. this component rendered standalone) — the studio's actual
+// name is a StudioProfile detail (AC-24.4), never hard-coded here.
+const FALLBACK_BUSINESS_NAME = 'the studio'
+
+interface VerticalMenuProps {
+  businessName?: string
+}
 
 const NAV_LINKS = [
   { href: '/', label: 'home' },
@@ -50,7 +62,7 @@ const SOCIAL_LINKS = [
   { href: '#', name: 'Google+', icon: 'xcon-gplus' },
 ]
 
-export function VerticalMenu() {
+export function VerticalMenu({ businessName = FALLBACK_BUSINESS_NAME }: Readonly<VerticalMenuProps>) {
   const { isOpen } = useMobileMenu()
 
   return (
@@ -67,7 +79,7 @@ export function VerticalMenu() {
           <Link href="/">
             <Image
               src="/photobuddy/img/logo.png"
-              alt="Earth &amp; Honey Photography"
+              alt={`${businessName} logo`}
               width={179}
               height={33}
               priority
@@ -93,7 +105,7 @@ export function VerticalMenu() {
           <span className="cright">
             &copy; Copyright {new Date().getFullYear()}.
             <br />
-            Designed by <span className="autor">Earth &amp; Honey</span>
+            Designed by <span className="autor">{businessName}</span>
           </span>
         </div>
         <div className="photobuddy_fl_social_icons" data-testid="social-icons">

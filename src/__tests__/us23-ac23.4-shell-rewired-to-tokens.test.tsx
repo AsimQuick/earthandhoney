@@ -13,6 +13,9 @@
  * created-by: dev-team
  * related-story: US-23
  * related-ac: 23.4
+ * updated-by: dev-team
+ * related-story: US-24
+ * related-ac: 24.4
  * ---
  */
 import { render } from '@testing-library/react'
@@ -20,7 +23,6 @@ import fs from 'fs'
 import path from 'path'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-import RootLayout from '@/app/(frontend)/layout'
 import { MobileMenuProvider } from '@/components/layout/MobileMenuContext'
 import { MobileMenuTrigger } from '@/components/layout/MobileMenuTrigger'
 import { PublicShell } from '@/components/layout/PublicShell'
@@ -96,14 +98,14 @@ describe('US-23 AC-23.4: the US-8 public shell is rewired onto the tokens', () =
 
 // --- Structural snapshot -----------------------------------------------
 //
-// Renders every one of the five files' exported component with
-// react-dom/server so the markup can be compared consistently (including
-// RootLayout, whose <html>/<body> tags can't be mounted through Testing
-// Library's own container). The `class` attribute value is normalised away
-// before snapshotting so future class-list token substitutions (the only
-// change AC-23.4 makes) never touch this snapshot — anything else (tag
-// names, nesting, ids, aria/data attributes, text) staying pinned is the
-// proof that the rewire changed parameterisation only, not structure.
+// Renders each of PublicShell/VerticalMenu/SiteFooter/MobileMenuTrigger with
+// react-dom/server so the markup can be compared consistently (RootLayout
+// itself is source-checked above instead — see that test for why). The
+// `class` attribute value is normalised away before snapshotting so future
+// class-list token substitutions (the only change AC-23.4 makes) never touch
+// this snapshot — anything else (tag names, nesting, ids, aria/data
+// attributes, text) staying pinned is the proof that the rewire changed
+// parameterisation only, not structure.
 function normalizeStructure(html: string): string {
   return html.replace(/\sclass="[^"]*"/g, '')
 }
@@ -141,13 +143,17 @@ describe('US-23 AC-23.4: rendered structure is unchanged (class-list token subst
     expect(normalizeStructure(html)).toMatchSnapshot()
   })
 
-  it('the (frontend) root layout', () => {
-    const html = renderToStaticMarkup(
-      <RootLayout>
-        <p data-testid="page-content">hello</p>
-      </RootLayout>,
-    )
-    expect(normalizeStructure(html)).toMatchSnapshot()
+  it('the (frontend) root layout composes PublicShell around its children, unchanged in structure (source-checked, not rendered)', () => {
+    // RootLayout reads the StudioProfile global via src/lib/getStudioProfile.ts
+    // (AC-24.4), which imports `payload` — an ESM-only package that breaks
+    // Jest's interop boundary when imported directly (see
+    // us3-ac3.5-galleries-api-read.test.ts) and cannot be rendered
+    // synchronously via renderToStaticMarkup. So, like every other Local API
+    // caller in this repo (see us6-ac6.2-isr-static-generation.test.ts), the
+    // composition this test cares about — PublicShell still wraps
+    // {children} — is asserted from source instead.
+    const src = read('src/app/(frontend)/layout.tsx')
+    expect(src).toMatch(/<PublicShell\s+businessName=\{studioProfile\.businessName\}>\{children\}<\/PublicShell>/)
   })
 
   it('VerticalMenu structure is identical whether the drawer is open or closed — only the class list differs', () => {
