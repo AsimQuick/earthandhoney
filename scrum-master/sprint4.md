@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/9 stories | 11/51 ACs
-**Last Updated:** 2026-08-07T02:07:08+00:00
+**Last Updated:** 2026-08-07T02:25:57+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -216,6 +216,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-23.6:** The tokens are exported in a form the Backstage / Project Room templates can consume, so both surfaces are consumers from day one as the brief requires: a generated, checked-in plain CSS custom-property file with no Tailwind or Next.js dependency, plus a short section in the token file's documentation showing how one `gallery-style-templates-baseline` variant would reference it. Generating the export is verified to be reproducible from the source tokens (regenerate and diff — an empty diff is the evidence). The fork's own templates are **not** rewired in this story.
   - Dev: implemented
 - [ ] **AC-23.7:** A guard prevents style drift from re-entering after this story closes: a lint rule or test fails when a raw hex colour, a raw `px` font-size, or an arbitrary-value Tailwind class is introduced anywhere under `src/components/` or `src/app/` outside the token source file. PRD §12.2's last requirement is "no style drift between original and newly created pages", and Pillar 3 (deterministic beauty) forbids page-level CSS editing — neither survives on convention alone.
+  - Dev: implemented
 
 **Dependencies:** US-21
 
@@ -269,6 +270,15 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - `scripts/generate-design-tokens-export.ts` — CLI wrapper (`npm run tokens:export`, added to `package.json`) that writes the generated CSS to the checked-in output path.
   - `exports/design-tokens/tokens.css` — the generated, checked-in plain CSS file (no `@theme`, no Tailwind/Next.js imports).
   - `src/__tests__/us23-ac23.6-token-export.test.ts` — 8 tests: metadata header, plain-CSS/no-framework-dependency assertions, the gallery-style-templates-baseline documentation section (and that referenced tokens actually exist …
+  AC-23.7 implemented (local checks green): Committed on `feature/US-23`.
+  
+  ## Summary
+  
+  Implemented AC-23.7's style-drift guard as three new files, no existing files touched:
+  
+  - **`src/lib/style-guard/detectStyleDrift.ts`** — shared detector: three regexes (raw hex colour, raw `px` font-size, arbitrary-value Tailwind bracket class) applied after stripping block comments, exported as `detectStyleDrift()`/`countByCategory()`.
+  - **`src/lib/style-guard/__fixtures__/us23-ac23.7-style-drift-baseline.ts`** — a checked-in ratchet baseline recording the exact per-file, per-category violation counts that already existed under `src/components/`/`src/app/` before this guard (pre-token-lockdown gallery components, the `noindex` dev demo/specimen routes, and `globals.css`'s legacy hex fallback). This lets the guard start green today without masking future drift: it can never fail on already-known debt, but fails the moment a baselined file's count grows or a brand-new file introduces any violation.
+  - **`src/__tests__/us23-ac23.7-style-drift-guard.test.ts`** — 19 tests: 7 unit tests proving the detector itself catches each category (and correctly ignores token references and comment prose) on synthetic samples, plus a real repo-wide scan co …
 
 **Tester Status:** approved
 **Tester Notes:**
