@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 7/9 stories | 46/59 ACs
-**Last Updated:** 2026-08-07T19:09:45+00:00
+**Last Updated:** 2026-08-07T19:32:36+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -682,6 +682,7 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
 - [ ] **AC-28.2:** The lock-in tests that pin the removed behaviour are removed **in the same commit as the removal that breaks them** — that is, inside AC-28.1.1 and AC-28.1.2 — never left failing and never skipped. This criterion owns the *record*, not a separate deletion pass: for each removed or trimmed test the commit message names which accepted AC it belonged to and why that AC's intent no longer applies after the pivot, because deleting a previously accepted AC's deliverable is a recorded decision, not a cleanup. The full set, which is closed: removed outright — `us3-ac3.1-galleries-collection.test.ts`, `us3-ac3.2`, `us3-ac3.3`, `us3-ac3.4`, `us3-ac3.5`, `us6-ac6.3-on-demand-revalidation.test.ts`, `us2-ac2.2-sharp-pipeline.test.ts`, `us2-ac2.3-media-variant-urls.test.ts`; trimmed in part — `us6-ac6.2-isr-static-generation.test.ts` (ISR-route assertions go, `mapPayloadGalleryToImages` coverage is relocated intact), `us19-ac19.1-media-reuse-adr.test.ts` (the dormant-Payload-Galleries block, which reads the deleted collection file), and the Payload-upload-path assertions only inside `us2-ac2.5-r2-env-config.test.ts` and `us1-ac1.4-env-config.test.ts`. A test appearing in this list that turns out not to break is left alone and the discrepancy noted; a test not in this list that does break is added to the record rather than silently deleted.
   - Dev: implemented
 - [ ] **AC-28.3:** The three orphaned environment variables `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL` and `NEXT_PUBLIC_WHATSAPP_NUMBER` — belonging to retired US-12/US-13, with no consuming code anywhere in `src/` — are removed from `.env.example`, and `us7-ac7.4-env-example-sprint2-vars.test.ts` is updated in the same change to assert `NEXT_PUBLIC_SITE_URL` only. They were retained in sprint 3 solely because that test forbade removing them. Retrospective action item 8.
+  - Dev: implemented
 - [ ] **AC-28.4:** Nothing the live stack still needs is removed. The `R2_*` variables stay in `.env.example` — the Backstage backend consumes them through `docker-compose.yml`, and only the *Payload-side* consumer is going away — as does `NEXT_PUBLIC_SITE_URL`, which `PIVOT_AUDIT.md` explicitly records as **not** orphaned. Proven by bringing the full stack up from a clean `cp .env.example .env` after the change and completing one Backstage upload.
 - [ ] **AC-28.5:** CI stays green and the coverage gate is **not** lowered to absorb the removals. If deleting tests moves global coverage, the shortfall is closed by covering live code, never by editing the threshold — the sprint-3 Definition of Done item 11 rule. The measured before/after coverage numbers are recorded on the story.
 
@@ -731,6 +732,15 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   
   **Verified now:**
   - `find`/`ls` confirms `us3-ac3.1..3 …
+  AC-28.3 implemented (local checks green): Committed on `feature/US-28`.
+  
+  **Implementation summary for AC-28.3:**
+  
+  - **`.env.example`** — removed `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL`, and `NEXT_PUBLIC_WHATSAPP_NUMBER` (and their now-orphaned comment headers), leaving `NEXT_PUBLIC_SITE_URL` in place.
+  - **`src/__tests__/us7-ac7.4-env-example-sprint2-vars.test.ts`** — rewritten to assert only `NEXT_PUBLIC_SITE_URL` in the "documented placeholder" and "valid URL" checks, and added a new `describe` block asserting the three retired vars are no longer present in `.env.example`. Test count: 12 tests (down from 25 in the original file, since the WhatsApp/email-format-specific assertions for the removed vars no longer apply).
+  - **`PIVOT_AUDIT.md`** — updated the "Orphaned configuration" table's disposition for all three vars from `Retained` to `Removed`, since `us14-ac14.2-superseded-artifacts.test.ts` independently verifies disposition-vs-reality consistency against `.env.example` (a pre-existing test on `main`, not new to this AC).
+  
+  Verified in Docker: full suite `docker compose run --rm web npm test` — 140/140 suites, 3275 passed / 7 skipped, 0 failures. Coverage with `--coverage --coverageThreshold`: 99.59% lines, 96.52% …
 
 **Tester Status:** approved
 **Tester Notes:**
