@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 1/9 stories | 6/51 ACs
-**Last Updated:** 2026-08-06T23:52:44+00:00
+**Last Updated:** 2026-08-07T00:06:35+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -132,6 +132,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-22.3:** The reopened contract-signing status is propagated to every artifact an agent may be handed, so nothing in a later sprint inherits a known-false assumption: the restored `CLAUDE.md` Contracts entry and PRD §29 both carry a dated `REOPENED` marker naming the failed element and pointing at `po-requests.md` item 7, and `SYSTEM_OWNERSHIP.md`'s Contracts row is annotated the same way. F1 and F5 receive the same treatment where the PRD's Project/Gallery and expiry language assumes otherwise. This is Reminder 15 applied to a finding rather than to a sprint file.
   - Dev: implemented
 - [ ] **AC-22.4:** The prepared-but-unsubmitted upstream defect report for the single-image download hang (F8 / UD-1) is surfaced in `po-requests.md` as an explicit human action item: it names the on-disk path of the drafted report, states that publishing it needs a human GitHub identity, and records the consequence of not filing it — the fork patch registered in `FORK_CHANGELOG.md` as droppable "when upstream fixes it" can never actually be dropped. Retrospective action item 9.
+  - Dev: implemented
 - [ ] **AC-22.5:** The F7 `/storage` permission fix survives container recreation, or is recorded as a known manual step. Either the fix is made reproducible in `docker-compose.yml` / an entrypoint so a `docker compose down -v && up` leaves the Backstage storage path writable with no hand intervention — proven by actually recreating the containers and re-running an upload — or, if that is not achievable without editing shipped upstream code, it is documented as a named manual step in `BACKSTAGE_STARTUP.md` with the symptom it produces when skipped. It has already had to be reapplied by hand once (AC-17.5.1 → AC-17.7). Retrospective action item 7.
 
 **Dependencies:** US-21
@@ -170,6 +171,15 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - `SYSTEM_OWNERSHIP.md` — Contracts row and its notes section annotated the same way, plus front matter updated to record AC-22.3.
   - `PIVOT_AUDIT.md` — the AC-17.4.1.1.3 section's PRD.md line citations were re-pointed to the new line numbers (a second re-citation note documents why), since inserting the markers shifted everything below §6.2.
   - `src/__tests__/us17-ac17.4.1.1.3-expiry-model-vs-prd.test.ts` — updated its pinned PRD.md line-nu …
+  AC-22.4 implemented (local checks green): Committed as `456b397`.
+  
+  **Implementation summary — US-22 AC-22.4**
+  
+  The deliverable was already fully drafted on disk from a prior incomplete session (uncommitted working-tree changes) — I verified it, ran the full test suite, and committed it rather than reinventing it.
+  
+  **Files changed:**
+  - `PIVOT_AUDIT.md` — new section `## AC-22.4 — the prepared-but-unsubmitted UD-1 upstream report, surfaced as a human action item`. Since `po-requests.md` is out of this AC's write scope (per the AC-14.6/AC-17.9/AC-22.2 precedent already established in this repo — implementing ACs don't hold write access to that file), this section contains the merge-ready content for the Product Owner/orchestrator to transcribe into `po-requests.md` item 16: the on-disk path of the drafted report (`.github/upstream-issues/UD-1-gallery-single-download.md`), the requirement for a human GitHub identity to publish it, the consequence of not filing it (the fork patch in `FORK_CHANGELOG.md` registered as droppable "when upstream fixes it" can never actually be dropped), and a cross-reference to `retrospective.md` action item 9.
+  - `src/__tests__/us22-ac22.4-ud1-report-surfaced.test.ts` (new) — 10 tests verifying the …
 
 **Tester Status:** approved
 **Tester Notes:**
