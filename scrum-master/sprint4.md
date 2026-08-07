@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/9 stories | 41/57 ACs
-**Last Updated:** 2026-08-07T16:24:08+00:00
+**Last Updated:** 2026-08-07T16:43:51+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -618,6 +618,7 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
 - [ ] **AC-27.4:** The static "CMS Pages" surface (impressum / privacy / terms, `adminCMS.js` + `publicCMS.js`) stays **enabled**, and a test asserts it is *not* disabled. `AC-18.5` recorded this as a deliberate scoping decision — legal/footer copy is not among the content types Payload owns, so it duplicates nothing. Encoding the decision as a test keeps a future cleanup from silently reversing it.
   - Dev: implemented
 - [ ] **AC-27.5:** Every change is additive — a new flag key, new checks, a gated panel — and no already-shipped upstream migration or migration file is modified; the `src/lib/picpeakMigrationManifest.ts` SHA-1 integrity test stays green. The deviation is recorded in `FORK_CHANGELOG.md` and `PICPEAK_PORT_LEDGER.md` with the file paths touched, and `UPSTREAM_SYNC.md` names the resulting merge-conflict risk on the next upstream sync.
+  - Dev: implemented
 
 **Dependencies:** US-21
 
@@ -651,6 +652,16 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   - **`vendor/picpeak/backend/__tests__/routes/publicQuotes.test.js`** — updated `beforeAll` to flip `quotes` on (since the flag now gates the whole router and the pre-existing token-guard tests need it enabled), and added a new `describe('quotes feature flag gate (US-27 AC-27.3)')` block with 2 tests asserting 403 `QUOTES_DISABLED` on both `GET /:token` and `POST /:token/respond` when the flag is off.
   - **`vendor/picpeak/backend/__tests__/routes/nativeBillingFlags.test.js`** (new, 5 tests) — on …
   AC-27.4 implemented (local checks green): The Docker-based backend route tests (85 tests across 8 suites, including the new AC-27.4 suite) all pass. I'm now waiting on the full root `npm test` run inside Docker to confirm no regressions elsewhere before committing — I'll follow up once it completes.
+  AC-27.5 implemented (local checks green): Committed on `feature/US-27` (not pushed, per instructions).
+  
+  **Implementation summary — AC-27.5**
+  
+  - `FORK_CHANGELOG.md` — added a `2026-08-07 — deviation` entry consolidating AC-27.1–27.4's publicSite flag-gating change, listing all 14 files touched, and stating no migration file was touched.
+  - `PICPEAK_PORT_LEDGER.md` — added new §5 "US-27 AC-27.5" with a table of the same file paths and their changes, cross-referencing the changelog entry.
+  - `UPSTREAM_SYNC.md` — added 5 new rows to §2's conflict-prone-files table for `adminFeatureFlags.js`, `publicSiteService.js`, `server.js`, `publicQuotes.js`, `CMSPage.tsx`, `FeatureFlagsContext.tsx`, `featureFlags.service.ts`, naming the merge-conflict risk for the next upstream sync.
+  - New test: `src/__tests__/us27-ac27.5-additive-deviation-recorded.test.ts` (11 tests) — asserts none of the touched files are under `vendor/picpeak/backend/migrations/`, the changelog entry validates via `validateChangelogEntry`, `verifyVendoredMigrations()` (the manifest SHA-1 integrity check) stays green, and all three docs name the same file paths.
+  
+  Verified full suite: 146 suites / 3388 tests passing, no skips introduced, coverage 99.6% statements (well ab …
 
 **Tester Status:** approved
 **Tester Notes:**
