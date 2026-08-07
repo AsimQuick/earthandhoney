@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/9 stories | 11/51 ACs
-**Last Updated:** 2026-08-07T01:56:34+00:00
+**Last Updated:** 2026-08-07T02:07:08+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -214,6 +214,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-23.5:** An internal `noindex` token-specimen route renders the full set for human confirmation: the type scale at every step with both families, the palette with its computed contrast ratios shown, the spacing scale, radii, gallery gaps, and each overlay/vignette preset over a sample photograph. The route is recorded in `po-requests.md` as awaiting human sign-off, because the confirmed brief is explicit that it is direction, not a locked visual spec, and that real mockups must be confirmed before broad rollout.
   - Dev: implemented
 - [ ] **AC-23.6:** The tokens are exported in a form the Backstage / Project Room templates can consume, so both surfaces are consumers from day one as the brief requires: a generated, checked-in plain CSS custom-property file with no Tailwind or Next.js dependency, plus a short section in the token file's documentation showing how one `gallery-style-templates-baseline` variant would reference it. Generating the export is verified to be reproducible from the source tokens (regenerate and diff — an empty diff is the evidence). The fork's own templates are **not** rewired in this story.
+  - Dev: implemented
 - [ ] **AC-23.7:** A guard prevents style drift from re-entering after this story closes: a lint rule or test fails when a raw hex colour, a raw `px` font-size, or an arbitrary-value Tailwind class is introduced anywhere under `src/components/` or `src/app/` outside the token source file. PRD §12.2's last requirement is "no style drift between original and newly created pages", and Pillar 3 (deterministic beauty) forbids page-level CSS editing — neither survives on convention alone.
 
 **Dependencies:** US-21
@@ -260,6 +261,14 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - `src/lib/designTokenSpecimen.ts` (new) — parses `src/styles/tokens.css` (the AC-23.1 source of truth) directly, computing WCAG contrast ratios with the same algorithm AC-23.3's gate uses, so the specimen never shows hand-copied/stale values.
   - `src/app/(frontend)/dev/token-specimen/page.tsx` (new) — the internal `noindex` route (`robots: { index: false, follow: false }`) rendering: type scale at every step in both Fraunces and Inter, the palette with a computed contrast-ratio table (ink × surface × usage × ratio × AA pass/fail), the spacing scale, radii, gallery gaps, and every overlay/vignette preset composited over a sample photograph. Not linked from public navigation. Reworded one internal comment (was `dev/gallery-demo`, now paraphrased) after discovering it tripped AC-4.4's link-scan test, which naively greps the whole `src/app` tree for that literal string.
   - `src/__tests__/us23-a …
+  AC-23.6 implemented (local checks green): Committed on `feature/US-23`.
+  
+  **Summary — AC-23.6 implemented:**
+  
+  - `src/lib/tokenExport.ts` — pure `generateTokenExportCss()` function that parses `src/styles/tokens.css` (reusing `parseCustomProperties` from `designTokenSpecimen.ts`) and emits a plain `:root { --token: value; }` CSS file, grouped by the same 12 PRD §12.2 categories, excluding `--usable-pair-*` (AC-23.3 contrast metadata, not a consumable design value). The generated header documents usage and includes a concrete example of how `gallery-style-templates-baseline/elegant-dark.css`'s `.gallery-page` custom properties (`--gallery-bg`, `--gallery-text`, etc.) would source their values via `var(--color-*)`.
+  - `scripts/generate-design-tokens-export.ts` — CLI wrapper (`npm run tokens:export`, added to `package.json`) that writes the generated CSS to the checked-in output path.
+  - `exports/design-tokens/tokens.css` — the generated, checked-in plain CSS file (no `@theme`, no Tailwind/Next.js imports).
+  - `src/__tests__/us23-ac23.6-token-export.test.ts` — 8 tests: metadata header, plain-CSS/no-framework-dependency assertions, the gallery-style-templates-baseline documentation section (and that referenced tokens actually exist …
 
 **Tester Status:** approved
 **Tester Notes:**
