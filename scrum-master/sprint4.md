@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 4/9 stories | 23/51 ACs
-**Last Updated:** 2026-08-07T06:36:24+00:00
+**Last Updated:** 2026-08-07T07:09:24+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -386,6 +386,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-25.5:** An internal `noindex` route renders one and the same Backstage gallery through two placements — one `masonry`, one `slideshow` — proving PRD §14's core claim that layout is a placement concern and one gallery can appear in different layouts without the underlying gallery changing. Masonry preserves every received aspect ratio and the photographer's order, never crops or stretches, and reserves aspect-ratio space before load (PRD §15.1); slideshow preloads only current and next (PRD §15.2). A test asserts zero image-caused layout shift on the masonry route; a second test asserts the masonry route's rendered image order and each image's rendered aspect ratio match the photo list returned by `GET /api/gallery/:slug/photos` exactly, with no `object-fit: cover`/crop applied; a third test asserts the slideshow route's network requests show only the current and next image's assets loaded, never the full set.
   - Dev: implemented
 - [ ] **AC-25.6:** Failure behaviour is defined and proven: an unreachable Backstage, a timeout, or a 404 slug renders the page with a placeholder for that placement and a logged error — never a 500 on a public page, and never a partially rendered gallery presented as complete. Tested by pointing a placement at a slug that does not exist and by simulating a Backstage timeout.
+  - Dev: implemented
 
 **Dependencies:** US-21, US-23
 
@@ -437,6 +438,15 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - `src/components/gallery/GallerySlideshowLayout.tsx` (new) — PRD §15.2 slideshow layout. Renders exactly two `next/image` elements at any time (current + next, the next one hidden via `sr-only`/`aria-hidden` for preload), swapping on navigation so a gallery of any size only ever has two assets in the DOM.
   - `src/app/(frontend)/dev/gallery-placement-demo/page.tsx` (new) — internal `noindex` route (`robots: { index: false, follow: false }`) that fetches one Backstage gallery once via `fetchPublishedGallery`/`mapBackstageGalleryToImages` and renders the same `images` array through both layouts side by side.
   - `src/__tests__/us25-ac25.5-gallery-placement-layouts.test.tsx` (new, 16 tests) — covers all three required assertions: zero-la …
+  AC-25.6 implemented (local checks green): Committed to `feature/US-25` (not pushed, per instructions).
+  
+  ## Summary — AC-25.6 implemented
+  
+  **New files:**
+  - `src/lib/logger.ts` — minimal structured `logError()` wrapping `console.error` with one JSON line; never throws even if fields aren't serializable.
+  - `src/lib/backstageGalleryPlacement.ts` — `resolveGalleryPlacementImages(slug, opts)`, the single chokepoint that turns a Flow A outcome (`fetchPublishedGallery` from AC-25.2) into `{ status: 'ok', images }` or `{ status: 'unavailable', reason }`. Logs exactly once (slug, Flow A step, reason, status, error) on any failure — network error, timeout, 404/`not_found`, redirect, unauthorized, unexpected status — and never throws or leaks a partial image list (Flow A already short-circuits on the first failed step).
+  - `src/components/gallery/GalleryUnavailablePlaceholder.tsx` — the placeholder a placement renders on failure, deliberately distinct from the layouts' own "no images" empty state (`role="status"`, `data-testid="gallery-placement-unavailable"`).
+  - `src/__tests__/us25-ac25.6-gallery-placement-failure-handling.test.tsx` — 12 tests covering: success path (no log), 404/`not_found`, simulated timeout, network error, a mid-Fl …
 
 **Tester Status:** approved
 **Tester Notes:**
