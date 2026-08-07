@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/9 stories | 11/51 ACs
-**Last Updated:** 2026-08-07T01:35:22+00:00
+**Last Updated:** 2026-08-07T01:56:34+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -212,6 +212,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-23.4:** The existing US-8 public shell is rewired onto the tokens: `src/components/layout/PublicShell.tsx`, `VerticalMenu.tsx`, `SiteFooter.tsx`, `MobileMenuTrigger.tsx` and `src/app/(frontend)/layout.tsx` use only token references. A test asserts no raw hex colour, no raw `px` font-size, and no arbitrary Tailwind bracket value remains in those five files. Rendered output is unchanged in structure — this is a re-parameterisation, not a redesign — proven by a DOM/structural snapshot of each of the five files' rendered output taken before and after the rewire, asserted identical (class-list token substitutions aside).
   - Dev: implemented
 - [ ] **AC-23.5:** An internal `noindex` token-specimen route renders the full set for human confirmation: the type scale at every step with both families, the palette with its computed contrast ratios shown, the spacing scale, radii, gallery gaps, and each overlay/vignette preset over a sample photograph. The route is recorded in `po-requests.md` as awaiting human sign-off, because the confirmed brief is explicit that it is direction, not a locked visual spec, and that real mockups must be confirmed before broad rollout.
+  - Dev: implemented
 - [ ] **AC-23.6:** The tokens are exported in a form the Backstage / Project Room templates can consume, so both surfaces are consumers from day one as the brief requires: a generated, checked-in plain CSS custom-property file with no Tailwind or Next.js dependency, plus a short section in the token file's documentation showing how one `gallery-style-templates-baseline` variant would reference it. Generating the export is verified to be reproducible from the source tokens (regenerate and diff — an empty diff is the evidence). The fork's own templates are **not** rewired in this story.
 - [ ] **AC-23.7:** A guard prevents style drift from re-entering after this story closes: a lint rule or test fails when a raw hex colour, a raw `px` font-size, or an arbitrary-value Tailwind class is introduced anywhere under `src/components/` or `src/app/` outside the token source file. PRD §12.2's last requirement is "no style drift between original and newly created pages", and Pillar 3 (deterministic beauty) forbids page-level CSS editing — neither survives on convention alone.
 
@@ -249,6 +250,16 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - **`src/components/layout/VerticalMenu.tsx`** — dropped the hardcoded `duration-300 ease-in-out` Tailwind utility classes from the drawer's transition (kept `transition-transform`). Updated its metadata header.
   - **`src/app/(frontend)/globals.css`** — added a `.photobuddy_fl_vertical_menu` rule sourcing `transition-duration`/`transition-timing-function` from the AC-23.1 animation-timing tokens (`--motion-duration-base`, `--motion-ease-standard`). Updated its metadata header.
   - **`src/__tests__/us23-ac23.4-shell-rewired-to-tokens.test.tsx`** (new, 25 tests) — asserts no raw hex colour, no raw `px` font-size, and no arbitrary Tailwind bracket value across all five files named in the AC (`PublicShell.tsx`, `VerticalMenu.tsx`, `SiteFooter.tsx`, `MobileMenuTrigger.tsx`, `(frontend)/layout.tsx`); asserts the duration/easing classes are gone and the token-driven CSS rule exists; and renders each file's component tree via `react-dom/server` (including the root layout's full `<html>/<body>` document, which Testing Library can't mount) into a class-list-normalised structural snapshot, proving the rewire changed only the clas …
+  AC-23.5 implemented (local checks green): Committed as `22f6471` on `feature/US-23`.
+  
+  **Implementation summary — AC-23.5**
+  
+  The deliverable was already fully drafted on disk from a prior session (uncommitted working-tree files). I verified it, fixed one cross-AC regression it caused, ran the full suite, and committed.
+  
+  **Files changed:**
+  - `src/lib/designTokenSpecimen.ts` (new) — parses `src/styles/tokens.css` (the AC-23.1 source of truth) directly, computing WCAG contrast ratios with the same algorithm AC-23.3's gate uses, so the specimen never shows hand-copied/stale values.
+  - `src/app/(frontend)/dev/token-specimen/page.tsx` (new) — the internal `noindex` route (`robots: { index: false, follow: false }`) rendering: type scale at every step in both Fraunces and Inter, the palette with a computed contrast-ratio table (ink × surface × usage × ratio × AA pass/fail), the spacing scale, radii, gallery gaps, and every overlay/vignette preset composited over a sample photograph. Not linked from public navigation. Reworded one internal comment (was `dev/gallery-demo`, now paraphrased) after discovering it tripped AC-4.4's link-scan test, which naively greps the whole `src/app` tree for that literal string.
+  - `src/__tests__/us23-a …
 
 **Tester Status:** approved
 **Tester Notes:**
