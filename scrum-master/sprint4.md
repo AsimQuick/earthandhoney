@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/9 stories | 41/57 ACs
-**Last Updated:** 2026-08-07T16:08:16+00:00
+**Last Updated:** 2026-08-07T16:24:08+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -616,6 +616,7 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
 - [ ] **AC-27.3:** The native quote / invoice / tax-report subsystem is confirmed off by default rather than assumed off: `adminQuotes.js`, `publicQuotes.js` (`quotes` flag), `adminInvoices.js`, `adminTaxReport.js` and `adminBusinessProfile.js` (`bills` flag) each have their default asserted `false`, and at least one flag-gated route per flag is shown returning 403 with the flag off. The Ledger Rule puts these records in headless Invoice Ninja; a second native billing surface is a duplicate ledger, and PRD §35.1 requires there be none.
   - Dev: implemented
 - [ ] **AC-27.4:** The static "CMS Pages" surface (impressum / privacy / terms, `adminCMS.js` + `publicCMS.js`) stays **enabled**, and a test asserts it is *not* disabled. `AC-18.5` recorded this as a deliberate scoping decision — legal/footer copy is not among the content types Payload owns, so it duplicates nothing. Encoding the decision as a test keeps a future cleanup from silently reversing it.
+  - Dev: implemented
 - [ ] **AC-27.5:** Every change is additive — a new flag key, new checks, a gated panel — and no already-shipped upstream migration or migration file is modified; the `src/lib/picpeakMigrationManifest.ts` SHA-1 integrity test stays green. The deviation is recorded in `FORK_CHANGELOG.md` and `PICPEAK_PORT_LEDGER.md` with the file paths touched, and `UPSTREAM_SYNC.md` names the resulting merge-conflict risk on the next upstream sync.
 
 **Dependencies:** US-21
@@ -649,6 +650,7 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   - **`vendor/picpeak/backend/src/routes/publicQuotes.js`** — added `requireQuotesFlag` middleware (mirrors `adminQuotes.js`'s existing gate exactly: checks `feature_flags.quotes`, returns `403 { error, code: 'QUOTES_DISABLED' }` when off), applied to the whole router via `router.use()`. This closes a real gap found while verifying the AC: `customerAccountsService.ensureCustomerFeatureEnabled`'s comment claims the global `quotes` toggle "is checked at the route layer," but `publicQuotes.js` never actually checked it — an already-issued token still let a customer view/accept/decline a quote with `quotes` globally off.
   - **`vendor/picpeak/backend/__tests__/routes/publicQuotes.test.js`** — updated `beforeAll` to flip `quotes` on (since the flag now gates the whole router and the pre-existing token-guard tests need it enabled), and added a new `describe('quotes feature flag gate (US-27 AC-27.3)')` block with 2 tests asserting 403 `QUOTES_DISABLED` on both `GET /:token` and `POST /:token/respond` when the flag is off.
   - **`vendor/picpeak/backend/__tests__/routes/nativeBillingFlags.test.js`** (new, 5 tests) — on …
+  AC-27.4 implemented (local checks green): The Docker-based backend route tests (85 tests across 8 suites, including the new AC-27.4 suite) all pass. I'm now waiting on the full root `npm test` run inside Docker to confirm no regressions elsewhere before committing — I'll follow up once it completes.
 
 **Tester Status:** approved
 **Tester Notes:**
