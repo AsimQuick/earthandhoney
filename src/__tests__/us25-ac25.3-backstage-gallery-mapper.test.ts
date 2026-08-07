@@ -147,11 +147,14 @@ describe('AC-25.3: no second gallery-rendering component set is introduced', () 
   // GalleryImage[] shape this mapper produces through the same
   // galleryImageLoader/NavigationControls/useSwipeNavigation building
   // blocks — a placement concern on top of the existing renderer, not a
-  // competing rendering system.
+  // competing rendering system. AC-25.6 adds GalleryUnavailablePlaceholder.tsx
+  // — the failure-state placeholder a placement renders in place of a
+  // layout, not a second way to render a successfully-fetched gallery.
   const AUDITED_FILES = [
     'GalleryEngine.tsx',
     'GalleryMasonryLayout.tsx',
     'GallerySlideshowLayout.tsx',
+    'GalleryUnavailablePlaceholder.tsx',
     'MainImageDisplay.tsx',
     'ThumbnailStrip.tsx',
     'ThumbnailDrawer.tsx',

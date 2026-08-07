@@ -17,15 +17,17 @@
  * created-by: dev-team
  * related-story: US-25
  * related-ac: 25.5
+ * updated-by: dev-team
+ * related-story: US-25
+ * related-ac: 25.6
  * ---
  */
 import type { Metadata } from 'next'
 
-import { mapBackstageGalleryToImages } from '@/components/gallery/backstageGalleryMapper'
 import { GalleryMasonryLayout } from '@/components/gallery/GalleryMasonryLayout'
 import { GallerySlideshowLayout } from '@/components/gallery/GallerySlideshowLayout'
-import type { GalleryImage } from '@/components/gallery/types'
-import { fetchPublishedGallery } from '@/lib/backstageClient'
+import { GalleryUnavailablePlaceholder } from '@/components/gallery/GalleryUnavailablePlaceholder'
+import { resolveGalleryPlacementImages } from '@/lib/backstageGalleryPlacement'
 
 // Internal-only: excluded from search indexing since this route is not part
 // of the public site.
@@ -40,13 +42,13 @@ export const metadata: Metadata = {
 // seed fixture can never drift apart.
 export const PLACEMENT_DEMO_GALLERY_SLUG = 'us-25-ac-25.5-placement-demo'
 
-async function getPlacementDemoImages(): Promise<GalleryImage[]> {
-  const outcome = await fetchPublishedGallery(PLACEMENT_DEMO_GALLERY_SLUG)
-  return outcome.ok ? mapBackstageGalleryToImages(outcome.photos) : []
-}
-
 export default async function GalleryPlacementDemoPage() {
-  const images = await getPlacementDemoImages()
+  // AC-25.6: on an unreachable Backstage, a timeout, or a 404 slug, this
+  // resolves to `{ status: 'unavailable' }` — logged once inside
+  // resolveGalleryPlacementImages — rather than throwing or handing back an
+  // empty image list indistinguishable from a real zero-photo gallery.
+  const result = await resolveGalleryPlacementImages(PLACEMENT_DEMO_GALLERY_SLUG)
+  const images = result.status === 'ok' ? result.images : null
 
   return (
     <main className="flex flex-col gap-16 py-8">
@@ -66,7 +68,7 @@ export default async function GalleryPlacementDemoPage() {
         <h2 id="masonry-placement-heading" className="pb-4 text-2xl font-normal tracking-[3px] uppercase">
           Masonry placement
         </h2>
-        <GalleryMasonryLayout images={images} />
+        {images ? <GalleryMasonryLayout images={images} /> : <GalleryUnavailablePlaceholder />}
       </section>
 
       <section
@@ -77,7 +79,7 @@ export default async function GalleryPlacementDemoPage() {
         <h2 id="slideshow-placement-heading" className="px-8 pb-4 text-2xl font-normal tracking-[3px] uppercase">
           Slideshow placement
         </h2>
-        <GallerySlideshowLayout images={images} />
+        {images ? <GallerySlideshowLayout images={images} /> : <GalleryUnavailablePlaceholder />}
       </section>
     </main>
   )

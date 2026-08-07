@@ -257,7 +257,7 @@ describe('AC-25.5: the internal demo route renders the same fetched gallery thro
 
     render(await GalleryPlacementDemoPage())
 
-    expect(fetchPublishedGalleryMock).toHaveBeenCalledWith(PLACEMENT_DEMO_GALLERY_SLUG)
+    expect(fetchPublishedGalleryMock).toHaveBeenCalledWith(PLACEMENT_DEMO_GALLERY_SLUG, {})
 
     const masonrySection = within(screen.getByTestId('masonry-placement-demo'))
     const slideshowSection = within(screen.getByTestId('slideshow-placement-demo'))
