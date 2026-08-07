@@ -12,10 +12,14 @@
  * updated-by: dev-team
  * related-story: US-23
  * related-ac: 23.1
+ * updated-by: dev-team
+ * related-story: US-23
+ * related-ac: 23.2
  * ---
  */
 @import "tailwindcss";
 @import "../../styles/tokens.css";
+@import "../../styles/fonts.css";
 
 /*
  * Color tokens match the hex values used throughout
