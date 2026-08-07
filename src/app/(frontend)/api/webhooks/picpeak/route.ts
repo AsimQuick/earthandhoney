@@ -38,6 +38,22 @@
  *          static segment (`/api/webhooks/picpeak`) ahead of a sibling
  *          catch-all (`/api/[...slug]`) in a different route group, since
  *          route groups don't affect the resolved URL.
+ *          AC-26.5 — a duplicate or replayed delivery (Backstage's own
+ *          5-attempt retry, or a manual replay from the admin deliveries
+ *          page) must produce one revalidation and no error, not one per
+ *          attempt. The `X-PicPeak-Delivery` id header
+ *          (`webhookDeliveryWorker.js`'s `DELIVERY_HEADER`) is claimed via
+ *          `picpeakWebhookDeliveryDedup.ts`'s `claimWebhookDelivery` before
+ *          the revalidation work is queued; a second delivery of the same
+ *          id still gets a 2xx response, it just claims `false` and skips
+ *          queuing the work again. A dropped delivery (Backstage gives up
+ *          after its 5th attempt, or the receiver was down for all of them)
+ *          is bounded, not unbounded staleness: every gallery-bearing route
+ *          this receiver's slug lookup can reach declares the same
+ *          60-second `revalidate` ISR cap PAYLOAD_PICPEAK_API_CONTRACT.md's
+ *          "What the Frontstage is allowed to cache" section commits to, so
+ *          Next.js re-renders it from Backstage on the next request past
+ *          that cap regardless of whether a webhook ever arrived.
  * created-by: dev-team
  * related-story: US-26
  * related-ac: 26.1
@@ -47,6 +63,9 @@
  * updated-by: dev-team
  * related-story: US-26
  * related-ac: 26.3
+ * updated-by: dev-team
+ * related-story: US-26
+ * related-ac: 26.5
  * ---
  */
 
@@ -54,9 +73,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { hasGalleryPlacementForSlug } from '@/lib/galleryPlacementLookup'
 import { getGalleryBearingPathsForSlug } from '@/lib/galleryRevalidation'
 import { verifyPicPeakWebhookSignature } from '@/lib/picpeakWebhookAuth'
+import { claimWebhookDelivery } from '@/lib/picpeakWebhookDeliveryDedup'
 import { isHandledPicPeakWebhookEvent, parsePicPeakWebhookEvent } from '@/lib/picpeakWebhookEvent'
 
 const SIGNATURE_HEADER = 'x-picpeak-signature'
+const DELIVERY_HEADER = 'x-picpeak-delivery'
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const rawBody = await request.text()
@@ -68,14 +89,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const event = parsePicPeakWebhookEvent(rawBody)
+  const deliveryId = request.headers.get(DELIVERY_HEADER)
 
   // A fixed, documented event type this receiver deliberately doesn't act
   // on (e.g. `event.archived`) — or a body this receiver can't make sense
   // of — is accepted and ignored, never treated as an error.
   if (event && isHandledPicPeakWebhookEvent(event.type) && event.gallerySlug) {
-    // AC-26.3: queued, not awaited — see the file header. The response
-    // below is returned regardless of how long this takes.
-    void queueRevalidationForSlug(event.gallerySlug)
+    // AC-26.5: a delivery id already claimed (a retry or replay of the same
+    // delivery) skips queuing a second revalidation — the response below is
+    // still 200, just with nothing new queued.
+    if (claimWebhookDelivery(deliveryId)) {
+      // AC-26.3: queued, not awaited — see the file header. The response
+      // below is returned regardless of how long this takes.
+      void queueRevalidationForSlug(event.gallerySlug)
+    }
   }
 
   return NextResponse.json({ received: true }, { status: 200 })

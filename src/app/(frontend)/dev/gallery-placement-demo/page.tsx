@@ -14,6 +14,14 @@
  *          Not linked from public navigation, not a public marketing page;
  *          excluded from search indexing like every other route under
  *          src/app/(frontend)/dev/.
+ *          AC-26.5 — `export const revalidate` is set to the same
+ *          60-second safety-net cap PAYLOAD_PICPEAK_API_CONTRACT.md commits
+ *          to (and gallery-webhook-proof/page.tsx already carries): this
+ *          route is one of the two gallery-bearing routes
+ *          `getGalleryBearingPathsForSlug` can resolve a webhook delivery
+ *          to, so a dropped/failed delivery for *this* slug must still
+ *          self-heal within the same bound, not stay stale indefinitely
+ *          just because this route predates that convention.
  * created-by: dev-team
  * related-story: US-25
  * related-ac: 25.5
@@ -23,6 +31,9 @@
  * updated-by: dev-team
  * related-story: US-26
  * related-ac: 26.2
+ * updated-by: dev-team
+ * related-story: US-26
+ * related-ac: 26.5
  * ---
  */
 import type { Metadata } from 'next'
@@ -38,6 +49,10 @@ import { PLACEMENT_DEMO_GALLERY_SLUG } from '@/lib/galleryRevalidation'
 // src/lib/galleryRevalidation.ts to be the single source of truth — keep
 // working unchanged.
 export { PLACEMENT_DEMO_GALLERY_SLUG }
+
+// The contract's own safety-net cap (row 5) — see the file header. Bounds
+// this route's staleness even when a webhook delivery for it is dropped.
+export const revalidate = 60
 
 // Internal-only: excluded from search indexing since this route is not part
 // of the public site.
