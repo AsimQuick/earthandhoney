@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 5/9 stories | 29/57 ACs
-**Last Updated:** 2026-08-07T14:20:45+00:00
+**Last Updated:** 2026-08-07T14:35:46+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -495,6 +495,7 @@ Fixed scope, so this stays a bounded choice rather than a search: at the pinned 
 Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two places — `routes/adminPhotos.js:694` on the single-photo delete path, and `routes/adminPhotos.js:828` once per row on the bulk-delete path. The single-photo path is the one this criterion needs; no search is required. Confirm the subscription registered in AC-26.4.1.1 lists `photo.deleted` in its `events` array.
   - Dev: implemented
 - [ ] **AC-26.5:** Duplicate and replayed deliveries are idempotent — the same delivery id processed twice produces one revalidation and no error — and a **dropped** delivery is bounded: with the webhook receiver stopped, a changed gallery page is shown to become correct within the 60-second safety-net cap the contract already commits to, so a lost webhook degrades staleness rather than breaking correctness. Contract row 5's five-attempt-then-`failed` retry policy is recorded as the upstream behaviour being relied on.
+  - Dev: implemented
 - [ ] **AC-26.6:** The webhook shared secret and receiver URL are documented in `.env.example` with placeholder values and a per-variable comment, matching the sprint-3 convention, and repository secret names match the variable names one-to-one. No secret value is committed. `.env.example` stays authoritative (Reminder 6).
 
 **Dependencies:** US-25
@@ -584,6 +585,17 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   **Files changed:**
   - `scripts/ac26.4.3-live-proof.sh` (new, executable) — deletes through the fork's single-photo delete route (`DELETE /api/admin/photos/:eventId/photos/:photoId`, `adminPhotos.js:632`, firing `photo.deleted` at `adminPhotos.js:694`, distinct from the bulk-delete call site at `adminPhotos.js:828`). Resolves its delete target dynamically (lowest-id photo still present) rather than hardcoding ids, polls the enqueued `webhook_deliveries` row to `success` (delete fires the event synchronously but the delivery worker itself is async), then polls the served `/dev/gallery-webhook-proof` page. Supports `proof`/`reproduce`/`all` args, mirroring `ac26.4.2-live-proof.sh`'s structure.
   - `WEBHOOK_LIVE_PROOF.md` — new `## (g)` section recording the live run: fixed-scope line citations verified against the pinned fork, the subscription's `events` array confirmed to list `photo.deleted`, both runs' real command output (delete photo 19 → page `photos=1`; delete photo 20 → page `photos=0`), delivery list+detail read-back for both deliveries (ids 57, 58), and the served page confirmed to no longer carry e …
+  AC-26.5 implemented (local checks green): Committed on `feature/US-26`.
+  
+  ## Summary
+  
+  **AC-26.5** implemented — webhook delivery idempotency + bounded dropped-delivery staleness.
+  
+  **Files changed:**
+  - `src/lib/picpeakWebhookDeliveryDedup.ts` (new) — `claimWebhookDelivery(deliveryId)`: synchronous check-and-mark primitive keyed on the `X-PicPeak-Delivery` header, `true` on first claim, `false` on every repeat. No id → always `true` (nothing to dedupe). Bounded to 500 tracked ids with oldest-first eviction.
+  - `src/app/(frontend)/api/webhooks/picpeak/route.ts` — extracts `x-picpeak-delivery`, gates `queueRevalidationForSlug` on `claimWebhookDelivery`, so a replayed delivery still returns 2xx but skips re-queuing work. Header metadata updated for AC-26.5.
+  - `src/app/(frontend)/dev/gallery-placement-demo/page.tsx` — added the missing `export const revalidate = 60`. This route is one of the two gallery-bearing routes `getGalleryBearingPathsForSlug` can resolve to, and it predated the 60s-cap convention established later in AC-26.4.1 — without it, the bounded-staleness guarantee wasn't actually true for this route.
+  - `src/__tests__/us26-ac26.5-webhook-idempotent-dropped-delivery.test.ts` (new, 17 tests) — dedup primitive unit test …
 
 **Tester Status:** approved
 **Tester Notes:**
