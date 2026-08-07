@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/9 stories | 18/51 ACs
-**Last Updated:** 2026-08-07T04:05:32+00:00
+**Last Updated:** 2026-08-07T04:17:19+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -299,6 +299,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-24.4:** No studio detail remains hard-coded in the repository. The US-8 shell, footer, and route metadata read their studio strings from `StudioProfile`, and a test asserts the previously hard-coded studio strings no longer appear as literals anywhere under `src/` outside test fixtures. PRD §21.1's requirement is a single owner, "no studio detail scattered through code".
   - Dev: implemented
 - [ ] **AC-24.5:** `StudioProfile` populates real output, not just a settings screen: the public route's `<title>` is produced from the default title pattern, its meta description and Open Graph image come from the global, and a JSON-LD `LocalBusiness`/`ProfessionalService` block is emitted from the same fields. A test asserts the rendered head and the structured-data block change when the global changes. No meta-keywords field is created (PRD §21.2).
+  - Dev: implemented
 
 **Dependencies:** US-21, US-23
 
@@ -352,6 +353,17 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   | `src/app/(frontend)/page.tsx` | Homepage placeholder no longer renders a studio literal. |
   | `src/globals/StudioProfile.ts` | `defaultMetaDescription` now seeds the description copy — the single owner. |
   | `src/__tests__/us24-ac24.4-… …
+  AC-24.5 implemented (local checks green): Committed as `7b04b8c` on `feature/US-24`.
+  
+  ## Summary
+  
+  **AC-24.5** — StudioProfile now drives real rendered output, not just an admin settings screen.
+  
+  **Files changed:**
+  - `src/lib/studioStructuredData.ts` (new) — pure function `buildStudioStructuredData()` that builds a JSON-LD `LocalBusiness`/`ProfessionalService` block from a resolved `StudioProfile` (name, description, phone, email, address, service areas, social profiles, social image). Kept payload-import-free (like `payloadGalleryMapper.ts`) so it's directly unit-testable.
+  - `src/lib/getStudioProfile.ts` — extended `ResolvedStudioProfile` with `description`, `publicPhone`, `publicEmail`, `address`, `serviceAreas`, `socialProfiles`, `defaultSocialImage`; fetch now uses `depth: 1` to populate the social-image upload relation.
+  - `src/app/(frontend)/layout.tsx` — `generateMetadata()` now sets `openGraph.images` from `defaultSocialImage`; `RootLayout` renders a `<script type="application/ld+json">` built by `buildStudioStructuredData()`. No `keywords` field is read or set anywhere.
+  - `src/__tests__/us24-ac24.5-studio-profile-seo-output.test.tsx` (new, 15 tests) — unit tests for the JSON-LD builder (including that its output cha …
 
 **Tester Status:** approved
 **Tester Notes:**
