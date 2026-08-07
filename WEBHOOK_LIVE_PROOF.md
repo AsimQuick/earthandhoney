@@ -634,3 +634,182 @@ route exists). The recovery is:
    both galleries as fresh drafts (new ids, same slugs) and detects the
    existing Payload `gallery-placements` documents and webhook subscription
    rather than duplicating either.
+
+### (e)(ii) AC-26.4.1.3.2 — publishing the first draft gallery, proven end to end in one run
+
+Using the harness (a)-(c) and the fixtures (d) without rebuilding either, this
+section runs `scripts/ac26.4.1-live-proof.sh proof` — a single invocation —
+against gallery A (id 18, slug
+`wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20`), the same fixture
+(e)(i)'s read-only pass left untouched at `is_draft: true`. Gallery B (id 19)
+is `AC-26.4.1.3.3`'s reproduction target and is not published here.
+
+### Pre-run check: both fixtures still fresh from (e)(i)
+
+```
+$ curl -s -b <cookie-jar> 'http://localhost:3101/api/admin/events?limit=200' \
+    | python3 -c "import json,sys
+d = json.load(sys.stdin)
+for e in d.get('events', d):
+    if 'ac-26-4-1-webhook-live-proof' in (e.get('slug') or ''):
+        print(e['id'], e['slug'], 'is_draft=', e.get('is_draft'))"
+19 wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21 is_draft= True
+18 wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 is_draft= True
+```
+
+No reset was needed — unlike (d) and (e)(i), nothing consumed these fixtures
+between (e)(i)'s read-only run and this one.
+
+### The script's real output, one run, `proof` mode only
+
+```
+$ bash scripts/ac26.4.1-live-proof.sh proof
+
+=== Backstage admin login
+login HTTP 200
+
+=== PROOF: pre-state — gallery 18 (wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20) is still a draft
+page reflects 'unavailable' for wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 after 0s
+
+=== PROOF: publish the gallery in Backstage (fires event.published)
+{"message":"Event published successfully","is_draft":false}
+publish HTTP 200
+
+=== PROOF: the delivery Backstage recorded for that publish
+id=53 event_type=event.published status=success response_status=200 attempts=1 latency_ms=12 last_error=None
+delivery reached success after 2s
+
+=== PROOF: the served Frontstage placement page reflecting the publish
+page reflects 'photos=0' for wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 after 0s
+
+=== PASSED
+```
+
+`DEADLINE_SECONDS` was left at its default, 25 — well inside the required
+margin under both the 60-second contract-row-5 safety net and the route's own
+`export const revalidate = 60`. The delivery reached `success` after 2s and
+the served page reflected the publish after a further 0s (its first poll,
+immediately following the delivery-success poll, already read the new
+state) — the total time from `publish` to the page changing was on the order
+of seconds, not the 60s the safety net alone would need, so this is
+attributable to the AC-26.1 receiver's `revalidatePath` call and not to the
+route's cache simply expiring on schedule.
+
+### Independent read-back: `GET .../deliveries` list, then the delivery's own detail
+
+The script's `delivery_line()` already performs this list-then-detail
+read-back internally (`ac26.4.1-live-proof.sh:144-162`); this is the same
+pair of calls run directly, so the record shows the actual JSON rather than
+only the script's one-line summary of it.
+
+```
+$ curl -s -b <cookie-jar> 'http://localhost:3101/api/admin/webhooks/2/deliveries?limit=5'
+{
+  "deliveries": [
+    {
+      "id": 53,
+      "event_type": "event.published",
+      "attempt_count": 1,
+      "status": "success",
+      "response_status": 200,
+      "latency_ms": 12,
+      "next_retry_at": null,
+      "created_at": "2026-08-07T13:26:01.909Z",
+      "completed_at": "2026-08-07T13:26:02.547Z",
+      "last_error": null
+    },
+    ... (39 older rows, unaffected by this run)
+  ],
+  "pagination": { "page": 1, "limit": 5, "total": 40 }
+}
+
+$ curl -s -b <cookie-jar> 'http://localhost:3101/api/admin/webhooks/2/deliveries/53'
+{
+  "id": 53,
+  "webhook_id": 2,
+  "event_type": "event.published",
+  "payload": {
+    "id": "efb21051-1ff5-49f5-acbe-aa8d082d7c4c",
+    "data": {
+      "event": {
+        "id": 18,
+        "slug": "wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20",
+        "share_url": "/gallery/wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20/4936f14c8ace7eab5810732d6693f6d5",
+        "event_date": "2026-09-20T00:00:00.000Z",
+        "event_name": "ac-26-4-1-webhook-live-proof-gallery",
+        "event_type": "wedding",
+        "share_token": "4936f14c8ace7eab5810732d6693f6d5",
+        "customer_name": "AC-26.4.1 Verification",
+        "customer_email": "ac26-4-1-webhook@example.com",
+        "customer_phone": null
+      }
+    },
+    "type": "event.published",
+    "created_at": "2026-08-07T13:26:01.909Z"
+  },
+  "attempt_count": 1,
+  "status": "success",
+  "response_status": 200,
+  "response_body": "{\"received\":true}",
+  "last_error": null,
+  "latency_ms": 12,
+  "next_retry_at": null,
+  "created_at": "2026-08-07T13:26:01.909Z",
+  "completed_at": "2026-08-07T13:26:02.547Z"
+}
+```
+
+The list row (no `payload` key, per `adminWebhooks.js:283-325`) and the
+detail row (carrying `payload.data.event.slug` matching gallery A) are the
+same delivery, `id=53`, confirming the list-plus-detail read-back the
+criterion requires.
+
+### Independent confirmation: gallery state and served page, read directly
+
+```
+$ curl -s -b <cookie-jar> 'http://localhost:3101/api/admin/events?limit=200' \
+    | python3 -c "import json,sys
+d = json.load(sys.stdin)
+for e in d.get('events', d):
+    if e.get('id') == 18:
+        print(e['id'], e['slug'], 'is_draft=', e.get('is_draft'))"
+18 wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 is_draft= False
+
+$ curl -sD - 'http://localhost:3000/dev/gallery-webhook-proof' -o /tmp/proof-page-e2.html \
+    | grep -iE '^(HTTP|content-type|x-nextjs)'
+HTTP/1.1 200 OK
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+Content-Type: text/html; charset=utf-8
+
+$ python3 -c "
+import re
+html = open('/tmp/proof-page-e2.html').read()
+for m in re.finditer(r'<section.*?</h2>', html, re.S):
+    print(m.group(0))
+    print('---')
+"
+<section aria-label="Live-proof gallery wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20" data-testid="webhook-proof-gallery" data-gallery-slug="wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20" data-photo-count="0" data-photo-ids="" class="w-full px-8"><h2 class="pb-4 text-2xl font-normal tracking-[3px] uppercase">wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 — 0 photos</h2>
+---
+<section aria-label="Live-proof gallery wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21" data-testid="webhook-proof-unavailable" data-gallery-slug="wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21" class="w-full px-8"><h2 class="pb-4 text-2xl font-normal tracking-[3px] uppercase">wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21<!-- --> — unavailable</h2>
+---
+```
+
+Gallery A's section now renders `data-testid="webhook-proof-gallery"` with
+`data-photo-count="0"` — the published branch of `page.tsx`, driven by
+Backstage's real `is_draft: false` for id 18 — while gallery B's section is
+untouched (`data-testid="webhook-proof-unavailable"`), confirming this run
+published exactly the one gallery the `proof` argument targets and left
+gallery B (id 19, AC-26.4.1.3.3's reproduction fixture) undisturbed for that
+criterion to transition independently.
+
+All three observations the criterion requires — the publish call itself, the
+`event.published` delivery reaching `status: success` through both the list
+and detail read-back, and the served Frontstage page changing to reflect the
+publish — came from this one invocation of
+`scripts/ac26.4.1-live-proof.sh proof`, inside `DEADLINE_SECONDS` (25s, well
+under the 60s safety net and the route's own `revalidate = 60`). Gallery A
+(id 18) is now published and its slot in the harness is spent; gallery B (id
+19) remains a fresh draft for AC-26.4.1.3.3 to publish next, reusing this
+same harness without rebuilding it.
