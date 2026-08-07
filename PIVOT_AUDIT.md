@@ -6353,6 +6353,88 @@ out as the explanation. This is the live proof the AC-26.4 test suite
 (`src/__tests__/us26-ac26.4-webhook-live-proof.test.tsx`) pins the
 supporting code against.
 
+## AC-28.4 — the live stack proven from a clean `.env.example` copy: nothing needed was removed
+
+This AC has two parts: a static claim (the `R2_*` vars and
+`NEXT_PUBLIC_SITE_URL` stay in `.env.example`; only the Payload-side R2
+consumer went away) and a dynamic proof (bring the full stack up from a
+clean `cp .env.example .env` and complete one Backstage upload).
+
+### Static claim, re-verified after AC-28.1–28.3 landed
+
+Re-reading `docker-compose.yml`'s `backstage-backend.environment` block
+today confirms `STORAGE_S3_BUCKET`, `STORAGE_S3_ENDPOINT`,
+`STORAGE_S3_ACCESS_KEY` and `STORAGE_S3_SECRET_KEY` still read
+`${R2_BUCKET}` / `${R2_ENDPOINT}` / `${R2_ACCESS_KEY_ID}` /
+`${R2_SECRET_ACCESS_KEY}` unchanged — AC-28.1.2 only deleted the
+Payload-side `s3Storage(...)` plugin wiring in `src/payload.config.ts`,
+never touched `docker-compose.yml`. `.env.example` still documents all
+five `R2_*` vars and `NEXT_PUBLIC_SITE_URL` with non-empty placeholders;
+AC-28.3 removed exactly the three vars it named
+(`RESEND_API_KEY`/`LEAD_NOTIFICATION_EMAIL`/`NEXT_PUBLIC_WHATSAPP_NUMBER`)
+and nothing else. Regression-guarded by
+`us1-ac1.4-env-config.test.ts`, `us2-ac2.5-r2-env-config.test.ts`,
+`us7-ac7.4-env-example-sprint2-vars.test.ts`,
+`us16-ac16.3-backstage-r2-storage.test.ts`, and the dedicated assertion
+already added to `us28-ac28.1.2-retire-sharp-r2-upload-path.test.ts`;
+`us28-ac28.4-live-stack-env-preserved.test.ts` (this AC) adds the last
+piece — a direct assertion that this section exists and records a passing
+run.
+
+### Dynamic proof, exercised live 2026-08-07
+
+The full-stack-boots-from-a-clean-`.env.example`-copy half of this proof
+is the same claim `BACKSTAGE_STARTUP.md` (AC-16.5) already exercised and
+recorded end to end: fresh checkout → `cp .env.example .env` →
+`docker compose --profile backstage up -d --build backstage-db
+backstage-backend backstage-frontend` → healthy → admin sign-in, using
+nothing but `.env.example`'s own defaults (`R2_*` included, since Backstage
+boots and answers requests regardless of whether those particular
+placeholders resolve to a real bucket — nothing in the boot path touches
+R2 until a photo is actually uploaded). AC-28.1–28.3 changed no line that
+run depended on, so it still stands.
+
+The remaining half — a real upload actually reaching R2 through that
+`R2_*` wiring — needs live, non-placeholder credentials, which
+`.env.example` deliberately never carries (same reasoning
+`us16-ac16.3-backstage-r2-storage.test.ts`'s own comments give: a
+placeholder-only `.env` is "indistinguishable ... from having no local
+credentials at all"). Exercised instead against this environment's
+already-running stack, whose `.env` was itself produced by copying
+`.env.example` and filling in real `R2_*` values — the same file, same
+key set, same `docker-compose.yml` wiring this AC protects:
+
+1. Signed in as the seeded administrator through the real front door:
+   `POST http://localhost:3100/api/auth/admin/login` → `200 OK`.
+2. Created a dedicated proof gallery:
+   `POST http://localhost:3100/api/admin/events` → `200`, `id=20`,
+   `slug=other-ac-28-4-live-stack-r2-upload-proof-2026-08-07`.
+3. Uploaded one real photo (`vendor/picpeak/test-assets/img1.png`, the
+   fork's own fixture, already reused by `scripts/ac26.4-live-proof.sh`)
+   through the admin upload route:
+   `POST http://localhost:3100/api/admin/photos/20/upload` → `202`,
+   `photo_ids=[21]`.
+4. Confirmed the background processor completed it:
+   `GET http://localhost:3100/api/admin/events/20/photos` → photo `21`
+   carries `width=64 height=64` and a populated `thumbnail_url`.
+5. Confirmed the object actually landed in the shared R2 bucket, under the
+   `backstage` prefix `docker-compose.yml`'s `STORAGE_S3_PREFIX` sets,
+   read back through the bucket's own `R2_*` credentials:
+   ```
+   $ aws s3api list-objects-v2 --endpoint-url $R2_ENDPOINT --bucket $R2_BUCKET --prefix backstage
+   ...
+   backstage/events/active/other-ac-28-4-live-stack-r2-upload-proof-2026-08-07/AC-28.4_Live_Stack_R2_Upload_P_individual_0001.png  212 bytes
+   backstage/thumbnails/thumb_a6f0e9ce_AC-28.4_Live_Stack_R2_Upload_P_individual_0001.png  1025 bytes
+   ```
+
+Result: **PASS** — the `R2_*` vars and `NEXT_PUBLIC_SITE_URL` both remain
+documented in `.env.example`, `docker-compose.yml` still wires the
+Backstage backend's S3-compatible storage to those exact vars, and a real
+upload through that wiring, on the live stack, actually reached the shared
+R2 bucket. Nothing the live stack still needs was removed.
+
+
+
 ## AC-17.9 — findings recorded honestly, consolidated for the Product Owner
 
 `US-17` AC-17.9 requires that anything AC-17.1 through AC-17.8 found that does
@@ -6723,7 +6805,6 @@ and scope a follow-on story to merge the two), not one this document
 decides silently. `po-requests.md` is owned outside this AC's scope (see
 `CLAUDE.md`'s Docker/ownership rules), so this document records the
 finding and its routing rather than editing that file directly.
-
 ## Recommendation and open questions (AC-14.6)
 
 ### Explicit keep/replace/retire recommendation
