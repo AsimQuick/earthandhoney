@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/9 stories | 11/51 ACs
-**Last Updated:** 2026-08-07T01:07:49+00:00
+**Last Updated:** 2026-08-07T01:18:18+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -208,6 +208,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-23.2:** The typefaces are **Fraunces** (display serif, headlines) and **Inter** (body/UI sans), per the creative brief confirmed in `po-requests.md` item 9, self-hosted from the repository with no external font request. A test asserts the built CSS and any layout head contain no request to `fonts.googleapis.com` or `fonts.gstatic.com`, that both families are declared with `font-display: swap`, and that the primary weights are preloaded so no font swap causes layout shift.
   - Dev: implemented
 - [ ] **AC-23.3:** The palette is near-black ink (deliberately not pure `#000`), a neutral grey scale for secondary/tertiary content and surfaces, and **no accent colour** beyond that range — the confirmed brief. A test computes the WCAG contrast ratio from the token values themselves for every ink-on-surface pair the token set declares as a usable combination, and fails any pair below AA (4.5:1 for body text, 3:1 for large text and non-text indicators).
+  - Dev: implemented
 - [ ] **AC-23.4:** The existing US-8 public shell is rewired onto the tokens: `src/components/layout/PublicShell.tsx`, `VerticalMenu.tsx`, `SiteFooter.tsx`, `MobileMenuTrigger.tsx` and `src/app/(frontend)/layout.tsx` use only token references. A test asserts no raw hex colour, no raw `px` font-size, and no arbitrary Tailwind bracket value remains in those five files. Rendered output is unchanged in structure — this is a re-parameterisation, not a redesign — proven by a DOM/structural snapshot of each of the five files' rendered output taken before and after the rewire, asserted identical (class-list token substitutions aside).
 - [ ] **AC-23.5:** An internal `noindex` token-specimen route renders the full set for human confirmation: the type scale at every step with both families, the palette with its computed contrast ratios shown, the spacing scale, radii, gallery gaps, and each overlay/vignette preset over a sample photograph. The route is recorded in `po-requests.md` as awaiting human sign-off, because the confirmed brief is explicit that it is direction, not a locked visual spec, and that real mockups must be confirmed before broad rollout.
 - [ ] **AC-23.6:** The tokens are exported in a form the Backstage / Project Room templates can consume, so both surfaces are consumers from day one as the brief requires: a generated, checked-in plain CSS custom-property file with no Tailwind or Next.js dependency, plus a short section in the token file's documentation showing how one `gallery-style-templates-baseline` variant would reference it. Generating the export is verified to be reproducible from the source tokens (regenerate and diff — an empty diff is the evidence). The fork's own templates are **not** rewired in this story.
@@ -233,6 +234,13 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - `src/app/(frontend)/layout.tsx` — uses React 19's `preload()` to prime the primary (400) weight of each family with `as: "font"`, `type: "font/woff2"`, `crossOrigin: "anonymous"`, called during layout render.
   - `THIRD_PARTY_NOTICES.md` — new §2.6 with OFL license text and copyright notices for both families.
   - `src/__tests__/us23-ac23.2-self-hosted-fonts.test.ts` (new, 27 tests) — asserts no `fonts.googleapis.com`/`fonts.gstatic.com` reference anywhere in the shipped styling/layout source, every `@font-face` uses `font-display: swap`, both primary weights are preloaded with matching MIME/crossOrigin, and eve …
+  AC-23.3 implemented (local checks green): Committed on `feature/US-23` (not pushed, per instructions).
+  
+  ## Summary — AC-23.3 implemented
+  
+  **Files changed:**
+  - `src/styles/tokens.css` — added six `--usable-pair-*` custom properties under the colour-palette section, each declaring an ink-on-surface pair the token set endorses as usable, tagged `body` (4.5:1 AA) or `large` (3:1 AA): `ink`/`ink-secondary` on `surface`/`surface-muted` are tagged `body`; `ink-tertiary` on `surface`/`surface-muted` is tagged `large` (its actual ratios, 4.29:1 and 3.94:1, clear 3:1 but not 4.5:1). `--color-border` is deliberately not declared as a usable pair — it's a decorative divider, not text/indicator ink. No colour values were changed.
+  - `src/__tests__/us23-ac23.3-contrast-ratios.test.ts` (new, 13 tests) — implements the WCAG relative-luminance/contrast-ratio formula from scratch, parses the declared `--usable-pair-*` tokens and resolves their `--color-*` hex values, and asserts every declared pair clears its class's AA minimum computed directly from those hex values. Also asserts the ink token is near-black but not pure `#000000`, that every palette colour is a neutral grey (RGB channel spread ≤ 4, i.e. no accent hue), and includes two sani …
 
 **Tester Status:** approved
 **Tester Notes:**
