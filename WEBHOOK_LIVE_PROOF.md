@@ -982,3 +982,321 @@ live once (AC-26.4.1.3.2) and shown to reproduce (AC-26.4.1.3.3), against two
 independently created galleries, using one unmodified script. Both proof
 galleries are now published — the state AC-26.4.2 (photo upload) builds on
 next.
+
+## (f) AC-26.4.2 — a photo uploaded into the published gallery, reaching the Frontstage through the verified webhook
+
+Reusing the harness (a)-(c) and gallery A (id 18, slug
+`wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20`) — the gallery
+AC-26.4.1.3.2 left published — without rebuilding either. Gallery B is
+AC-26.4.1.3.3's fixture and is not touched here.
+
+### Which of the five `photo.uploaded` call sites the admin upload path reaches
+
+The fixed scope handed to this criterion: `POST /api/admin/photos/:eventId/upload`
+(multipart, field name `photos`), already exercised live in `PIVOT_AUDIT.md`
+under AC-17.1.3/17.5, does not fire the event itself — and the pinned fork
+has exactly five `webhookService.fire('photo.uploaded', ...)` call sites to
+choose from:
+
+| Call site | Reached by the admin upload path? |
+|---|---|
+| `services/photoProcessor.js:246` (inside `processUploadedPhotos`) | No — that function belongs to the **chunked-upload-complete** route (`adminPhotos.js:1321`, `POST /:eventId/chunked-upload/:uploadId/complete`), a different upload path this criterion is not scoped to. |
+| `services/photoProcessor.js:494` (inside `processPhoto`) | **Yes** — see below. |
+| `services/fileWatcher.js:142` | No — filesystem auto-import, not an admin API path. |
+| `services/s3AutoImporter.js:144` | No — S3 auto-import, not an admin API path. |
+| `routes/v1/events.js:595` | No — the public v1 guest-upload route, a different caller than the admin route this criterion targets. |
+
+Reading `routes/adminPhotos.js`'s `/:eventId/upload` handler confirms it: the
+per-file loop (`adminPhotos.js:327-395`) moves each file to its final
+storage key and inserts a `photos` row with `processing_status: 'pending'`
+and a shared `upload_id`, then the route returns `202 Accepted`
+(`adminPhotos.js:452`) — no `webhookService` call appears anywhere in the
+route handler. The route's own comment block above the loop
+(`adminPhotos.js:303-313`) states why: EXIF/thumbnail/webhook work "all
+happen in the background worker (`services/backgroundProcessor.js`) so the
+request returns in seconds". That worker's loop
+(`backgroundProcessor.js:86-121`) polls `photos.processing_status = 'pending'`
+and hands each claimed row to `photoProcessor.js`'s `processPhoto(photoId)`
+(`backgroundProcessor.js:103`) — the function whose body ends by calling
+`webhookService.fire('photo.uploaded', ...)` at `photoProcessor.js:494`,
+after marking the row `processing_status: 'complete'`
+(`photoProcessor.js:479-482`). The worker is started unconditionally at
+server boot (`server.js:901`, `backgroundProcessor.start()`) and
+`UPLOAD_PROCESSOR_DISABLED` is not set anywhere in this repo's compose files
+or `.env`, so the worker runs in the stack this proof is taken against.
+
+**Finding, not a blocker:** the admin upload route reaches `photo.uploaded`
+only indirectly, asynchronously, through the background worker —
+`photoProcessor.js:494`, not `photoProcessor.js:246`. A caller that assumes
+the webhook has already fired by the time the route's `202` response
+returns would be wrong; the proof below polls the delivery for exactly this
+reason, the same way `scripts/ac26.4-live-proof.sh`'s `upload_leg`
+(recorded live in `PIVOT_AUDIT.md`'s `## AC-26.4` section) already
+established. This split — one call site per upload entry path, not all
+paths sharing one — is itself worth raising to the Product Owner: a fix or
+consolidation of the fork's upload paths is outside this criterion's scope
+(a live proof, not a fork patch) and belongs with sprint 3's discipline of
+naming upstream defects/design points rather than silently working around
+them.
+
+### Subscription's `events` array carries `photo.uploaded` — required for delivery to be attempted at all
+
+Re-read from (b), unchanged: upstream matches an outbound event against the
+subscription's own `events` array before ever attempting delivery
+(`webhookService`'s dispatch, exercised live by every delivery recorded
+below reaching this subscription in the first place). Confirmed directly
+against the live subscription:
+
+```
+$ curl -s -b <cookie-jar> http://localhost:3101/api/admin/webhooks | python3 -m json.tool
+[
+    {
+        "id": 2,
+        "name": "AC-26.4.1 webhook live-proof receiver",
+        "url": "http://web:3000/api/webhooks/picpeak",
+        "events": [
+            "event.published",
+            "photo.uploaded",
+            "photo.deleted"
+        ],
+        "active": true,
+        ...
+    }
+]
+```
+
+`photo.uploaded` is present. Had it been absent, every delivery below would
+never have been attempted — not rejected by the receiver, simply never
+sent — which is why this check is confirmed before, not after, the proof
+run.
+
+### Pre-run check: gallery A published, 0 photos — exactly where (e)(iii) left it
+
+```
+$ curl -s -b <cookie-jar> 'http://localhost:3101/api/admin/events?limit=200' \
+    | python3 -c "import json,sys
+d = json.load(sys.stdin)
+for e in d.get('events', d):
+    if 'ac-26-4-1-webhook-live-proof' in (e.get('slug') or ''):
+        print(e['id'], e['slug'], 'is_draft=', e.get('is_draft'))"
+19 wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21 is_draft= False
+18 wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 is_draft= False
+
+$ curl -s -b <cookie-jar> 'http://localhost:3101/api/admin/photos/18/photos'
+{"photos":[]}
+```
+
+No reset was needed — nothing consumed gallery A between (e)(iii)'s run and
+this one.
+
+### The script's real output, one run each, `proof` then `reproduce`, unmodified
+
+Unlike publish (a one-way draft->live transition that needed a second,
+independently created gallery to reproduce against), uploading is
+repeatable, so both runs target the SAME gallery — `proof` uploads
+`img1.png`, `reproduce` uploads `img2.png` — and reproduction is shown by
+running the identical sequence again, not by switching fixtures.
+
+```
+$ bash scripts/ac26.4.2-live-proof.sh proof
+
+=== Backstage admin login
+login HTTP 200
+
+=== PROOF: uploading vendor/picpeak/test-assets/img1.png to gallery 18 (wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20)
+{"upload_id":"7b9451c3005faeae9f95e19d4b7a5924","count":1,"photo_ids":[19],"message":"Successfully 1 queued","photos":[{"id":19,"filename":"ac-26-4-1-webhook-live-proof-g_individual_0001.png","size":212,"category_id":null}],"replaced":[],"replacedCount":0,"skippedReplacements":[],"totalFiles":1,"successCount":1,"failureCount":0}
+upload HTTP 202
+queued photo id: 19
+
+=== PROOF: the delivery Backstage recorded once background processing completed
+id=55 event_type=photo.uploaded status=success response_status=200 attempts=1 latency_ms=10 last_error=None
+delivery reached success after 6s
+
+=== PROOF: the served Frontstage placement page reflecting the upload
+page reflects 'photos=1' for wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 after 0s
+
+=== PASSED
+```
+
+```
+$ bash scripts/ac26.4.2-live-proof.sh reproduce
+
+=== Backstage admin login
+login HTTP 200
+
+=== REPRODUCE: uploading vendor/picpeak/test-assets/img2.png to gallery 18 (wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20)
+{"upload_id":"65c0901c204a533a2a8701c5a0d4fd8c","count":1,"photo_ids":[20],"message":"Successfully 1 queued","photos":[{"id":20,"filename":"ac-26-4-1-webhook-live-proof-g_individual_0002.png","size":212,"category_id":null}],"replaced":[],"replacedCount":0,"skippedReplacements":[],"totalFiles":1,"successCount":1,"failureCount":0}
+upload HTTP 202
+queued photo id: 20
+
+=== REPRODUCE: the delivery Backstage recorded once background processing completed
+id=56 event_type=photo.uploaded status=success response_status=200 attempts=1 latency_ms=14 last_error=None
+delivery reached success after 4s
+
+=== REPRODUCE: the served Frontstage placement page reflecting the upload
+page reflects 'photos=2' for wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 after 0s
+
+=== PASSED
+```
+
+No change was needed to the recorded commands to make either run pass — the
+sequence reproduced on the first attempt, unmodified. `upload HTTP 202`
+confirms the route's own async-accept contract (not a synchronous "webhook
+already fired" response); the delivery reached `status: success` after 6s
+and 4s respectively — well inside `DEADLINE_SECONDS` (25s, itself under the
+60s contract-row-5 safety net and the route's own `revalidate = 60`) —
+attributable to the background worker claiming the pending row
+(`UPLOAD_PROCESSOR_POLL_MS`, 1000ms default) and upstream's delivery worker
+firing it (`WEBHOOK_DELIVERY_INTERVAL_MS`, 5000ms default), not to any cache
+expiring on its own schedule.
+
+### Independent read-back: `GET .../deliveries` list, then each delivery's own detail
+
+The script's `delivery_line()` already performs this list-then-detail
+read-back internally; this is the same pair of calls run directly, so the
+record shows the actual JSON rather than only the script's one-line summary.
+
+```
+$ curl -s -b <admin-cookie-jar> 'http://localhost:3101/api/admin/webhooks/2/deliveries?limit=5'
+{
+    "deliveries": [
+        {
+            "id": 56,
+            "event_type": "photo.uploaded",
+            "attempt_count": 1,
+            "status": "success",
+            "response_status": 200,
+            "latency_ms": 14,
+            "next_retry_at": null,
+            "created_at": "2026-08-07T13:52:05.986Z",
+            "completed_at": "2026-08-07T13:52:07.948Z",
+            "last_error": null
+        },
+        {
+            "id": 55,
+            "event_type": "photo.uploaded",
+            "attempt_count": 1,
+            "status": "success",
+            "response_status": 200,
+            "latency_ms": 10,
+            "next_retry_at": null,
+            "created_at": "2026-08-07T13:51:56.065Z",
+            "completed_at": "2026-08-07T13:51:57.944Z",
+            "last_error": null
+        },
+        ... (41 older rows, unaffected by this run)
+    ],
+    "pagination": { "page": 1, "limit": 5, "total": 43 }
+}
+
+$ curl -s -b <admin-cookie-jar> 'http://localhost:3101/api/admin/webhooks/2/deliveries/55'
+{
+    "id": 55,
+    "webhook_id": 2,
+    "event_type": "photo.uploaded",
+    "payload": {
+        "id": "2595a66e-e9b3-4caa-917f-aec1ea92e498",
+        "data": {
+            "event": {
+                "id": 18,
+                "slug": "wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20",
+                "event_name": "ac-26-4-1-webhook-live-proof-gallery"
+            },
+            "photo": {
+                "id": 19,
+                "filename": "ac-26-4-1-webhook-live-proof-g_individual_0001.png",
+                "size_bytes": 212,
+                "original_filename": "img1.png"
+            }
+        },
+        "type": "photo.uploaded",
+        "created_at": "2026-08-07T13:51:56.065Z"
+    },
+    "attempt_count": 1,
+    "status": "success",
+    "response_status": 200,
+    "response_body": "{\"received\":true}",
+    "last_error": null,
+    "latency_ms": 10,
+    "next_retry_at": null,
+    "created_at": "2026-08-07T13:51:56.065Z",
+    "completed_at": "2026-08-07T13:51:57.944Z"
+}
+
+$ curl -s -b <admin-cookie-jar> 'http://localhost:3101/api/admin/webhooks/2/deliveries/56'
+{
+    "id": 56,
+    "webhook_id": 2,
+    "event_type": "photo.uploaded",
+    "payload": {
+        "id": "a2711a30-fb30-469b-b6af-8c6eb8eb3649",
+        "data": {
+            "event": {
+                "id": 18,
+                "slug": "wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20",
+                "event_name": "ac-26-4-1-webhook-live-proof-gallery"
+            },
+            "photo": {
+                "id": 20,
+                "filename": "ac-26-4-1-webhook-live-proof-g_individual_0002.png",
+                "size_bytes": 212,
+                "original_filename": "img2.png"
+            }
+        },
+        "type": "photo.uploaded",
+        "created_at": "2026-08-07T13:52:05.986Z"
+    },
+    "attempt_count": 1,
+    "status": "success",
+    "response_status": 200,
+    "response_body": "{\"received\":true}",
+    "last_error": null,
+    "latency_ms": 14,
+    "next_retry_at": null,
+    "created_at": "2026-08-07T13:52:05.986Z",
+    "completed_at": "2026-08-07T13:52:07.948Z"
+}
+```
+
+The list rows (no `payload` key, per `adminWebhooks.js:283-325`) and the
+detail rows (each carrying `payload.data.photo.id` matching the photo
+uploaded in that run, and `payload.data.event.slug` matching gallery A) are
+the same two deliveries, `id=55` and `id=56` — the list-plus-detail
+read-back the criterion requires, for two independent deliveries.
+
+### Independent confirmation: the served Frontstage page, read directly
+
+```
+$ curl -sD - 'http://localhost:3000/dev/gallery-webhook-proof' -o /tmp/proof-page-ac26.4.2.html \
+    | grep -iE '^(HTTP|content-type|x-nextjs)'
+HTTP/1.1 200 OK
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+Content-Type: text/html; charset=utf-8
+
+$ python3 -c "
+import re
+html = open('/tmp/proof-page-ac26.4.2.html').read()
+for m in re.finditer(r'<section.*?</h2>', html, re.S):
+    print(m.group(0))
+    print('---')
+"
+<section aria-label="Live-proof gallery wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20" data-testid="webhook-proof-gallery" data-gallery-slug="wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20" data-photo-count="2" data-photo-ids="20,19" class="w-full px-8"><h2 class="pb-4 text-2xl font-normal tracking-[3px] uppercase">wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20<!-- --> — <!-- -->2<!-- --> photo<!-- -->s</h2>
+---
+<section aria-label="Live-proof gallery wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21" data-testid="webhook-proof-gallery" data-gallery-slug="wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21" data-photo-count="0" data-photo-ids="" class="w-full px-8"><h2 class="pb-4 text-2xl font-normal tracking-[3px] uppercase">wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21<!-- --> — <!-- -->0<!-- --> photo<!-- -->s</h2>
+---
+```
+
+Gallery A now carries `data-photo-count="2"` with `data-photo-ids="20,19"`
+— both photos uploaded by the two runs above, both reflected by the same
+served page without rebuilding the harness or the fixtures. Gallery B is
+untouched, still `data-photo-count="0"`, confirming this criterion's scope
+stayed to gallery A alone. All three pieces of evidence the criterion
+requires — the upload command and its output, the `photo.uploaded` delivery
+shown as `success` through both the list and detail forms of
+`GET /api/admin/webhooks/:id/deliveries`, and the Frontstage placement page
+shown carrying the new photo — came from the two runs above, and the
+sequence reproduced on the second run without any change to the recorded
+commands. Gallery A now carries two photos — the state AC-26.4.3 (photo
+delete) builds on next.
