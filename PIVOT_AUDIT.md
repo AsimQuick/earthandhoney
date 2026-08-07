@@ -482,9 +482,9 @@ configuration with no consuming feature:
 
 | Variable | Origin | Consuming code found? | Disposition | Reason |
 |---|---|---|---|---|
-| `RESEND_API_KEY` | US-12 AC-12.5 (lead-notification email) | None in `src/` — only referenced by the `us7-ac7.4-env-example-sprint2-vars.test.ts` lock-in test | Retained | US-12 is retired unbuilt, so nothing consumes this var; it is retained rather than removed because deleting it now would break the still-active AC-7.4 test that asserts its presence, and rewriting that test is a change to a previously accepted AC's deliverable, out of this audit AC's scope. Removal is deferred to a follow-on pivot-execution story that updates AC-7.4's test alongside the var. |
-| `LEAD_NOTIFICATION_EMAIL` | US-12 AC-12.5 (lead-notification email) | None in `src/` — only referenced by the `us7-ac7.4-env-example-sprint2-vars.test.ts` lock-in test | Retained | Same reasoning as `RESEND_API_KEY` — orphaned by US-12's retirement, retained to avoid breaking AC-7.4's lock-in test; removal deferred to a follow-on pivot-execution story. |
-| `NEXT_PUBLIC_WHATSAPP_NUMBER` | US-13 AC-13.3 (`wa.me` deep-link hand-off) | None in `src/` — only referenced by the `us7-ac7.4-env-example-sprint2-vars.test.ts` lock-in test | Retained | Same reasoning — orphaned by US-13's retirement, retained to avoid breaking AC-7.4's lock-in test; removal deferred to a follow-on pivot-execution story. |
+| `RESEND_API_KEY` | US-12 AC-12.5 (lead-notification email) | None in `src/` | Removed | US-12 is retired unbuilt, so nothing consumes this var. It was previously retained because deleting it would have broken the then-active AC-7.4 lock-in test; US-28 AC-28.3 is the deferred follow-on that removes the var and updates `us7-ac7.4-env-example-sprint2-vars.test.ts` in the same change. |
+| `LEAD_NOTIFICATION_EMAIL` | US-12 AC-12.5 (lead-notification email) | None in `src/` | Removed | Same reasoning as `RESEND_API_KEY` — orphaned by US-12's retirement, removed by US-28 AC-28.3 alongside the AC-7.4 test update. |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | US-13 AC-13.3 (`wa.me` deep-link hand-off) | None in `src/` | Removed | Same reasoning — orphaned by US-13's retirement, removed by US-28 AC-28.3 alongside the AC-7.4 test update. |
 
 `NEXT_PUBLIC_SITE_URL`, the fourth var `.env.example` groups alongside
 these three under the "sprint-2 vars" comment, is **not** orphaned: it is
