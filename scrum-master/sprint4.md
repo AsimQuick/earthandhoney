@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/9 stories | 41/57 ACs
-**Last Updated:** 2026-08-07T15:41:56+00:00
+**Last Updated:** 2026-08-07T16:08:16+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -614,6 +614,7 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
 - [ ] **AC-27.2:** The "Public Site" raw HTML/CSS panel in `frontend/src/pages/admin/CMSPage.tsx` is hidden behind the same flag using the fork's existing `RequireFeature` gate, the way the quotes UI already is — so the capability is not merely unreachable at the server, it is not offered. Pillar 3 forbids page-level CSS editing and Payload owns Frontstage publishing; an editor that exists will eventually be used. A test asserts `CMSPage.tsx` does not render the Public Site panel when the `publicSite` flag is false, mirroring the existing test pattern that covers the quotes panel's `RequireFeature` gate.
   - Dev: implemented
 - [ ] **AC-27.3:** The native quote / invoice / tax-report subsystem is confirmed off by default rather than assumed off: `adminQuotes.js`, `publicQuotes.js` (`quotes` flag), `adminInvoices.js`, `adminTaxReport.js` and `adminBusinessProfile.js` (`bills` flag) each have their default asserted `false`, and at least one flag-gated route per flag is shown returning 403 with the flag off. The Ledger Rule puts these records in headless Invoice Ninja; a second native billing surface is a duplicate ledger, and PRD §35.1 requires there be none.
+  - Dev: implemented
 - [ ] **AC-27.4:** The static "CMS Pages" surface (impressum / privacy / terms, `adminCMS.js` + `publicCMS.js`) stays **enabled**, and a test asserts it is *not* disabled. `AC-18.5` recorded this as a deliberate scoping decision — legal/footer copy is not among the content types Payload owns, so it duplicates nothing. Encoding the decision as a test keeps a future cleanup from silently reversing it.
 - [ ] **AC-27.5:** Every change is additive — a new flag key, new checks, a gated panel — and no already-shipped upstream migration or migration file is modified; the `src/lib/picpeakMigrationManifest.ts` SHA-1 integrity test stays green. The deviation is recorded in `FORK_CHANGELOG.md` and `PICPEAK_PORT_LEDGER.md` with the file paths touched, and `UPSTREAM_SYNC.md` names the resulting merge-conflict risk on the next upstream sync.
 
@@ -641,6 +642,13 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   - `vendor/picpeak/frontend/src/contexts/FeatureFlagsContext.tsx` — added `publicSite: false` to `DEFAULT_FLAGS`, mirroring the backend's AC-27.1 default.
   - `vendor/picpeak/frontend/src/pages/admin/CMSPage.tsx` — imports `useFeatureFlags`, reads `flags.publicSite`, and wraps the entire Public Site panel `<div>` in `{featureFlags.publicSite && (...)}`. The always-on "CMS Pages" surface (AC-27.4 scoping) is untouched and sits outside the gate.
   - `src/__tests__/us27-ac27.2-cms-public-site-panel-flag-gated.test.ts` (new, 7 tests) — since `jest.config.ts` scopes test/module discovery to `src/` only and excludes `vendor/` (US-15 AC-15.6), this follows the same static-source-assertion pattern the sibling AC-18.5 test used to cross-check the quotes `RequireFeature` gate: it reads the fork's source files …
+  AC-27.3 implemented (local checks green): Committed. Summary for the orchestrator:
+  
+  **AC-27.3 implementation summary**
+  
+  - **`vendor/picpeak/backend/src/routes/publicQuotes.js`** — added `requireQuotesFlag` middleware (mirrors `adminQuotes.js`'s existing gate exactly: checks `feature_flags.quotes`, returns `403 { error, code: 'QUOTES_DISABLED' }` when off), applied to the whole router via `router.use()`. This closes a real gap found while verifying the AC: `customerAccountsService.ensureCustomerFeatureEnabled`'s comment claims the global `quotes` toggle "is checked at the route layer," but `publicQuotes.js` never actually checked it — an already-issued token still let a customer view/accept/decline a quote with `quotes` globally off.
+  - **`vendor/picpeak/backend/__tests__/routes/publicQuotes.test.js`** — updated `beforeAll` to flip `quotes` on (since the flag now gates the whole router and the pre-existing token-guard tests need it enabled), and added a new `describe('quotes feature flag gate (US-27 AC-27.3)')` block with 2 tests asserting 403 `QUOTES_DISABLED` on both `GET /:token` and `POST /:token/respond` when the flag is off.
+  - **`vendor/picpeak/backend/__tests__/routes/nativeBillingFlags.test.js`** (new, 5 tests) — on …
 
 **Tester Status:** approved
 **Tester Notes:**
