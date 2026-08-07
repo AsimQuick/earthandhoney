@@ -17,6 +17,9 @@
  * created-by: dev-team
  * related-story: US-24
  * related-ac: 24.4
+ * updated-by: dev-team
+ * related-story: US-24
+ * related-ac: 24.5
  * ---
  */
 import { getPayload } from 'payload'
@@ -25,10 +28,30 @@ import type { Field } from 'payload'
 import config from '@payload-config'
 import { StudioProfile } from '@/globals/StudioProfile'
 
+export interface StudioAddress {
+  street: string
+  city: string
+  region: string
+  postalCode: string
+  country: string
+}
+
+export interface StudioSocialProfile {
+  platform: string
+  url: string
+}
+
 export interface ResolvedStudioProfile {
   businessName: string
+  description: string
   defaultTitlePattern: string
   defaultMetaDescription: string
+  publicPhone: string
+  publicEmail: string
+  address: StudioAddress
+  serviceAreas: string[]
+  socialProfiles: StudioSocialProfile[]
+  defaultSocialImage: { url: string } | null
 }
 
 function fieldDefaultValue(name: string): string {
@@ -41,15 +64,45 @@ function fieldDefaultValue(name: string): string {
 
 export async function getStudioProfile(): Promise<ResolvedStudioProfile> {
   const payload = await getPayload({ config })
-  const doc = (await payload.findGlobal({ slug: 'studio-profile' })) as {
+  // depth: 1 populates the `defaultSocialImage` upload relation (its `url`,
+  // not just its id) — the field AC-24.5's Open Graph image and JSON-LD
+  // `image` read from.
+  const doc = (await payload.findGlobal({ slug: 'studio-profile', depth: 1 })) as {
     businessName?: string
+    description?: string
     defaultTitlePattern?: string
     defaultMetaDescription?: string
+    publicPhone?: string
+    publicEmail?: string
+    address?: Partial<StudioAddress>
+    serviceAreas?: Array<{ area?: string }>
+    socialProfiles?: Array<{ platform?: string; url?: string }>
+    defaultSocialImage?: { url?: string } | number | null
   }
+
+  const defaultSocialImage =
+    doc.defaultSocialImage && typeof doc.defaultSocialImage === 'object' && doc.defaultSocialImage.url
+      ? { url: doc.defaultSocialImage.url }
+      : null
 
   return {
     businessName: doc.businessName || fieldDefaultValue('businessName'),
+    description: doc.description || '',
     defaultTitlePattern: doc.defaultTitlePattern || fieldDefaultValue('defaultTitlePattern'),
     defaultMetaDescription: doc.defaultMetaDescription || fieldDefaultValue('defaultMetaDescription'),
+    publicPhone: doc.publicPhone || '',
+    publicEmail: doc.publicEmail || '',
+    address: {
+      street: doc.address?.street || '',
+      city: doc.address?.city || '',
+      region: doc.address?.region || '',
+      postalCode: doc.address?.postalCode || '',
+      country: doc.address?.country || '',
+    },
+    serviceAreas: (doc.serviceAreas ?? []).map((row) => row.area || '').filter(Boolean),
+    socialProfiles: (doc.socialProfiles ?? []).filter(
+      (row): row is StudioSocialProfile => Boolean(row.platform && row.url),
+    ),
+    defaultSocialImage,
   }
 }
