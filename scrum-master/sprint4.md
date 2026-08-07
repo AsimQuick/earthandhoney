@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 4/9 stories | 23/51 ACs
-**Last Updated:** 2026-08-07T05:59:39+00:00
+**Last Updated:** 2026-08-07T06:36:24+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -384,6 +384,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-25.4:** Caching obeys the contract exactly: the bounded 60-second safety-net cap, display data only, and never a Backstage database row stored Frontstage-side. A test asserts the cached shape contains only the fields the contract's "What the Frontstage is allowed to cache" section permits — rendered image URLs, thumbnails, gallery title/cover, item counts — and that a Frontstage cache is never treated as authoritative.
   - Dev: implemented
 - [ ] **AC-25.5:** An internal `noindex` route renders one and the same Backstage gallery through two placements — one `masonry`, one `slideshow` — proving PRD §14's core claim that layout is a placement concern and one gallery can appear in different layouts without the underlying gallery changing. Masonry preserves every received aspect ratio and the photographer's order, never crops or stretches, and reserves aspect-ratio space before load (PRD §15.1); slideshow preloads only current and next (PRD §15.2). A test asserts zero image-caused layout shift on the masonry route; a second test asserts the masonry route's rendered image order and each image's rendered aspect ratio match the photo list returned by `GET /api/gallery/:slug/photos` exactly, with no `object-fit: cover`/crop applied; a third test asserts the slideshow route's network requests show only the current and next image's assets loaded, never the full set.
+  - Dev: implemented
 - [ ] **AC-25.6:** Failure behaviour is defined and proven: an unreachable Backstage, a timeout, or a 404 slug renders the page with a placeholder for that placement and a logged error — never a 500 on a public page, and never a partially rendered gallery presented as complete. Tested by pointing a placement at a slug that does not exist and by simulating a Backstage timeout.
 
 **Dependencies:** US-21, US-23
@@ -427,6 +428,15 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
     - `toCachedGalleryDisplay()` maps a successful `FlowAOutcome` (from AC-25.2's client) down to that narrow shape, dropping `event_type`, `expires_at`, `is_active`, `is_expired`, `requires_password`, `color_theme`, `allow_downloads`, `allow_user_uploads`, the raw `event` object, and per-photo `id`/`filename`.
     - `getCached()` enforces the 60-second (`CACHE_TTL_MS = 60_000`) safety-net cap on every read — an expired entry is deleted and returns `null`, identical to a cache miss, so no caller can special-case "stale but usable." Returns a defensive copy so mutation can't corrupt later reads.
     - `setCached()` only accepts the narrowed shape; `invalidateCached()` is ready for the future webhook-drive …
+  AC-25.5 implemented (local checks green): Committed as `f6e1a0b` on `feature/US-25`.
+  
+  ## Summary — AC-25.5 implemented
+  
+  **Files changed:**
+  - `src/components/gallery/GalleryMasonryLayout.tsx` (new) — PRD §15.1 masonry layout. Reserves each image's aspect-ratio space synchronously at render via an inline `aspect-ratio` style (never waits for load, so no image-caused layout shift), renders in exact received order, uses `object-contain` (never `object-cover`) so nothing is ever cropped or stretched.
+  - `src/components/gallery/GallerySlideshowLayout.tsx` (new) — PRD §15.2 slideshow layout. Renders exactly two `next/image` elements at any time (current + next, the next one hidden via `sr-only`/`aria-hidden` for preload), swapping on navigation so a gallery of any size only ever has two assets in the DOM.
+  - `src/app/(frontend)/dev/gallery-placement-demo/page.tsx` (new) — internal `noindex` route (`robots: { index: false, follow: false }`) that fetches one Backstage gallery once via `fetchPublishedGallery`/`mapBackstageGalleryToImages` and renders the same `images` array through both layouts side by side.
+  - `src/__tests__/us25-ac25.5-gallery-placement-layouts.test.tsx` (new, 16 tests) — covers all three required assertions: zero-la …
 
 **Tester Status:** approved
 **Tester Notes:**
