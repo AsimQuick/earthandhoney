@@ -65,9 +65,10 @@ SLUG_B="wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21"
 # every WEBHOOK_DELIVERY_INTERVAL_MS (5000ms default) and the background
 # upload processor every UPLOAD_PROCESSOR_POLL_MS (1000ms default), both
 # confirmed live at 1-9s. The remaining, Frontstage-side half — Next's own
-# on-demand regeneration of the statically-rendered proof route after
-# `revalidatePath` runs — was measured live, repeatedly, at anywhere from
-# ~2s to ~61s with no consistent floor or ceiling (see PIVOT_AUDIT.md
+# on-demand regeneration of the statically-rendered proof route once the
+# AC-26.1 receiver's on-demand path revalidation runs — was measured live,
+# repeatedly, at anywhere from ~2s to ~61s with no consistent floor or ceiling
+# (see PIVOT_AUDIT.md
 # `## AC-26.4`'s timing note). 55s is set here as the largest margin that
 # still stays under the hard 60s cap, not because 55s is expected on every
 # run.
