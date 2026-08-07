@@ -49,12 +49,16 @@ function readDoc(): string {
   return fs.readFileSync(DOC_PATH, 'utf8')
 }
 
-/** The `### (e)(ii)` subsection, from its heading to end of file. */
+/**
+ * The `### (e)(ii)` subsection, up to the next top-level section
+ * (`## (e)(iii)`, added by AC-26.4.1.3.3) or end of file if none follows.
+ */
 function sectionEII(): string {
   const doc = readDoc()
   const start = doc.indexOf('### (e)(ii)')
   expect(start).toBeGreaterThan(-1)
-  return doc.slice(start)
+  const nextSectionIndex = doc.indexOf('## (e)(iii)', start)
+  return nextSectionIndex === -1 ? doc.slice(start) : doc.slice(start, nextSectionIndex)
 }
 
 describe('AC-26.4.1.3.2: WEBHOOK_LIVE_PROOF.md records the first-publish proof as section (e)(ii)', () => {
