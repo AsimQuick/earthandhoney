@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/9 stories | 18/51 ACs
-**Last Updated:** 2026-08-07T03:10:01+00:00
+**Last Updated:** 2026-08-07T03:23:17+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -295,6 +295,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-24.2:** The photographer's branding controls are bounded to exactly PRD §12.3's list — logo, accent colour from a validated safe input, one approved font pairing chosen from the token set's approved combinations, and site identity/contact details. A test asserts `StudioProfile` exposes **no** field for arbitrary CSS, layout, margin, padding, or component positioning, since Pillar 3 forbids them and a field that exists will eventually be used.
   - Dev: implemented
 - [ ] **AC-24.3:** The accent-colour input validates contrast before it can be saved: the submitted value is checked against the token ink and surface values, and a value failing WCAG AA is rejected with a clear admin-facing error naming the measured ratio and the required one. A safe input with no validation is not a safe input.
+  - Dev: implemented
 - [ ] **AC-24.4:** No studio detail remains hard-coded in the repository. The US-8 shell, footer, and route metadata read their studio strings from `StudioProfile`, and a test asserts the previously hard-coded studio strings no longer appear as literals anywhere under `src/` outside test fixtures. PRD §21.1's requirement is a single owner, "no studio detail scattered through code".
 - [ ] **AC-24.5:** `StudioProfile` populates real output, not just a settings screen: the public route's `<title>` is produced from the default title pattern, its meta description and Open Graph image come from the global, and a JSON-LD `LocalBusiness`/`ProfessionalService` block is emitted from the same fields. A test asserts the rendered head and the structured-data block change when the global changes. No meta-keywords field is created (PRD §21.2).
 
@@ -327,6 +328,12 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
     - `fontPairing` — required `select` whose options are derived live from `src/lib/approvedFontPairings.ts` rather than hardcoded, so they can never drift from the US-23 token set's `--font-combo-*` values
   - `src/lib/approvedFontPairings.ts` (new) — parses `tokens.css` for `--font-combo-<name>-{display,sans}-weight` tokens and exposes the distinct approved pairing names/options.
   - `src/__tests__/us24-ac24.2-studio-profile-branding-bounds.test.ts` (new, 8 tests) — asserts the branding group holds exactly `logo`/`accentColor`/`fontPairing`; validates the accent-colour hex regex behavior (including rejecting a CSS-injection-style string); asserts `fontPairing`'s options exactly match the token set's approved combinations (and that …
+  AC-24.3 implemented (local checks green): AC-24.3 implemented and committed to `feature/US-24`.
+  
+  **Summary:**
+  - `src/lib/accentColorContrast.ts` (new) — `checkAccentColorContrast()` and `validateAccentColorContrast()`, reusing AC-23.5's `contrastRatio`/token-parsing utilities from `designTokenSpecimen.ts`. Checks a submitted accent hex against both `--color-ink` and `--color-surface` from `src/styles/tokens.css`, using the WCAG AA "large text / non-text indicators" 3:1 minimum (the 4.5:1 body minimum is mathematically unsatisfiable against both a near-black ink and a white surface simultaneously — verified numerically and documented in the file header). Returns `true` or an error string naming each failing side's measured and required ratio.
+  - `src/globals/StudioProfile.ts` — `branding.accentColor.validate` now runs the hex-format check first, then `validateAccentColorContrast`, so a format-valid but low-contrast value is rejected before save. Header updated to list AC-24.3.
+  - `src/__tests__/us24-ac24.3-accent-color-contrast.test.ts` (new, 10 tests) — covers both-token checking, a passing colour (`#2B6CB0`, matching the AC-24.2 example so that existing test stays valid), a surface-failing colour, an ink-failing colour, the …
 
 **Tester Status:** approved
 **Tester Notes:**
