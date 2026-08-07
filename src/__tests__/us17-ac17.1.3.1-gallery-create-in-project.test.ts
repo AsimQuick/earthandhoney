@@ -123,14 +123,14 @@ describe('AC-17.1.3.1: a Gallery can be created inside the Project and read back
     })
 
     it('cites the full mount chain reaching the route', () => {
-      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:638/)
+      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:449/)
       expect(section).toMatch(/vendor\/picpeak\/backend\/src\/routes\/admin\.js:9/)
       expect(section).toMatch(/vendor\/picpeak\/backend\/src\/routes\/admin\.js:22/)
     })
 
     it('that mount chain really resolves /api/admin/events to adminEvents in the pinned source', () => {
       const server = read('vendor/picpeak/backend/server.js').split('\n')
-      expect(server[637]).toContain("app.use('/api/admin', adminRoutes)")
+      expect(server[448]).toContain("app.use('/api/admin', adminRoutes)")
 
       const admin = read('vendor/picpeak/backend/src/routes/admin.js').split('\n')
       expect(admin[8]).toContain("require('./adminEvents')")
@@ -139,13 +139,13 @@ describe('AC-17.1.3.1: a Gallery can be created inside the Project and read back
 
     it('rules out the adminEventRename router mounted at the same prefix', () => {
       expect(section).toMatch(/adminEventRename\.js/)
-      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:652/)
+      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:463/)
     })
 
     it('that rename router really is mounted at the same prefix one line later', () => {
       const server = read('vendor/picpeak/backend/server.js').split('\n')
-      expect(server[651]).toContain("app.use('/api/admin/events'")
-      expect(server[651]).toContain('adminEventRename')
+      expect(server[462]).toContain("app.use('/api/admin/events'")
+      expect(server[462]).toContain('adminEventRename')
     })
 
     it('records the create call and its response, and explains the 200 (not 201)', () => {

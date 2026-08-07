@@ -55,6 +55,12 @@ fork is expected to deviate from upstream's default at exactly that file:
 | Database migration files (e.g. the schema introduced by the webhooks migration referenced in `PICPEAK_CAPABILITY_AUDIT.md` as "migration 082") | The DoD forbids ever modifying an already-shipped upstream migration. Any fork-side schema change must be added as a new migration, never an edit to an existing one — the highest-risk category for silently breaking that rule during a sync. |
 | `backend/package.json` / `backend/package-lock.json` | Dependency versions are likely to drift between what this fork pins and what upstream moves to, independent of any feature change. |
 | `.env.example` (upstream's own, inside the fork tree) | This fork adds R2-specific and project-specific environment variables not present upstream; an upstream change to its own `.env.example` needs manual reconciliation rather than a straight overwrite. |
+| `backend/src/routes/adminFeatureFlags.js` | This fork adds a `publicSite` flag key to `KNOWN_FLAGS`/`DEFAULT_FLAGS` (US-27, AC-27.1). Any upstream change to this file's flag list or default-computation logic conflicts with that addition. |
+| `backend/src/services/publicSiteService.js` | This fork moved the homepage HTML-rendering helpers in from `server.js` and added a `publicSite` flag check ahead of the `app_settings` read (US-27, AC-27.1). An upstream change to `getPublicSitePayload`/`handlePublicSiteRequest`'s signature or call order conflicts directly with this restructuring. |
+| `backend/server.js` | The homepage HTML-rendering helpers that used to live here were relocated to `publicSiteService.js` as part of the same US-27 AC-27.1 change; an upstream edit to that removed code has nothing left here to apply against. |
+| `backend/src/routes/publicQuotes.js` | This fork adds an explicit `quotes` flag check ahead of the public quote routes (US-27, AC-27.3), where upstream has none. |
+| `frontend/src/pages/admin/CMSPage.tsx` | This fork wraps the Public Site panel in `RequireFeature('publicSite')` (US-27, AC-27.2), mirroring the existing quotes-panel gate; an upstream restructuring of this panel conflicts with that wrapper. |
+| `frontend/src/contexts/FeatureFlagsContext.tsx` and `frontend/src/services/featureFlags.service.ts` | This fork adds the `publicSite` flag to the tracked flag set/type (US-27, AC-27.2), alongside the existing `quotes`/`bills` flags upstream already tracks. |
 
 This list is not exhaustive — it names the conflict-prone files known at
 fork-initialisation time (AC-15.5), before the fork's vendored code is

@@ -62,6 +62,15 @@ const KNOWN_FLAGS = [
   // upload). Seeded block bodies are EXAMPLES ONLY; admins must have a
   // lawyer review before sending. See docs/crm-disclaimers.md.
   'contracts',
+  // Raw-HTML/CSS homepage editor + its public `/` route (US-27
+  // AC-27.1). Server-side gate for the duplicate-publisher risk
+  // identified as AC-18.5: without this, a single PUT to
+  // /api/admin/settings/general (general_public_site_enabled=true)
+  // would make Backstage a second publisher of the site's `/` route
+  // that Payload Frontstage already owns. Mirrors the quotes/bills
+  // default-false pattern exactly; `handlePublicSiteRequest` checks
+  // this flag before the app_settings value is ever read.
+  'publicSite',
 ];
 
 // Spec defaults for any flag missing from the DB (e.g. a row added by a
@@ -84,6 +93,7 @@ const DEFAULT_FLAGS = {
   taxReport: false,
   hoursLogging: false,
   contracts: false,
+  publicSite: false,
 };
 
 async function readAllFlags() {

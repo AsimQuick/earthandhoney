@@ -6,6 +6,11 @@
  *   - never leak admin-only fields (internal_notes, etc.)
  *   - rate-limit by IP/token to soften brute-force token guessing
  *   - honour the 15-min re-toggle window enforced at the service layer
+ *   - refuse to serve a live quote when the global `quotes` flag is
+ *     off (US-27 AC-27.3) — the per-customer `feature_quotes` override
+ *     enforced in quoteService.ensureCustomerFeatureEnabled() is a
+ *     narrower, separate check; a global-off install must not still
+ *     let an existing token accept/decline through this public route.
  *
  * Surface:
  *   GET  /:token              read-only quote view for the customer
@@ -22,6 +27,25 @@ const { clientIpForAudit } = require('../utils/clientIp');
 const { loadActionToken } = require('../utils/publicTokenGuards');
 
 const router = express.Router();
+
+// ----- feature flag gate (global) --------------------------------------
+// Mirrors adminQuotes.js's requireQuotesFlag exactly (same flag key,
+// same disabled response shape) so a disabled installation refuses this
+// public surface too, not just the admin one.
+async function requireQuotesFlag(req, res, next) {
+  try {
+    const row = await db('feature_flags').where({ key: 'quotes' }).first();
+    const enabled = row && (row.value === true || row.value === 1 || row.value === '1');
+    if (!enabled) {
+      return res.status(403).json({ error: 'Quotes feature is disabled', code: 'QUOTES_DISABLED' });
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+router.use(requireQuotesFlag);
 
 // Normalise a Settings → Branding logo value (absolute URL, /-rooted path,
 // or bare `uploads/...` filename) into a URL the public page can load.

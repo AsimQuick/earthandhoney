@@ -143,8 +143,8 @@ describe('AC-17.4.1.1.1.2.2.1: the write path — creation-path evidence for the
       )
     })
 
-    it('the cited mount chain server.js:638 -> admin.js:22 genuinely reaches adminEvents.js', () => {
-      expect(lineAt(SERVER, 638)).toMatch(/app\.use\('\/api\/admin',\s*adminRoutes\)/)
+    it('the cited mount chain server.js:449 -> admin.js:22 genuinely reaches adminEvents.js', () => {
+      expect(lineAt(SERVER, 449)).toMatch(/app\.use\('\/api\/admin',\s*adminRoutes\)/)
       const admin = 'vendor/picpeak/backend/src/routes/admin.js'
       expect(lineAt(admin, 22)).toMatch(/router\.use\('\/events',\s*eventsRoutes\)/)
       expect(read(admin)).toMatch(/const eventsRoutes = require\('\.\/adminEvents'\)/)
@@ -161,8 +161,8 @@ describe('AC-17.4.1.1.1.2.2.1: the write path — creation-path evidence for the
       expect(section).toContain('`vendor/picpeak/backend/src/routes/v1/events.js:114`')
       expect(lineAt(EVENTS, 60)).toMatch(/router\.post\('\/',\s*adminAuth/)
       expect(lineAt(V1_EVENTS, 114)).toMatch(/router\.post\(/)
-      expect(lineAt(SERVER, 632)).toMatch(/app\.use\('\/api\/events',\s*eventRoutes\)/)
-      expect(lineAt(SERVER, 720)).toMatch(/app\.use\('\/api\/v1',\s*require\('\.\/src\/routes\/v1\/events'\)\)/)
+      expect(lineAt(SERVER, 443)).toMatch(/app\.use\('\/api\/events',\s*eventRoutes\)/)
+      expect(lineAt(SERVER, 531)).toMatch(/app\.use\('\/api\/v1',\s*require\('\.\/src\/routes\/v1\/events'\)\)/)
     })
 
     it('the fourth insert site is genuinely unreachable — adminEvents-enhanced.js is never required', () => {

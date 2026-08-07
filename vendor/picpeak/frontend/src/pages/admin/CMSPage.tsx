@@ -13,10 +13,16 @@ import type { CMSPage as CMSPageType } from '../../services/cms.service';
 import { settingsService, PublicSiteBranding } from '../../services/settings.service';
 import { buildResourceUrl } from '../../utils/url';
 import { useLocalizedDate } from '../../hooks/useLocalizedDate';
+import { useFeatureFlags } from '../../contexts/FeatureFlagsContext';
 
 export const CMSPage: React.FC = () => {
   const { t } = useTranslation();
   const { formatDateTime: fmtDateTime, formatTime: fmtTime } = useLocalizedDate();
+  // Public Site panel gate (US-27 AC-27.2). Same flag, same off-by-default
+  // gate RequireFeature applies to the quotes/bills routes — the raw
+  // HTML/CSS editor isn't offered in the UI when the flag is off, not
+  // merely unreachable at the server (AC-27.1).
+  const { flags: featureFlags } = useFeatureFlags();
   const queryClient = useQueryClient();
   const [selectedPage, setSelectedPage] = useState<string>('impressum');
   const [editingLang, setEditingLang] = useState<'en' | 'de'>('en');
@@ -379,6 +385,7 @@ export const CMSPage: React.FC = () => {
         <p className="text-neutral-600 dark:text-neutral-400 mt-1">{t('cms.subtitle')}</p>
       </div>
 
+      {featureFlags.publicSite && (
       <div className="mb-8">
         <Card className="space-y-6">
           <div className="flex items-start justify-between gap-4">
@@ -507,6 +514,7 @@ export const CMSPage: React.FC = () => {
           )}
         </Card>
       </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Page Selection */}

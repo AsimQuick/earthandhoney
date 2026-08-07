@@ -97,3 +97,38 @@ for all three entries in `GALLERY_STYLE_TEMPLATE_BASELINE`:
 3. this ledger names every template, its baseline file, and its source
    migration (proves the ledger and the manifest module cannot silently
    fall out of sync).
+
+## 5. US-27 AC-27.5 — publicSite flag-gating deviation, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-08-07` in `FORK_CHANGELOG.md` (US-27, AC-27.1–27.4: gating every
+duplicate Backstage publishing surface behind a feature flag), as required by
+AC-27.5. See that changelog entry for the full description of what changed
+and why; this is the flat list of paths for cross-reference against
+`UPSTREAM_SYNC.md` §2 during a future sync.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/src/routes/adminFeatureFlags.js` | `publicSite` flag added to `KNOWN_FLAGS`/`DEFAULT_FLAGS`, default `false` |
+| `vendor/picpeak/backend/src/services/publicSiteService.js` | `handlePublicSiteRequest` checks `publicSite` before reading `app_settings`; homepage HTML-rendering helpers relocated in from `server.js` |
+| `vendor/picpeak/backend/server.js` | relocated HTML-rendering helpers removed; route delegates to `handlePublicSiteRequest` |
+| `vendor/picpeak/backend/src/routes/publicQuotes.js` | new — `quotes` flag check added ahead of the public quote routes |
+| `vendor/picpeak/frontend/src/pages/admin/CMSPage.tsx` | Public Site panel wrapped in `RequireFeature('publicSite')` |
+| `vendor/picpeak/frontend/src/contexts/FeatureFlagsContext.tsx` | `publicSite` added to the tracked flag set |
+| `vendor/picpeak/frontend/src/services/featureFlags.service.ts` | `publicSite` added to the flag-service type/defaults |
+| `vendor/picpeak/backend/src/__tests__/adminFeatureFlags.publicSite.test.js` | new pinning suite |
+| `vendor/picpeak/backend/src/__tests__/publicSiteService.test.js` | extended for the pre-`app_settings` flag check |
+| `vendor/picpeak/backend/__tests__/routes/cmsStaysEnabled.test.js` | new — pins CMS Pages as deliberately not flag-gated |
+| `vendor/picpeak/backend/__tests__/routes/nativeBillingFlags.test.js` | new — proves `quotes`/`bills` defaults and 403-with-flag-off |
+| `vendor/picpeak/backend/__tests__/routes/publicQuotes.test.js` | new — covers the added `quotes` flag check |
+| `src/__tests__/us27-ac27.2-cms-public-site-panel-flag-gated.test.ts` | new |
+| `src/__tests__/us18-ac18.5-backstage-surfaces-disabled.test.ts` | updated now the AC-18.5 gap is closed |
+
+None of the above is a file under `vendor/picpeak/backend/migrations/` — every
+change is additive (a new flag key, a new check, a gated panel), and
+`src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity test stays green
+against this change (verified in
+`src/__tests__/us27-ac27.5-additive-deviation-recorded.test.ts`).
+
+- **Recorded:** 2026-08-07
+- **Recorded by:** dev-team (US-27, AC-27.5)

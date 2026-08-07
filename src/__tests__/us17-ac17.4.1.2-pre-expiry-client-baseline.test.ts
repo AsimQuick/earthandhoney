@@ -101,7 +101,7 @@ describe('AC-17.4.1.2: pre-expiry client-facing baseline is recorded', () => {
     it('names the route, its mount, and the middleware gating it', () => {
       expect(section).toMatch(/`GET \/api\/gallery\/:slug\/photos`/)
       expect(section).toMatch(/vendor\/picpeak\/backend\/src\/routes\/gallery\.js:216/)
-      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:635/)
+      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:446/)
       expect(section).toMatch(/vendor\/picpeak\/backend\/src\/middleware\/gallery\.js:20/)
     })
 
@@ -111,7 +111,7 @@ describe('AC-17.4.1.2: pre-expiry client-facing baseline is recorded', () => {
       expect(gallery[217]).toContain('verifyGalleryAccess')
 
       const server = read('vendor/picpeak/backend/server.js').split('\n')
-      expect(server[634]).toContain("app.use('/api/gallery', galleryRoutes)")
+      expect(server[445]).toContain("app.use('/api/gallery', galleryRoutes)")
 
       const middleware = read('vendor/picpeak/backend/src/middleware/gallery.js').split('\n')
       expect(middleware[19]).toContain('async function verifyGalleryAccess')

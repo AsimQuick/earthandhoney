@@ -81,15 +81,15 @@ describe('AC-17.7: a Backstage webhook fires and is received by a listener that 
       expect(section).toMatch(/vendor\/picpeak\/backend\/src\/services\/webhookService\.js/)
       expect(section).toMatch(/vendor\/picpeak\/backend\/src\/services\/webhookDeliveryWorker\.js/)
       expect(section).toMatch(/vendor\/picpeak\/backend\/src\/routes\/adminWebhooks\.js/)
-      expect(section).toMatch(/`\/api\/admin\/webhooks`\s*\n?by\s*\n?`server\.js:717`/)
-      expect(section).toMatch(/`vendor\/picpeak\/backend\/server\.js:841-842`/)
+      expect(section).toMatch(/`\/api\/admin\/webhooks`\s*\n?by\s*\n?`server\.js:528`/)
+      expect(section).toMatch(/`vendor\/picpeak\/backend\/server\.js:652-653`/)
     })
 
     it('those cited lines really do mount the routes and start the worker', () => {
       const server = read('vendor/picpeak/backend/server.js').split('\n')
-      expect(server[716]).toContain("app.use('/api/admin/webhooks', require('./src/routes/adminWebhooks'))")
-      expect(server[840]).toContain("const { startWebhookDeliveryWorker } = require('./src/services/webhookDeliveryWorker')")
-      expect(server[841]).toContain('startWebhookDeliveryWorker()')
+      expect(server[527]).toContain("app.use('/api/admin/webhooks', require('./src/routes/adminWebhooks'))")
+      expect(server[651]).toContain("const { startWebhookDeliveryWorker } = require('./src/services/webhookDeliveryWorker')")
+      expect(server[652]).toContain('startWebhookDeliveryWorker()')
     })
 
     it('the migration really does create the webhooks and webhook_deliveries tables', () => {

@@ -68,8 +68,8 @@ describe('AC-18.5: the contract records which Backstage surfaces are disabled, a
       expect(surfaces).toMatch(/res\.redirect\(302, '\/admin\/login'\)/)
     })
 
-    it('records the missing feature-flag wiring as a gap with a named design decision for the implementing story', () => {
-      expect(surfacesFlat).toMatch(/recorded here as a gap/)
+    it('records that the feature-flag gap has been closed by US-27 AC-27.1, citing the change record', () => {
+      expect(surfacesFlat).toMatch(/closes the gap the original audit recorded here/)
       expect(surfaces).toMatch(/publicSite/)
       expect(surfaces).toMatch(/FORK_CHANGELOG\.md/)
     })
@@ -173,18 +173,19 @@ describe('AC-18.5: the disabling claims are cross-checked directly against the p
     expect(service).toMatch(/general_public_site_enabled:\s*false/)
   })
 
-  it('server.js really does redirect GET / to /admin/login when the public site is disabled', () => {
-    const server = read('vendor/picpeak/backend/server.js')
-    expect(server).toMatch(/if \(!payload\.enabled\)/)
-    expect(server).toMatch(/res\.redirect\(302, '\/admin\/login'\)/)
+  it('publicSiteService.js really does redirect GET / to /admin/login when the flag is off or the setting is disabled (US-27 AC-27.1 moved this out of server.js)', () => {
+    const service = read('vendor/picpeak/backend/src/services/publicSiteService.js')
+    expect(service).toMatch(/if \(!flagEnabled\)/)
+    expect(service).toMatch(/if \(!payload\.enabled\)/)
+    expect(service).toMatch(/res\.redirect\(302, '\/admin\/login'\)/)
   })
 
-  it('KNOWN_FLAGS really does omit a public-site/cms flag, confirming the recorded gap is real, not invented', () => {
+  it('KNOWN_FLAGS really does now include a publicSite flag, confirming US-27 AC-27.1 closed the recorded gap (cms remains untouched, per the 1a scoping decision)', () => {
     const flags = read('vendor/picpeak/backend/src/routes/adminFeatureFlags.js')
     const knownFlagsMatch = flags.match(/const KNOWN_FLAGS = \[([\s\S]*?)\];/)
     expect(knownFlagsMatch).toBeTruthy()
     const knownFlagsBlock = knownFlagsMatch![1]
-    expect(knownFlagsBlock).not.toMatch(/'publicSite'/)
+    expect(knownFlagsBlock).toMatch(/'publicSite'/)
     expect(knownFlagsBlock).not.toMatch(/'cms'/)
   })
 

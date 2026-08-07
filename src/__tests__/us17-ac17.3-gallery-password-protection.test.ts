@@ -112,7 +112,7 @@ describe('AC-17.3: gallery password protection refuses without, grants with, the
     it('names the password-verification route and its mount', () => {
       expect(section).toMatch(/`POST \/api\/auth\/gallery\/verify`/)
       expect(section).toMatch(/vendor\/picpeak\/backend\/src\/routes\/auth\.js:184/)
-      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:631/)
+      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:442/)
     })
 
     it('names the gated content route and its mount', () => {
@@ -120,7 +120,7 @@ describe('AC-17.3: gallery password protection refuses without, grants with, the
         /`GET \/api\/gallery\/:slug\/photos`/
       )
       expect(section).toMatch(/vendor\/picpeak\/backend\/src\/routes\/gallery\.js:216/)
-      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:635/)
+      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:446/)
     })
 
     it('those cited lines really are the verify route, the photos route, and their mounts', () => {
@@ -132,8 +132,8 @@ describe('AC-17.3: gallery password protection refuses without, grants with, the
       expect(gallery[217]).toContain('verifyGalleryAccess')
 
       const server = read('vendor/picpeak/backend/server.js').split('\n')
-      expect(server[630]).toContain("app.use('/api/auth', authRoutes)")
-      expect(server[634]).toContain("app.use('/api/gallery', galleryRoutes)")
+      expect(server[441]).toContain("app.use('/api/auth', authRoutes)")
+      expect(server[445]).toContain("app.use('/api/gallery', galleryRoutes)")
     })
 
     it('cites the bcrypt comparison against the stored password hash', () => {
