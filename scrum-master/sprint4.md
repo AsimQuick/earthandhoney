@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 5/9 stories | 29/57 ACs
-**Last Updated:** 2026-08-07T14:35:46+00:00
+**Last Updated:** 2026-08-07T14:46:04+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -497,6 +497,7 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
 - [ ] **AC-26.5:** Duplicate and replayed deliveries are idempotent — the same delivery id processed twice produces one revalidation and no error — and a **dropped** delivery is bounded: with the webhook receiver stopped, a changed gallery page is shown to become correct within the 60-second safety-net cap the contract already commits to, so a lost webhook degrades staleness rather than breaking correctness. Contract row 5's five-attempt-then-`failed` retry policy is recorded as the upstream behaviour being relied on.
   - Dev: implemented
 - [ ] **AC-26.6:** The webhook shared secret and receiver URL are documented in `.env.example` with placeholder values and a per-variable comment, matching the sprint-3 convention, and repository secret names match the variable names one-to-one. No secret value is committed. `.env.example` stays authoritative (Reminder 6).
+  - Dev: implemented
 
 **Dependencies:** US-25
 
@@ -596,6 +597,7 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   - `src/app/(frontend)/api/webhooks/picpeak/route.ts` — extracts `x-picpeak-delivery`, gates `queueRevalidationForSlug` on `claimWebhookDelivery`, so a replayed delivery still returns 2xx but skips re-queuing work. Header metadata updated for AC-26.5.
   - `src/app/(frontend)/dev/gallery-placement-demo/page.tsx` — added the missing `export const revalidate = 60`. This route is one of the two gallery-bearing routes `getGalleryBearingPathsForSlug` can resolve to, and it predated the 60s-cap convention established later in AC-26.4.1 — without it, the bounded-staleness guarantee wasn't actually true for this route.
   - `src/__tests__/us26-ac26.5-webhook-idempotent-dropped-delivery.test.ts` (new, 17 tests) — dedup primitive unit test …
+  AC-26.6 implemented (local checks green): Waiting for the background test suite to finish (a monitor and fallback wakeup are both armed) before committing.
 
 **Tester Status:** approved
 **Tester Notes:**
