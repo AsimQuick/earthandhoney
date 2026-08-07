@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 4/9 stories | 23/51 ACs
-**Last Updated:** 2026-08-07T04:52:55+00:00
+**Last Updated:** 2026-08-07T05:35:15+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -378,6 +378,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-25.1:** A Payload `GalleryPlacement` model exists with exactly the fields PRD §14 specifies: the Backstage gallery identifier (the gallery `slug`, stored as a plain external-identifier field), layout (`slideshow` or `masonry`), optional heading, optional description, optional theme/overlay preset drawn from the US-23 token presets, visibility rules, and order within the page or story. A test asserts the model holds **no** foreign key or relation into `backstage-db` — `PAYLOAD_PICPEAK_API_CONTRACT.md`'s "No cross-database access" rule and Reminder 4 both forbid it.
   - Dev: implemented
 - [ ] **AC-25.2:** A single server-side Backstage client implements Flow A rows 1–2 of `PAYLOAD_PICPEAK_API_CONTRACT.md`: `GET /api/gallery/:slug/info` for display metadata, then the `POST /api/auth/gallery/verify` handshake followed by `GET /api/gallery/:slug/photos` for the photo list — the handshake is coded even for public galleries, because the contract does not let Frontstage assume `requires_password: false` in advance. Every call carries an explicit timeout. Proven live against the running Backstage stack for a published gallery, reproduced rather than run once.
+  - Dev: implemented
 - [ ] **AC-25.3:** The existing gallery components under `src/components/gallery/` render the Backstage-sourced photo list unchanged in location, through a new `backstageGalleryMapper` that takes the place of `payloadGalleryMapper.ts` as the data source. This is the "Kept as a Frontstage renderer" disposition `PIVOT_AUDIT.md`'s superseded-artifact table already records. A test asserts no second gallery-rendering component set is introduced.
 - [ ] **AC-25.4:** Caching obeys the contract exactly: the bounded 60-second safety-net cap, display data only, and never a Backstage database row stored Frontstage-side. A test asserts the cached shape contains only the fields the contract's "What the Frontstage is allowed to cache" section permits — rendered image URLs, thumbnails, gallery title/cover, item counts — and that a Frontstage cache is never treated as authoritative.
 - [ ] **AC-25.5:** An internal `noindex` route renders one and the same Backstage gallery through two placements — one `masonry`, one `slideshow` — proving PRD §14's core claim that layout is a placement concern and one gallery can appear in different layouts without the underlying gallery changing. Masonry preserves every received aspect ratio and the photographer's order, never crops or stretches, and reserves aspect-ratio space before load (PRD §15.1); slideshow preloads only current and next (PRD §15.2). A test asserts zero image-caused layout shift on the masonry route; a second test asserts the masonry route's rendered image order and each image's rendered aspect ratio match the photo list returned by `GET /api/gallery/:slug/photos` exactly, with no `object-fit: cover`/crop applied; a third test asserts the slideshow route's network requests show only the current and next image's assets loaded, never the full set.
@@ -394,6 +395,18 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - **`src/collections/GalleryPlacements.ts`** (new) — Payload collection `gallery-placements` with exactly the PRD §14 fields: `gallerySlug` (required `text`, the Backstage gallery identifier — a plain external-identifier field, never a `relationship`/`join`), `layout` (required `select`: `slideshow`/`masonry`), optional `heading` (`text`), optional `description` (`textarea`), optional `themePreset` (`select`, options loaded live from `loadTokenSpecimenData().overlaysAndVignettes` — the US-23 token source of truth), `visibility` (required `select`: `public`/`unlisted`/`draft`, defaults `draft`), `order` (required `number`). Exports `themePresetOptions()` for reuse/testing.
   - **`src/payload.config.ts`** — registers `GalleryPlacements` as a collection.
   - **`src/__tests__/us25-ac25.1-gallery-placement-model.test.ts`** (new, 13 tests) — asserts the exact field set, each field's type/required/options/default, that `themePreset` options track the live token source, that the collection is registered in config, and — the AC's explicit requirement — that **no field is `relationship`/`join`** and the source contai …
+  AC-25.2 implemented (local checks green): Committed on `feature/US-25` (not pushed).
+  
+  ## Implementation summary — US-25 AC-25.2
+  
+  **Files changed (3), commit `206c1de`:**
+  
+  - **`src/lib/backstageClient.ts`** (new) — the single server-side Backstage client for Flow A rows 1–2 of `PAYLOAD_PICPEAK_API_CONTRACT.md`.
+    - `getGalleryInfo()` — row 1, `GET /api/gallery/:slug/info`. Maps 404 to a single `not_found` reason (the contract's combined not-found/archived/unpublished rule) and surfaces the 301 `{redirect, newSlug}` body as a renamed-slug outcome rather than retrying the old slug.
+    - `verifyGalleryAccess()` — row 2 step 1, `POST /api/auth/gallery/verify`. Omits the `password` field entirely for a public gallery; maps 401 to `unauthorized`.
+    - `getGalleryPhotos()` — row 2 step 2, `GET /api/gallery/:slug/photos`. Passes the gallery JWT back as a Bearer credential, never decoded.
+    - `fetchPublishedGallery()` — the orchestration: info → verify → photos, stopping on the first failure and tagging which `step` failed. **The verify handshake runs unconditionally**, even when `info` already returned `requires_password: false`, because the contract does not let Frontstage assume that per-gallery in advance.
+    - **Every call carries …
 
 **Tester Status:** approved
 **Tester Notes:**
