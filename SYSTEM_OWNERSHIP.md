@@ -9,9 +9,14 @@ purpose: AC-18.1 — for every domain in the ownership table in CLAUDE.md,
          were written in sprint-3 against main's stale pre-pivot CLAUDE.md,
          citing the exact restored-CLAUDE.md line each corrected row now
          matches.
+         AC-22.3 — annotate the Contracts row with a dated REOPENED marker
+         naming the failed AC-17.10 element (audit page baked into the
+         delivered PDF) and pointing at scrum-master/po-requests.md item 7,
+         so the reopened contract-signing status propagates to this
+         artifact too.
 created-by: dev-team
-related-story: US-18, US-21
-related-ac: 18.1, 21.5
+related-story: US-18, US-21, US-22
+related-ac: 18.1, 21.5, 22.3
 ---
 -->
 
@@ -68,7 +73,7 @@ is folded into that domain below rather than duplicated.
 | Auth — photographer/admin/dashboard identity, and gallery-viewer access | PicPeak (PicPeak authentication and authorization; Better Auth is retired — `CLAUDE.md:122`, Technology Stack `Auth:` line) | Nothing — no other system in this stack authenticates a user or issues its own session. | No other system (Payload/Frontstage included) may authenticate a user or issue its own session; Better Auth must not be reintroduced as a second identity system. |
 | Email — outbound sending | PicPeak / Backstage email queue (SMTP via the PicPeak email queue; Resend is retired — `CLAUDE.md:123`, Technology Stack `Email:` line) | Nothing — sending is not a display concern. | No other system may dispatch its own client-facing or photographer-facing email; Resend must not be reintroduced as a second sender, per CLAUDE.md's rule that exactly one system sends any given email type. |
 | Payments — invoices, receipts, balances, and the actual card charge | Invoice Ninja (invoice/receipt/payment record, headless — API only, no client portal, gateway disconnected — `CLAUDE.md:105-108`, System Ownership table, and `CLAUDE.md:124`, Technology Stack `Ledger:` line) for the ledger; Stripe (the ported direct flow from `techno`) for the actual card charge — `CLAUDE.md:125`, Technology Stack `Payments:` line, and The Ledger Rule (`CLAUDE.md:44-81`), reconciled into Invoice Ninja via webhook | The app may display Invoice Ninja's invoice/receipt/payment status and Stripe's charge confirmation, cached for display only — our stored balances and statuses are display-only caches, never authoritative (The Ledger Rule's Headless guards, `CLAUDE.md:79-80`). | The app must never recreate billing logic or compute an authoritative balance itself; Invoice Ninja's own Stripe gateway must stay disconnected so there is exactly one payment path (`CLAUDE.md:77-78`). |
-| Contracts — signing | Open decision — e-sign provider TBD; V1 may ship manual signed-PDF upload with audit entry (per CLAUDE.md Technology Stack, see note below). Presentation is owned by PicPeak / Project Room regardless of which provider is eventually chosen (CLAUDE.md System Ownership table row: "Quote and contract workflow and presentation", owner "PicPeak / Project Room"). | Frontstage/Project Room may display signing status (sent/pending/signed) and the signed-document link/download handed to it by Backstage, once a provider is chosen. | No system may unilaterally lock in an e-sign vendor or the manual-upload fallback as final — that remains an open decision requiring Product Owner sign-off (CLAUDE.md's "Decisions No Agent May Make Alone," item 5); Frontstage must never itself record or stamp a signature. |
+| Contracts — signing | Open decision — e-sign provider TBD; V1 may ship manual signed-PDF upload with audit entry (per CLAUDE.md Technology Stack, see note below). **REOPENED (2026-08-07):** see `scrum-master/po-requests.md` item 7 — the audit-page-in-PDF element this open decision partly rested on does not hold at the pinned commit; PicPeak's native signing was verified 6 of 7 assumed elements, not 7. Presentation is owned by PicPeak / Project Room regardless of which provider is eventually chosen (CLAUDE.md System Ownership table row: "Quote and contract workflow and presentation", owner "PicPeak / Project Room"). | Frontstage/Project Room may display signing status (sent/pending/signed) and the signed-document link/download handed to it by Backstage, once a provider is chosen. | No system may unilaterally lock in an e-sign vendor or the manual-upload fallback as final — that remains an open decision requiring Product Owner sign-off (CLAUDE.md's "Decisions No Agent May Make Alone," item 5); Frontstage must never itself record or stamp a signature. |
 
 ## Notes and citations per domain
 
@@ -122,10 +127,15 @@ not connected" (`CLAUDE.md:77-78`), so this row avoids wording (e.g.
 "Stripe Checkout") that `CLAUDE.md` itself no longer uses.
 
 **Contracts — why this row states an open decision rather than naming a
-single system.** `CLAUDE.md`'s Technology Stack line for Contracts
-currently reads `open decision — e-sign provider TBD; V1 may ship manual
-signed-PDF upload with audit entry (Adobe Sign is no longer locked in)`.
-That is `CLAUDE.md`'s own current text, and it is not stale — this
+single system (REOPENED 2026-08-07, AC-22.3).** `CLAUDE.md`'s Technology
+Stack line for Contracts currently reads `open decision — e-sign provider
+TBD; V1 may ship manual signed-PDF upload with audit entry (Adobe Sign is
+no longer locked in)`, now itself carrying a dated `REOPENED (2026-08-07)`
+marker pointing at `scrum-master/po-requests.md` item 7: item 7's
+2026-07-30 confirmation of PicPeak's native signing was conditional on
+AC-17.10 verifying all seven assumed elements, and that condition failed —
+see the seventh-element gap two paragraphs below. That is `CLAUDE.md`'s
+own current text, and it is not stale — this
 document restates it rather than asserting a single authoritative signing
 system, because `CLAUDE.md`'s own "Decisions No Agent May Make Alone"
 list keeps the V1 contract-signing provider (or manual fallback) as item

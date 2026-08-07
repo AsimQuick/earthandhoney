@@ -186,8 +186,26 @@ describe('AC-3.3: upload / reorder / remove images and select a cover image enti
             const form = new FormData()
             form.append('file', new Blob([new Uint8Array(buffer)], { type: 'image/jpeg' }), `${label}.jpg`)
             form.append('_payload', JSON.stringify({ alt: `AC-3.3 ${label}` }))
-            const res = await fetch(`${base}/api/media`, { method: 'POST', headers: authHeaders, body: form })
-            expect(res.status).toBeLessThan(300)
+
+            // Each upload round-trips through Sharp derivative generation and
+            // four real writes to Cloudflare R2 (original + thumbnail/medium/
+            // large), and may land while `next dev` is still warming up the
+            // route on its first hit — an occasional transient 5xx here is
+            // dev-server/R2 latency, not a wiring defect, so retry a couple
+            // of times before failing the assertion.
+            let res: Response
+            let attempt = 0
+            do {
+              attempt += 1
+              res = await fetch(`${base}/api/media`, { method: 'POST', headers: authHeaders, body: form })
+              if (res.status < 500 || attempt >= 3) break
+              await new Promise((resolve) => setTimeout(resolve, 1000 * attempt))
+            } while (true)
+            if (res.status >= 300) {
+              throw new Error(
+                `POST /api/media failed with ${res.status} after ${attempt} attempt(s): ${await res.text()}`,
+              )
+            }
             const body = await res.json()
             return (body.doc ?? body).id as string
           }

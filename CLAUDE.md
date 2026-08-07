@@ -123,7 +123,7 @@ Ninja visible to a client or duplicates a record we already own.
 - **Email:** SMTP via the PicPeak email queue as the default owner of all client-facing mail (Resend is retired)
 - **Ledger:** Invoice Ninja, **headless** — API only, portal disabled, gateway disconnected. Runs in **our** `docker-compose.yml` on **our** VPS.
 - **Payments:** Stripe, ported from `/Users/asim/NoIcloud/techno` (see below). One payment path: the ported direct flow, reconciled into the ledger.
-- **Contracts:** open decision — e-sign provider TBD; V1 may ship manual signed-PDF upload with audit entry (Adobe Sign is no longer locked in)
+- **Contracts:** open decision — e-sign provider TBD; V1 may ship manual signed-PDF upload with audit entry (Adobe Sign is no longer locked in). **REOPENED (2026-08-07):** PicPeak's native contract-signing capability, the leading V1 candidate, was verified 6 of 7 assumed elements at the pinned fork commit — the 7th, *an audit page baked into the delivered PDF*, does not hold: the fork ships the audit trail as a separate sibling PDF, never merged into the signed-contract PDF. See `scrum-master/po-requests.md` item 7.
 - **Alt text:** self-hosted caption suggestion (Florence-2 is the first candidate, must be benchmarked) + human approval
 - **Deployment:** dedicated VPS, Docker Compose, one reverse proxy (Caddy or Nginx). **No Kubernetes.**
 
