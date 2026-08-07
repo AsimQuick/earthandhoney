@@ -34,7 +34,7 @@
     "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
     "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (retrospective action item 3)"
   ],
-  "last_updated": "2026-08-07T00:22:49+00:00",
+  "last_updated": "2026-08-07T00:30:11+00:00",
   "stories": [
     {
       "id": "US-21",
@@ -95,7 +95,7 @@
     {
       "id": "US-22",
       "title": "Route the sprint-3 findings to the Product Owner: reopen the contract-signing decision and register F1\u2013F9",
-      "status": "in-progress",
+      "status": "done",
       "priority": "critical",
       "dependencies": [
         "US-21"
@@ -104,36 +104,36 @@
         {
           "id": "22.1",
           "text": "`scrum-master/po-requests.md` item 7 (contract / e-signature provider for V1) is **reopened**. It currently reads \"Confirmed 2026-07-30, conditionally\" against a condition that has since failed: AC-17.10 verified 6 of 7 contract-signing elements at the pinned commit, and the 7th \u2014 *an audit page baked into the delivered PDF* \u2014 does **not** hold; the fork ships the audit trail as a separate sibling PDF, never merged into the signed contract. The reopening entry states which element failed, cites the `PIVOT_AUDIT.md` section and the fork file/line that proves it, changes the item's status to `REOPENED \u2014 awaiting decision`, and lists the options (accept the sibling-PDF audit trail as sufficient; patch the fork to merge the audit page; adopt an external provider, which the pivot currently forbids) with the Product Owner's recommendation. Sprint-3's own acceptance criterion AC-17.10 required this routing and it never happened.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "22.2",
           "text": "The nine honest upstream findings **F1\u2013F9** recorded in `PIVOT_AUDIT.md` \u2014 where the pinned fork behaves differently than the PRD assumed (including F1 a Gallery does not auto-inherit its Project's Client, F4 no `aspect_ratio` column, F5 roughly one hour of expiry-enforcement lag, F7 the `/storage` permission fix not surviving container recreation, F9 missing `gallery_expired`/`archive_complete` email templates) \u2014 are added to `po-requests.md` as PO findings. Each carries its finding id, a one-line statement, the PRD section it contradicts, and a proposed disposition: accept as-is, schedule fork work, or raise upstream. AC-17.9 required this routing; `PIVOT_AUDIT.md` states the findings \"are to be added\" and the addition never happened, because `po-requests.md` is outside an implementing AC's write scope.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "22.3",
           "text": "The reopened contract-signing status is propagated to every artifact an agent may be handed, so nothing in a later sprint inherits a known-false assumption: the restored `CLAUDE.md` Contracts entry and PRD \u00a729 both carry a dated `REOPENED` marker naming the failed element and pointing at `po-requests.md` item 7, and `SYSTEM_OWNERSHIP.md`'s Contracts row is annotated the same way. F1 and F5 receive the same treatment where the PRD's Project/Gallery and expiry language assumes otherwise. This is Reminder 15 applied to a finding rather than to a sprint file.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "22.4",
           "text": "The prepared-but-unsubmitted upstream defect report for the single-image download hang (F8 / UD-1) is surfaced in `po-requests.md` as an explicit human action item: it names the on-disk path of the drafted report, states that publishing it needs a human GitHub identity, and records the consequence of not filing it \u2014 the fork patch registered in `FORK_CHANGELOG.md` as droppable \"when upstream fixes it\" can never actually be dropped. Retrospective action item 9.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "22.5",
           "text": "The F7 `/storage` permission fix survives container recreation, or is recorded as a known manual step. Either the fix is made reproducible in `docker-compose.yml` / an entrypoint so a `docker compose down -v && up` leaves the Backstage storage path writable with no hand intervention \u2014 proven by actually recreating the containers and re-running an upload \u2014 or, if that is not achievable without editing shipped upstream code, it is documented as a named manual step in `BACKSTAGE_STARTUP.md` with the symptom it produces when skipped. It has already had to be reapplied by hand once (AC-17.5.1 \u2192 AC-17.7). Retrospective action item 7.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         }
       ],
