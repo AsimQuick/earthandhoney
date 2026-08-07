@@ -1,3 +1,15 @@
+/**
+ * Public Site Service
+ *
+ * Builds the raw-HTML/CSS homepage payload (sanitization + branding
+ * token substitution) and serves it via `handlePublicSiteRequest`, the
+ * handler for GET / (mounted in server.js). Gated by two independent
+ * checks, both of which must pass:
+ *   1. the `publicSite` feature flag (feature_flags table) — checked
+ *      first, before any app_settings row is read (US-27 AC-27.1)
+ *   2. the `general_public_site_enabled` app_settings value
+ */
+
 const crypto = require('crypto');
 const sanitizeHtml = require('sanitize-html');
 const { db } = require('../database/db');
@@ -233,6 +245,221 @@ function clearPublicSiteCache() {
   cacheExpiresAt = 0;
 }
 
+// ---------------------------------------------------------------------
+// Request handler for GET / (US-27 AC-27.1)
+//
+// `handlePublicSiteRequest` and the document-rendering helpers below
+// used to live inline in server.js. Moved here so the route can be
+// unit-tested without booting the full server (server.js calls
+// startServer() at import time). Behaviour is unchanged except for the
+// new `publicSite` feature-flag gate, checked FIRST — before
+// getPublicSitePayload() ever reads the `general_public_site_enabled`
+// app_settings row — so a settings-only write can no longer turn
+// Backstage into a second publisher of `/` (the duplicate AC-18.5
+// identified). Missing/false flag row → disabled, mirroring the
+// quotes/bills server-side gate pattern in adminQuotes.js.
+// ---------------------------------------------------------------------
+
+async function isPublicSiteFeatureEnabled() {
+  const row = await db('feature_flags').where({ key: 'publicSite' }).first();
+  return Boolean(row && (row.value === true || row.value === 1 || row.value === '1'));
+}
+
+function composeInlineStyles(payload) {
+  const { branding } = payload;
+  const cssSegments = [];
+
+  cssSegments.push(`:root {
+  --brand-primary: ${branding.colors.primary};
+  --brand-accent: ${branding.colors.accent};
+  --brand-background: ${branding.colors.background};
+  --brand-text: ${branding.colors.text};
+  --brand-surface: ${branding.colors.surface || '#ffffff'};
+  --brand-elevated: ${branding.colors.elevated || '#f5f5f5'};
+  --brand-border: ${branding.colors.border || '#e5e5e5'};
+  --brand-muted-text: ${branding.colors.mutedText || '#737373'};
+}`);
+
+  if (payload.baseCss) {
+    cssSegments.push(payload.baseCss);
+  }
+
+  if (payload.css) {
+    cssSegments.push(`/* Custom styles */\n${payload.css}`);
+  }
+
+  return cssSegments.join('\n\n');
+}
+
+function escapeDocumentHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function renderBrandHeader(branding) {
+  const displayName = escapeDocumentHtml(branding.companyName || 'PicPeak');
+  const logoSrc = encodeURI(branding.logoUrl || '/picpeak-logo-transparent.png');
+  const logo = `<img src="${logoSrc}" alt="${displayName}" class="brand-logo" loading="lazy" decoding="async" />`;
+
+  const tagline = branding.companyTagline
+    ? `<p class="brand-tagline">${escapeDocumentHtml(branding.companyTagline)}</p>`
+    : '';
+
+  return `<header class="site-header">
+  <div class="header-inner">
+    <div class="brand">
+      ${logo}
+      <div class="brand-copy">
+        <p class="brand-label">${displayName}</p>
+        ${tagline}
+      </div>
+    </div>
+    <nav class="site-nav">
+      <a href="#features">${'Features'}</a>
+      <a href="#workflow">${'Workflow'}</a>
+      <a href="#collections">${'Collections'}</a>
+      <a href="#stories">${'Stories'}</a>
+      <a href="#contact">${'Contact'}</a>
+    </nav>
+  </div>
+</header>`;
+}
+
+function renderBrandFooter(branding) {
+  const displayName = escapeDocumentHtml(branding.companyName || 'PicPeak');
+  const footerNote = branding.footerText
+    ? `<p>${escapeDocumentHtml(branding.footerText)}</p>`
+    : '<p>Powered by PicPeak to keep every celebration beautifully organised.</p>';
+
+  const supportEmail = escapeDocumentHtml(branding.supportEmail || '');
+  const supportLink = supportEmail
+    ? `<a href="mailto:${supportEmail}">Support</a>`
+    : '';
+
+  const legalLinks = `
+    <a href="/datenschutz">Privacy Policy</a>
+    <a href="/impressum">Impressum</a>
+    ${supportLink}
+  `;
+
+  return `<footer class="site-footer" id="contact">
+  <div class="footer-inner">
+    <div>
+      <h2>${displayName}</h2>
+      ${footerNote}
+    </div>
+    <div class="footer-links">
+      ${legalLinks}
+    </div>
+  </div>
+</footer>`;
+}
+
+function buildSeoMetaTags(seoSettings) {
+  const tags = [];
+  const robotsDirectives = [];
+
+  if (seoSettings.seo_meta_noindex) robotsDirectives.push('noindex');
+  if (seoSettings.seo_meta_nofollow) robotsDirectives.push('nofollow');
+
+  if (robotsDirectives.length > 0) {
+    tags.push(`<meta name="robots" content="${robotsDirectives.join(', ')}" />`);
+  }
+
+  if (seoSettings.seo_meta_noai) {
+    tags.push('<meta name="robots" content="noai, noimageai" />');
+  }
+
+  return tags.join('\n  ');
+}
+
+function buildPublicSiteDocument(payload) {
+  const inlineStyles = composeInlineStyles(payload);
+  const header = renderBrandHeader(payload.branding);
+  const footer = renderBrandFooter(payload.branding);
+  const seoMeta = payload.seoSettings ? buildSeoMetaTags(payload.seoSettings) : '';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeDocumentHtml(payload.title)}</title>
+  <meta name="description" content="Curated photo galleries and stories from unforgettable celebrations." />
+  ${seoMeta}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>${inlineStyles}</style>
+</head>
+<body>
+  <div class="site-shell">
+    ${header}
+    <main class="site-main">
+      ${payload.html}
+    </main>
+    ${footer}
+  </div>
+</body>
+</html>`;
+}
+
+async function handlePublicSiteRequest(req, res, next) {
+  try {
+    const flagEnabled = await isPublicSiteFeatureEnabled();
+    if (!flagEnabled) {
+      res.redirect(302, '/admin/login');
+      return;
+    }
+
+    const payload = await getPublicSitePayload();
+
+    if (!payload.enabled) {
+      res.redirect(302, '/admin/login');
+      return;
+    }
+
+    if (payload.etag && req.headers['if-none-match'] === payload.etag) {
+      res.status(304).end();
+      return;
+    }
+
+    // Inject SEO meta settings into payload
+    try {
+      const seoRows = await db('app_settings')
+        .where('setting_type', 'seo')
+        .whereIn('setting_key', ['seo_meta_noindex', 'seo_meta_nofollow', 'seo_meta_noai'])
+        .select('setting_key', 'setting_value');
+      const seoSettings = {};
+      for (const row of seoRows) {
+        let val = row.setting_value;
+        if (typeof val === 'string') { try { val = JSON.parse(val); } catch {} }
+        seoSettings[row.setting_key] = val;
+      }
+      payload.seoSettings = seoSettings;
+    } catch {}
+
+    const document = buildPublicSiteDocument(payload);
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=30, must-revalidate');
+    res.setHeader('ETag', payload.etag);
+    res.setHeader('Vary', 'Accept-Encoding');
+    res.setHeader('Content-Security-Policy', "default-src 'self'; frame-ancestors 'none'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https: data:; object-src 'none'; script-src 'self'; form-action 'self'");
+
+    res.status(200).send(document);
+  } catch (error) {
+    logger.error('Failed to render public site', { error: error.message });
+    next();
+  }
+}
+
 async function getDefaultPublicSitePayload() {
   const branding = await fetchBrandingContext();
   return buildCachedPayload({
@@ -273,5 +500,7 @@ module.exports = {
   getPublicSitePayload,
   clearPublicSiteCache,
   getDefaultPublicSitePayload,
-  getRawPublicSiteSettings
+  getRawPublicSiteSettings,
+  isPublicSiteFeatureEnabled,
+  handlePublicSiteRequest
 };

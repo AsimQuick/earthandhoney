@@ -13,7 +13,7 @@ jest.mock('../utils/logger', () => ({
 }));
 
 const { db } = require('../database/db');
-const { getPublicSitePayload, clearPublicSiteCache } = require('../services/publicSiteService');
+const { getPublicSitePayload, clearPublicSiteCache, handlePublicSiteRequest } = require('../services/publicSiteService');
 const { sanitizeCss } = require('../utils/cssSanitizer');
 
 const buildPublicSiteRows = (overrides = {}) => ([
@@ -188,4 +188,95 @@ describe('publicSiteService', () => {
     expect(payload.baseCss).toContain('var(--brand-muted-text');
   });
 
+});
+
+// ---------------------------------------------------------------------
+// US-27 AC-27.1 — `handlePublicSiteRequest` checks the `publicSite`
+// feature flag BEFORE app_settings is ever read, so a settings-only
+// write (general_public_site_enabled=true) can't turn Backstage into
+// a second publisher of `/` while the server-side flag stays false.
+// ---------------------------------------------------------------------
+describe('handlePublicSiteRequest (US-27 AC-27.1)', () => {
+  beforeEach(() => {
+    clearPublicSiteCache();
+    jest.clearAllMocks();
+  });
+
+  function mockRes() {
+    const res = {
+      redirect: jest.fn(),
+      setHeader: jest.fn(),
+      send: jest.fn(),
+      end: jest.fn(),
+    };
+    res.status = jest.fn(() => res);
+    return res;
+  }
+
+  function flagRow(enabled) {
+    return { where: () => ({ first: () => Promise.resolve(enabled ? { key: 'publicSite', value: true } : null) }) };
+  }
+
+  it('redirects to /admin/login when the flag is false, even though general_public_site_enabled is true — and never reads app_settings', async () => {
+    db.mockImplementationOnce(() => flagRow(false));
+
+    const req = { headers: {} };
+    const res = mockRes();
+    const next = jest.fn();
+
+    await handlePublicSiteRequest(req, res, next);
+
+    expect(res.redirect).toHaveBeenCalledWith(302, '/admin/login');
+    expect(res.send).not.toHaveBeenCalled();
+    // Only the feature-flag lookup ran — getPublicSitePayload (which
+    // reads general_public_site_enabled from app_settings) never fired.
+    expect(db).toHaveBeenCalledTimes(1);
+    expect(db).toHaveBeenCalledWith('feature_flags');
+  });
+
+  it('still redirects when the flag is true but general_public_site_enabled is false (existing app_settings gate stays intact)', async () => {
+    db.mockImplementationOnce(() => flagRow(true));
+    db.mockImplementationOnce(() => ({
+      whereIn: () => Promise.resolve([
+        { setting_key: 'general_public_site_enabled', setting_value: JSON.stringify(false) },
+      ]),
+    }));
+    db.mockImplementationOnce(() => ({ whereIn: () => Promise.resolve([]) }));
+
+    const req = { headers: {} };
+    const res = mockRes();
+    const next = jest.fn();
+
+    await handlePublicSiteRequest(req, res, next);
+
+    expect(res.redirect).toHaveBeenCalledWith(302, '/admin/login');
+  });
+
+  it('renders the document when both the flag and general_public_site_enabled are true', async () => {
+    db.mockImplementationOnce(() => flagRow(true));
+    db.mockImplementationOnce(() => ({
+      whereIn: () => Promise.resolve([
+        { setting_key: 'general_public_site_enabled', setting_value: JSON.stringify(true) },
+        { setting_key: 'general_public_site_html', setting_value: JSON.stringify('<h1>{{company_name}}</h1>') },
+      ]),
+    }));
+    db.mockImplementationOnce(() => ({
+      whereIn: () => Promise.resolve([
+        { setting_key: 'branding_company_name', setting_value: JSON.stringify('Willow & Pine Studio') },
+      ]),
+    }));
+    db.mockImplementationOnce(() => ({
+      where: () => ({ whereIn: () => ({ select: () => Promise.resolve([]) }) }),
+    }));
+
+    const req = { headers: {} };
+    const res = mockRes();
+    const next = jest.fn();
+
+    await handlePublicSiteRequest(req, res, next);
+
+    expect(res.redirect).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Willow & Pine Studio'));
+  });
 });
