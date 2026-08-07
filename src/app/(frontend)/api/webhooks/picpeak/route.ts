@@ -23,10 +23,16 @@
  *          gallery-bearing route(s) via galleryRevalidation.ts's re-keyed
  *          `getGalleryBearingPathsForSlug` and each is revalidated via
  *          `revalidatePath`. Both `payload` and `next/cache` are
- *          dynamically imported (mirrors src/collections/Galleries.ts) so
- *          the fast, non-blocking 2xx response itself is AC-26.3's scope,
- *          not this AC's — this route still awaits the lookup/revalidation
- *          work before responding.
+ *          dynamically imported (mirrors src/collections/Galleries.ts).
+ *          AC-26.3 — the placement lookup and revalidation
+ *          (`queueRevalidationForSlug`) are deliberately *not* awaited
+ *          before responding: contract row 5 requires the receiver return
+ *          2xx promptly, not after Backstage's own downstream work
+ *          finishes, since a slow/hanging lookup must never delay
+ *          Backstage's delivery confirmation. The work still runs — it is
+ *          queued, not skipped — a rejection from it is caught and logged
+ *          rather than surfaced, since the response has already been sent
+ *          and nothing can retry off the back of it.
  *          Coexists with the Payload catch-all at
  *          src/app/(payload)/api/[...slug]/route.ts: Next.js resolves a
  *          static segment (`/api/webhooks/picpeak`) ahead of a sibling
@@ -38,6 +44,9 @@
  * updated-by: dev-team
  * related-story: US-26
  * related-ac: 26.2
+ * updated-by: dev-team
+ * related-story: US-26
+ * related-ac: 26.3
  * ---
  */
 
@@ -64,7 +73,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // on (e.g. `event.archived`) — or a body this receiver can't make sense
   // of — is accepted and ignored, never treated as an error.
   if (event && isHandledPicPeakWebhookEvent(event.type) && event.gallerySlug) {
-    const slug = event.gallerySlug
+    // AC-26.3: queued, not awaited — see the file header. The response
+    // below is returned regardless of how long this takes.
+    void queueRevalidationForSlug(event.gallerySlug)
+  }
+
+  return NextResponse.json({ received: true }, { status: 200 })
+}
+
+async function queueRevalidationForSlug(slug: string): Promise<void> {
+  try {
     if (await hasGalleryPlacementForSlug(slug)) {
       const paths = getGalleryBearingPathsForSlug(slug)
       if (paths.length > 0) {
@@ -74,7 +92,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
       }
     }
+  } catch (error) {
+    console.error('picpeak webhook: queued revalidation failed', error)
   }
-
-  return NextResponse.json({ received: true }, { status: 200 })
 }

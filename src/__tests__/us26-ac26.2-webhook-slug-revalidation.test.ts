@@ -56,6 +56,14 @@ function sign(secret: string, body: string): string {
   return crypto.createHmac('sha256', secret).update(body, 'utf8').digest('hex')
 }
 
+// AC-26.3 made the placement lookup/revalidation a queued (non-awaited)
+// background step, so a test must let it settle before asserting on
+// `revalidatePath` — `hasGalleryPlacementForSlug` itself is still invoked
+// synchronously within the POST call, so no flush is needed to observe that.
+function flushMicrotasks(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve))
+}
+
 function makeRequest(body: string, signature: string): NextRequest {
   return new NextRequest('http://localhost:3000/api/webhooks/picpeak', {
     method: 'POST',
@@ -205,6 +213,7 @@ describe('AC-26.2: POST /api/webhooks/picpeak revalidates on-demand for a handle
 
     expect(response.status).toBe(200)
     expect(hasPlacementMock).toHaveBeenCalledWith(PLACEMENT_DEMO_GALLERY_SLUG)
+    await flushMicrotasks()
     expect(revalidatePath).toHaveBeenCalledTimes(1)
     expect(revalidatePath).toHaveBeenCalledWith(PLACEMENT_DEMO_GALLERY_PATH)
   })
@@ -218,6 +227,7 @@ describe('AC-26.2: POST /api/webhooks/picpeak revalidates on-demand for a handle
       const response = await POST(makeRequest(body, sign(SECRET, body)))
 
       expect(response.status).toBe(200)
+      await flushMicrotasks()
       expect(revalidatePath).toHaveBeenCalledWith(PLACEMENT_DEMO_GALLERY_PATH)
     }
   })
@@ -231,6 +241,7 @@ describe('AC-26.2: POST /api/webhooks/picpeak revalidates on-demand for a handle
 
     expect(response.status).toBe(200)
     expect(hasPlacementMock).toHaveBeenCalledTimes(1)
+    await flushMicrotasks()
     expect(revalidatePath).not.toHaveBeenCalled()
   })
 
@@ -245,6 +256,7 @@ describe('AC-26.2: POST /api/webhooks/picpeak revalidates on-demand for a handle
     const response = await POST(makeRequest(body, sign(SECRET, body)))
 
     expect(response.status).toBe(200)
+    await flushMicrotasks()
     expect(revalidatePath).not.toHaveBeenCalled()
   })
 
