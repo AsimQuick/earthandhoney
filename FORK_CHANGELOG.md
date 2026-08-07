@@ -36,6 +36,96 @@ sync time for a permanent, project-specific deviation.
 
 ---
 
+## 2026-08-07 — `deviation`
+
+**Every duplicate Backstage publishing surface AC-18.5 identified is now held
+off by its own feature flag, not just a settings default.** A new
+`publicSite` flag was added to `KNOWN_FLAGS`/`DEFAULT_FLAGS`, mirroring the
+existing `quotes`/`bills` pattern exactly, defaulting to `false`; the raw-HTML
+homepage renderer now checks it **before** `app_settings` is read, closing
+the gap where a single `PUT /api/admin/settings/general` write could turn
+Backstage into a second publisher of the site's `/` route. The equivalent
+admin-UI panel is hidden behind the same flag using the fork's existing
+`RequireFeature` gate, so the capability is not merely unreachable at the
+server — it is not offered. The native quote/invoice/tax-report subsystem's
+`quotes`/`bills` defaults were confirmed `false` with a live 403 proof rather
+than assumed off, and the static CMS Pages surface was confirmed to stay
+**enabled** (a deliberate scoping decision, not an oversight) with a test
+that would fail if a future cleanup silently reversed it. US-27 AC-27.1
+through AC-27.4.
+
+- **Type:** permanent deviation — new flag keys and gate checks this project
+  adds on top of upstream's existing flag mechanism. Not a vendor-defect
+  workaround, so §4 of `UPSTREAM_SYNC.md` does not apply; it is carried
+  forward on every future merge per §1.
+- **What changed:**
+  1. `publicSite` added to `KNOWN_FLAGS`/`DEFAULT_FLAGS`
+     (`adminFeatureFlags.js`), defaulting to `false`. US-27 AC-27.1.
+  2. `handlePublicSiteRequest` in `publicSiteService.js` now checks the
+     `publicSite` flag before reading `general_public_site_enabled` from
+     `app_settings`; the raw-HTML composition helpers (`composeInlineStyles`,
+     `renderBrandHeader`, `renderBrandFooter`, and the rest of the homepage
+     template) moved out of `server.js` and into the service alongside that
+     check, so the flag gate and the rendering it gates live in one place.
+     US-27 AC-27.1.
+  3. The admin "Public Site" raw HTML/CSS panel in `CMSPage.tsx` is hidden
+     behind the same `publicSite` flag via `RequireFeature`, the way the
+     quotes UI already is; `FeatureFlagsContext.tsx` and
+     `featureFlags.service.ts` carry the new flag through to the admin UI.
+     US-27 AC-27.2.
+  4. `publicQuotes.js` gained an explicit `quotes`-flag check on its public
+     routes (previously reachable whenever a quote existed, with no flag
+     behind it); `adminQuotes.js`, `adminInvoices.js`, `adminTaxReport.js`,
+     and `adminBusinessProfile.js` were confirmed to already default `quotes`
+     / `bills` to `false` with at least one flag-gated route per flag proven
+     to 403 with the flag off. US-27 AC-27.3.
+  5. `adminCMS.js` / `publicCMS.js` (the static CMS Pages surface) confirmed
+     to stay enabled — no flag added, by design; a pinning test now protects
+     that decision. US-27 AC-27.4.
+- **Files touched:**
+  - `vendor/picpeak/backend/src/routes/adminFeatureFlags.js` — `publicSite`
+    flag key.
+  - `vendor/picpeak/backend/src/services/publicSiteService.js` — flag check
+    moved ahead of the `app_settings` read; HTML-rendering helpers relocated
+    in from `server.js`.
+  - `vendor/picpeak/backend/server.js` — the relocated helpers removed; the
+    route now delegates entirely to `handlePublicSiteRequest`.
+  - `vendor/picpeak/backend/src/routes/publicQuotes.js` — new file, `quotes`
+    flag check added ahead of the public quote routes.
+  - `vendor/picpeak/frontend/src/pages/admin/CMSPage.tsx` — Public Site panel
+    wrapped in `RequireFeature('publicSite')`.
+  - `vendor/picpeak/frontend/src/contexts/FeatureFlagsContext.tsx` —
+    `publicSite` added to the tracked flag set.
+  - `vendor/picpeak/frontend/src/services/featureFlags.service.ts` —
+    `publicSite` added to the flag-service type/defaults.
+  - `vendor/picpeak/backend/src/__tests__/adminFeatureFlags.publicSite.test.js`
+    — new pinning suite for the flag default and its gate order.
+  - `vendor/picpeak/backend/src/__tests__/publicSiteService.test.js` —
+    extended to cover the pre-`app_settings` flag check.
+  - `vendor/picpeak/backend/__tests__/routes/cmsStaysEnabled.test.js` — new,
+    pins the CMS Pages surface as deliberately not flag-gated.
+  - `vendor/picpeak/backend/__tests__/routes/nativeBillingFlags.test.js` —
+    new, proves the `quotes`/`bills` defaults and the 403-with-flag-off
+    behaviour.
+  - `vendor/picpeak/backend/__tests__/routes/publicQuotes.test.js` — new,
+    covers the added `quotes` flag check.
+  - `src/__tests__/us27-ac27.2-cms-public-site-panel-flag-gated.test.ts` —
+    new, mirrors the existing quotes-panel `RequireFeature` test pattern.
+  - `src/__tests__/us18-ac18.5-backstage-surfaces-disabled.test.ts` — updated
+    now that AC-27.1 closed the gap AC-18.5 originally recorded as open.
+- **Evidence:** none of the above are under
+  `vendor/picpeak/backend/migrations/` — every change is a new flag key, a
+  new check, or a gated panel, never an edit to an already-shipped migration.
+  `src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity test
+  (`src/__tests__/us15-ac15.6-picpeak-vendored-fork.test.ts`) stays green
+  against this change, re-asserted by
+  `src/__tests__/us27-ac27.5-additive-deviation-recorded.test.ts`.
+
+- **Recorded:** 2026-08-07
+- **Recorded by:** dev-team (US-27, AC-27.5)
+
+---
+
 ## 2026-08-01 — `deviation`
 
 **Single-photo gallery download patched: read through the storage backend,
