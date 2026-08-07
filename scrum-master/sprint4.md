@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/9 stories | 18/51 ACs
-**Last Updated:** 2026-08-07T02:58:18+00:00
+**Last Updated:** 2026-08-07T03:10:01+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -293,6 +293,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-24.1:** A Payload global `StudioProfile` exists carrying exactly the central studio fields PRD §21.1 names: business name, owner name, description, established year (Earth & Honey Studios, since 2006), address, public phone, public email, service areas, social profiles, default social image, default title pattern, and default meta description. Every field is photographer-editable in the admin UI with no developer assistance. The collection file carries its structured metadata header.
   - Dev: implemented
 - [ ] **AC-24.2:** The photographer's branding controls are bounded to exactly PRD §12.3's list — logo, accent colour from a validated safe input, one approved font pairing chosen from the token set's approved combinations, and site identity/contact details. A test asserts `StudioProfile` exposes **no** field for arbitrary CSS, layout, margin, padding, or component positioning, since Pillar 3 forbids them and a field that exists will eventually be used.
+  - Dev: implemented
 - [ ] **AC-24.3:** The accent-colour input validates contrast before it can be saved: the submitted value is checked against the token ink and surface values, and a value failing WCAG AA is rejected with a clear admin-facing error naming the measured ratio and the required one. A safe input with no validation is not a safe input.
 - [ ] **AC-24.4:** No studio detail remains hard-coded in the repository. The US-8 shell, footer, and route metadata read their studio strings from `StudioProfile`, and a test asserts the previously hard-coded studio strings no longer appear as literals anywhere under `src/` outside test fixtures. PRD §21.1's requirement is a single owner, "no studio detail scattered through code".
 - [ ] **AC-24.5:** `StudioProfile` populates real output, not just a settings screen: the public route's `<title>` is produced from the default title pattern, its meta description and Open Graph image come from the global, and a JSON-LD `LocalBusiness`/`ProfessionalService` block is emitted from the same fields. A test asserts the rendered head and the structured-data block change when the global changes. No meta-keywords field is created (PRD §21.2).
@@ -315,6 +316,17 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - `src/__tests__/us24-ac24.1-studio-profile-global.test.ts` (new) — 7 tests covering metadata header, global registration, exact field set, defaults, email field type, and no hidden/readOnly/dev-only fields.
   
   **Verif …
+  AC-24.2 implemented (local checks green): Committed as `2342cf8` on `feature/US-24`.
+  
+  ## Summary — AC-24.2 implemented
+  
+  **Files changed:**
+  - `src/globals/StudioProfile.ts` — added a `branding` group field (PRD §12.3), bounded to exactly three sub-fields:
+    - `logo` — `upload` field relating to `media`
+    - `accentColor` — plain `text` field with a `validate` function rejecting anything but a 6-digit hex value (the "validated safe input" requirement; WCAG contrast validation itself is AC-24.3's scope)
+    - `fontPairing` — required `select` whose options are derived live from `src/lib/approvedFontPairings.ts` rather than hardcoded, so they can never drift from the US-23 token set's `--font-combo-*` values
+  - `src/lib/approvedFontPairings.ts` (new) — parses `tokens.css` for `--font-combo-<name>-{display,sans}-weight` tokens and exposes the distinct approved pairing names/options.
+  - `src/__tests__/us24-ac24.2-studio-profile-branding-bounds.test.ts` (new, 8 tests) — asserts the branding group holds exactly `logo`/`accentColor`/`fontPairing`; validates the accent-colour hex regex behavior (including rejecting a CSS-injection-style string); asserts `fontPairing`'s options exactly match the token set's approved combinations (and that …
 
 **Tester Status:** approved
 **Tester Notes:**
