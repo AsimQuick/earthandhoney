@@ -34,7 +34,7 @@
     "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
     "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (retrospective action item 3)"
   ],
-  "last_updated": "2026-08-07T07:09:24+00:00",
+  "last_updated": "2026-08-07T07:18:19+00:00",
   "stories": [
     {
       "id": "US-21",
@@ -263,7 +263,7 @@
     {
       "id": "US-25",
       "title": "Gallery Placement: a Frontstage page renders a Backstage gallery through the agreed API boundary",
-      "status": "in-progress",
+      "status": "done",
       "priority": "critical",
       "dependencies": [
         "US-21",
@@ -273,43 +273,43 @@
         {
           "id": "25.1",
           "text": "A Payload `GalleryPlacement` model exists with exactly the fields PRD \u00a714 specifies: the Backstage gallery identifier (the gallery `slug`, stored as a plain external-identifier field), layout (`slideshow` or `masonry`), optional heading, optional description, optional theme/overlay preset drawn from the US-23 token presets, visibility rules, and order within the page or story. A test asserts the model holds **no** foreign key or relation into `backstage-db` \u2014 `PAYLOAD_PICPEAK_API_CONTRACT.md`'s \"No cross-database access\" rule and Reminder 4 both forbid it.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "25.2",
           "text": "A single server-side Backstage client implements Flow A rows 1\u20132 of `PAYLOAD_PICPEAK_API_CONTRACT.md`: `GET /api/gallery/:slug/info` for display metadata, then the `POST /api/auth/gallery/verify` handshake followed by `GET /api/gallery/:slug/photos` for the photo list \u2014 the handshake is coded even for public galleries, because the contract does not let Frontstage assume `requires_password: false` in advance. Every call carries an explicit timeout. Proven live against the running Backstage stack for a published gallery, reproduced rather than run once.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "25.3",
           "text": "The existing gallery components under `src/components/gallery/` render the Backstage-sourced photo list unchanged in location, through a new `backstageGalleryMapper` that takes the place of `payloadGalleryMapper.ts` as the data source. This is the \"Kept as a Frontstage renderer\" disposition `PIVOT_AUDIT.md`'s superseded-artifact table already records. A test asserts no second gallery-rendering component set is introduced.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "25.4",
           "text": "Caching obeys the contract exactly: the bounded 60-second safety-net cap, display data only, and never a Backstage database row stored Frontstage-side. A test asserts the cached shape contains only the fields the contract's \"What the Frontstage is allowed to cache\" section permits \u2014 rendered image URLs, thumbnails, gallery title/cover, item counts \u2014 and that a Frontstage cache is never treated as authoritative.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "25.5",
           "text": "An internal `noindex` route renders one and the same Backstage gallery through two placements \u2014 one `masonry`, one `slideshow` \u2014 proving PRD \u00a714's core claim that layout is a placement concern and one gallery can appear in different layouts without the underlying gallery changing. Masonry preserves every received aspect ratio and the photographer's order, never crops or stretches, and reserves aspect-ratio space before load (PRD \u00a715.1); slideshow preloads only current and next (PRD \u00a715.2). A test asserts zero image-caused layout shift on the masonry route; a second test asserts the masonry route's rendered image order and each image's rendered aspect ratio match the photo list returned by `GET /api/gallery/:slug/photos` exactly, with no `object-fit: cover`/crop applied; a third test asserts the slideshow route's network requests show only the current and next image's assets loaded, never the full set.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "25.6",
           "text": "Failure behaviour is defined and proven: an unreachable Backstage, a timeout, or a 404 slug renders the page with a placeholder for that placement and a logged error \u2014 never a 500 on a public page, and never a partially rendered gallery presented as complete. Tested by pointing a placement at a slug that does not exist and by simulating a Backstage timeout.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         }
       ],
