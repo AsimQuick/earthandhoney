@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 5/9 stories | 29/57 ACs
-**Last Updated:** 2026-08-07T13:37:02+00:00
+**Last Updated:** 2026-08-07T13:47:06+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -485,6 +485,7 @@ Fixed scope. All three observations belong to one run and must not be split acro
 - [ ] **AC-26.4.1.3.3:** The sequence AC-26.4.1.3.2 recorded is re-run against the **second** draft gallery, from those recorded commands and without modifying them, and shown to reproduce — the same three pieces of evidence: the publish, the `event.published` delivery for that gallery reaching `status: success`, and the served Frontstage placement page changing inside the same sub-60-second deadline. Recorded as section (e)(iii) of `WEBHOOK_LIVE_PROOF.md`. This closes the first of AC-26.4's three changes and leaves both proof galleries published — the state AC-26.4.2 uploads a photo into.
 
 Fixed scope: this is `scripts/ac26.4.1-live-proof.sh reproduce`, the invocation the script already splits out for exactly this purpose. A second gallery rather than the first one re-published because the pinned fork's publish route is a one-way draft→live transition (`adminEvents.js:1049`) with no un-publish route, so reproducing through the supported interface needs an independently created draft rather than a database edit underneath the first — AC-26.4.1.2 created it for precisely this. The bar here is reproduction, not fresh proof: if the second run needs any change to the recorded commands in order to pass, make the change and record what changed and why, because a sequence that only works once has not reproduced.
+  - Dev: implemented
 - [ ] **AC-26.4.2:** Reusing the harness AC-26.4.1.1 recorded, without rebuilding it, a photo is uploaded into the gallery AC-26.4.1.3.2 left published, and `WEBHOOK_LIVE_PROOF.md` records the same three pieces of evidence: the upload command and its output, the `photo.uploaded` delivery shown as `success` through `GET /api/admin/webhooks/:id/deliveries`, and the Frontstage placement page shown carrying the new photo. The sequence is re-run and shown to reproduce.
 
 Fixed scope, so this stays a bounded choice rather than a search: at the pinned commit the admin upload route is `POST /api/admin/photos/:eventId/upload` (multipart, field name `photos`), already exercised live in `PIVOT_AUDIT.md` under AC-17.1.3/17.5 and reusable verbatim. That route in `routes/adminPhotos.js` does **not** fire the event itself. The complete set of `webhookService.fire('photo.uploaded', ...)` call sites in the fork is exactly five — `services/photoProcessor.js:246`, `services/photoProcessor.js:494`, `services/fileWatcher.js:142`, `services/s3AutoImporter.js:144`, `routes/v1/events.js:595` — and the task is to determine which of those five the admin upload path reaches, a choice from a closed list. If the admin upload path reaches none of them, that is a recorded finding and not a blocker: state it plainly in `WEBHOOK_LIVE_PROOF.md` with file and line, satisfy this criterion through whichever of the five listed paths does fire `photo.uploaded` for a photo landing in a published gallery, and raise the gap for the Product Owner the way sprint 3 raised its upstream defects. Confirm too that the subscription registered in AC-26.4.1.1 lists `photo.uploaded` in its `events` array — upstream matches each delivery against that list, so an event absent from it is never sent.
@@ -565,6 +566,7 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   
   **Files changed:**
   - `WEBHOOK_LIVE_PROOF.md` — added section `### (e)(ii)` recording the live run's real outpu …
+  AC-26.4.1.3.3 implemented (local checks green): I'll stop here and wait for the background task notification.
 
 **Tester Status:** approved
 **Tester Notes:**
