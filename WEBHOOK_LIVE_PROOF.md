@@ -341,3 +341,296 @@ Backstage's real `is_draft: true` for both galleries, not a mock. Nothing
 was published to produce this: no `/publish` call appears anywhere above —
 that state transition is AC-26.4.1.3's to make and to prove. AC-26.4.1.3
 reuses these two fixtures (ids 8 and 9) without recreating them.
+
+## (e) AC-26.4.1.3.1 — the read-only observation machinery, proven live before the one-way publish
+
+`scripts/ac26.4.1-live-proof.sh` performs its actual publish through
+`POST /api/admin/events/:id/publish`, a one-way transition the pinned fork
+gives no un-publish route for (`adminEvents.js:1049`). Everything else the
+script does to observe the result — resolving the subscription id, resolving
+each gallery's numeric id, reading the served proof page, and reading a
+webhook delivery back — is read-only and repeatable. This section runs that
+read-only half against the running stack and records its real output, so a
+parsing or lookup bug in the observation code is found here, before it can
+consume a fixture that publish's one-way nature would then require deleting
+and recreating.
+
+### Pre-run finding: the proof fixtures were published out of order again
+
+Before this criterion's own read-only run, the two proof galleries AC-26.4.1.2
+recorded as fresh drafts (ids 8 and 9) were checked again and found already
+**published** — the same out-of-order-consumption pattern section (d)'s own
+"Pre-run finding" already hit once, recurring because another live run of the
+downstream reproduction happened between that recording and this one:
+
+```
+$ curl -s -b <admin-cookie-jar> 'http://localhost:3101/api/admin/events?limit=200' \
+    | python3 -c "import json,sys
+d = json.load(sys.stdin)
+for e in d.get('events', d):
+    if 'ac-26-4-1-webhook-live-proof' in (e.get('slug') or ''):
+        print(e['id'], e['slug'], 'is_draft=', e.get('is_draft'))"
+17 wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21 is_draft= False
+16 wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 is_draft= False
+```
+
+(ids had already advanced from 8/9 to 16/17 by the time of this check — an
+earlier reset cycle this document does not separately narrate — but the
+`is_draft: False` finding is what matters here.) Fixed the same way section
+(d) established: delete both through the supported admin route, then re-run
+the idempotent setup harness to recreate them fresh.
+
+```
+$ curl -s -b <admin-cookie-jar> -X DELETE 'http://localhost:3101/api/admin/events/16'
+{"message":"Event deleted successfully"}
+$ curl -s -b <admin-cookie-jar> -X DELETE 'http://localhost:3101/api/admin/events/17'
+{"message":"Event deleted successfully"}
+
+$ bash scripts/webhook-live-proof-setup.sh
+[... sections (a)-(c) output, unchanged from above ...]
+
+=== (d) the two draft Backstage galleries the publish proof transitions
+{"id":18,"slug":"wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20", ..., "is_draft":true, ...}
+create gallery HTTP 200
+verified created slug wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20: True
+{"id":19,"slug":"wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21", ..., "is_draft":true, ...}
+create gallery HTTP 200
+verified created slug wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21: True
+
+=== (d) the matching Payload gallery-placements documents
+skip (already exists): wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 -> placement id 4
+skip (already exists): wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21 -> placement id 5
+
+=== HARNESS READY
+```
+
+Fresh galleries, ids 18 and 19, `is_draft: true` on both — the state the
+read-only run below requires. This is the exact recovery named at the end of
+this section, for AC-26.4.1.3 and AC-26.4.2 to reuse if a *publish* run fails
+partway rather than a *read-only* one.
+
+### (e)(i) The script's read-only functions, exercised end to end against the running stack
+
+Each command below is the literal body of the named function from
+`scripts/ac26.4.1-live-proof.sh`, run under `bash` (its own shebang
+interpreter — the functions rely on bash's word-splitting behaviour for
+`for id in $ids`, which does not hold under every shell) against the fresh
+fixtures ids 18/19 above.
+
+**Backstage admin login:**
+
+```
+$ curl -s -c <cookie-jar> -X POST http://localhost:3101/api/auth/admin/login \
+    -H 'Content-Type: application/json' \
+    -d '{"username":"admin","password":"change-me-in-production"}' \
+    -o /dev/null -w 'login HTTP %{http_code}\n'
+login HTTP 200
+```
+
+**`subscription_id()` — resolved from the receiver URL, not hardcoded:**
+
+```
+$ curl -s -b <cookie-jar> http://localhost:3101/api/admin/webhooks | jqpy '
+subs = json.load(sys.stdin)
+subs = subs.get("webhooks", subs) if isinstance(subs, dict) else subs
+for s in subs:
+    if s.get("url") == "http://web:3000/api/webhooks/picpeak":
+        print(s["id"]); sys.exit(0)
+sys.exit(1)'
+2
+```
+
+**`event_id_for_slug()` — resolved from each proof slug, both still `is_draft: true`:**
+
+```
+$ event_id_for_slug "wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20"
+18
+$ event_id_for_slug "wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21"
+19
+
+$ curl -s -b <cookie-jar> 'http://localhost:3101/api/admin/events?limit=200' \
+    | python3 -c "import json,sys
+d = json.load(sys.stdin)
+for e in d.get('events', d):
+    if e.get('id') in (18, 19):
+        print(e['id'], e['slug'], 'is_draft=', e.get('is_draft'))"
+19 wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21 is_draft= True
+18 wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 is_draft= True
+```
+
+**`page_state()` — the served `/dev/gallery-webhook-proof` page, read through the
+script's own `data-` attribute extraction, with the response's cache headers:**
+
+The very first read after (e)'s fixture recreation above still returned
+`photos=0` for both slugs — a leftover render cached under the *same* slugs
+from the just-deleted galleries (ids 16/17), `x-nextjs-cache: STALE`. This is
+the same caching behaviour section (d) already recorded, so it is expected,
+not a defect: the page's own `revalidate = 60` needed to elapse before a
+request would trigger a fresh render.
+
+```
+$ curl -sD - 'http://localhost:3000/dev/gallery-webhook-proof' -o /dev/null \
+    | grep -iE '^(HTTP|content-type|x-nextjs)'
+HTTP/1.1 200 OK
+x-nextjs-cache: STALE
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+Content-Type: text/html; charset=utf-8
+
+$ page_state "wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20"
+photos=0
+$ page_state "wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21"
+photos=0
+```
+
+Polling `page_state` once every 10s, both slugs settled to `unavailable`
+after 10s — the route's own background regeneration completing, well inside
+the 90s pre-state settle window `publish_and_prove` itself budgets for this
+exact situation:
+
+```
+$ curl -sD - 'http://localhost:3000/dev/gallery-webhook-proof' -o /dev/null \
+    | grep -iE '^(HTTP|content-type|x-nextjs)'
+HTTP/1.1 200 OK
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+Content-Type: text/html; charset=utf-8
+
+$ page_state "wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20"
+unavailable
+$ page_state "wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21"
+unavailable
+```
+
+Both slugs read `unavailable` through the script's own extraction, served
+with `x-nextjs-cache: HIT` — the same combination section (d) already
+recorded and flagged as worth checking explicitly rather than assumed.
+
+**The delivery read-back path — list, then one row's detail:**
+
+`GET /api/admin/webhooks/:id/deliveries` selects a fixed column set that
+excludes `payload` (`adminWebhooks.js:283-325`):
+
+```
+$ curl -s -b <cookie-jar> 'http://localhost:3101/api/admin/webhooks/2/deliveries?limit=50' \
+    | python3 -m json.tool
+{
+    "deliveries": [
+        {
+            "id": 52,
+            "event_type": "event.published",
+            "attempt_count": 1,
+            "status": "success",
+            "response_status": 200,
+            "latency_ms": 14,
+            "next_retry_at": null,
+            "created_at": "2026-08-07T12:43:48.468Z",
+            "completed_at": "2026-08-07T12:43:52.376Z",
+            "last_error": null
+        },
+        {
+            "id": 51,
+            "event_type": "event.published",
+            ...
+        },
+        ... (39 rows total, none carrying a "payload" key)
+    ]
+}
+```
+
+Reading two of those rows back individually through
+`GET /api/admin/webhooks/:id/deliveries/:deliveryId` does return `payload`,
+each containing the gallery slug the script's own `delivery_line()` matches
+against — these two rows are historical `event.published` deliveries for the
+same slugs from the galleries just deleted in the pre-run finding above (ids
+16/17, before they became 18/19), which is exactly why the script matches by
+**slug found inside the payload** rather than by the delivery's or gallery's
+numeric id: the id churns across a fixture reset, the slug does not.
+
+```
+$ curl -s -b <cookie-jar> 'http://localhost:3101/api/admin/webhooks/2/deliveries/51' \
+    | python3 -m json.tool
+{
+    "id": 51,
+    "webhook_id": 2,
+    "event_type": "event.published",
+    "payload": {
+        "id": "3980954f-06a8-4202-bd49-eb4a9d3a08f3",
+        "data": {
+            "event": {
+                "id": 16,
+                "slug": "wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20",
+                ...
+            }
+        },
+        "type": "event.published",
+        "created_at": "2026-08-07T12:43:43.220Z"
+    },
+    "attempt_count": 1,
+    "status": "success",
+    "response_status": 200,
+    "response_body": "{\"received\":true}",
+    ...
+}
+
+$ curl -s -b <cookie-jar> 'http://localhost:3101/api/admin/webhooks/2/deliveries/52' \
+    | python3 -m json.tool
+{
+    "id": 52,
+    "webhook_id": 2,
+    "event_type": "event.published",
+    "payload": {
+        "id": "146e6d2a-c21a-4956-a7f8-8c3a2c6c5a8f",
+        "data": {
+            "event": {
+                "id": 17,
+                "slug": "wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21",
+                ...
+            }
+        },
+        "type": "event.published",
+        ...
+    },
+    "attempt_count": 1,
+    "status": "success",
+    "response_status": 200,
+    "response_body": "{\"received\":true}",
+    ...
+}
+```
+
+Running the script's own `delivery_line()` function against both slugs
+confirms the match logic itself, not just the two raw reads above:
+
+```
+$ delivery_line 2 "wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20"
+id=51 event_type=event.published status=success response_status=200 attempts=1 latency_ms=12 last_error=None
+$ delivery_line 2 "wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21"
+id=52 event_type=event.published status=success response_status=200 attempts=1 latency_ms=14 last_error=None
+```
+
+Every step above matched what `scripts/ac26.4.1-live-proof.sh` already
+expects — `subscription_id()`, `event_id_for_slug()`, `page_state()`, and
+`delivery_line()` all ran unmodified and produced the output their own
+callers (`publish_and_prove`, `await_page_state`, `await_delivery_success`)
+already assume. No script correction was needed. No gallery was published by
+this section: both fixtures (ids 18/19) remain `is_draft: true`, undisturbed,
+for AC-26.4.1.3 to transition.
+
+### Recovery: the fixture-reset procedure a failed publish run falls back to
+
+The pre-run finding above re-used, verbatim, the procedure AC-26.4.1.2's own
+"Pre-run finding" established in section (d). Naming it here once, so
+AC-26.4.1.3 and AC-26.4.2 can point back to it instead of re-describing it:
+if a publish run against either proof gallery fails partway — publish
+succeeds but the delivery never reaches `success`, or the page never settles
+— the fixture is left in a state no supported route can undo (no un-publish
+route exists). The recovery is:
+
+1. `DELETE /api/admin/events/:id` for both proof galleries (id from
+   `event_id_for_slug()`, as above).
+2. Re-run `scripts/webhook-live-proof-setup.sh`, which idempotently recreates
+   both galleries as fresh drafts (new ids, same slugs) and detects the
+   existing Payload `gallery-placements` documents and webhook subscription
+   rather than duplicating either.

@@ -36,12 +36,16 @@ function readDoc(): string {
   return fs.readFileSync(DOC_PATH, 'utf8')
 }
 
-/** The `## (d)` section of WEBHOOK_LIVE_PROOF.md, to end of file. */
+/**
+ * The `## (d)` section of WEBHOOK_LIVE_PROOF.md, up to the next top-level
+ * section (`## (e)`, added by AC-26.4.1.3.1) or end of file if none follows.
+ */
 function sectionD(): string {
   const doc = readDoc()
   const start = doc.indexOf('## (d)')
   expect(start).toBeGreaterThan(-1)
-  return doc.slice(start)
+  const nextSectionIndex = doc.indexOf('## (e)', start)
+  return nextSectionIndex === -1 ? doc.slice(start) : doc.slice(start, nextSectionIndex)
 }
 
 describe('AC-26.4.1.2: WEBHOOK_LIVE_PROOF.md records the publish proof fixtures as section (d)', () => {
