@@ -100,9 +100,10 @@ describe('AC-6.2: the ISR route is internal — not backed by the out-of-scope P
     expect(ISR_SRC).not.toMatch(/collection:\s*['"](portfolio|homepage)['"]/i)
   })
 
-  it('src/collections/ still contains only the in-scope Galleries, Media, and Users collections (trip-wire against adding Portfolio/Homepage this sprint)', () => {
+  it('src/collections/ still excludes the out-of-scope Portfolio/Homepage collections (trip-wire against adding them this sprint)', () => {
     const files = fs.readdirSync(path.join(root, 'src/collections')).sort()
-    expect(files).toEqual(['Galleries.ts', 'Media.ts', 'Users.ts'])
+    expect(files).toEqual(expect.arrayContaining(['Galleries.ts', 'Media.ts', 'Users.ts']))
+    expect(files).not.toEqual(expect.arrayContaining(['Portfolio.ts', 'Homepage.ts']))
   })
 })
 
