@@ -34,7 +34,7 @@
     "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
     "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (retrospective action item 3)"
   ],
-  "last_updated": "2026-08-07T16:43:51+00:00",
+  "last_updated": "2026-08-07T16:53:44+00:00",
   "stories": [
     {
       "id": "US-21",
@@ -422,7 +422,7 @@
     {
       "id": "US-27",
       "title": "Disable the duplicate Backstage surfaces so every business function has exactly one owner",
-      "status": "in-progress",
+      "status": "done",
       "priority": "high",
       "dependencies": [
         "US-21"
@@ -431,36 +431,36 @@
         {
           "id": "27.1",
           "text": "A new `publicSite` feature flag is added to the fork's `KNOWN_FLAGS` and `DEFAULT_FLAGS` (`backend/src/routes/adminFeatureFlags.js`) defaulting to `false`, mirroring the existing `quotes`/`bills` pattern exactly, and `handlePublicSiteRequest` checks it **before** the `app_settings` value is read. Today the raw-HTML homepage editor is held off only by a settings default with no server-side flag behind it, so a single `PUT /api/admin/settings/general` write can turn Backstage into a second publisher of the site's `/` route \u2014 the duplicate `AC-18.5` identified. A test proves the route stays redirected to admin login even when `general_public_site_enabled` is set true while the flag is false.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "27.2",
           "text": "The \"Public Site\" raw HTML/CSS panel in `frontend/src/pages/admin/CMSPage.tsx` is hidden behind the same flag using the fork's existing `RequireFeature` gate, the way the quotes UI already is \u2014 so the capability is not merely unreachable at the server, it is not offered. Pillar 3 forbids page-level CSS editing and Payload owns Frontstage publishing; an editor that exists will eventually be used. A test asserts `CMSPage.tsx` does not render the Public Site panel when the `publicSite` flag is false, mirroring the existing test pattern that covers the quotes panel's `RequireFeature` gate.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "27.3",
           "text": "The native quote / invoice / tax-report subsystem is confirmed off by default rather than assumed off: `adminQuotes.js`, `publicQuotes.js` (`quotes` flag), `adminInvoices.js`, `adminTaxReport.js` and `adminBusinessProfile.js` (`bills` flag) each have their default asserted `false`, and at least one flag-gated route per flag is shown returning 403 with the flag off. The Ledger Rule puts these records in headless Invoice Ninja; a second native billing surface is a duplicate ledger, and PRD \u00a735.1 requires there be none.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "27.4",
           "text": "The static \"CMS Pages\" surface (impressum / privacy / terms, `adminCMS.js` + `publicCMS.js`) stays **enabled**, and a test asserts it is *not* disabled. `AC-18.5` recorded this as a deliberate scoping decision \u2014 legal/footer copy is not among the content types Payload owns, so it duplicates nothing. Encoding the decision as a test keeps a future cleanup from silently reversing it.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "27.5",
           "text": "Every change is additive \u2014 a new flag key, new checks, a gated panel \u2014 and no already-shipped upstream migration or migration file is modified; the `src/lib/picpeakMigrationManifest.ts` SHA-1 integrity test stays green. The deviation is recorded in `FORK_CHANGELOG.md` and `PICPEAK_PORT_LEDGER.md` with the file paths touched, and `UPSTREAM_SYNC.md` names the resulting merge-conflict risk on the next upstream sync.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         }
       ],
