@@ -1300,3 +1300,307 @@ shown carrying the new photo — came from the two runs above, and the
 sequence reproduced on the second run without any change to the recorded
 commands. Gallery A now carries two photos — the state AC-26.4.3 (photo
 delete) builds on next.
+
+## (g) AC-26.4.3 — a photo deleted from the published gallery, reaching the Frontstage through the verified webhook
+
+Reusing the harness (a)-(c) and gallery A (id 18, slug
+`wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20`) — carrying the
+two photos AC-26.4.2 uploaded (ids 19 and 20) — without rebuilding either.
+Gallery B is AC-26.4.1.3.3's fixture and is not touched here. This closes
+the third and last of AC-26.4's three changes, the one the original AC-26.4
+bundled together with publish and upload.
+
+### Fixed scope: the single-photo delete path, confirmed at the stated line
+
+The criterion's scope: at the pinned commit `photo.deleted` is fired from
+exactly two places — `routes/adminPhotos.js:694` on the single-photo delete
+path (`DELETE /api/admin/photos/:eventId/photos/:photoId`,
+`adminPhotos.js:632`), and `routes/adminPhotos.js:828` once per row on the
+bulk-delete path. This proof targets the single-photo path only:
+
+```
+$ sed -n '691,698p' vendor/picpeak/backend/src/routes/adminPhotos.js
+    // Webhook (#327): single-photo delete.
+    try {
+      const webhookService = require('../services/webhookService');
+      await webhookService.fire('photo.deleted', {
+        event: { id: parseInt(eventId, 10), slug: event?.slug, event_name: event?.event_name },
+        photo: { id: parseInt(photoId, 10), filename: photo.filename },
+      });
+    } catch (e) { /* non-fatal */ }
+```
+
+Line 694 is the `await webhookService.fire('photo.deleted', ...)` call
+itself, confirming the criterion's stated line against the pinned code
+rather than the criterion's own prose alone. Unlike the upload route (which
+does not call `webhookService` at all — AC-26.4.2's section (f) established
+that), the delete handler fires the event itself, synchronously in the
+request — but `webhookService.fire()` only enqueues a `webhook_deliveries`
+row (`services/webhookService.js:148-199`); a separate delivery worker still
+attempts the HTTP call on upstream's own polling schedule
+(`WEBHOOK_DELIVERY_INTERVAL_MS`, 5000ms default). The proof below polls the
+delivery for exactly this reason, rather than assuming success by the time
+the delete route's own response returns.
+
+### Subscription's `events` array carries `photo.deleted` — required for delivery to be attempted at all
+
+Re-read from (b), unchanged: upstream matches an outbound event against the
+subscription's own `events` array before ever attempting delivery.
+Confirmed directly against the live subscription:
+
+```
+$ curl -s -b <cookie-jar> http://localhost:3101/api/admin/webhooks | python3 -m json.tool
+[
+    {
+        "id": 2,
+        "name": "AC-26.4.1 webhook live-proof receiver",
+        "url": "http://web:3000/api/webhooks/picpeak",
+        "events": [
+            "event.published",
+            "photo.uploaded",
+            "photo.deleted"
+        ],
+        "active": true,
+        ...
+    }
+]
+```
+
+`photo.deleted` is present. Had it been absent, every delivery below would
+never have been attempted — not rejected by the receiver, simply never
+sent — the same reasoning section (f) already recorded for `photo.uploaded`.
+
+### Pre-run check: gallery A published, carrying both AC-26.4.2 photos
+
+```
+$ curl -s -b <cookie-jar> 'http://localhost:3101/api/admin/events?limit=200' \
+    | python3 -c "import json,sys
+d = json.load(sys.stdin)
+for e in d.get('events', d):
+    if 'ac-26-4-1-webhook-live-proof' in (e.get('slug') or ''):
+        print(e['id'], e['slug'], 'is_draft=', e.get('is_draft'))"
+19 wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21 is_draft= False
+18 wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 is_draft= False
+
+$ curl -s -b <cookie-jar> 'http://localhost:3101/api/admin/photos/18/photos' | python3 -m json.tool
+{
+    "photos": [
+        {"id": 20, "filename": "ac-26-4-1-webhook-live-proof-g_individual_0002.png", "original_filename": "img2.png", ...},
+        {"id": 19, "filename": "ac-26-4-1-webhook-live-proof-g_individual_0001.png", "original_filename": "img1.png", ...}
+    ]
+}
+```
+
+No reset was needed — nothing consumed gallery A between (f)'s run and this
+one; both photos (19, 20) remain exactly where AC-26.4.2 left them.
+
+### The script's real output, one run each, `proof` then `reproduce`, unmodified
+
+Deleting is repeatable in the sense this proof needs: two independent
+photos already exist on gallery A, so `proof` deletes the older one (photo
+19, uploaded first by AC-26.4.2's proof run) and `reproduce` deletes the
+remaining one (photo 20, uploaded by AC-26.4.2's reproduce run) — the
+identical sequence run a second time against the same gallery, each time
+resolving its target as the lowest-id photo still present rather than
+hardcoding an id.
+
+```
+$ bash scripts/ac26.4.3-live-proof.sh proof
+
+=== Backstage admin login
+login HTTP 200
+
+=== PROOF: deleting photo 19 from gallery 18 (wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20)
+{"message":"Photo deleted successfully"}
+delete HTTP 200
+
+=== PROOF: the delivery Backstage recorded for that delete
+id=57 event_type=photo.deleted status=success response_status=200 attempts=1 latency_ms=16 last_error=None
+delivery reached success after 4s
+
+=== PROOF: the served Frontstage placement page reflecting the delete
+page reflects 'photos=1' for wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 after 0s
+
+=== PASSED
+```
+
+```
+$ bash scripts/ac26.4.3-live-proof.sh reproduce
+
+=== Backstage admin login
+login HTTP 200
+
+=== REPRODUCE: deleting photo 20 from gallery 18 (wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20)
+{"message":"Photo deleted successfully"}
+delete HTTP 200
+
+=== REPRODUCE: the delivery Backstage recorded for that delete
+id=58 event_type=photo.deleted status=success response_status=200 attempts=1 latency_ms=12 last_error=None
+delivery reached success after 2s
+
+=== REPRODUCE: the served Frontstage placement page reflecting the delete
+page reflects 'photos=0' for wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 after 0s
+
+=== PASSED
+```
+
+No change was needed to the recorded commands to make either run pass — the
+sequence reproduced on the second run without any modification. The
+delivery reached `status: success` after 4s and 2s respectively — well
+inside `DEADLINE_SECONDS` (25s, itself under the 60s contract-row-5 safety
+net and the route's own `revalidate = 60`) — attributable to upstream's
+delivery worker firing the enqueued row, not to any cache expiring on its
+own schedule.
+
+### Independent read-back: `GET .../deliveries` list, then each delivery's own detail
+
+The script's `delivery_line()` already performs this list-then-detail
+read-back internally; this is the same pair of calls run directly, so the
+record shows the actual JSON rather than only the script's one-line summary.
+
+```
+$ curl -s -b <admin-cookie-jar> 'http://localhost:3101/api/admin/webhooks/2/deliveries?limit=3'
+{
+    "deliveries": [
+        {
+            "id": 58,
+            "event_type": "photo.deleted",
+            "attempt_count": 1,
+            "status": "success",
+            "response_status": 200,
+            "latency_ms": 12,
+            "next_retry_at": null,
+            "created_at": "2026-08-07T14:11:11.369Z",
+            "completed_at": "2026-08-07T14:11:13.148Z",
+            "last_error": null
+        },
+        {
+            "id": 57,
+            "event_type": "photo.deleted",
+            "attempt_count": 1,
+            "status": "success",
+            "response_status": 200,
+            "latency_ms": 16,
+            "next_retry_at": null,
+            "created_at": "2026-08-07T14:10:50.650Z",
+            "completed_at": "2026-08-07T14:10:53.151Z",
+            "last_error": null
+        },
+        ... (43 older rows, unaffected by this run)
+    ],
+    "pagination": { "page": 1, "limit": 3, "total": 45 }
+}
+
+$ curl -s -b <admin-cookie-jar> 'http://localhost:3101/api/admin/webhooks/2/deliveries/57'
+{
+    "id": 57,
+    "webhook_id": 2,
+    "event_type": "photo.deleted",
+    "payload": {
+        "id": "1489b303-ad63-46a9-a5c3-a0bac4afdbf9",
+        "data": {
+            "event": {
+                "id": 18,
+                "slug": "wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20",
+                "event_name": "ac-26-4-1-webhook-live-proof-gallery"
+            },
+            "photo": {
+                "id": 19,
+                "filename": "ac-26-4-1-webhook-live-proof-g_individual_0001.png"
+            }
+        },
+        "type": "photo.deleted",
+        "created_at": "2026-08-07T14:10:50.650Z"
+    },
+    "attempt_count": 1,
+    "status": "success",
+    "response_status": 200,
+    "response_body": "{\"received\":true}",
+    "last_error": null,
+    "latency_ms": 16,
+    "next_retry_at": null,
+    "created_at": "2026-08-07T14:10:50.650Z",
+    "completed_at": "2026-08-07T14:10:53.151Z"
+}
+
+$ curl -s -b <admin-cookie-jar> 'http://localhost:3101/api/admin/webhooks/2/deliveries/58'
+{
+    "id": 58,
+    "webhook_id": 2,
+    "event_type": "photo.deleted",
+    "payload": {
+        "id": "e346c961-315b-474c-801d-cd999524caa2",
+        "data": {
+            "event": {
+                "id": 18,
+                "slug": "wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20",
+                "event_name": "ac-26-4-1-webhook-live-proof-gallery"
+            },
+            "photo": {
+                "id": 20,
+                "filename": "ac-26-4-1-webhook-live-proof-g_individual_0002.png"
+            }
+        },
+        "type": "photo.deleted",
+        "created_at": "2026-08-07T14:11:11.369Z"
+    },
+    "attempt_count": 1,
+    "status": "success",
+    "response_status": 200,
+    "response_body": "{\"received\":true}",
+    "last_error": null,
+    "latency_ms": 12,
+    "next_retry_at": null,
+    "created_at": "2026-08-07T14:11:11.369Z",
+    "completed_at": "2026-08-07T14:11:13.148Z"
+}
+```
+
+The list rows (no `payload` key, per `adminWebhooks.js:283-325`) and the
+detail rows (each carrying `payload.data.photo.id` matching the photo
+deleted in that run, and `payload.data.event.slug` matching gallery A) are
+the same two deliveries, `id=57` and `id=58` — the list-plus-detail
+read-back the criterion requires, for two independent deliveries.
+
+### Independent confirmation: the served Frontstage page and gallery state, read directly
+
+```
+$ curl -s -b <admin-cookie-jar> 'http://localhost:3101/api/admin/photos/18/photos'
+{"photos":[]}
+
+$ curl -sD - 'http://localhost:3000/dev/gallery-webhook-proof' -o /tmp/proof-page-ac26.4.3-reproduce.html \
+    | grep -iE '^(HTTP|content-type|x-nextjs)'
+HTTP/1.1 200 OK
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+Content-Type: text/html; charset=utf-8
+
+$ python3 -c "
+import re
+html = open('/tmp/proof-page-ac26.4.3-reproduce.html').read()
+for m in re.finditer(r'<section.*?</h2>', html, re.S):
+    print(m.group(0))
+    print('---')
+"
+<section aria-label="Live-proof gallery wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20" data-testid="webhook-proof-gallery" data-gallery-slug="wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20" data-photo-count="0" data-photo-ids="" class="w-full px-8"><h2 class="pb-4 text-2xl font-normal tracking-[3px] uppercase">wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20<!-- --> — <!-- -->0<!-- --> photo<!-- -->s</h2>
+---
+<section aria-label="Live-proof gallery wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21" data-testid="webhook-proof-gallery" data-gallery-slug="wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21" data-photo-count="0" data-photo-ids="" class="w-full px-8"><h2 class="pb-4 text-2xl font-normal tracking-[3px] uppercase">wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21<!-- --> — <!-- -->0<!-- --> photo<!-- -->s</h2>
+---
+```
+
+Gallery A now carries `data-photo-count="0"` with `data-photo-ids=""` —
+both AC-26.4.2 photos are gone from the served page, Backstage's real
+underlying state (`{"photos":[]}`, read directly). Gallery B is untouched,
+already `data-photo-count="0"` from its own earlier publish, confirming
+this criterion's scope stayed to gallery A alone.
+
+All three pieces of evidence the criterion requires — the delete command
+and its output, the `photo.deleted` delivery shown as `success` through
+both the list and detail forms of `GET /api/admin/webhooks/:id/deliveries`,
+and the Frontstage placement page shown no longer carrying the deleted
+photo — came from the two runs above, and the sequence reproduced on the
+second run without any change to the recorded commands. This closes the
+three-change set the original AC-26.4 stated as one: publish
+(AC-26.4.1.3.2/.3.3), upload (AC-26.4.2), and delete (AC-26.4.3), all proven
+live against the running stack and all shown to reproduce.
