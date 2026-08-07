@@ -13,14 +13,18 @@
  *          logo, a validated-safe accent colour, and one approved font
  *          pairing drawn from the design token set — no field for arbitrary
  *          CSS, layout, margin, padding, or component positioning exists
- *          anywhere in this global.
+ *          anywhere in this global. The accent colour is further checked for
+ *          WCAG AA contrast against the token ink/surface values before it
+ *          can be saved (AC-24.3) — a safe input with no validation is not a
+ *          safe input.
  * created-by: dev-team
  * related-story: US-24
- * related-ac: 24.1, 24.2
+ * related-ac: 24.1, 24.2, 24.3
  * ---
  */
 import type { GlobalConfig } from 'payload'
 
+import { validateAccentColorContrast } from '../lib/accentColorContrast'
 import { getApprovedFontPairingOptions } from '../lib/approvedFontPairings'
 
 export const SOCIAL_PROFILE_PLATFORMS = [
@@ -206,9 +210,10 @@ export const StudioProfile: GlobalConfig = {
             if (value === undefined || value === null || value === '') {
               return true
             }
-            return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value)
-              ? true
-              : 'Accent colour must be a 6-digit hex value, e.g. "#2B6CB0".'
+            if (typeof value !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value)) {
+              return 'Accent colour must be a 6-digit hex value, e.g. "#2B6CB0".'
+            }
+            return validateAccentColorContrast(value)
           },
         },
         {
