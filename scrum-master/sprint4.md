@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 5/9 stories | 29/51 ACs
-**Last Updated:** 2026-08-07T07:42:39+00:00
+**Last Updated:** 2026-08-07T08:15:02+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -461,6 +461,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-26.1:** A Frontstage receiver route accepts the Backstage webhook and recomputes the `X-PicPeak-Signature` HMAC-SHA256 over the raw body **before** trusting any field in it. An absent, malformed, or mismatched signature is rejected with 401 and revalidates nothing. A test proves a forged body with a stale signature is rejected. `PAYLOAD_PICPEAK_API_CONTRACT.md` Flow C step 3 states this rule and it is the whole security basis of the flow.
   - Dev: implemented
 - [ ] **AC-26.2:** The receiver extracts the changed gallery's `id`/`slug` from the verified payload, maps it to the `GalleryPlacement` records referencing that slug, and calls the existing on-demand revalidation mechanism in `src/lib/galleryRevalidation.ts` — re-keyed from its current Payload-gallery-title lookup (`getGalleryBearingPaths`) to a Backstage slug lookup. The mechanism's role is unchanged; only the source of truth it maps from has changed with the pivot. The fixed event catalog it handles (`event.published`, `photo.uploaded`, `photo.deleted`) is asserted against contract row 5, and an unrecognised event type is accepted with 2xx and ignored, not treated as an error.
+  - Dev: implemented
 - [ ] **AC-26.3:** The receiver returns 2xx promptly after queuing or performing the revalidation, not after Backstage's own work finishes — contract row 5's requirement. A test asserts the response is returned without waiting on the revalidation's completion.
 - [ ] **AC-26.4:** Proven live and reproducibly against the running stack: publish a gallery in Backstage, then upload and delete a photo in one already published, and show the Frontstage placement page reflecting each change. Each proof is shown to reproduce, per the sprint-3 evidence discipline.
 - [ ] **AC-26.5:** Duplicate and replayed deliveries are idempotent — the same delivery id processed twice produces one revalidation and no error — and a **dropped** delivery is bounded: with the webhook receiver stopped, a changed gallery page is shown to become correct within the 60-second safety-net cap the contract already commits to, so a lost webhook degrades staleness rather than breaking correctness. Contract row 5's five-attempt-then-`failed` retry policy is recorded as the upstream behaviour being relied on.
@@ -479,6 +480,18 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - `.env.example` — documents `PICPEAK_WEBHOOK_SECRET` with a descriptive comment, no real value.
   - `src/__tests__/us26-ac26.1-picpeak-webhook-signature-verification.test.ts` (new) — 11 tests: primitive-level (valid, missing, malformed, wrong-secret, unconfigured-secret, forged-body-with-stale-signature) and route-level (accept valid, reject missing/malformed/forged-stale with 401 and no revalidation side effect, reject when secret unset).
   - `src/__tests__/us3-ac3.2-single-image-system.test.ts` — added an audited-exception allowlist so its "e …
+  AC-26.2 implemented (local checks green): Committed as `48f6216` on `feature/US-26`.
+  
+  ## Summary
+  
+  **AC-26.2** was already implemented (uncommitted) from a prior session; I reviewed it end-to-end, verified it against the AC text and the contract doc, ran the full test suite, and committed it.
+  
+  **Files changed:**
+  - `src/lib/picpeakWebhookEvent.ts` (new) — parses a verified webhook body into `type`/`gallerySlug`/`galleryId`; defines the fixed 3-type handled-event set (`event.published`, `photo.uploaded`, `photo.deleted`) and `isHandledPicPeakWebhookEvent`.
+  - `src/lib/galleryPlacementLookup.ts` (new) — `hasGalleryPlacementForSlug()`, queries Payload's `gallery-placements` collection by `gallerySlug` via dynamically-imported Local API.
+  - `src/lib/galleryRevalidation.ts` — adds `getGalleryBearingPathsForSlug()`, the slug-keyed sibling to the existing title-keyed `getGalleryBearingPaths()`; leaves the original untouched.
+  - `src/app/(frontend)/api/webhooks/picpeak/route.ts` — after AC-26.1's signature check, parses the event, ignores unhandled types (2xx), else checks placement and revalidates matched paths.
+  - `src/app/(frontend)/dev/gallery-placement-demo/page.tsx` — `PLACEMENT_DEMO_GALLERY_SLUG` moved to `galleryRevalidation.ts` …
 
 **Tester Status:** approved
 **Tester Notes:**
