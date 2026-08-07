@@ -34,7 +34,7 @@
     "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
     "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (retrospective action item 3)"
   ],
-  "last_updated": "2026-08-07T07:18:19+00:00",
+  "last_updated": "2026-08-07T07:42:39+00:00",
   "stories": [
     {
       "id": "US-21",
@@ -322,7 +322,7 @@
     {
       "id": "US-26",
       "title": "A Backstage change triggers a Frontstage content refresh through a verified webhook",
-      "status": "draft",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [
         "US-25"
@@ -332,7 +332,7 @@
           "id": "26.1",
           "text": "A Frontstage receiver route accepts the Backstage webhook and recomputes the `X-PicPeak-Signature` HMAC-SHA256 over the raw body **before** trusting any field in it. An absent, malformed, or mismatched signature is rejected with 401 and revalidates nothing. A test proves a forged body with a stale signature is rejected. `PAYLOAD_PICPEAK_API_CONTRACT.md` Flow C step 3 states this rule and it is the whole security basis of the flow.",
           "checked": false,
-          "dev_status": "not-started",
+          "dev_status": "implemented",
           "tester_status": "not-started"
         },
         {
@@ -372,7 +372,7 @@
         }
       ],
       "dev_status": "not-started",
-      "dev_notes": "",
+      "dev_notes": "AC-26.1 implemented (local checks green): Committed as `c565a9e` on `feature/US-26`.\n\n**Implementation summary \u2014 AC-26.1**\n\n- `src/lib/picpeakWebhookAuth.ts` (new) \u2014 `verifyPicPeakWebhookSignature(secret, rawBody, signatureHeader)`: recomputes HMAC-SHA256 over the raw body, compares with `crypto.timingSafeEqual`, returns `false` (never throws) on any missing secret/header, malformed hex, or mismatch.\n- `src/app/(frontend)/api/webhooks/picpeak/route.ts` (new) \u2014 `POST` receiver: reads raw body text, verifies the `X-PicPeak-Signature` header before touching any payload field, returns 401 on failure, 200 on success. Payload extraction/revalidation is explicitly out of scope (AC-26.2/26.3).\n- `.env.example` \u2014 documents `PICPEAK_WEBHOOK_SECRET` with a descriptive comment, no real value.\n- `src/__tests__/us26-ac26.1-picpeak-webhook-signature-verification.test.ts` (new) \u2014 11 tests: primitive-level (valid, missing, malformed, wrong-secret, unconfigured-secret, forged-body-with-stale-signature) and route-level (accept valid, reject missing/malformed/forged-stale with 401 and no revalidation side effect, reject when secret unset).\n- `src/__tests__/us3-ac3.2-single-image-system.test.ts` \u2014 added an audited-exception allowlist so its \"e \u2026",
       "tester_status": "approved",
       "tester_notes": "Requirements review pass. All 6 ACs testable: explicit forged-signature test (26.1), a named fixed event catalog with an explicit unknown-event pass condition (26.2), an explicit non-blocking-response test (26.3), a named live-reproduction sequence (26.4), explicit idempotency and bounded-staleness proof (26.5), and a concrete .env.example/secret-naming check (26.6). No vague wording or missing test criteria found. No JSON edits required.",
       "issue": 69
