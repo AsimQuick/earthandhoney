@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 5/9 stories | 29/51 ACs
-**Last Updated:** 2026-08-07T08:15:02+00:00
+**Last Updated:** 2026-08-07T08:48:14+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -463,6 +463,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-26.2:** The receiver extracts the changed gallery's `id`/`slug` from the verified payload, maps it to the `GalleryPlacement` records referencing that slug, and calls the existing on-demand revalidation mechanism in `src/lib/galleryRevalidation.ts` — re-keyed from its current Payload-gallery-title lookup (`getGalleryBearingPaths`) to a Backstage slug lookup. The mechanism's role is unchanged; only the source of truth it maps from has changed with the pivot. The fixed event catalog it handles (`event.published`, `photo.uploaded`, `photo.deleted`) is asserted against contract row 5, and an unrecognised event type is accepted with 2xx and ignored, not treated as an error.
   - Dev: implemented
 - [ ] **AC-26.3:** The receiver returns 2xx promptly after queuing or performing the revalidation, not after Backstage's own work finishes — contract row 5's requirement. A test asserts the response is returned without waiting on the revalidation's completion.
+  - Dev: implemented
 - [ ] **AC-26.4:** Proven live and reproducibly against the running stack: publish a gallery in Backstage, then upload and delete a photo in one already published, and show the Frontstage placement page reflecting each change. Each proof is shown to reproduce, per the sprint-3 evidence discipline.
 - [ ] **AC-26.5:** Duplicate and replayed deliveries are idempotent — the same delivery id processed twice produces one revalidation and no error — and a **dropped** delivery is bounded: with the webhook receiver stopped, a changed gallery page is shown to become correct within the 60-second safety-net cap the contract already commits to, so a lost webhook degrades staleness rather than breaking correctness. Contract row 5's five-attempt-then-`failed` retry policy is recorded as the upstream behaviour being relied on.
 - [ ] **AC-26.6:** The webhook shared secret and receiver URL are documented in `.env.example` with placeholder values and a per-variable comment, matching the sprint-3 convention, and repository secret names match the variable names one-to-one. No secret value is committed. `.env.example` stays authoritative (Reminder 6).
@@ -492,6 +493,14 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - `src/lib/galleryRevalidation.ts` — adds `getGalleryBearingPathsForSlug()`, the slug-keyed sibling to the existing title-keyed `getGalleryBearingPaths()`; leaves the original untouched.
   - `src/app/(frontend)/api/webhooks/picpeak/route.ts` — after AC-26.1's signature check, parses the event, ignores unhandled types (2xx), else checks placement and revalidates matched paths.
   - `src/app/(frontend)/dev/gallery-placement-demo/page.tsx` — `PLACEMENT_DEMO_GALLERY_SLUG` moved to `galleryRevalidation.ts` …
+  AC-26.3 already satisfied on the story branch (no new commit; Tester-verified): 100% coverage on the route file. The full test suite already passed too (36/36 across the three US-26 test files). Working tree is clean and `git status` shows nothing to commit — the existing commit `fbf6903` already contains everything needed for AC-26.3.
+  
+  **ALREADY-SATISFIED.**
+  
+  Evidence:
+  - `src/app/(frontend)/api/webhooks/picpeak/route.ts` — `POST` calls `void queueRevalidationForSlug(event.gallerySlug)` (not awaited) and returns `NextResponse.json({ received: true }, { status: 200 })` immediately. `queueRevalidationForSlug` runs the placement lookup + `revalidatePath` calls in the background, wrapped in try/catch that logs (`console.error('picpeak webhook: queued revalidation failed', ...)`) rather than surfacing failures, since the response is already sent.
+  - `src/__tests__/us26-ac26.3-webhook-non-blocking-response.test.ts` (3 tests) — proves the response settles with 200 while the placement lookup promise is still deliberately unresolved (would hang on Jest's timeout if the route awaited it), proves an unhandled event type responds with no lookup queued at all, and proves a rejected queued lookup is logged, not surfaced.
+  - `src/__tests__/us26-ac26.2-webhook-slug-revalidation …
 
 **Tester Status:** approved
 **Tester Notes:**
