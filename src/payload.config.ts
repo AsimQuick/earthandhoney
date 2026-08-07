@@ -24,14 +24,15 @@
  * updated-by: dev-team
  * related-story: US-28
  * related-ac: 28.1.1
+ * updated-by: dev-team
+ * related-story: US-28
+ * related-ac: 28.1.2
  * ---
  */
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
-import { s3Storage } from '@payloadcms/storage-s3'
 import path from 'path'
 import { buildConfig } from 'payload'
-import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
 import { GalleryPlacements } from './collections/GalleryPlacements'
@@ -53,9 +54,6 @@ export default buildConfig({
   globals: [StudioProfile],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
-  // Required for Media's `upload.imageSizes` (thumbnail/medium/large) to run —
-  // without it, Payload silently skips derivative-size generation on upload.
-  sharp,
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
@@ -64,23 +62,4 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URL,
     },
   }),
-  plugins: [
-    // Binary files for the Media collection are stored in Cloudflare R2 (S3-compatible),
-    // never in Postgres or the local filesystem — only file references/metadata live in Payload.
-    s3Storage({
-      collections: {
-        media: true,
-      },
-      bucket: process.env.R2_BUCKET || '',
-      config: {
-        endpoint: process.env.R2_ENDPOINT,
-        region: 'auto',
-        credentials: {
-          accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
-        },
-        forcePathStyle: true,
-      },
-    }),
-  ],
 })

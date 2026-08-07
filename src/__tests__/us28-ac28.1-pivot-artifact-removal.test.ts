@@ -5,16 +5,19 @@
  * purpose: Verify AC-28.1.1 — the first of PIVOT_AUDIT.md's three
  *          superseded artifacts marked "Left dormant" is removed: the
  *          Payload `Galleries` collection is no longer exposed by the admin.
- *          The other two artifacts this AC's parent groups (the Payload-
- *          owned Sharp derivative pipeline, the Payload-owned R2 upload
- *          path) are out of this AC's scope and remain "Left dormant";
- *          follow-on AC-28.1.x stories cover them. The fourth
+ *          AC-28.1.2 (also verified here) then removes the other two —
+ *          the Payload-owned Sharp derivative pipeline and the Payload-owned
+ *          R2 upload path, together, since both are the same Payload-owned
+ *          Media upload path living in the same two files. The fourth
  *          superseded-artifacts row — the gallery viewer components under
  *          src/components/gallery/ — is "Kept as a Frontstage renderer" and
  *          must not be removed, so this test also asserts its survival.
  * created-by: dev-team
  * related-story: US-28
  * related-ac: 28.1.1
+ * updated-by: dev-team
+ * related-story: US-28
+ * related-ac: 28.1.2
  * ---
  */
 import fs from 'fs'
@@ -81,13 +84,13 @@ describe('AC-28.1.1: PIVOT_AUDIT.md records the Galleries collection as actually
   })
 
   it.each(['Payload-owned Sharp derivative pipeline', 'Payload-owned R2 upload path'])(
-    '%s is out of this AC\'s scope and stays marked "Left dormant"',
+    '%s is now marked "Deleted now" — removed together by AC-28.1.2',
     (artifact) => {
       const lineStart = artifactsSection.indexOf(artifact)
       expect(lineStart).toBeGreaterThanOrEqual(0)
       const lineEnd = artifactsSection.indexOf('\n', lineStart)
       const line = artifactsSection.slice(lineStart, lineEnd === -1 ? undefined : lineEnd)
-      expect(line).toContain('Left dormant')
+      expect(line).toContain('Deleted now')
     },
   )
 
