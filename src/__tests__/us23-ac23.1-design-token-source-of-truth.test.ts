@@ -140,7 +140,7 @@ describe("US-23 AC-23.1: single design-token source of truth", () => {
 
     expect(Object.keys(categories)).toHaveLength(12);
 
-    for (const [category, predicate] of Object.entries(categories)) {
+    for (const [, predicate] of Object.entries(categories)) {
       const properties = propertiesFor(predicate);
       expect(properties.length).toBeGreaterThan(0);
       for (const [, value] of properties) {
