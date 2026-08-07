@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/9 stories | 11/51 ACs
-**Last Updated:** 2026-08-07T00:41:53+00:00
+**Last Updated:** 2026-08-07T01:07:49+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -206,6 +206,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-23.1:** A single token source of truth exists (CSS custom properties, surfaced to Tailwind through its theme configuration) covering every category PRD §12.2 names before page creation may expand: one display/serif family and one sans/utility family; at most three approved font combinations; colour palette; type scale; line heights; text measures; spacing scale; gallery gaps; radii; overlay and vignette presets; breakpoints; animation timing. Every value is a named step in a limited scale — no one-off values — and the file carries the CLAUDE.md structured metadata header. A test asserts every one of the twelve categories is present and non-empty.
   - Dev: implemented
 - [ ] **AC-23.2:** The typefaces are **Fraunces** (display serif, headlines) and **Inter** (body/UI sans), per the creative brief confirmed in `po-requests.md` item 9, self-hosted from the repository with no external font request. A test asserts the built CSS and any layout head contain no request to `fonts.googleapis.com` or `fonts.gstatic.com`, that both families are declared with `font-display: swap`, and that the primary weights are preloaded so no font swap causes layout shift.
+  - Dev: implemented
 - [ ] **AC-23.3:** The palette is near-black ink (deliberately not pure `#000`), a neutral grey scale for secondary/tertiary content and surfaces, and **no accent colour** beyond that range — the confirmed brief. A test computes the WCAG contrast ratio from the token values themselves for every ink-on-surface pair the token set declares as a usable combination, and fails any pair below AA (4.5:1 for body text, 3:1 for large text and non-text indicators).
 - [ ] **AC-23.4:** The existing US-8 public shell is rewired onto the tokens: `src/components/layout/PublicShell.tsx`, `VerticalMenu.tsx`, `SiteFooter.tsx`, `MobileMenuTrigger.tsx` and `src/app/(frontend)/layout.tsx` use only token references. A test asserts no raw hex colour, no raw `px` font-size, and no arbitrary Tailwind bracket value remains in those five files. Rendered output is unchanged in structure — this is a re-parameterisation, not a redesign — proven by a DOM/structural snapshot of each of the five files' rendered output taken before and after the rewire, asserted identical (class-list token substitutions aside).
 - [ ] **AC-23.5:** An internal `noindex` token-specimen route renders the full set for human confirmation: the type scale at every step with both families, the palette with its computed contrast ratios shown, the spacing scale, radii, gallery gaps, and each overlay/vignette preset over a sample photograph. The route is recorded in `po-requests.md` as awaiting human sign-off, because the confirmed brief is explicit that it is direction, not a locked visual spec, and that real mockups must be confirmed before broad rollout.
@@ -222,6 +223,16 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - `src/styles/tokens.css` (new) — the single design-token source of truth: a Tailwind v4 `@theme` block defining all twelve PRD §12.2 categories as named, limited-scale steps (no one-off values): font families (`--font-display`/`--font-sans`), font combinations (3 named weight pairings: editorial/classic/bold), colour palette (near-black ink + neutral greys, no accent), type scale (`--text-*`, 9 steps), line heights (`--leading-*`, 5 steps), text measures (`--measure-*`, 3 steps), spacing scale (`--spacing-*`, 9 steps), gallery gaps (`--gallery-gap-*`, 3 steps), radii (`--radius-*`, 5 steps), overlay/vignette presets (5 tokens), breakpoints (`--breakpoint-*`, 5 steps), animation timing (`--motion-*` durations + easing curves). Carries the CLAUDE.md structured metadata header.
   - `src/app/(frontend)/globals.css` — added `@import "../../styles/tokens.css";` after the Tailwind import so the token file is actually surfaced to Tailwind's theme configuration (verified via `next build`: Tailwind's PostCSS plugin compiles it cleanly).
   - `src/__tests__/us23-ac23.1-design-token-source-of-truth.test.ts` (new) — 16 tests: metada …
+  AC-23.2 implemented (local checks green): Committed as `89cb5bb` on `feature/US-23`.
+  
+  **Implementation summary — AC-23.2:**
+  
+  - `src/styles/fonts.css` (new) — `@font-face` declarations for Fraunces (weights 300/400/600) and Inter (weights 400/500), each sourcing a local `/fonts/...` woff2 path with `font-display: swap`, no remote URLs.
+  - `public/fonts/fraunces/`, `public/fonts/inter/` (new) — 5 vendored woff2 binaries (verified valid `wOF2` signatures, 17–24 KB each), not an npm/CDN dependency.
+  - `src/app/(frontend)/globals.css` — `@import "../../styles/fonts.css"` added so the self-hosted faces ship in the built CSS.
+  - `src/app/(frontend)/layout.tsx` — uses React 19's `preload()` to prime the primary (400) weight of each family with `as: "font"`, `type: "font/woff2"`, `crossOrigin: "anonymous"`, called during layout render.
+  - `THIRD_PARTY_NOTICES.md` — new §2.6 with OFL license text and copyright notices for both families.
+  - `src/__tests__/us23-ac23.2-self-hosted-fonts.test.ts` (new, 27 tests) — asserts no `fonts.googleapis.com`/`fonts.gstatic.com` reference anywhere in the shipped styling/layout source, every `@font-face` uses `font-display: swap`, both primary weights are preloaded with matching MIME/crossOrigin, and eve …
 
 **Tester Status:** approved
 **Tester Notes:**
