@@ -93,8 +93,9 @@ describe('AC-28.1.2: the Payload-owned R2 upload path is removed', () => {
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         const full = path.join(dir, entry.name)
         if (entry.isDirectory()) {
+          if (entry.name === '__tests__') continue
           walk(full)
-        } else if (/\.(ts|tsx)$/.test(entry.name) && full !== __filename) {
+        } else if (/\.(ts|tsx)$/.test(entry.name)) {
           const contents = fs.readFileSync(full, 'utf8')
           if (/s3Storage\(/.test(contents)) {
             offenders.push(full)
