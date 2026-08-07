@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 7/9 stories | 46/59 ACs
-**Last Updated:** 2026-08-07T19:32:36+00:00
+**Last Updated:** 2026-08-07T19:55:39+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -684,6 +684,7 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
 - [ ] **AC-28.3:** The three orphaned environment variables `RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL` and `NEXT_PUBLIC_WHATSAPP_NUMBER` — belonging to retired US-12/US-13, with no consuming code anywhere in `src/` — are removed from `.env.example`, and `us7-ac7.4-env-example-sprint2-vars.test.ts` is updated in the same change to assert `NEXT_PUBLIC_SITE_URL` only. They were retained in sprint 3 solely because that test forbade removing them. Retrospective action item 8.
   - Dev: implemented
 - [ ] **AC-28.4:** Nothing the live stack still needs is removed. The `R2_*` variables stay in `.env.example` — the Backstage backend consumes them through `docker-compose.yml`, and only the *Payload-side* consumer is going away — as does `NEXT_PUBLIC_SITE_URL`, which `PIVOT_AUDIT.md` explicitly records as **not** orphaned. Proven by bringing the full stack up from a clean `cp .env.example .env` after the change and completing one Backstage upload.
+  - Dev: implemented
 - [ ] **AC-28.5:** CI stays green and the coverage gate is **not** lowered to absorb the removals. If deleting tests moves global coverage, the shortfall is closed by covering live code, never by editing the threshold — the sprint-3 Definition of Done item 11 rule. The measured before/after coverage numbers are recorded on the story.
 
 **Dependencies:** US-25
@@ -741,6 +742,7 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   - **`PIVOT_AUDIT.md`** — updated the "Orphaned configuration" table's disposition for all three vars from `Retained` to `Removed`, since `us14-ac14.2-superseded-artifacts.test.ts` independently verifies disposition-vs-reality consistency against `.env.example` (a pre-existing test on `main`, not new to this AC).
   
   Verified in Docker: full suite `docker compose run --rm web npm test` — 140/140 suites, 3275 passed / 7 skipped, 0 failures. Coverage with `--coverage --coverageThreshold`: 99.59% lines, 96.52% …
+  AC-28.4 implemented (local checks green): I'll stop here and wait for the background test run to complete — I'll pick back up once notified.
 
 **Tester Status:** approved
 **Tester Notes:**
