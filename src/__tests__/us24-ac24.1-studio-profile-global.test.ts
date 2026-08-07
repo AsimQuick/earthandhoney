@@ -86,8 +86,9 @@ describe('US-24 AC-24.1: StudioProfile global carries exactly the central studio
       for (const field of fields) {
         expect(devOnlyFieldTypes).not.toContain(field.type)
         if ('admin' in field && field.admin) {
-          expect(field.admin.hidden).not.toBe(true)
-          expect(field.admin.readOnly).not.toBe(true)
+          const admin = field.admin as { hidden?: boolean; readOnly?: boolean }
+          expect(admin.hidden).not.toBe(true)
+          expect(admin.readOnly).not.toBe(true)
         }
         if ('fields' in field && Array.isArray(field.fields)) {
           walk(field.fields as Field[])
