@@ -16,10 +16,16 @@
  *          anywhere in this global. The accent colour is further checked for
  *          WCAG AA contrast against the token ink/surface values before it
  *          can be saved (AC-24.3) — a safe input with no validation is not a
- *          safe input.
+ *          safe input. This global (via src/lib/getStudioProfile.ts) is the
+ *          single source the (frontend) route metadata and shell chrome read
+ *          their studio strings from (AC-24.4) — no other file under src/
+ *          hard-codes a copy of the business name or description.
  * created-by: dev-team
  * related-story: US-24
  * related-ac: 24.1, 24.2, 24.3
+ * updated-by: dev-team
+ * related-story: US-24
+ * related-ac: 24.4
  * ---
  */
 import type { GlobalConfig } from 'payload'
@@ -179,8 +185,14 @@ export const StudioProfile: GlobalConfig = {
     {
       name: 'defaultMetaDescription',
       type: 'textarea',
+      // The seed copy this global owns. It names the studio consistently with
+      // `businessName`/`defaultTitlePattern` above, and it lives here — the
+      // single owner (PRD §21.1) — rather than in the route that renders it.
+      defaultValue:
+        'Earth & Honey Studios is a premium, gallery-first photography studio for weddings, portraits, and events — browse our galleries and book your session.',
       admin: {
-        description: 'The fallback meta description used when a page defines none.',
+        description:
+          'The fallback meta description used when a page defines none. Also the source the (frontend) route metadata reads its <meta name="description"> from (AC-24.4) — no page hard-codes its own copy.',
       },
     },
     {

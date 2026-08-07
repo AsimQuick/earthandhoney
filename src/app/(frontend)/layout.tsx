@@ -18,6 +18,9 @@
  * updated-by: dev-team
  * related-story: US-23
  * related-ac: 23.2
+ * updated-by: dev-team
+ * related-story: US-24
+ * related-ac: 24.4
  * ---
  */
 import type { Metadata } from "next";
@@ -25,6 +28,7 @@ import { Rubik } from "next/font/google";
 import { preload } from "react-dom";
 import "./globals.css";
 import { PublicShell } from "@/components/layout/PublicShell";
+import { getStudioProfile } from "@/lib/getStudioProfile";
 
 const rubik = Rubik({
   variable: "--font-rubik",
@@ -51,29 +55,36 @@ function preloadPrimaryFontWeights() {
   });
 }
 
-export const metadata: Metadata = {
-  title: {
-    default: "Earth & Honey Photography",
-    template: "%s | Earth & Honey Photography",
-  },
-  description:
-    "Earth & Honey Photography is a premium, gallery-first photography studio for weddings, portraits, and events — browse our galleries and book your session.",
-  icons: {
-    icon: "/favicon.ico",
-  },
-};
+// The site title/description are studio details (PRD §21.1) owned by the
+// StudioProfile global, not hard-coded here (AC-24.4) — generateMetadata is
+// the async Next.js hook that lets a route's <head> depend on that global.
+export async function generateMetadata(): Promise<Metadata> {
+  const studioProfile = await getStudioProfile();
 
-export default function RootLayout({
+  return {
+    title: {
+      default: studioProfile.businessName,
+      template: studioProfile.defaultTitlePattern,
+    },
+    description: studioProfile.defaultMetaDescription,
+    icons: {
+      icon: "/favicon.ico",
+    },
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   preloadPrimaryFontWeights();
+  const studioProfile = await getStudioProfile();
 
   return (
     <html lang="en" className={`${rubik.variable} h-full antialiased`}>
       <body className="min-h-full">
-        <PublicShell>{children}</PublicShell>
+        <PublicShell businessName={studioProfile.businessName}>{children}</PublicShell>
       </body>
     </html>
   );
