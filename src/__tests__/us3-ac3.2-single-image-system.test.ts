@@ -129,12 +129,24 @@ describe('AC-3.2: no CMS collection or code path other than Media and Galleries 
   })
 
   describe('no code path outside Payload\'s generated API implements its own image upload handling', () => {
-    it('every route.ts under src/app only re-exports a @payloadcms/next/routes handler', () => {
+    // Trip-wire, same discipline as the collections allowlist above: a route
+    // lands here only after an explicit audit confirms it carries no image
+    // upload/derivative handling of its own. The AC-26.1 webhook receiver
+    // (PAYLOAD_PICPEAK_API_CONTRACT.md Flow C) reads a JSON event body and a
+    // signature header — no file/image data ever reaches it, verified by the
+    // "no manual multipart/form-data parsing" check below, which still runs
+    // against every route including this one.
+    const AUDITED_NON_PAYLOAD_ROUTES = ['src/app/(frontend)/api/webhooks/picpeak/route.ts']
+
+    it('every route.ts under src/app either re-exports a @payloadcms/next/routes handler or is an audited non-image exception', () => {
       const routeFiles = findRouteFiles(path.join(root, APP_DIR))
       expect(routeFiles.length).toBeGreaterThan(0)
       for (const file of routeFiles) {
         const src = fs.readFileSync(file, 'utf8')
-        expect(src).toMatch(/from ['"]@payloadcms\/next\/routes['"]/)
+        const relPath = path.relative(root, file)
+        if (!AUDITED_NON_PAYLOAD_ROUTES.includes(relPath)) {
+          expect(src).toMatch(/from ['"]@payloadcms\/next\/routes['"]/)
+        }
         // No manual multipart/form-data parsing — Payload's own upload
         // handling is the only path a file can take into the system.
         expect(src).not.toMatch(/formidable|multer|busboy|req\.formData\(\)/)
