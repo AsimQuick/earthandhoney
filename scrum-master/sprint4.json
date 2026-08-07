@@ -34,7 +34,7 @@
     "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
     "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (retrospective action item 3)"
   ],
-  "last_updated": "2026-08-07T02:25:57+00:00",
+  "last_updated": "2026-08-07T02:36:12+00:00",
   "stories": [
     {
       "id": "US-21",
@@ -146,7 +146,7 @@
     {
       "id": "US-23",
       "title": "Design-token lock-down: the shared token set every Frontstage and Project Room surface is built from",
-      "status": "in-progress",
+      "status": "done",
       "priority": "critical",
       "dependencies": [
         "US-21"
@@ -155,50 +155,50 @@
         {
           "id": "23.1",
           "text": "A single token source of truth exists (CSS custom properties, surfaced to Tailwind through its theme configuration) covering every category PRD \u00a712.2 names before page creation may expand: one display/serif family and one sans/utility family; at most three approved font combinations; colour palette; type scale; line heights; text measures; spacing scale; gallery gaps; radii; overlay and vignette presets; breakpoints; animation timing. Every value is a named step in a limited scale \u2014 no one-off values \u2014 and the file carries the CLAUDE.md structured metadata header. A test asserts every one of the twelve categories is present and non-empty.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "23.2",
           "text": "The typefaces are **Fraunces** (display serif, headlines) and **Inter** (body/UI sans), per the creative brief confirmed in `po-requests.md` item 9, self-hosted from the repository with no external font request. A test asserts the built CSS and any layout head contain no request to `fonts.googleapis.com` or `fonts.gstatic.com`, that both families are declared with `font-display: swap`, and that the primary weights are preloaded so no font swap causes layout shift.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "23.3",
           "text": "The palette is near-black ink (deliberately not pure `#000`), a neutral grey scale for secondary/tertiary content and surfaces, and **no accent colour** beyond that range \u2014 the confirmed brief. A test computes the WCAG contrast ratio from the token values themselves for every ink-on-surface pair the token set declares as a usable combination, and fails any pair below AA (4.5:1 for body text, 3:1 for large text and non-text indicators).",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "23.4",
           "text": "The existing US-8 public shell is rewired onto the tokens: `src/components/layout/PublicShell.tsx`, `VerticalMenu.tsx`, `SiteFooter.tsx`, `MobileMenuTrigger.tsx` and `src/app/(frontend)/layout.tsx` use only token references. A test asserts no raw hex colour, no raw `px` font-size, and no arbitrary Tailwind bracket value remains in those five files. Rendered output is unchanged in structure \u2014 this is a re-parameterisation, not a redesign \u2014 proven by a DOM/structural snapshot of each of the five files' rendered output taken before and after the rewire, asserted identical (class-list token substitutions aside).",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "23.5",
           "text": "An internal `noindex` token-specimen route renders the full set for human confirmation: the type scale at every step with both families, the palette with its computed contrast ratios shown, the spacing scale, radii, gallery gaps, and each overlay/vignette preset over a sample photograph. The route is recorded in `po-requests.md` as awaiting human sign-off, because the confirmed brief is explicit that it is direction, not a locked visual spec, and that real mockups must be confirmed before broad rollout.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "23.6",
           "text": "The tokens are exported in a form the Backstage / Project Room templates can consume, so both surfaces are consumers from day one as the brief requires: a generated, checked-in plain CSS custom-property file with no Tailwind or Next.js dependency, plus a short section in the token file's documentation showing how one `gallery-style-templates-baseline` variant would reference it. Generating the export is verified to be reproducible from the source tokens (regenerate and diff \u2014 an empty diff is the evidence). The fork's own templates are **not** rewired in this story.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "23.7",
           "text": "A guard prevents style drift from re-entering after this story closes: a lint rule or test fails when a raw hex colour, a raw `px` font-size, or an arbitrary-value Tailwind class is introduced anywhere under `src/components/` or `src/app/` outside the token source file. PRD \u00a712.2's last requirement is \"no style drift between original and newly created pages\", and Pillar 3 (deterministic beauty) forbids page-level CSS editing \u2014 neither survives on convention alone.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         }
       ],
