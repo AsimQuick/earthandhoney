@@ -64,6 +64,7 @@ const AUDIT_PATH = path.join(REPO_ROOT, 'PIVOT_AUDIT.md')
 function imagesFor(count: number) {
   return Array.from({ length: count }, (_, index) => ({
     id: `photo-${index + 1}`,
+    url: `https://cdn.example/${index + 1}.jpg`,
     alt: `photo ${index + 1}`,
     thumbnailUrl: `https://cdn.example/${index + 1}-thumb.jpg`,
     mediumUrl: `https://cdn.example/${index + 1}-medium.jpg`,
