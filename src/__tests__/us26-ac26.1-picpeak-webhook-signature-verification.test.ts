@@ -25,6 +25,15 @@
 import crypto from 'crypto'
 import { NextRequest } from 'next/server'
 import { verifyPicPeakWebhookSignature } from '@/lib/picpeakWebhookAuth'
+
+// AC-26.2 added a GalleryPlacement lookup (Payload Local API) the route now
+// runs for a handled, verified event — mocked out here since this suite
+// only exercises signature verification (AC-26.1's scope) and must not pull
+// in the ESM-only `payload` package.
+jest.mock('@/lib/galleryPlacementLookup', () => ({
+  hasGalleryPlacementForSlug: jest.fn().mockResolvedValue(false),
+}))
+
 import { POST } from '@/app/(frontend)/api/webhooks/picpeak/route'
 
 const SECRET = 'whsec_test_secret_123'
