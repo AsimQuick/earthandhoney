@@ -108,18 +108,18 @@ describe('AC-23.2: Fraunces and Inter are self-hosted with no external font requ
 
     it('preloads the Fraunces primary weight as a font asset', () => {
       expect(src).toMatch(
-        /preload\(\s*["']\/fonts\/fraunces\/fraunces-latin-400-normal\.woff2["'],\s*\{[^}]*as:\s*["']font["'][^}]*\}\s*\)/s,
+        /preload\(\s*["']\/fonts\/fraunces\/fraunces-latin-400-normal\.woff2["'],\s*\{[^}]*as:\s*["']font["'][^}]*\}\s*\)/,
       )
     })
 
     it('preloads the Inter primary weight as a font asset', () => {
       expect(src).toMatch(
-        /preload\(\s*["']\/fonts\/inter\/inter-latin-400-normal\.woff2["'],\s*\{[^}]*as:\s*["']font["'][^}]*\}\s*\)/s,
+        /preload\(\s*["']\/fonts\/inter\/inter-latin-400-normal\.woff2["'],\s*\{[^}]*as:\s*["']font["'][^}]*\}\s*\)/,
       )
     })
 
     it('every preload call declares the woff2 MIME type and crossOrigin, matching the @font-face src it primes', () => {
-      const preloadCalls = src.match(/preload\(\s*["'][^"']+["'],\s*\{[^}]*\}\s*\)/gs) ?? []
+      const preloadCalls = src.match(/preload\(\s*["'][^"']+["'],\s*\{[^}]*\}\s*\)/g) ?? []
       const fontPreloads = preloadCalls.filter((c) => c.includes('/fonts/'))
       expect(fontPreloads.length).toBeGreaterThan(0)
       for (const call of fontPreloads) {
