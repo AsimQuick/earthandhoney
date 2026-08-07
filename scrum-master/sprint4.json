@@ -34,7 +34,7 @@
     "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
     "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (retrospective action item 3)"
   ],
-  "last_updated": "2026-08-08",
+  "last_updated": "2026-08-07T21:01:41+00:00",
   "stories": [
     {
       "id": "US-21",
