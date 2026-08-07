@@ -18,7 +18,9 @@
  *          already-baselined slide aspect ratio, and
  *          dev/gallery-placement-demo/page.tsx's `tracking-[3px]` headings
  *          mirror dev/gallery-demo/page.tsx's already-baselined heading
- *          style — reused idioms, not new debt shapes.
+ *          style — reused idioms, not new debt shapes. AC-26.4 added
+ *          dev/gallery-webhook-proof/page.tsx's two `tracking-[3px]`
+ *          headings the same way, mirroring the same heading idiom.
  * created-by: dev-team
  * related-story: US-23
  * related-ac: 23.7
@@ -84,6 +86,11 @@ export const STYLE_DRIFT_BASELINE: Record<string, StyleDriftViolationCounts> = {
     arbitraryTailwindBracket: 2,
   },
   'src/app/(frontend)/dev/gallery-placement-demo/page.tsx': {
+    hex: 0,
+    rawPxFontSize: 0,
+    arbitraryTailwindBracket: 2,
+  },
+  'src/app/(frontend)/dev/gallery-webhook-proof/page.tsx': {
     hex: 0,
     rawPxFontSize: 0,
     arbitraryTailwindBracket: 2,
