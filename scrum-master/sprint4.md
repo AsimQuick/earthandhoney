@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/9 stories | 18/51 ACs
-**Last Updated:** 2026-08-07T03:23:17+00:00
+**Last Updated:** 2026-08-07T04:05:32+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -297,6 +297,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-24.3:** The accent-colour input validates contrast before it can be saved: the submitted value is checked against the token ink and surface values, and a value failing WCAG AA is rejected with a clear admin-facing error naming the measured ratio and the required one. A safe input with no validation is not a safe input.
   - Dev: implemented
 - [ ] **AC-24.4:** No studio detail remains hard-coded in the repository. The US-8 shell, footer, and route metadata read their studio strings from `StudioProfile`, and a test asserts the previously hard-coded studio strings no longer appear as literals anywhere under `src/` outside test fixtures. PRD §21.1's requirement is a single owner, "no studio detail scattered through code".
+  - Dev: implemented
 - [ ] **AC-24.5:** `StudioProfile` populates real output, not just a settings screen: the public route's `<title>` is produced from the default title pattern, its meta description and Open Graph image come from the global, and a JSON-LD `LocalBusiness`/`ProfessionalService` block is emitted from the same fields. A test asserts the rendered head and the structured-data block change when the global changes. No meta-keywords field is created (PRD §21.2).
 
 **Dependencies:** US-21, US-23
@@ -334,6 +335,23 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - `src/lib/accentColorContrast.ts` (new) — `checkAccentColorContrast()` and `validateAccentColorContrast()`, reusing AC-23.5's `contrastRatio`/token-parsing utilities from `designTokenSpecimen.ts`. Checks a submitted accent hex against both `--color-ink` and `--color-surface` from `src/styles/tokens.css`, using the WCAG AA "large text / non-text indicators" 3:1 minimum (the 4.5:1 body minimum is mathematically unsatisfiable against both a near-black ink and a white surface simultaneously — verified numerically and documented in the file header). Returns `true` or an error string naming each failing side's measured and required ratio.
   - `src/globals/StudioProfile.ts` — `branding.accentColor.validate` now runs the hex-format check first, then `validateAccentColorContrast`, so a format-valid but low-contrast value is rejected before save. Header updated to list AC-24.3.
   - `src/__tests__/us24-ac24.3-accent-color-contrast.test.ts` (new, 10 tests) — covers both-token checking, a passing colour (`#2B6CB0`, matching the AC-24.2 example so that existing test stays valid), a surface-failing colour, an ink-failing colour, the …
+  AC-24.4 implemented (local checks green): Committed as `5e48c43` on `feature/US-24`. Not pushed.
+  
+  ## Implementation summary — US-24 AC-24.4
+  
+  A previous agent left the bulk of this uncommitted on the branch; I reviewed it, tightened two things, verified it, and committed.
+  
+  **Files changed (11):**
+  
+  | File | What it does |
+  |---|---|
+  | `src/lib/getStudioProfile.ts` *(new)* | Single server-side reader for the `StudioProfile` global. Falls back to the global's own field `defaultValue`s (never a second literal copy) when the doc is unsaved. |
+  | `src/app/(frontend)/layout.tsx` | Static `metadata` export → async `generateMetadata()`; title `default`/`template` and `description` come from the global. Threads `businessName` into `PublicShell`. |
+  | `src/components/layout/PublicShell.tsx` | Accepts and forwards `businessName` to `VerticalMenu`. |
+  | `src/components/layout/VerticalMenu.tsx` | Uses `businessName` for logo alt text and the copyright line; standalone fallback is the generic `'the studio'`. |
+  | `src/app/(frontend)/page.tsx` | Homepage placeholder no longer renders a studio literal. |
+  | `src/globals/StudioProfile.ts` | `defaultMetaDescription` now seeds the description copy — the single owner. |
+  | `src/__tests__/us24-ac24.4-… …
 
 **Tester Status:** approved
 **Tester Notes:**
