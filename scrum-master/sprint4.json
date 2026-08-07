@@ -34,7 +34,7 @@
     "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
     "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (retrospective action item 3)"
   ],
-  "last_updated": "2026-08-07T00:30:11+00:00",
+  "last_updated": "2026-08-07T00:41:53+00:00",
   "stories": [
     {
       "id": "US-21",
@@ -146,7 +146,7 @@
     {
       "id": "US-23",
       "title": "Design-token lock-down: the shared token set every Frontstage and Project Room surface is built from",
-      "status": "draft",
+      "status": "in-progress",
       "priority": "critical",
       "dependencies": [
         "US-21"
@@ -156,7 +156,7 @@
           "id": "23.1",
           "text": "A single token source of truth exists (CSS custom properties, surfaced to Tailwind through its theme configuration) covering every category PRD \u00a712.2 names before page creation may expand: one display/serif family and one sans/utility family; at most three approved font combinations; colour palette; type scale; line heights; text measures; spacing scale; gallery gaps; radii; overlay and vignette presets; breakpoints; animation timing. Every value is a named step in a limited scale \u2014 no one-off values \u2014 and the file carries the CLAUDE.md structured metadata header. A test asserts every one of the twelve categories is present and non-empty.",
           "checked": false,
-          "dev_status": "not-started",
+          "dev_status": "implemented",
           "tester_status": "not-started"
         },
         {
@@ -203,7 +203,7 @@
         }
       ],
       "dev_status": "not-started",
-      "dev_notes": "",
+      "dev_notes": "AC-23.1 implemented (local checks green): Committed. Implementation summary for AC-23.1:\n\n**Files changed:**\n- `src/styles/tokens.css` (new) \u2014 the single design-token source of truth: a Tailwind v4 `@theme` block defining all twelve PRD \u00a712.2 categories as named, limited-scale steps (no one-off values): font families (`--font-display`/`--font-sans`), font combinations (3 named weight pairings: editorial/classic/bold), colour palette (near-black ink + neutral greys, no accent), type scale (`--text-*`, 9 steps), line heights (`--leading-*`, 5 steps), text measures (`--measure-*`, 3 steps), spacing scale (`--spacing-*`, 9 steps), gallery gaps (`--gallery-gap-*`, 3 steps), radii (`--radius-*`, 5 steps), overlay/vignette presets (5 tokens), breakpoints (`--breakpoint-*`, 5 steps), animation timing (`--motion-*` durations + easing curves). Carries the CLAUDE.md structured metadata header.\n- `src/app/(frontend)/globals.css` \u2014 added `@import \"../../styles/tokens.css\";` after the Tailwind import so the token file is actually surfaced to Tailwind's theme configuration (verified via `next build`: Tailwind's PostCSS plugin compiles it cleanly).\n- `src/__tests__/us23-ac23.1-design-token-source-of-truth.test.ts` (new) \u2014 16 tests: metada \u2026",
       "tester_status": "approved",
       "tester_notes": "Requirements review pass, 2 minor defects found and fixed directly in this pass (wording/missing test criteria, not scope): AC-23.4 asserted 'rendered output is unchanged in structure' with no stated verification method (only the raw-value lint check had one) \u2014 added an explicit before/after structural-snapshot requirement. All other ACs (23.1, 23.2, 23.3, 23.5, 23.6, 23.7) already state an explicit, objective test or reproduction method and were left unchanged. Confirmed AC-23.1's twelve named categories actually enumerate to twelve (font families counts as one category alongside the separate 'font combinations' category) \u2014 no miscount. Confirmed AC-23.2/23.3 correctly cite the creative brief already recorded in po-requests.md item 9.",
       "issue": 66
