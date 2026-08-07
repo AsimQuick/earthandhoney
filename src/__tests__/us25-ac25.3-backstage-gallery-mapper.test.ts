@@ -142,9 +142,16 @@ describe('AC-25.3: no second gallery-rendering component set is introduced', () 
   // viewer components" already names every file this directory is allowed
   // to hold under the "Kept as a Frontstage renderer" disposition, plus this
   // AC's own new mapper — its designated payloadGalleryMapper.ts
-  // replacement, not a second component set.
+  // replacement, not a second component set. AC-25.5 adds two placement
+  // *layouts* (masonry, slideshow, PRD §15.1/§15.2) that render the same
+  // GalleryImage[] shape this mapper produces through the same
+  // galleryImageLoader/NavigationControls/useSwipeNavigation building
+  // blocks — a placement concern on top of the existing renderer, not a
+  // competing rendering system.
   const AUDITED_FILES = [
     'GalleryEngine.tsx',
+    'GalleryMasonryLayout.tsx',
+    'GallerySlideshowLayout.tsx',
     'MainImageDisplay.tsx',
     'ThumbnailStrip.tsx',
     'ThumbnailDrawer.tsx',
