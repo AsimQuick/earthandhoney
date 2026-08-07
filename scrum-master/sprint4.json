@@ -34,7 +34,7 @@
     "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
     "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (retrospective action item 3)"
   ],
-  "last_updated": "2026-08-07T04:26:06+00:00",
+  "last_updated": "2026-08-07T04:52:55+00:00",
   "stories": [
     {
       "id": "US-21",
@@ -263,7 +263,7 @@
     {
       "id": "US-25",
       "title": "Gallery Placement: a Frontstage page renders a Backstage gallery through the agreed API boundary",
-      "status": "draft",
+      "status": "in-progress",
       "priority": "critical",
       "dependencies": [
         "US-21",
@@ -274,7 +274,7 @@
           "id": "25.1",
           "text": "A Payload `GalleryPlacement` model exists with exactly the fields PRD \u00a714 specifies: the Backstage gallery identifier (the gallery `slug`, stored as a plain external-identifier field), layout (`slideshow` or `masonry`), optional heading, optional description, optional theme/overlay preset drawn from the US-23 token presets, visibility rules, and order within the page or story. A test asserts the model holds **no** foreign key or relation into `backstage-db` \u2014 `PAYLOAD_PICPEAK_API_CONTRACT.md`'s \"No cross-database access\" rule and Reminder 4 both forbid it.",
           "checked": false,
-          "dev_status": "not-started",
+          "dev_status": "implemented",
           "tester_status": "not-started"
         },
         {
@@ -314,7 +314,7 @@
         }
       ],
       "dev_status": "not-started",
-      "dev_notes": "",
+      "dev_notes": "AC-25.1 implemented (local checks green): Committed as `73be59c` on `feature/US-25`.\n\n**Summary (AC-25.1 implemented):**\n\n- **`src/collections/GalleryPlacements.ts`** (new) \u2014 Payload collection `gallery-placements` with exactly the PRD \u00a714 fields: `gallerySlug` (required `text`, the Backstage gallery identifier \u2014 a plain external-identifier field, never a `relationship`/`join`), `layout` (required `select`: `slideshow`/`masonry`), optional `heading` (`text`), optional `description` (`textarea`), optional `themePreset` (`select`, options loaded live from `loadTokenSpecimenData().overlaysAndVignettes` \u2014 the US-23 token source of truth), `visibility` (required `select`: `public`/`unlisted`/`draft`, defaults `draft`), `order` (required `number`). Exports `themePresetOptions()` for reuse/testing.\n- **`src/payload.config.ts`** \u2014 registers `GalleryPlacements` as a collection.\n- **`src/__tests__/us25-ac25.1-gallery-placement-model.test.ts`** (new, 13 tests) \u2014 asserts the exact field set, each field's type/required/options/default, that `themePreset` options track the live token source, that the collection is registered in config, and \u2014 the AC's explicit requirement \u2014 that **no field is `relationship`/`join`** and the source contai \u2026",
       "tester_status": "approved",
       "tester_notes": "Requirements review pass, 1 minor defect found and fixed directly (missing test criteria, not scope): AC-25.5 asserted three behavioral claims (aspect-ratio preservation, order preservation, no crop/stretch, bounded slideshow preloading) but stated an explicit test for only one of them (masonry CLS) \u2014 added explicit assertions tying the remaining claims to the photo-list response shape and to network-request inspection. AC-25.1 through 25.4 and 25.6 already carry explicit tests or live-reproduction proof and were left unchanged.",
       "issue": 68
