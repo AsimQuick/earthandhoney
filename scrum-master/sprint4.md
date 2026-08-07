@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 1/9 stories | 6/51 ACs
-**Last Updated:** 2026-08-07T00:06:35+00:00
+**Last Updated:** 2026-08-07T00:22:49+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -134,6 +134,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-22.4:** The prepared-but-unsubmitted upstream defect report for the single-image download hang (F8 / UD-1) is surfaced in `po-requests.md` as an explicit human action item: it names the on-disk path of the drafted report, states that publishing it needs a human GitHub identity, and records the consequence of not filing it — the fork patch registered in `FORK_CHANGELOG.md` as droppable "when upstream fixes it" can never actually be dropped. Retrospective action item 9.
   - Dev: implemented
 - [ ] **AC-22.5:** The F7 `/storage` permission fix survives container recreation, or is recorded as a known manual step. Either the fix is made reproducible in `docker-compose.yml` / an entrypoint so a `docker compose down -v && up` leaves the Backstage storage path writable with no hand intervention — proven by actually recreating the containers and re-running an upload — or, if that is not achievable without editing shipped upstream code, it is documented as a named manual step in `BACKSTAGE_STARTUP.md` with the symptom it produces when skipped. It has already had to be reapplied by hand once (AC-17.5.1 → AC-17.7). Retrospective action item 7.
+  - Dev: implemented
 
 **Dependencies:** US-21
 
@@ -180,6 +181,17 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   **Files changed:**
   - `PIVOT_AUDIT.md` — new section `## AC-22.4 — the prepared-but-unsubmitted UD-1 upstream report, surfaced as a human action item`. Since `po-requests.md` is out of this AC's write scope (per the AC-14.6/AC-17.9/AC-22.2 precedent already established in this repo — implementing ACs don't hold write access to that file), this section contains the merge-ready content for the Product Owner/orchestrator to transcribe into `po-requests.md` item 16: the on-disk path of the drafted report (`.github/upstream-issues/UD-1-gallery-single-download.md`), the requirement for a human GitHub identity to publish it, the consequence of not filing it (the fork patch in `FORK_CHANGELOG.md` registered as droppable "when upstream fixes it" can never actually be dropped), and a cross-reference to `retrospective.md` action item 9.
   - `src/__tests__/us22-ac22.4-ud1-report-surfaced.test.ts` (new) — 10 tests verifying the …
+  AC-22.5 implemented (local checks green): No lingering Backstage containers — they were torn down during the `down -v` testing, and only the base `db` service (spun up by the test-run compose invocations) remains, which is unrelated to this AC. Nothing further to clean up.
+  
+  ## Summary
+  
+  **AC-22.5 implemented** — the F7 `/storage` permission fix (previously reapplied by hand under AC-17.5.1 → AC-17.7) is now reproducible and survives container recreation.
+  
+  **Root cause confirmed:** the Gallery-create route (`adminEvents.js:607-611`) unconditionally resolves a folder at `/storage`, distinct from the `/app/storage` path the vendored Dockerfile actually creates and chowns to `nodejs`. With no volume backing `/storage`, a fresh container has no such path, and the non-root `nodejs` user can't create it.
+  
+  **Fix (`docker-compose.yml`):** overrides `backstage-backend`'s `command:` to `mkdir -p /storage && chown -R nodejs:nodejs /storage` while the process still runs as root, then `exec`s the vendored `wait-for-db.sh` → `node server.js` chain completely unmodified. No file under `vendor/picpeak/` was touched (Fork Discipline preserved).
+  
+  **Proved live**, not just asserted: ran `docker compose --profile backstage down -v` then rebuilt …
 
 **Tester Status:** approved
 **Tester Notes:**
