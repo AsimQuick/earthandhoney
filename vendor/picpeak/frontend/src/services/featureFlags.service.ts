@@ -41,7 +41,12 @@ export type FeatureKey =
   // upload. Independent of quotes / bills — contracts can be sent on
   // their own. Seeded block bodies are examples only; admins must
   // have their lawyer review before sending. See docs/crm-disclaimers.md.
-  | 'contracts';
+  | 'contracts'
+  // Raw-HTML/CSS homepage editor + its public `/` route (US-27 AC-27.1).
+  // Gates the "Public Site" panel in CMSPage.tsx (AC-27.2) the same way
+  // `quotes`/`bills` gate their admin routes — off by default so the
+  // capability isn't merely unreachable at the server, it isn't offered.
+  | 'publicSite';
 
 export type FeatureFlags = Record<FeatureKey, boolean>;
 

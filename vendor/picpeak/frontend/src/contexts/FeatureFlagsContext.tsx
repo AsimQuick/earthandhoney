@@ -45,6 +45,10 @@ export const DEFAULT_FLAGS: FeatureFlags = {
   // Settings → Features once they've reviewed the seeded block
   // library with their lawyer.
   contracts: false,
+  // Raw-HTML/CSS homepage editor (US-27 AC-27.1/AC-27.2). Off by
+  // default, mirroring the backend's KNOWN_FLAGS/DEFAULT_FLAGS entry —
+  // Payload owns Frontstage publishing.
+  publicSite: false,
 };
 
 export const FEATURE_FLAGS_QUERY_KEY = ['feature-flags'] as const;
