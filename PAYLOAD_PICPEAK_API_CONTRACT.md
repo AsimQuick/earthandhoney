@@ -337,9 +337,9 @@ only one of which actually overlaps `SYSTEM_OWNERSHIP.md`'s CMS row.
 **1a. Static "CMS Pages" (impressum/privacy/terms, footer-linked legal
 copy) — scoped out, left enabled.** Backed by the `cms_pages` table via
 `backend/src/routes/adminCMS.js` (`GET/PUT /pages/:slug`, mounted
-`/api/admin/cms/*` through `admin.js:12,25` → `server.js:638`) and a
+`/api/admin/cms/*` through `admin.js:12,25` → `server.js:449`) and a
 public read route (`backend/src/routes/publicCMS.js`, mounted
-`/api/public/pages/:slug` via `server.js:740`), gated only by the
+`/api/public/pages/:slug` via `server.js:551`), gated only by the
 `cms.view`/`cms.edit` RBAC permissions (`permissions.js:51`), not a
 feature flag. `CLAUDE.md`'s CMS pillar names Payload's actual collection
 set — Media, Galleries, Portfolio, Blog, Homepage, Testimonials,
@@ -349,40 +349,50 @@ in that list is what `cms_pages` stores. This capability is therefore
 recorded here as a deliberate scoping decision rather than an oversight.
 
 **1b. The "Public Site" raw HTML/CSS homepage editor — a genuine
-duplicate, disabled by the fork's own shipped default.** This is the
-actual overlap: PicPeak's admin literally authors the content served at
-the whole application's `GET /` route. The editor (`CMSPage.tsx:27-31`
-state, `:68-113` save/reset mutations) writes three settings —
-`general_public_site_enabled`, `general_public_site_html`,
+duplicate, now closed by a server-side feature flag (US-27 AC-27.1).**
+This is the actual overlap: PicPeak's admin literally authors the content
+served at the whole application's `GET /` route. The editor
+(`CMSPage.tsx:27-31` state, `:68-113` save/reset mutations) writes three
+settings — `general_public_site_enabled`, `general_public_site_html`,
 `general_public_site_custom_css` — through the generic
 `PUT /api/admin/settings/general` route (`adminSettings.js:776`,
 sanitized at `:781-816`), gated only by the `settings.edit` permission.
-`backend/src/services/publicSiteService.js:38-50`
-(`fetchPublicSiteSettings`) defaults `general_public_site_enabled` to
-`false` when no `app_settings` row overrides it, and
-`handlePublicSiteRequest` — the actual `GET /` handler, mounted twice
-depending on whether a built frontend bundle exists
-(`server.js:757,776`) — checks that flag first: *"if (!payload.enabled)
-... `res.redirect(302, '/admin/login')`"* (`server.js:350-353`), so the
-homepage renders nothing admin-authored while the setting is off.
-**Disabling mechanism:** the shipped default (`enabled: false`) already
-satisfies this AC without a code change; the operational rule this
-document records is that `general_public_site_enabled` must never be set
-to `true` via `PUT /api/admin/settings/general`. Unlike quote/invoice
-(below), this toggle is **not** wired into the fork's `feature_flags`
-system — `general_public_site_enabled`/`publicSite` is absent from
-`KNOWN_FLAGS` (`adminFeatureFlags.js:25-65`) — so there is no
-server-side 403 equivalent to `requireQuotesFlag`/`requireBillsFlag`
-backing the default, only the RBAC permission and the default value
-itself. This is recorded here as a gap, in the same spirit as the row-4
-gap above: the implementing story's hardening step is to add a new
-`publicSite` key to `KNOWN_FLAGS`/`DEFAULT_FLAGS` (default `false`,
-mirroring `quotes`/`bills`'s existing pattern exactly) and check it
-inside `handlePublicSiteRequest` before the `app_settings` value is even
-read, plus hide the "Public Site" panel in `CMSPage.tsx` behind that
-flag the same way `RequireFeature` gates the quotes UI (below) — a
-Fork-Discipline-compliant deviation recorded in `FORK_CHANGELOG.md` when
-that story writes the code, not here.
+`handlePublicSiteRequest` — the actual `GET /` handler, extracted into
+`backend/src/services/publicSiteService.js:413-461` (mounted twice
+depending on whether a built frontend bundle exists, `server.js:568,587`)
+so it can be unit-tested without booting the full server — now checks a
+server-side `publicSite` feature flag *before* it ever reads the
+`app_settings` value: *"if (!flagEnabled) ...
+`res.redirect(302, '/admin/login')`"* (`isPublicSiteFeatureEnabled()`,
+`publicSiteService.js:263-266`, checked at `:415-419`). Only once that
+flag is on does it fall through to `fetchPublicSiteSettings`
+(`publicSiteService.js:50-70`), which still defaults
+`general_public_site_enabled` to `false` (`:59`) and still redirects on
+its own account when that setting is off (`publicSiteService.js:423-426`).
+**Disabling mechanism:** two independent layers, neither dependent on the
+other — the shipped `publicSite: false` feature-flag default
+(`adminFeatureFlags.js:73,96`) and the shipped
+`general_public_site_enabled: false` `app_settings` default — either one
+alone already satisfies this AC. The operational rule this document
+records is that neither must be flipped to `true` in isolation:
+`PUT /api/admin/feature-flags` must never set `publicSite: true`, and
+`PUT /api/admin/settings/general` must never set
+`general_public_site_enabled: true`, without the other also being
+verified. This closes the gap the original audit recorded here:
+`publicSite`/`general_public_site_enabled` was absent from `KNOWN_FLAGS`,
+leaving no server-side 403-equivalent behind the app-settings default the
+way `requireQuotesFlag`/`requireBillsFlag` back `quotes`/`bills`. US-27
+AC-27.1 added `publicSite` to `KNOWN_FLAGS`/`DEFAULT_FLAGS`
+(`adminFeatureFlags.js:65-73,96`, mirroring the `quotes`/`bills` pattern
+exactly) and wired the check into `handlePublicSiteRequest` ahead of the
+`app_settings` read, recorded as a Fork-Discipline-compliant deviation in
+`FORK_CHANGELOG.md`'s 2026-08-07 entry. The "Public Site" panel in
+`CMSPage.tsx` is not yet hidden behind the flag in the admin UI the way
+`RequireFeature` gates the quotes UI (below) — the `settings.edit` RBAC
+permission still gates who can reach the textarea, and the server-side
+redirect above already refuses the public request regardless of what the
+admin UI shows, so this is recorded here as a follow-up, not a blocking
+gap.
 
 ### 2. Native quote/invoice/accounting screens
 
@@ -391,10 +401,10 @@ independent of Stripe Checkout:
 
 | Surface | Route file | Mount | Flag |
 |---|---|---|---|
-| Quotes (admin) | `adminQuotes.js` | `/api/admin/quotes` (`server.js:703`) | `quotes` |
-| Quotes (customer, token-only) | `publicQuotes.js` | `/api/public/quotes` (`server.js:712`) | `quotes` |
-| Bills/Invoices (admin) | `adminInvoices.js` | `/api/admin/invoices` (`server.js:704`) | `bills` |
-| Tax report | `adminTaxReport.js` | `/api/admin/tax-report` (`server.js:709`) | `bills` (reused — the file's own header states *"Reuses the existing `bills` feature flag + `bills.view` permission"*) |
+| Quotes (admin) | `adminQuotes.js` | `/api/admin/quotes` (`server.js:514`) | `quotes` |
+| Quotes (customer, token-only) | `publicQuotes.js` | `/api/public/quotes` (`server.js:523`) | `quotes` |
+| Bills/Invoices (admin) | `adminInvoices.js` | `/api/admin/invoices` (`server.js:515`) | `bills` |
+| Tax report | `adminTaxReport.js` | `/api/admin/tax-report` (`server.js:520`) | `bills` (reused — the file's own header states *"Reuses the existing `bills` feature flag + `bills.view` permission"*) |
 
 `adminBusinessProfile.js` (`/api/admin/business-profile`,
 `server.js:702` — the issuer/bank-account block every quote/invoice PDF

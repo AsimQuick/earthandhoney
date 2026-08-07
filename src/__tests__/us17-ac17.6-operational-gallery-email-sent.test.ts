@@ -149,26 +149,26 @@ describe('AC-17.6: an operational gallery email is sent through Backstage email 
 
     it('cites the admin-login route and its mount', () => {
       expect(section).toMatch(/vendor\/picpeak\/backend\/src\/routes\/auth\.js:36/)
-      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:631/)
+      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:442/)
     })
 
     it('those cited lines really are the admin-login route and its mount', () => {
       const auth = read('vendor/picpeak/backend/src/routes/auth.js').split('\n')
       expect(auth[35]).toContain("router.post('/admin/login'")
       const server = read('vendor/picpeak/backend/server.js').split('\n')
-      expect(server[630]).toContain("app.use('/api/auth', authRoutes)")
+      expect(server[441]).toContain("app.use('/api/auth', authRoutes)")
     })
 
     it('cites the adminEmail mount chain (admin.js -> /email, server.js -> /api/admin)', () => {
       expect(section).toMatch(/admin\.js:20/)
-      expect(section).toMatch(/server\.js:638/)
+      expect(section).toMatch(/server\.js:449/)
     })
 
     it('those cited lines really do mount adminEmail at /api/admin/email', () => {
       const admin = read('vendor/picpeak/backend/src/routes/admin.js').split('\n')
       expect(admin[19]).toContain("router.use('/email', emailRoutes)")
       const server = read('vendor/picpeak/backend/server.js').split('\n')
-      expect(server[637]).toContain("app.use('/api/admin', adminRoutes)")
+      expect(server[448]).toContain("app.use('/api/admin', adminRoutes)")
     })
   })
 
@@ -227,7 +227,7 @@ describe('AC-17.6: an operational gallery email is sent through Backstage email 
 
     it('cites startEmailQueueProcessor, its 60-second period, and its server.js start site', () => {
       expect(section).toMatch(/`emailProcessor\.js:1029`/)
-      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:838/)
+      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:649/)
       expect(section).toMatch(/every 60 seconds/)
     })
 
@@ -236,7 +236,7 @@ describe('AC-17.6: an operational gallery email is sent through Backstage email 
       expect(processor[1028]).toContain('function startEmailQueueProcessor()')
 
       const server = read('vendor/picpeak/backend/server.js').split('\n')
-      expect(server[837]).toContain('startEmailQueueProcessor()')
+      expect(server[648]).toContain('startEmailQueueProcessor()')
     })
 
     it('the processor really does run on a 60000ms interval', () => {

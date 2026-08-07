@@ -124,13 +124,13 @@ describe('AC-17.1.2: a Project can be created and linked to a Client via a real 
     })
 
     it('cites the mount point for the projects router', () => {
-      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:706/)
+      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:517/)
     })
 
     it('that cited line really does mount adminProjects at /api/admin/projects', () => {
       const lines = read('vendor/picpeak/backend/server.js').split('\n')
-      expect(lines[705]).toContain("app.use('/api/admin/projects'")
-      expect(lines[705]).toContain('./src/routes/adminProjects')
+      expect(lines[516]).toContain("app.use('/api/admin/projects'")
+      expect(lines[516]).toContain('./src/routes/adminProjects')
     })
 
     it('cites the permissions seed migration and the exact events.* permissions it defines', () => {

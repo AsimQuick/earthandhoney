@@ -94,14 +94,14 @@ describe('AC-17.1.1: a Client can be created in the running Backstage and surviv
       expect(lines[231]).toContain("router.post('/'")
     })
 
-    it('cites the mount point at vendor/picpeak/backend/server.js:687', () => {
-      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:687/)
+    it('cites the mount point at vendor/picpeak/backend/server.js:498', () => {
+      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:498/)
     })
 
     it('the cited line really does mount that router at /api/admin/customers', () => {
       const lines = read('vendor/picpeak/backend/server.js').split('\n')
-      expect(lines[686]).toContain("app.use('/api/admin/customers'")
-      expect(lines[686]).toContain('./src/routes/adminCustomers')
+      expect(lines[497]).toContain("app.use('/api/admin/customers'")
+      expect(lines[497]).toContain('./src/routes/adminCustomers')
     })
 
     it('records that the route is admin-authenticated and permission-gated, not open', () => {

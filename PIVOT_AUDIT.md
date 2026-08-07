@@ -200,7 +200,7 @@ related-story: US-14
          `checkExpirations()`/`handleExpiredEvent()`, registered by a
          `cron.schedule('0 * * * *', ...)` expression (hourly, via
          `node-cron`) at `expirationChecker.js:11`, started at
-         `server.js:820` in the process this deployment actually runs.
+         `server.js:631` in the process this deployment actually runs.
          Records `workerManager.js`'s duplicate call site as dead code,
          never invoked by any script, Dockerfile, PM2 config, or compose
          file in the pinned commit.
@@ -613,7 +613,7 @@ the Client.
 ### Creation route used
 
 `POST /api/admin/customers` (`vendor/picpeak/backend/src/routes/adminCustomers.js:232`,
-mounted at `vendor/picpeak/backend/server.js:687`), admin-authenticated
+mounted at `vendor/picpeak/backend/server.js:498`), admin-authenticated
 (`adminAuth`) and gated by the `customers.create` RBAC permission. This
 is the same route the admin UI's "add customer" screen calls; it creates
 the `customer_accounts` row directly (`customerAccountsService.createDirect`)
@@ -725,7 +725,7 @@ a real FK, not a free-text field.
 (update/relink), and `POST /api/admin/projects/:id/events` (attach an
 event) are each gated by `requirePermission('events.manage')`
 (`vendor/picpeak/backend/src/routes/adminProjects.js:32,54,74`, mounted
-at `vendor/picpeak/backend/server.js:706`). No permission named
+at `vendor/picpeak/backend/server.js:517`). No permission named
 `events.manage` exists anywhere in the pinned fork:
 
 - The permissions seed (`vendor/picpeak/backend/migrations/core/055_add_permissions_table.js:49-53`)
@@ -868,14 +868,14 @@ migration actually inserts
 (`vendor/picpeak/backend/migrations/core/055_add_permissions_table.js:50`,
 distinct from the never-seeded `events.manage` that blocks the Project
 routes documented under AC-17.1.2 above). The route is reached at
-`/api/admin/events` via `vendor/picpeak/backend/server.js:638`
+`/api/admin/events` via `vendor/picpeak/backend/server.js:449`
 (`app.use('/api/admin', adminRoutes)`) →
 `vendor/picpeak/backend/src/routes/admin.js:9` (`const eventsRoutes =
 require('./adminEvents')`) →
 `vendor/picpeak/backend/src/routes/admin.js:22` (`router.use('/events',
 eventsRoutes)`) — not through `adminEventRename.js`, which is mounted at
 the same `/api/admin/events` prefix one line later
-(`vendor/picpeak/backend/server.js:652`) but only handles the
+(`vendor/picpeak/backend/server.js:463`) but only handles the
 `/:eventId/rename` and `/:eventId/validate-rename` sub-paths.
 
 Exercised live against the running Backstage
@@ -1518,7 +1518,7 @@ HTTP/1.1 200 OK
 
 - **Password verification**: `POST /api/auth/gallery/verify`
   (`vendor/picpeak/backend/src/routes/auth.js:184`), mounted at
-  `vendor/picpeak/backend/server.js:631`
+  `vendor/picpeak/backend/server.js:442`
   (`app.use('/api/auth', authRoutes)`). It looks up the event by `slug`,
   and when `require_password` is true, compares the supplied `password`
   against `event.password_hash` with `bcrypt.compare`
@@ -1529,7 +1529,7 @@ HTTP/1.1 200 OK
   the verify calls below succeeding with no `recaptchaToken` supplied.
 - **Gated content**: `GET /api/gallery/:slug/photos`
   (`vendor/picpeak/backend/src/routes/gallery.js:216`), mounted at
-  `vendor/picpeak/backend/server.js:635`
+  `vendor/picpeak/backend/server.js:446`
   (`app.use('/api/gallery', galleryRoutes)`), guarded by the
   `verifyGalleryAccess` middleware cited above. With no token, and the
   Gallery requiring one, it falls through to
@@ -1958,13 +1958,13 @@ migrations**); the rest are new to this AC.
 | `TokenExpiredError` | Third-party (`jsonwebtoken`) error-class name the fork's own code names and checks against | No | `vendor/picpeak/backend/src/middleware/auth.js:26,148`; `vendor/picpeak/backend/src/middleware/customerAuth.js:47` |
 | `valid_until` / `validUntil` | DB column (`quotes`, `contracts`) and its camelCase API-response field | Yes | `vendor/picpeak/backend/src/routes/adminQuotes.js:84` (`validUntil: q.valid_until`) |
 | `CACHE_TTL` | Named cache-duration constant (permissions cache; update-check cache) | No | `vendor/picpeak/backend/src/middleware/permissions.js:13`; `vendor/picpeak/backend/src/services/updateCheckService.js:9` |
-| `CACHE_TTL_MS` | Named cache-duration constant (upload-settings cache; public-site cache) | No | `vendor/picpeak/backend/src/services/uploadSettings.js:5`; `vendor/picpeak/backend/src/services/publicSiteService.js:12` |
+| `CACHE_TTL_MS` | Named cache-duration constant (upload-settings cache; public-site cache) | No | `vendor/picpeak/backend/src/services/uploadSettings.js:5`; `vendor/picpeak/backend/src/services/publicSiteService.js:24` |
 | `CODE_TTL_MS` | Named recovery-code duration constant | No | `vendor/picpeak/backend/src/services/guestRecoveryService.js:18` |
 | `FONTS_CACHE_TTL_MS` | Named cache-duration constant | No | `vendor/picpeak/backend/src/services/fontsService.js:43` |
 | `GALLERY_TOKEN_TTL_SECONDS` | Named token-duration constant | No | `vendor/picpeak/backend/src/routes/customer.js:87` |
 | `INVITATION_TTL_MS` | Named invitation-duration constant | No | `vendor/picpeak/backend/src/services/customerAccountsService.js:23` |
 | `PASSWORD_RESET_TTL_MS` | Named reset-token-duration constant | No | `vendor/picpeak/backend/src/services/customerAccountsService.js:1165` |
-| `PUBLIC_SITE_CACHE_TTL_MS` | Environment-variable name | No | `vendor/picpeak/backend/src/services/publicSiteService.js:12` (`process.env.PUBLIC_SITE_CACHE_TTL_MS`) |
+| `PUBLIC_SITE_CACHE_TTL_MS` | Environment-variable name | No | `vendor/picpeak/backend/src/services/publicSiteService.js:24` (`process.env.PUBLIC_SITE_CACHE_TTL_MS`) |
 | `TOKEN_TTL_SECONDS` | Named token-duration constant (customer auth) | No | `vendor/picpeak/backend/src/routes/customerAuth.js:48` |
 | `UPLOAD_EXPIRATION_MS` | Named upload-expiration constant | No | `vendor/picpeak/backend/src/services/chunkedUploadService.js:17` |
 | `expiringEvents` | API response field name (admin dashboard summary) | No | `vendor/picpeak/backend/src/routes/adminDashboard.js:24,101` |
@@ -2202,9 +2202,9 @@ guest identity at all.
 | Entry | Name(s) | Evidence (file:line) |
 |---|---|---|
 | E20 | `CACHE_TTL` (update check) | `vendor/picpeak/backend/src/services/updateCheckService.js:9` — caches a GitHub version-check response for an hour. |
-| E21 | `CACHE_TTL_MS` | `vendor/picpeak/backend/src/services/uploadSettings.js:5`; `vendor/picpeak/backend/src/services/publicSiteService.js:12`. |
+| E21 | `CACHE_TTL_MS` | `vendor/picpeak/backend/src/services/uploadSettings.js:5`; `vendor/picpeak/backend/src/services/publicSiteService.js:24`. |
 | E23 | `FONTS_CACHE_TTL_MS` | `vendor/picpeak/backend/src/services/fontsService.js:43`. |
-| E27 | `PUBLIC_SITE_CACHE_TTL_MS` | `vendor/picpeak/backend/src/services/publicSiteService.js:12` (`process.env.PUBLIC_SITE_CACHE_TTL_MS`). |
+| E27 | `PUBLIC_SITE_CACHE_TTL_MS` | `vendor/picpeak/backend/src/services/publicSiteService.js:24` (`process.env.PUBLIC_SITE_CACHE_TTL_MS`). |
 | E29 | `UPLOAD_EXPIRATION_MS` | `vendor/picpeak/backend/src/services/chunkedUploadService.js:17` — cleans up a stale, never-finished chunked upload after 24h. |
 
 ### Ruled-out group: Session-token revocation bookkeeping
@@ -2588,9 +2588,9 @@ The Gallery creation route is `POST /api/admin/events`
 (`vendor/picpeak/backend/src/routes/adminEvents.js:330-864`), the same
 route AC-17.1.3.1 already established as "the creation route used" for a
 Gallery — admin-authenticated, gated by the seeded `events.create`
-permission, and reached via `server.js:638` → `admin.js:22` (which
+permission, and reached via `server.js:449` → `admin.js:22` (which
 `require`s `./adminEvents` at line 9) ahead of the `adminEventRename.js`
-mount at the same URL prefix (`server.js:652`). Throughout this section
+mount at the same URL prefix (`server.js:463`). Throughout this section
 `server.js` means `vendor/picpeak/backend/server.js` — it sits at the
 backend root, not under `backend/src/`.
 
@@ -2598,11 +2598,11 @@ Two other reachable event-creation endpoints exist in the pinned commit
 and were inspected for this AC wherever a confirmed-set entry had no
 write on the primary route: `POST /api/events`
 (`vendor/picpeak/backend/src/routes/events.js:60`, `adminAuth`-gated but
-without the `events.create` RBAC check, mounted at `server.js:632` — an
+without the `events.create` RBAC check, mounted at `server.js:443` — an
 older, parallel implementation of the same create flow, not the route
 AC-17.1.3.1 exercised) and `POST /api/v1/events`
 (`vendor/picpeak/backend/src/routes/v1/events.js:114`, gated by
-`apiTokenAuth` + `requireApiScope('admin')`, mounted at `server.js:720`
+`apiTokenAuth` + `requireApiScope('admin')`, mounted at `server.js:531`
 — the external integration API). A fourth insert site,
 `vendor/picpeak/backend/src/routes/adminEvents-enhanced.js:92`, is never
 `require`d by `server.js` and is unreachable dead code, so it is not a
@@ -2925,7 +2925,7 @@ sections had no reason to surface: `middleware/auth.js` defines its own
 
 ```
 $ grep -rn "middleware/auth['\"])" vendor/picpeak/backend/server.js vendor/picpeak/backend/src -r
-vendor/picpeak/backend/server.js:726:  const { adminAuth } = require('./src/middleware/auth');
+vendor/picpeak/backend/server.js:537:  const { adminAuth } = require('./src/middleware/auth');
 vendor/picpeak/backend/src/routes/adminApiTokens.js:11:const { adminAuth } = require('./../middleware/auth');
 vendor/picpeak/backend/src/routes/adminArchives.js:7:const { adminAuth } = require('../middleware/auth');
 ... (39 route files total, every one destructuring only `adminAuth`)
@@ -3350,10 +3350,10 @@ runs:**
 
 - `vendor/picpeak/backend/server.js:22` — `const { startExpirationChecker
   } = require('./src/services/expirationChecker');`
-- `vendor/picpeak/backend/server.js:820` — `startExpirationChecker();`,
-  inside `async function startServer()` (`:791-912`), a few lines ahead
-  of `app.listen(PORT, ...)` (`:903`).
-- `vendor/picpeak/backend/server.js:914` — `startServer();`, called at
+- `vendor/picpeak/backend/server.js:631` — `startExpirationChecker();`,
+  inside `async function startServer()` (`:602-723`), a few lines ahead
+  of `app.listen(PORT, ...)` (`:714`).
+- `vendor/picpeak/backend/server.js:725` — `startServer();`, called at
   module scope, so `startExpirationChecker()` — and with it the
   `cron.schedule('0 * * * *', ...)` registration — runs every time
   `server.js` is executed as the process entry point.
@@ -3398,8 +3398,8 @@ pinned commit:**
 
 The trigger this deployment actually starts, then, is registered at
 `expirationChecker.js:11` (the `cron.schedule` call itself) and started
-at `server.js:820` (the call site actually reached by the running
-container), reached via `server.js:914`'s module-scope `startServer()`
+at `server.js:631` (the call site actually reached by the running
+container), reached via `server.js:725`'s module-scope `startServer()`
 call — not `workerManager.js`, which is never executed.
 
 ### Verdict
@@ -3414,8 +3414,8 @@ once per hour on the hour, via `node-cron` — not a timer interval and
 not an on-request handler. A whole-backend search confirms it is the
 only scheduled process that references `expires_at`. The trigger is
 started, in the process this deployment actually runs, at
-`server.js:820` inside `startServer()`, itself invoked at module scope
-by `server.js:914`, with `server.js` confirmed as the real entry point
+`server.js:631` inside `startServer()`, itself invoked at module scope
+by `server.js:725`, with `server.js` confirmed as the real entry point
 by `package.json`'s `start` script, the vendored `Dockerfile`'s `CMD`,
 `ecosystem.config.js`'s PM2 definition, and the absence of any
 `command:` override in our own `docker-compose.yml`. A second call site,
@@ -3527,7 +3527,7 @@ column of its own (AC-17.4.1.1.1.3(b)).
 
 AC-17.4.1.1.2 located the scheduled process that acts on that column:
 `expirationChecker.js`'s hourly `cron.schedule('0 * * * *', ...)`
-(`expirationChecker.js:11`), started at `server.js:820` in the process
+(`expirationChecker.js:11`), started at `server.js:631` in the process
 this deployment actually runs. On each tick, `checkExpirations()` finds
 rows whose `expires_at` has passed and calls `handleExpiredEvent(event)`
 once per row, which — per AC-17.4.1.1.2's restatement of
@@ -3710,7 +3710,7 @@ The value matches the row read back in full above:
 The request AC-17.4.2 re-runs after expiry is
 `GET /api/gallery/:slug/photos`
 (`vendor/picpeak/backend/src/routes/gallery.js:216`, mounted at
-`vendor/picpeak/backend/server.js:635` —
+`vendor/picpeak/backend/server.js:446` —
 `app.use('/api/gallery', galleryRoutes)`), guarded by the
 `verifyGalleryAccess` middleware
 (`vendor/picpeak/backend/src/middleware/gallery.js:20`), which only
@@ -5580,7 +5580,7 @@ transporter + queue processor in
 admin-facing routes in `vendor/picpeak/backend/src/routes/adminEmail.js`
 (mounted at `/email` by `vendor/picpeak/backend/src/routes/admin.js:20`,
 itself mounted at `/api/admin` by
-`vendor/picpeak/backend/server.js:638`) — works exactly as delivered. What
+`vendor/picpeak/backend/server.js:449`) — works exactly as delivered. What
 was missing was infrastructure this project's own `docker-compose.yml`
 never provisioned: a capture inbox for the SMTP host the pinned fork
 already expects, and a correct port for it.
@@ -5667,7 +5667,7 @@ compounded — nothing was capturing mail regardless of port.
 
 Login route: `router.post('/admin/login', ...)`,
 `vendor/picpeak/backend/src/routes/auth.js:36`, mounted at `/api/auth` by
-`vendor/picpeak/backend/server.js:631`.
+`vendor/picpeak/backend/server.js:442`.
 
 ### An operational gallery email, not a synthetic one
 
@@ -5708,7 +5708,7 @@ With the corrected config in place, the four pending `gallery_created` rows
 were delivered by upstream's **ordinary background queue processor**, with no
 admin intervention at all — the plainest possible operational path.
 `startEmailQueueProcessor` (`emailProcessor.js:1029`, started at
-`vendor/picpeak/backend/server.js:838`) runs `processEmailQueue` immediately
+`vendor/picpeak/backend/server.js:649`) runs `processEmailQueue` immediately
 and then every 60 seconds; because `POST /config` refreshes the *cached*
 transporter in place (`adminEmail.js:104-105`), the very next tick picked the
 rows up without a container restart. Upstream's own activity log pins the
@@ -5905,9 +5905,9 @@ and enqueue logic in
 `vendor/picpeak/backend/src/services/webhookService.js`, the poll-based
 delivery worker in
 `vendor/picpeak/backend/src/services/webhookDeliveryWorker.js` (started at
-`vendor/picpeak/backend/server.js:841-842`), and the admin-facing routes in
+`vendor/picpeak/backend/server.js:652-653`), and the admin-facing routes in
 `vendor/picpeak/backend/src/routes/adminWebhooks.js` (mounted directly at
-`/api/admin/webhooks` by `server.js:717`) — works exactly as delivered.
+`/api/admin/webhooks` by `server.js:528`) — works exactly as delivered.
 What was missing, exactly as with AC-17.6, was a listener this project's
 own `docker-compose.yml` never provisioned.
 
