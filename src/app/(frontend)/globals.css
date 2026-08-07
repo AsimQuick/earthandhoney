@@ -15,6 +15,9 @@
  * updated-by: dev-team
  * related-story: US-23
  * related-ac: 23.2
+ * updated-by: dev-team
+ * related-story: US-23
+ * related-ac: 23.4
  * ---
  */
 @import "tailwindcss";
@@ -46,4 +49,16 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-rubik), Arial, Helvetica, sans-serif;
+}
+
+/*
+ * AC-23.4: src/components/layout/VerticalMenu.tsx no longer carries
+ * Tailwind's built-in duration-300/ease-in-out utility classes for the
+ * drawer's open/close transition — the animation-timing category (AC-23.1)
+ * owns that value instead, so this rule reads it straight from the token
+ * custom properties in src/styles/tokens.css.
+ */
+.photobuddy_fl_vertical_menu {
+  transition-duration: var(--motion-duration-base);
+  transition-timing-function: var(--motion-ease-standard);
 }
