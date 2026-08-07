@@ -41,6 +41,22 @@
   --color-surface-muted: #f5f5f4;
   --color-border: #d9d9d6;
 
+  /* Usable ink-on-surface combinations (AC-23.3). Each pairing this token
+   * set actually endorses for rendering text/indicators is declared here,
+   * tagged with the WCAG AA usage class its contrast is required to clear:
+   * "body" (4.5:1) or "large" (large text / non-text indicators, 3:1).
+   * A test computes each pair's contrast ratio from the --color-* values
+   * above and fails if any declared pair falls under its class's minimum.
+   * --color-border is a decorative divider, not a text/indicator ink —
+   * it is not declared as a usable pair here.
+   */
+  --usable-pair-ink--on--surface: body;
+  --usable-pair-ink--on--surface-muted: body;
+  --usable-pair-ink-secondary--on--surface: body;
+  --usable-pair-ink-secondary--on--surface-muted: body;
+  --usable-pair-ink-tertiary--on--surface: large;
+  --usable-pair-ink-tertiary--on--surface-muted: large;
+
   /* ---------------------------------------------------------------------
    * 4. Type scale — a limited, named set of font sizes.
    * ------------------------------------------------------------------- */
