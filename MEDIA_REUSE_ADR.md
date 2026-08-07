@@ -36,13 +36,15 @@ established: the PRD's "Gallery" is upstream's `events` table (see
 `PIVOT_AUDIT.md`'s AC-17.1.3.1 section, "Upstream does not have a 'Gallery'
 object — it has an Event").
 
-For completeness: the dormant Payload `Galleries` collection
-(`src/collections/Galleries.ts:66-75`) models its `images` field as an
-`array` of `relationship` rows pointing at `media`, which is structurally
+For completeness: the Payload `Galleries` collection was removed by US-28 AC-28.1.1
+as part of pivot execution (PIVOT_AUDIT.md's superseded-artifacts
+table, row 1). Before its removal it modeled its `images` field as an
+`array` of `relationship` rows pointing at `media`, which was structurally
 capable of letting the same `media` document be listed inside more than one
-`galleries` document — but that collection is not the live system per
-`SYSTEM_OWNERSHIP.md`, so it does not change the answer for "currently."
-This ADR answers the question against the fork that is actually running.
+`galleries` document — but that collection was not the live system per
+`SYSTEM_OWNERSHIP.md`, so its removal does not change the answer for
+"currently." This ADR answers the question against the fork that is
+actually running.
 
 ### Schema level: a photo row belongs to exactly one event, enforced by a foreign key
 

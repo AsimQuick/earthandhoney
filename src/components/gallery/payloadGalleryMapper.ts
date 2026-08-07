@@ -2,18 +2,23 @@
  * ---
  * file: src/components/gallery/payloadGalleryMapper.ts
  * project: earthandhoney
- * purpose: Pure mapping from a Payload Galleries Local API document (with
+ * purpose: Pure mapping from a Payload gallery document shape (with
  *          populated Media relations) to the Gallery Engine's GalleryImage[]
  *          shape. Deliberately free of any `payload` import — importing
  *          `payload` (or anything that transitively does, e.g. @payload-
- *          config) breaks Jest's ESM interop (see
- *          us3-ac3.5-galleries-api-read.test.ts), so keeping this mapping
- *          logic payload-import-free is what makes it directly unit-testable
+ *          config) breaks Jest's ESM interop, so keeping this mapping logic
+ *          payload-import-free is what makes it directly unit-testable
  *          instead of only verifiable via source-text assertions or a live
- *          next build/start round trip.
+ *          next build/start round trip. Survives the removal of the Payload
+ *          `galleries` collection (US-28 AC-28.1.1, PIVOT_AUDIT.md's
+ *          superseded-artifacts row 4, "Kept as a Frontstage renderer") —
+ *          rewired to a PicPeak-sourced document shape by a later story.
  * created-by: dev-team
  * related-story: US-6
  * related-ac: 6.2
+ * updated-by: dev-team
+ * related-story: US-28
+ * related-ac: 28.1.1
  * ---
  */
 import type { GalleryImage, GallerySettings } from './types'

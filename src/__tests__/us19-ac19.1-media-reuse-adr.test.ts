@@ -113,17 +113,10 @@ describe('AC-19.1: MEDIA_REUSE_ADR.md documents current image-to-gallery binding
     })
   })
 
-  describe('acknowledges the dormant Payload model without letting it change the "currently" answer', () => {
-    const galleriesSrc = read('src/collections/Galleries.ts')
-
-    it('ADR notes the dormant Payload Galleries collection structurally allows shared references', () => {
-      expect(doc).toMatch(/Galleries\.ts:66-75/)
+  describe('acknowledges the removed Payload model without letting it change the "currently" answer', () => {
+    it('ADR notes the Payload Galleries collection was removed (US-28 AC-28.1.1), not merely dormant', () => {
+      expect(doc).toMatch(/removed by US-28 AC-28\.1\.1/)
       expect(doc).toMatch(/not the live system/)
-    })
-
-    it('Galleries.ts images field really is an array of relationships to media', () => {
-      expect(galleriesSrc).toMatch(/name:\s*'images'/)
-      expect(galleriesSrc).toMatch(/relationTo:\s*'media'/)
     })
   })
 })
