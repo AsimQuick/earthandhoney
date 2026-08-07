@@ -6285,6 +6285,50 @@ AC-17.7). This section adds only the PRD-section citation and the
 disposition category; it introduces no new fork behaviour and changes no
 finding's substance.
 
+## AC-22.4 — the prepared-but-unsubmitted UD-1 upstream report, surfaced as a human action item
+
+`scrum-master/po-requests.md` item 16 already names the ask ("A human GitHub
+identity to publish the upstream defect report for the single-image download
+hang (F8 / UD-1)") but stops short of naming where the drafted report
+actually lives, and it predates `retrospective.md`'s numbered action-item
+list, so it carries no cross-reference to action item 9 there. `po-requests.md`
+is outside this AC's write scope for the same reason AC-14.6, AC-17.9 and
+AC-22.2 above give: no implementing AC in this chain holds write access to
+that file. This section finishes the merge-ready content the same way AC-22.2
+did, for whoever holds write scope (the Product Owner or the orchestrator) to
+transcribe into item 16.
+
+### Merge-ready addition to `po-requests.md` item 16
+
+- **On-disk path of the drafted report:**
+  `.github/upstream-issues/UD-1-gallery-single-download.md` — the exact
+  `--body-file` this repository's own submission command
+  (`PICPEAK_UPSTREAM_DEFECTS.md`, `UD-1` entry) points at:
+  `gh issue create --repo <picpeak-upstream-org>/<picpeak-upstream-repo> --title "..." --body-file .github/upstream-issues/UD-1-gallery-single-download.md`.
+- **Publishing requires a human GitHub identity:** no automated step in this
+  pipeline can file the issue — it must be submitted under a real person's
+  GitHub account, which is why it has sat prepared, not submitted since
+  2026-08-01 (`FORK_CHANGELOG.md`'s `2026-08-01` `deviation` entry;
+  `PICPEAK_UPSTREAM_DEFECTS.md`'s `UD-1` entry).
+- **Consequence of not filing it:** the fork patch is registered in
+  `FORK_CHANGELOG.md` (the same `2026-08-01` `deviation` entry) and
+  `PICPEAK_UPSTREAM_DEFECTS.md` (`UD-1`'s "Sync disposition: drop rather than
+  merge") as droppable "when upstream fixes it," once upstream lands a fix
+  meeting the three-part condition `UD-1` states. While the report sits
+  unfiled, that condition can never even be evaluated — the patch registered
+  as droppable can never actually be dropped, and is carried forever,
+  re-verified at every upstream sync for no reason, until a human files it.
+- **Retrospective cross-reference:** this is `scrum-master/retrospective.md`'s
+  **Process improvements / action items** table, **action item 9** — "Decide
+  whether to submit the prepared upstream defect report (F8/UD-1) … Project
+  Lead (human decision)."
+
+Basis: `FORK_CHANGELOG.md`'s `2026-08-01` `deviation` entry,
+`PICPEAK_UPSTREAM_DEFECTS.md`'s `UD-1` entry, `scrum-master/po-requests.md`
+item 16 (existing text), and `scrum-master/retrospective.md` action item 9.
+This section adds no new fork behaviour and changes no finding's substance —
+it only completes the human-facing routing AC-22.4 requires.
+
 ## AC-17.10 — PicPeak's native contract-signing capability, verified against the pinned commit
 
 `po-requests.md` item 7 confirmed, conditionally, that V1 uses "PicPeak's
