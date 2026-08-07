@@ -1,0 +1,129 @@
+/*
+ * ---
+ * file: exports/design-tokens/tokens.css
+ * project: earthandhoney
+ * purpose: AC-23.6 — plain CSS custom-property export of the design-token
+ *          source of truth (src/styles/tokens.css), so Backstage and
+ *          Project Room templates can consume the tokens as consumers from
+ *          day one, with no Tailwind or Next.js dependency.
+ * created-by: dev-team
+ * related-story: US-23
+ * related-ac: 23.6
+ * ---
+ *
+ * GENERATED FILE — do not edit by hand.
+ * Regenerate with: npm run tokens:export
+ * Source of truth: src/styles/tokens.css
+ *
+ * Usage
+ * -----
+ * Plain CSS, no build step required: link or @import this file directly.
+ * A consuming template reads a token with var(--token-name), the same way
+ * PicPeak's own gallery-style templates already read their own --gallery-*
+ * custom properties.
+ *
+ * Example — how one gallery-style-templates-baseline variant would
+ * reference these tokens (illustrative only; the fork's own templates are
+ * not rewired in this story). gallery-style-templates-baseline/elegant-dark.css declares its
+ * own custom properties on ".gallery-page"; sourcing them from this export
+ * instead of its current hard-coded hex/px values would look like:
+ *
+ *   .gallery-page {
+ *     --gallery-bg: var(--color-surface);
+ *     --gallery-text: var(--color-ink);
+ *     --gallery-text-muted: var(--color-ink-tertiary);
+ *     --gallery-accent: var(--color-ink-secondary);
+ *     --gallery-border: var(--color-border);
+ *     --gallery-radius: var(--radius-md);
+ *     --gallery-spacing: var(--spacing-sm);
+ *   }
+ */
+
+:root {
+  /* Font families */
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Font combinations */
+  --font-combo-editorial-display-weight: 400;
+  --font-combo-editorial-sans-weight: 400;
+  --font-combo-classic-display-weight: 300;
+  --font-combo-classic-sans-weight: 400;
+  --font-combo-bold-display-weight: 600;
+  --font-combo-bold-sans-weight: 500;
+
+  /* Colour palette */
+  --color-ink: #1a1a1a;
+  --color-ink-secondary: #4d4d4d;
+  --color-ink-tertiary: #7a7a7a;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f5f5f4;
+  --color-border: #d9d9d6;
+
+  /* Type scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.25rem;
+  --text-3xl: 3rem;
+  --text-4xl: 3.75rem;
+
+  /* Line heights */
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+  --leading-loose: 1.85;
+
+  /* Text measures */
+  --measure-narrow: 45ch;
+  --measure-normal: 65ch;
+  --measure-wide: 75ch;
+
+  /* Spacing scale */
+  --spacing-3xs: 0.25rem;
+  --spacing-2xs: 0.5rem;
+  --spacing-xs: 0.75rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2.5rem;
+  --spacing-xl: 4rem;
+  --spacing-2xl: 6rem;
+  --spacing-3xl: 9rem;
+
+  /* Gallery gaps */
+  --gallery-gap-sm: 0.5rem;
+  --gallery-gap-md: 1rem;
+  --gallery-gap-lg: 1.5rem;
+
+  /* Radii */
+  --radius-none: 0px;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-full: 9999px;
+
+  /* Overlay and vignette presets */
+  --overlay-subtle: rgb(0 0 0 / 0.15);
+  --overlay-medium: rgb(0 0 0 / 0.35);
+  --overlay-strong: rgb(0 0 0 / 0.55);
+  --vignette-soft: radial-gradient(ellipse at center, transparent 60%, rgb(0 0 0 / 0.25) 100%);
+  --vignette-strong: radial-gradient(ellipse at center, transparent 45%, rgb(0 0 0 / 0.5) 100%);
+
+  /* Breakpoints */
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+
+  /* Animation timing */
+  --motion-duration-fast: 120ms;
+  --motion-duration-base: 200ms;
+  --motion-duration-slow: 360ms;
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+}

@@ -11,13 +11,20 @@
  *          uppercase transform). Below the `lg` breakpoint it is an
  *          off-canvas drawer toggled by MobileMenuTrigger via
  *          MobileMenuContext; at `lg` and above it is always visible,
- *          matching the template's fixed left sidebar.
+ *          matching the template's fixed left sidebar. The drawer's
+ *          open/close transition timing (AC-23.4) is set by the
+ *          .photobuddy_fl_vertical_menu rule in globals.css, which reads
+ *          the animation-timing tokens from src/styles/tokens.css, rather
+ *          than Tailwind's built-in transition-duration/easing scale.
  * created-by: dev-team
  * related-story: US-8
  * related-ac: 8.1
  * updated-by: dev-team
  * related-story: US-8
  * related-ac: 8.3
+ * updated-by: dev-team
+ * related-story: US-23
+ * related-ac: 23.4
  * ---
  */
 'use client'
@@ -51,7 +58,7 @@ export function VerticalMenu() {
       id="vertical-menu"
       data-testid="vertical-menu"
       data-state={isOpen ? 'open' : 'closed'}
-      className={`photobuddy_fl_vertical_menu fixed inset-y-0 left-0 z-40 w-72 -translate-x-full overflow-y-auto transition-transform duration-300 ease-in-out lg:static lg:z-auto lg:w-80 lg:translate-x-0 ${
+      className={`photobuddy_fl_vertical_menu fixed inset-y-0 left-0 z-40 w-72 -translate-x-full overflow-y-auto transition-transform lg:static lg:z-auto lg:w-80 lg:translate-x-0 ${
         isOpen ? 'translate-x-0' : ''
       }`}
     >

@@ -1,0 +1,60 @@
+/*
+ * ---
+ * file: src/styles/fonts.css
+ * project: earthandhoney
+ * purpose: Self-hosted @font-face declarations for Fraunces (display serif)
+ *          and Inter (body/UI sans) per the creative brief confirmed in
+ *          po-requests.md item 9 — every font file is served from this
+ *          repository's own public/fonts directory, never requested from
+ *          an external Google-hosted font CDN. Each face declares
+ *          font-display: swap so text renders in a fallback font
+ *          immediately rather than staying invisible while the webfont
+ *          loads. The primary (400) weight of each family is preloaded in
+ *          src/app/(frontend)/layout.tsx so the first paint already has the
+ *          real font available and no swap-induced layout shift occurs;
+ *          the remaining weights load on demand without a preload hint.
+ * created-by: dev-team
+ * related-story: US-23
+ * related-ac: 23.2
+ * ---
+ */
+
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/fraunces/fraunces-latin-300-normal.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/fraunces/fraunces-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Fraunces";
+  src: url("/fonts/fraunces/fraunces-latin-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/inter/inter-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/inter/inter-latin-500-normal.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
