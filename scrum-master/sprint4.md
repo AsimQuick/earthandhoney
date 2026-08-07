@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 5/9 stories | 29/57 ACs
-**Last Updated:** 2026-08-07T13:24:27+00:00
+**Last Updated:** 2026-08-07T13:37:02+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -481,6 +481,7 @@ Fixed scope, and this criterion publishes nothing. It exists because the publish
 - [ ] **AC-26.4.1.3.2:** Using the machinery AC-26.4.1.3.1 proved and the fixtures AC-26.4.1.2 created, without rebuilding either, publishing the **first** draft gallery is proven end to end in a single run and recorded as section (e)(ii) of `WEBHOOK_LIVE_PROOF.md`: that gallery is published through `POST /api/admin/events/:id/publish`; the `event.published` delivery Backstage recorded for it is shown reaching `status: success` through `GET /api/admin/webhooks/:id/deliveries` plus the detail read-back; and the served Frontstage placement page is shown changing to reflect the publish. The page change is bounded by a deadline shorter than the 60-second safety net contract row 5 commits to and the route's own `export const revalidate = 60` — the script's `DEADLINE_SECONDS`, default 25 — so a refresh the safety net could have produced on its own does not count as evidence the webhook produced it. This is `scripts/ac26.4.1-live-proof.sh proof`, one invocation, and its real output is the record.
 
 Fixed scope. All three observations belong to one run and must not be split across sessions: the publish is one-way, and the deadline-bounded page change is only observable in the seconds following that single publish — once the safety net has had its 60 seconds, the attribution evidence is gone and cannot be recovered without resetting the fixture. The delivery worker polls on its own schedule every `WEBHOOK_DELIVERY_INTERVAL_MS`, default 5000ms (`webhookDeliveryWorker.js:7`), so no manual trigger exists or is needed — there is only waiting. Reproduction against the second gallery belongs to AC-26.4.1.3.3 and is explicitly not this criterion's work; do not run the script's `all` mode. If the run fails partway and consumes the first gallery, reset both fixtures through the procedure AC-26.4.1.3.1 recorded, re-run, and record the reset — a documented reset-and-re-run is a finding, not a failure of this criterion.
+  - Dev: implemented
 - [ ] **AC-26.4.1.3.3:** The sequence AC-26.4.1.3.2 recorded is re-run against the **second** draft gallery, from those recorded commands and without modifying them, and shown to reproduce — the same three pieces of evidence: the publish, the `event.published` delivery for that gallery reaching `status: success`, and the served Frontstage placement page changing inside the same sub-60-second deadline. Recorded as section (e)(iii) of `WEBHOOK_LIVE_PROOF.md`. This closes the first of AC-26.4's three changes and leaves both proof galleries published — the state AC-26.4.2 uploads a photo into.
 
 Fixed scope: this is `scripts/ac26.4.1-live-proof.sh reproduce`, the invocation the script already splits out for exactly this purpose. A second gallery rather than the first one re-published because the pinned fork's publish route is a one-way draft→live transition (`adminEvents.js:1049`) with no un-publish route, so reproducing through the supported interface needs an independently created draft rather than a database edit underneath the first — AC-26.4.1.2 created it for precisely this. The bar here is reproduction, not fresh proof: if the second run needs any change to the recorded commands in order to pass, make the change and record what changed and why, because a sequence that only works once has not reproduced.
@@ -553,6 +554,17 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   **Pre-run finding:** the two proof galleries (previously ids 8/9, then 16/17) were found already published (`is_draft: false`) — the same out-of-order-consumption pattern AC-26.4.1.2 hit. Fixed through the supported `DELETE /api/admin/events/:id` route, then re-ran `scripts/webhook-live-proof-setup.sh` to recreate them fresh (new ids 18/19, `is_draft: true`).
   
   **Read-only proof recorded** (`WEBHOOK_LIVE_PROOF.md` section (e)/(e)(i)): Backstage admin login; `subscription_id()` resolved from the receiver URL; `event_id_for_slug()` resolved for both slugs with `is_draft: true` confirmed; `page_state()` extraction — caught a stale `photos=0` cache read (`x-nextjs-cache: STALE`) immediately after fixture recreation, settling to `unavailable` for both slugs within 10s (`x-nextjs-cache: HIT`); and the delivery read-back path exercised end to end — list route (39 rows, no `payload` column) then two `deliveries/:id` detail reads, each retu …
+  AC-26.4.1.3.2 implemented (local checks green): **Implementation summary for AC-26.4.1.3.2:**
+  
+  Ran `scripts/ac26.4.1-live-proof.sh proof` once against the running stack, reusing the AC-26.4.1.1 harness and AC-26.4.1.2 fixtures without rebuilding either. Both proof galleries (ids 18/19) were still fresh drafts left over from AC-26.4.1.3.1, so no fixture reset was needed for this run.
+  
+  The single invocation proved all three required observations:
+  1. Gallery A (id 18) published via `POST /api/admin/events/18/publish` → `200`, `is_draft:false`.
+  2. The `event.published` delivery (id 53) reached `status: success` within 2s — read back independently via both `GET /api/admin/webhooks/2/deliveries` (list) and `GET .../deliveries/53` (detail).
+  3. The served `/dev/gallery-webhook-proof` page changed to the published branch (`data-testid="webhook-proof-gallery"`, 0 photos) within `DEADLINE_SECONDS` (25s, default) — strictly under the 60s contract-row-5 safety net and the route's own `revalidate = 60`, so the change is attributable to the webhook rather than cache expiry. Gallery B (id 19) was confirmed untouched for AC-26.4.1.3.3.
+  
+  **Files changed:**
+  - `WEBHOOK_LIVE_PROOF.md` — added section `### (e)(ii)` recording the live run's real outpu …
 
 **Tester Status:** approved
 **Tester Notes:**
