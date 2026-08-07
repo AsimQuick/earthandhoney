@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 4/9 stories | 23/51 ACs
-**Last Updated:** 2026-08-07T05:50:19+00:00
+**Last Updated:** 2026-08-07T05:59:39+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -382,6 +382,7 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
 - [ ] **AC-25.3:** The existing gallery components under `src/components/gallery/` render the Backstage-sourced photo list unchanged in location, through a new `backstageGalleryMapper` that takes the place of `payloadGalleryMapper.ts` as the data source. This is the "Kept as a Frontstage renderer" disposition `PIVOT_AUDIT.md`'s superseded-artifact table already records. A test asserts no second gallery-rendering component set is introduced.
   - Dev: implemented
 - [ ] **AC-25.4:** Caching obeys the contract exactly: the bounded 60-second safety-net cap, display data only, and never a Backstage database row stored Frontstage-side. A test asserts the cached shape contains only the fields the contract's "What the Frontstage is allowed to cache" section permits — rendered image URLs, thumbnails, gallery title/cover, item counts — and that a Frontstage cache is never treated as authoritative.
+  - Dev: implemented
 - [ ] **AC-25.5:** An internal `noindex` route renders one and the same Backstage gallery through two placements — one `masonry`, one `slideshow` — proving PRD §14's core claim that layout is a placement concern and one gallery can appear in different layouts without the underlying gallery changing. Masonry preserves every received aspect ratio and the photographer's order, never crops or stretches, and reserves aspect-ratio space before load (PRD §15.1); slideshow preloads only current and next (PRD §15.2). A test asserts zero image-caused layout shift on the masonry route; a second test asserts the masonry route's rendered image order and each image's rendered aspect ratio match the photo list returned by `GET /api/gallery/:slug/photos` exactly, with no `object-fit: cover`/crop applied; a third test asserts the slideshow route's network requests show only the current and next image's assets loaded, never the full set.
 - [ ] **AC-25.6:** Failure behaviour is defined and proven: an unreachable Backstage, a timeout, or a 404 slug renders the page with a placeholder for that placement and a logged error — never a 500 on a public page, and never a partially rendered gallery presented as complete. Tested by pointing a placement at a slug that does not exist and by simulating a Backstage timeout.
 
@@ -417,6 +418,15 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   **Files changed:**
   - `src/components/gallery/backstageGalleryMapper.ts` (new) — pure function `mapBackstageGalleryToImages()` mapping a Backstage `GET /api/gallery/:slug/photos` response (`GalleryPhotosResponse`/`GalleryPhoto` from `src/lib/backstageClient.ts`) into the existing `GalleryImage[]` shape from `src/components/gallery/types.ts` — the same shape `payloadGalleryMapper.ts` already produces. Maps PicPeak's `thumbnail_url`/`preview_url`/`hero_url` tiers onto `thumbnailUrl`/`mediumUrl`/`largeUrl`, with `alt` falling back through `original_filename` → `filename` → gallery `event_name`. No React import, no JSX — a pure data mapper like its Payload counterpart.
   - `src/__tests__/us25-ac25.3-backstage-gallery-mapper.test.ts` (new, 13 tests) — covers full field mapping, alt-text fallback chain, order preservation, missing-url/tier/dimension defaults, empty-photos handling; and a second describe block a …
+  AC-25.4 implemented (local checks green): Committed as `fa2adc2` on `feature/US-25`.
+  
+  **Implementation summary — AC-25.4:**
+  
+  - **`src/lib/backstageGalleryCache.ts`** (new): the sole caching module for Backstage-sourced gallery data.
+    - `CachedGalleryDisplay` interface names exactly the contract-permitted fields — `title`, `cover`, `imageUrls`, `thumbnailUrls`, `itemCount` — with no index signature, unlike `backstageClient.ts`'s richer `GalleryInfo`/`GalleryPhotosResponse` types, so it can never widen back to a raw API/DB shape.
+    - `toCachedGalleryDisplay()` maps a successful `FlowAOutcome` (from AC-25.2's client) down to that narrow shape, dropping `event_type`, `expires_at`, `is_active`, `is_expired`, `requires_password`, `color_theme`, `allow_downloads`, `allow_user_uploads`, the raw `event` object, and per-photo `id`/`filename`.
+    - `getCached()` enforces the 60-second (`CACHE_TTL_MS = 60_000`) safety-net cap on every read — an expired entry is deleted and returns `null`, identical to a cache miss, so no caller can special-case "stale but usable." Returns a defensive copy so mutation can't corrupt later reads.
+    - `setCached()` only accepts the narrowed shape; `invalidateCached()` is ready for the future webhook-drive …
 
 **Tester Status:** approved
 **Tester Notes:**
