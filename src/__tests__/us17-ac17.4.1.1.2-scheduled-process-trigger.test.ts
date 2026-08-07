@@ -239,7 +239,14 @@ describe('AC-17.4.1.1.2: the scheduled process, and how it is triggered', () => 
       expect(lineAt(ECOSYSTEM_CONFIG, 4)).toMatch(/script:\s*'\.\/server\.js'/)
     })
 
-    it('our docker-compose.yml sets no command: override for backstage-backend', () => {
+    it("our docker-compose.yml's command: override for backstage-backend (added by AC-22.5, unrelated to this AC) still execs the vendored wait-for-db.sh -> node server.js chain unmodified", () => {
+      // AC-22.5 overrides "command:" to fix the F7 /storage permission gap
+      // (mkdir/chown, run once as root before anything else). It does not
+      // replace the trigger site this AC proves: the override's last step
+      // still hands off to the image's own wait-for-db.sh with the same
+      // "node server.js" args the vendored Dockerfile's default CMD used, so
+      // startExpirationChecker's registration inside server.js is still the
+      // live path.
       const composeLines = lines(OUR_COMPOSE)
       const svcStart = composeLines.findIndex((l) => l.trim() === 'backstage-backend:')
       expect(svcStart).toBeGreaterThan(-1)
@@ -251,7 +258,8 @@ describe('AC-17.4.1.1.2: the scheduled process, and how it is triggered', () => 
         }
       }
       const svcBlock = composeLines.slice(svcStart, svcEnd).join('\n')
-      expect(svcBlock).not.toMatch(/^\s*command:/m)
+      expect(svcBlock).toMatch(/^\s*command:/m)
+      expect(svcBlock).toMatch(/exec \.\/wait-for-db\.sh node server\.js/)
     })
   })
 

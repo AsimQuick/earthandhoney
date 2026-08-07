@@ -126,6 +126,29 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    # AC-22.5 / F7: the Gallery-create route (`adminEvents.js:607-611`)
+    # unconditionally resolves a local folder at `path.join(__dirname,
+    # '../../../storage')`, which from that file's location is `/storage` —
+    # not the `/app/storage` the vendored Dockerfile actually creates and
+    # chowns to `nodejs` (see PIVOT_AUDIT.md's "unrelated local-storage
+    # permission gap" write-up under AC-17.5.1/AC-17.7). With no volume
+    # backing `/storage`, a freshly recreated container has no `/storage` at
+    # all, and the non-root `nodejs` user the app runs as can't create it
+    # under root-owned `/`. This had to be fixed by hand twice
+    # (`docker compose exec ... mkdir /storage && chown -R nodejs:nodejs
+    # /storage`) before this AC. Rather than patch vendored source (Fork
+    # Discipline forbids editing shipped upstream code for a route we haven't
+    # otherwise registered as a formal defect — that's F6, out of scope
+    # here), this command override runs the same one-time fix automatically,
+    # every container start, while the process still runs as root (the image
+    # has no USER directive) — the same category of operational step as the
+    # vendored `wait-for-db.sh`'s own `chown -R nodejs:nodejs /app/storage`,
+    # just covering the second, unmanaged path the create route actually
+    # resolves to. It then `exec`s the image's own unmodified
+    # `wait-for-db.sh` entrypoint chain, so migrations, the root→nodejs
+    # privilege drop, and `node server.js` all still run exactly as upstream
+    # ships them.
+    command: ["sh", "-c", "mkdir -p /storage && chown -R nodejs:nodejs /storage && exec ./wait-for-db.sh node server.js"]
 
   backstage-frontend:
     profiles: ["backstage"]
