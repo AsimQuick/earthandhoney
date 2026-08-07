@@ -3,8 +3,9 @@
 Live-proof harness for US-26 AC-26.4: Backstage-to-Frontstage webhook
 revalidation, proven against the running stack rather than mocked. This
 document opens with the harness's **connective tissue** — stood up once here
-(AC-26.4.1.1) and reused, not rebuilt, by AC-26.4.1.2 (publish), AC-26.4.1.3
-(reproduction), AC-26.4.2 (photo upload), and AC-26.4.3 (photo delete).
+(AC-26.4.1.1) and reused, not rebuilt, by AC-26.4.1.2 (publish fixtures),
+AC-26.4.1.3 (publish + reproduction), AC-26.4.2 (photo upload), and
+AC-26.4.3 (photo delete).
 
 The Backstage-side half of this path — an outbound webhook firing and being
 received — was already proven live at the pinned fork commit in
@@ -204,3 +205,139 @@ nothing downstream runs (no gallery lookup, no revalidation) — exactly the
 "no gallery, no publish" scope this closing check requires. The harness is
 live and the secret is reconciled; AC-26.4.1.2 onward builds on this without
 repeating it.
+
+## (d) The publish proof's fixtures — two draft galleries and their Payload placements
+
+AC-26.4.1.2's own scope: reusing the harness above without rebuilding it,
+create the two draft Backstage galleries the publish proof (AC-26.4.1.3)
+transitions, and the matching Payload `gallery-placements` record for each.
+Nothing here is published — `is_draft: true` on both, precisely so
+AC-26.4.1.3's publish call is a real state transition and not something
+this criterion already did for it. This is `scripts/webhook-live-proof-setup.sh`'s
+`(d)` block, the same idempotent script (a)-(c) above were captured from.
+
+### Pre-run finding: the fixtures had already been consumed out of order
+
+Before running the harness's `(d)` block, both proof gallery slugs already
+existed live — but as **published** galleries (`is_draft: false`), left over
+from an earlier session that ran the full downstream reproduction
+(`scripts/ac26.4-live-proof.sh`, recorded in `PIVOT_AUDIT.md`'s `## AC-26.4`
+section) before this criterion had stood the fixtures up:
+
+```
+$ curl -s -b <admin-cookie-jar> 'http://localhost:3101/api/admin/events?limit=200' \
+    | python3 -c "import json,sys
+d = json.load(sys.stdin)
+for e in d.get('events', d):
+    if 'ac-26-4-1-webhook-live-proof' in (e.get('slug') or ''):
+        print(e['id'], e['slug'], 'is_draft=', e.get('is_draft'))"
+7 wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 is_draft= False
+6 wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21 is_draft= False
+```
+
+Both already-published, both already carrying an upload/delete history from
+that earlier run. The pinned fork's publish route is a one-way
+draft→live transition with no un-publish route (`adminEvents.js:1049`), so
+there is no supported way to put an already-published gallery back into
+draft — the only honest fix is to delete those two galleries outright,
+through the same supported admin route the rest of this harness uses, and
+let the idempotent `(d)` block recreate them fresh:
+
+```
+$ curl -s -b <admin-cookie-jar> -X DELETE 'http://localhost:3101/api/admin/events/6'
+{"message":"Event deleted successfully"}
+$ curl -s -b <admin-cookie-jar> -X DELETE 'http://localhost:3101/api/admin/events/7'
+{"message":"Event deleted successfully"}
+```
+
+This does not touch the earlier recorded proof — `PIVOT_AUDIT.md`'s
+`## AC-26.4` section is a transcript of a run that already happened and
+stays as written. It only clears the live fixtures back to a state
+AC-26.4.1.2 can honestly build from, matching the "fix directly through the
+supported interface, and record the finding" discipline that section's own
+"Pre-run finding" already established for this document family.
+
+### The harness's `(d)` block, re-run clean
+
+```
+$ bash scripts/webhook-live-proof-setup.sh
+
+=== (a) Frontstage and Backstage on the shared compose "default" network
+[... sections (a)-(c) output, unchanged from above ...]
+
+=== (d) the two draft Backstage galleries the publish proof transitions
+{"id":8,"slug":"wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20","event_name":"ac-26-4-1-webhook-live-proof-gallery","event_type":"wedding","customer_name":"AC-26.4.1 Verification","customer_email":"ac26-4-1-webhook@example.com","require_password":false,"photo_cap":null,"is_draft":true,"share_link":"/gallery/wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20/aaa51af369d6b825ee3f20ca0386aeae","expires_at":"2026-10-20T00:00:00.000Z","created_at":"2026-08-07T11:59:48.709Z"}
+create gallery HTTP 200
+verified created slug wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20: True
+{"id":9,"slug":"wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21","event_name":"ac-26-4-1-webhook-live-proof-gallery-two","event_type":"wedding","customer_name":"AC-26.4.1 Verification","customer_email":"ac26-4-1-webhook@example.com","require_password":false,"photo_cap":null,"is_draft":true,"share_link":"/gallery/wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21/bbe95590d81dbefc7d504097619b81ef","expires_at":"2026-10-21T00:00:00.000Z","created_at":"2026-08-07T11:59:49.142Z"}
+create gallery HTTP 200
+verified created slug wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21: True
+
+=== (d) the matching Payload gallery-placements documents
+skip (already exists): wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 -> placement id 4
+skip (already exists): wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21 -> placement id 5
+
+=== HARNESS READY
+```
+
+Both galleries created fresh (`is_draft: true`, new ids 8 and 9 — the old
+6 and 7 are gone), each read back by slug to confirm upstream's
+name+date-derived slug matches what the rest of the harness names, exactly
+as the script's own header documents. `POST /api/admin/events` returned
+`HTTP 200` on a freshly recreated `backstage-backend` container without the
+`EACCES: permission denied, mkdir '/storage'` upstream defect
+`PIVOT_AUDIT.md`'s `## AC-17.5.1` / `## AC-17.7` sections record — the
+one-time `mkdir -p /storage && chown -R nodejs:nodejs /storage` fix already
+recorded there was still in effect, so it did not need re-applying this run.
+
+The Payload `gallery-placements` documents (ids 4 and 5) already existed
+from AC-26.4.1.1's own earlier run of this same script and were correctly
+detected and skipped rather than duplicated — placement records key on
+gallery **slug**, not the underlying Backstage gallery id, so recreating the
+galleries above with the same slugs left these placements pointed at the
+right fixtures without needing to touch them.
+
+### The named Frontstage page, live, in its pre-publish state
+
+`WEBHOOK_LIVE_PROOF_GALLERY_PATH` (`/dev/gallery-webhook-proof`,
+`src/lib/galleryRevalidation.ts`) is cached with `revalidate = 60`
+(`src/app/(frontend)/dev/gallery-webhook-proof/page.tsx`), so the request
+immediately after recreating the galleries above still served the prior
+render; the check below was taken after that 60-second window passed, so it
+reflects Backstage's current state rather than a leftover cache entry:
+
+```
+$ curl -sD - 'http://localhost:3000/dev/gallery-webhook-proof' -o /tmp/proof-page.html \
+    | grep -iE '^(HTTP|content-type|x-nextjs)'
+HTTP/1.1 200 OK
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+Content-Type: text/html; charset=utf-8
+
+$ grep -oE 'data-testid="webhook-proof-[a-z]+"|data-gallery-slug="[^"]*"' /tmp/proof-page.html
+data-testid="webhook-proof-unavailable"
+data-gallery-slug="wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20"
+data-testid="webhook-proof-unavailable"
+data-gallery-slug="wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21"
+
+$ python3 -c "
+import re
+html = open('/tmp/proof-page.html').read()
+for m in re.finditer(r'<section.*?</h2>', html, re.S):
+    print(m.group(0))
+    print('---')
+"
+<section aria-label="Live-proof gallery wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20" data-testid="webhook-proof-unavailable" data-gallery-slug="wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20" class="w-full px-8"><h2 class="pb-4 text-2xl font-normal tracking-[3px] uppercase">wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20<!-- --> — unavailable</h2>
+---
+<section aria-label="Live-proof gallery wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21" data-testid="webhook-proof-unavailable" data-gallery-slug="wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21" class="w-full px-8"><h2 class="pb-4 text-2xl font-normal tracking-[3px] uppercase">wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21<!-- --> — unavailable</h2>
+---
+```
+
+Both proof galleries render `data-testid="webhook-proof-unavailable"`
+(`GalleryUnavailablePlaceholder`, `page.tsx`'s draft branch) — the page's
+honest pre-publish state, driven by `resolveGalleryPlacementImages` reading
+Backstage's real `is_draft: true` for both galleries, not a mock. Nothing
+was published to produce this: no `/publish` call appears anywhere above —
+that state transition is AC-26.4.1.3's to make and to prove. AC-26.4.1.3
+reuses these two fixtures (ids 8 and 9) without recreating them.
