@@ -34,7 +34,7 @@
     "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
     "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (retrospective action item 3)"
   ],
-  "last_updated": "2026-08-07T14:56:25+00:00",
+  "last_updated": "2026-08-07T15:31:45+00:00",
   "stories": [
     {
       "id": "US-21",
@@ -422,7 +422,7 @@
     {
       "id": "US-27",
       "title": "Disable the duplicate Backstage surfaces so every business function has exactly one owner",
-      "status": "draft",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [
         "US-21"
@@ -432,7 +432,7 @@
           "id": "27.1",
           "text": "A new `publicSite` feature flag is added to the fork's `KNOWN_FLAGS` and `DEFAULT_FLAGS` (`backend/src/routes/adminFeatureFlags.js`) defaulting to `false`, mirroring the existing `quotes`/`bills` pattern exactly, and `handlePublicSiteRequest` checks it **before** the `app_settings` value is read. Today the raw-HTML homepage editor is held off only by a settings default with no server-side flag behind it, so a single `PUT /api/admin/settings/general` write can turn Backstage into a second publisher of the site's `/` route \u2014 the duplicate `AC-18.5` identified. A test proves the route stays redirected to admin login even when `general_public_site_enabled` is set true while the flag is false.",
           "checked": false,
-          "dev_status": "not-started",
+          "dev_status": "implemented",
           "tester_status": "not-started"
         },
         {
@@ -465,7 +465,7 @@
         }
       ],
       "dev_status": "not-started",
-      "dev_notes": "",
+      "dev_notes": "AC-27.1 implemented (local checks green): Committed as `34c108f`.\n\n**Summary:**\n\n- `vendor/picpeak/backend/src/routes/adminFeatureFlags.js` \u2014 added `publicSite` to `KNOWN_FLAGS` and `DEFAULT_FLAGS` (default `false`), mirroring the `quotes`/`bills` pattern.\n- `vendor/picpeak/backend/src/services/publicSiteService.js` \u2014 relocated `handlePublicSiteRequest` and its rendering helpers (`buildPublicSiteDocument`, `composeInlineStyles`, `renderBrandHeader/Footer`, `buildSeoMetaTags`) here from `server.js`, so the route is unit-testable without booting the full server (which calls `startServer()` at import time \u2014 same reason `galleryOgService.js` was previously extracted). Added `isPublicSiteFeatureEnabled()`, which queries `feature_flags` for `publicSite` and is checked **first**, before `getPublicSitePayload()` ever reads `general_public_site_enabled` from `app_settings`.\n- `vendor/picpeak/backend/server.js` \u2014 now imports `handlePublicSiteRequest` from `publicSiteService` instead of defining it inline; both `app.get('/', handlePublicSiteRequest, ...)` mount points unchanged.\n- Tests (12 total, all passing):\n  - `src/__tests__/adminFeatureFlags.publicSite.test.js` (new, 3 tests) \u2014 `publicSite` defaults to `false` via GET, reflects \u2026",
       "tester_status": "approved",
       "tester_notes": "Requirements review pass, 1 minor defect found and fixed directly (missing test criteria, not scope): AC-27.2 described the intended gating behavior but, unlike its sibling 27.1/27.3/27.4, stated no explicit test assertion \u2014 added one mirroring the existing quotes-panel RequireFeature test pattern it's explicitly modeled on. AC-27.1, 27.3, 27.4 and 27.5 already state explicit tests/proofs and were left unchanged.",
       "issue": 70

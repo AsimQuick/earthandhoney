@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/9 stories | 41/57 ACs
-**Last Updated:** 2026-08-07T14:56:25+00:00
+**Last Updated:** 2026-08-07T15:31:45+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -606,10 +606,11 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
 ---
 
 ### US-27: Disable the duplicate Backstage surfaces so every business function has exactly one owner
-**Status:** draft | **Priority:** high
+**Status:** in-progress | **Priority:** high
 
 #### Acceptance Criteria
 - [ ] **AC-27.1:** A new `publicSite` feature flag is added to the fork's `KNOWN_FLAGS` and `DEFAULT_FLAGS` (`backend/src/routes/adminFeatureFlags.js`) defaulting to `false`, mirroring the existing `quotes`/`bills` pattern exactly, and `handlePublicSiteRequest` checks it **before** the `app_settings` value is read. Today the raw-HTML homepage editor is held off only by a settings default with no server-side flag behind it, so a single `PUT /api/admin/settings/general` write can turn Backstage into a second publisher of the site's `/` route — the duplicate `AC-18.5` identified. A test proves the route stays redirected to admin login even when `general_public_site_enabled` is set true while the flag is false.
+  - Dev: implemented
 - [ ] **AC-27.2:** The "Public Site" raw HTML/CSS panel in `frontend/src/pages/admin/CMSPage.tsx` is hidden behind the same flag using the fork's existing `RequireFeature` gate, the way the quotes UI already is — so the capability is not merely unreachable at the server, it is not offered. Pillar 3 forbids page-level CSS editing and Payload owns Frontstage publishing; an editor that exists will eventually be used. A test asserts `CMSPage.tsx` does not render the Public Site panel when the `publicSite` flag is false, mirroring the existing test pattern that covers the quotes panel's `RequireFeature` gate.
 - [ ] **AC-27.3:** The native quote / invoice / tax-report subsystem is confirmed off by default rather than assumed off: `adminQuotes.js`, `publicQuotes.js` (`quotes` flag), `adminInvoices.js`, `adminTaxReport.js` and `adminBusinessProfile.js` (`bills` flag) each have their default asserted `false`, and at least one flag-gated route per flag is shown returning 403 with the flag off. The Ledger Rule puts these records in headless Invoice Ninja; a second native billing surface is a duplicate ledger, and PRD §35.1 requires there be none.
 - [ ] **AC-27.4:** The static "CMS Pages" surface (impressum / privacy / terms, `adminCMS.js` + `publicCMS.js`) stays **enabled**, and a test asserts it is *not* disabled. `AC-18.5` recorded this as a deliberate scoping decision — legal/footer copy is not among the content types Payload owns, so it duplicates nothing. Encoding the decision as a test keeps a future cleanup from silently reversing it.
@@ -618,6 +619,16 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
 **Dependencies:** US-21
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-27.1 implemented (local checks green): Committed as `34c108f`.
+  
+  **Summary:**
+  
+  - `vendor/picpeak/backend/src/routes/adminFeatureFlags.js` — added `publicSite` to `KNOWN_FLAGS` and `DEFAULT_FLAGS` (default `false`), mirroring the `quotes`/`bills` pattern.
+  - `vendor/picpeak/backend/src/services/publicSiteService.js` — relocated `handlePublicSiteRequest` and its rendering helpers (`buildPublicSiteDocument`, `composeInlineStyles`, `renderBrandHeader/Footer`, `buildSeoMetaTags`) here from `server.js`, so the route is unit-testable without booting the full server (which calls `startServer()` at import time — same reason `galleryOgService.js` was previously extracted). Added `isPublicSiteFeatureEnabled()`, which queries `feature_flags` for `publicSite` and is checked **first**, before `getPublicSitePayload()` ever reads `general_public_site_enabled` from `app_settings`.
+  - `vendor/picpeak/backend/server.js` — now imports `handlePublicSiteRequest` from `publicSiteService` instead of defining it inline; both `app.get('/', handlePublicSiteRequest, ...)` mount points unchanged.
+  - Tests (12 total, all passing):
+    - `src/__tests__/adminFeatureFlags.publicSite.test.js` (new, 3 tests) — `publicSite` defaults to `false` via GET, reflects …
 
 **Tester Status:** approved
 **Tester Notes:**
