@@ -59,6 +59,12 @@ describe('publicQuotes routes', () => {
     }).returning('id');
     quoteId = inserted[0]?.id ?? inserted[0];
 
+    // migration 088 seeds `quotes` as false for a fresh install (see
+    // its docstring) — every scenario in this file below exercises the
+    // token-guard contract on an ENABLED install; the flag-off 403 gate
+    // itself (US-27 AC-27.3) is covered in the describe block below.
+    await db('feature_flags').where({ key: 'quotes' }).update({ value: true });
+
     app = buildRouteApp('/api/public/quotes', require('../../src/routes/publicQuotes'));
   }, 60000);
 
@@ -166,6 +172,44 @@ describe('publicQuotes routes', () => {
         .post(`/api/public/quotes/${token}/respond`)
         .send({ action: 'accept' });
       expect(res.status).toBe(410);
+    });
+  });
+
+  // US-27 AC-27.3 — the native quote subsystem must be confirmed off by
+  // default rather than assumed off. `ensureCustomerFeatureEnabled` in
+  // customerAccountsService.js documents the global `quotes` toggle as
+  // "checked at the route layer" but this route previously never made
+  // that check itself: a valid, already-issued token still worked with
+  // `quotes` globally off, which is exactly the assumed-not-confirmed
+  // gap this AC exists to close. requireQuotesFlag() closes it; these
+  // tests pin the closed behaviour for both endpoints on this router.
+  describe('quotes feature flag gate (US-27 AC-27.3)', () => {
+    afterEach(async () => {
+      // Restore the ON state the rest of this file's beforeAll set up,
+      // so flipping it off here doesn't leak into later test files.
+      await db('feature_flags').where({ key: 'quotes' }).update({ value: true });
+    });
+
+    it('GET /:token returns 403 QUOTES_DISABLED when the global quotes flag is off, even for a valid token', async () => {
+      await db('feature_flags').where({ key: 'quotes' }).update({ value: false });
+      const token = await createPublicToken(db, 'quote_action_tokens', { quote_id: quoteId });
+
+      const res = await request(app).get(`/api/public/quotes/${token}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('QUOTES_DISABLED');
+    });
+
+    it('POST /:token/respond returns 403 QUOTES_DISABLED when the global quotes flag is off, even for a valid token', async () => {
+      await db('feature_flags').where({ key: 'quotes' }).update({ value: false });
+      const token = await createPublicToken(db, 'quote_action_tokens', { quote_id: quoteId });
+
+      const res = await request(app)
+        .post(`/api/public/quotes/${token}/respond`)
+        .send({ action: 'accept' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('QUOTES_DISABLED');
     });
   });
 });
