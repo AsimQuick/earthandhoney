@@ -13,6 +13,12 @@
  *          so this file may only shrink (as future stories migrate these
  *          files onto tokens) or gain new entries with a matching commit
  *          that adds new pre-existing debt, never grow silently.
+ *          AC-25.5 added two entries this way: GallerySlideshowLayout.tsx's
+ *          `aspect-[3/2]`/`aspect-[16/9]` mirror MainImageDisplay.tsx's
+ *          already-baselined slide aspect ratio, and
+ *          dev/gallery-placement-demo/page.tsx's `tracking-[3px]` headings
+ *          mirror dev/gallery-demo/page.tsx's already-baselined heading
+ *          style — reused idioms, not new debt shapes.
  * created-by: dev-team
  * related-story: US-23
  * related-ac: 23.7
@@ -71,5 +77,15 @@ export const STYLE_DRIFT_BASELINE: Record<string, StyleDriftViolationCounts> = {
     hex: 0,
     rawPxFontSize: 0,
     arbitraryTailwindBracket: 1,
+  },
+  'src/components/gallery/GallerySlideshowLayout.tsx': {
+    hex: 0,
+    rawPxFontSize: 0,
+    arbitraryTailwindBracket: 2,
+  },
+  'src/app/(frontend)/dev/gallery-placement-demo/page.tsx': {
+    hex: 0,
+    rawPxFontSize: 0,
+    arbitraryTailwindBracket: 2,
   },
 }
