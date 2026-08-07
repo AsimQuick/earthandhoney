@@ -108,7 +108,6 @@ describe('AC-26.4.1.1: scripts/webhook-live-proof-setup.sh matches the receiver 
   it('exists and is executable', () => {
     expect(fs.existsSync(SCRIPT_PATH)).toBe(true)
     const mode = fs.statSync(SCRIPT_PATH).mode
-    // eslint-disable-next-line no-bitwise
     expect(mode & 0o111).not.toBe(0)
   })
 

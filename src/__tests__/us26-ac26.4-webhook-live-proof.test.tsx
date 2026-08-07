@@ -174,7 +174,6 @@ describe('AC-26.4: the reproduction script makes the proof re-runnable rather th
   const script = fs.readFileSync(SCRIPT_PATH, 'utf8')
 
   it('exists and is executable', () => {
-    // eslint-disable-next-line no-bitwise
     expect(fs.statSync(SCRIPT_PATH).mode & 0o111).toBeGreaterThan(0)
   })
 
