@@ -6204,6 +6204,155 @@ integration path (`webhookService.fire()` → `webhook_deliveries` →
 content-refresh listener will subscribe to in place of today's throwaway
 `webhook-receiver`.
 
+## AC-26.4 — all three webhook-driven changes reaching the Frontstage, reproduced live, twice
+
+This closes the AC-26.4 group by running `scripts/ac26.4-live-proof.sh`
+to completion against the running stack, twice — once per proof gallery,
+per the sprint-3 reproduce-don't-run-once discipline — and recording the
+real transcript below. The harness this script reuses rather than
+rebuilds (the shared Compose network, the webhook subscription covering
+`event.published`/`photo.uploaded`/`photo.deleted`, and the reconciled
+`PICPEAK_WEBHOOK_SECRET`) was already stood up and proven live under
+AC-26.4.1.1 — see `WEBHOOK_LIVE_PROOF.md`; that proof is not repeated
+here.
+
+Both proof galleries
+(`wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20` and
+`wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21`) had already
+been published by an earlier session, so — as the script's own header
+comment documents — the `event.published` leg is not re-fired (the pinned
+fork's publish route is a one-way draft→live transition with no
+un-publish route; a second publish call 400s). Instead each run surfaces
+the live evidence that earlier publish already left behind: the recorded
+webhook delivery and the served page reflecting it. The `photo.uploaded`
+and `photo.deleted` legs run for real on every invocation.
+
+### Pre-run finding: a residual photo on the second proof gallery
+
+The first attempt at Run 2 (and a retry) failed at the delete leg —
+`await_page_state` timed out at the 55s deadline with the page still
+reporting `photos=1` for the second gallery after our own uploaded photo
+had been deleted and its `photo.deleted` delivery had already reached
+`status=success`. Reading gallery 6's photos directly from Backstage
+(`GET /api/admin/events/6/photos`) explained why: it already held one
+photo (`id=13`) left over, unrelated to this run, from an earlier
+incomplete session that never cleaned up after itself. That photo — not
+a revalidation failure — is what kept the page at `photos=1`. It was
+deleted once, directly, through the same admin route the script's delete
+leg uses (`DELETE /api/admin/photos/6/photos/13`), confirmed live to
+bring the page back to `photos=0`, and the run below is the first clean
+run afterward. This is recorded here, rather than silently discarded, per
+the AC-17.9 honest-findings discipline this document already follows.
+
+### Run 1 — `wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20`
+
+```
+$ scripts/ac26.4-live-proof.sh run1
+
+=== Backstage admin login
+login HTTP 200
+
+=== RUN 1: event.published — gallery 7 (wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20) was already published by an earlier run (the fork's publish route is one-way, so it cannot be re-fired here); reusing the live evidence that publish already left behind
+the delivery Backstage recorded for that earlier publish:
+id=15 event_type=event.published status=success response_status=200 attempts=1 latency_ms=15 last_error=None
+the served Frontstage page for this gallery, right now:
+photos=1
+
+=== RUN 1: photo.uploaded — uploading vendor/picpeak/test-assets/img1.png to gallery 7 (wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20)
+{"upload_id":"9c4342f616fa59163004d5d0855841a8","count":1,"photo_ids":[15],"message":"Successfully 1 queued","photos":[{"id":15,"filename":"ac-26-4-1-webhook-live-proof-g_individual_0001.png","size":212,"category_id":null}],"replaced":[],"replacedCount":0,"skippedReplacements":[],"totalFiles":1,"successCount":1,"failureCount":0}
+upload HTTP 202
+queued photo id: 15
+
+=== RUN 1: the delivery Backstage recorded once background processing completed
+id=36 event_type=photo.uploaded status=success response_status=200 attempts=1 latency_ms=11 last_error=None
+delivery reached success after 6s
+
+=== RUN 1: the served Frontstage page reflecting the upload
+page reflects 'photos=1' for wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 after 53s
+
+=== RUN 1: photo.deleted — deleting photo 15 from gallery 7 (wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20)
+{"message":"Photo deleted successfully"}
+delete HTTP 200
+
+=== RUN 1: the delivery Backstage recorded for that delete
+id=37 event_type=photo.deleted status=success response_status=200 attempts=1 latency_ms=12 last_error=None
+delivery reached success after 5s
+
+=== RUN 1: the served Frontstage page reflecting the delete
+page reflects 'photos=0' for wedding-ac-26-4-1-webhook-live-proof-gallery-2026-09-20 after 55s
+
+=== PASSED
+```
+
+`photo_ids=[15]` on upload matches the id the `photo.uploaded` delivery
+and the subsequent delete both key on, and the page moves
+unavailable→`photos=1`→`photos=0` across the run, driven only by
+Backstage's verified webhook deliveries (`status=success` on both) — the
+route's own `revalidate = 60` safety net never had to fire, since every
+observed transition landed inside the 55s deadline the script enforces
+below that cap.
+
+### Run 2 — `wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21`
+
+```
+$ scripts/ac26.4-live-proof.sh run2
+
+=== Backstage admin login
+login HTTP 200
+
+=== RUN 2: event.published — gallery 6 (wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21) was already published by an earlier run (the fork's publish route is one-way, so it cannot be re-fired here); reusing the live evidence that publish already left behind
+the delivery Backstage recorded for that earlier publish:
+id=16 event_type=event.published status=success response_status=200 attempts=1 latency_ms=12 last_error=None
+the served Frontstage page for this gallery, right now:
+photos=0
+
+=== RUN 2: photo.uploaded — uploading vendor/picpeak/test-assets/img1.png to gallery 6 (wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21)
+{"upload_id":"4bf93dbeec355ca6813bc4e54d74c035","count":1,"photo_ids":[18],"message":"Successfully 1 queued","photos":[{"id":18,"filename":"AC-26.4.1_Webhook_Live_Proof_G_individual_0001.png","size":212,"category_id":null}],"replaced":[],"replacedCount":0,"skippedReplacements":[],"totalFiles":1,"successCount":1,"failureCount":0}
+upload HTTP 202
+queued photo id: 18
+
+=== RUN 2: the delivery Backstage recorded once background processing completed
+id=43 event_type=photo.uploaded status=success response_status=200 attempts=1 latency_ms=12 last_error=None
+delivery reached success after 8s
+
+=== RUN 2: the served Frontstage page reflecting the upload
+page reflects 'photos=1' for wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21 after 44s
+
+=== RUN 2: photo.deleted — deleting photo 18 from gallery 6 (wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21)
+{"message":"Photo deleted successfully"}
+delete HTTP 200
+
+=== RUN 2: the delivery Backstage recorded for that delete
+id=44 event_type=photo.deleted status=success response_status=200 attempts=1 latency_ms=11 last_error=None
+delivery reached success after 4s
+
+=== RUN 2: the served Frontstage page reflecting the delete
+page reflects 'photos=0' for wedding-ac-26-4-1-webhook-live-proof-gallery-two-2026-09-21 after 55s
+
+=== PASSED
+```
+
+With the residual photo cleared beforehand, gallery 6 starts this run at
+the same clean `photos=0` baseline gallery 7 started Run 1 from, and the
+same publish-reuse / upload / delete sequence reproduces cleanly on the
+second, independently-created gallery — proving the path is not an
+artifact of one specific gallery's history.
+
+### What this closes
+
+Across the two runs above, all three event types this story handles —
+`event.published`, `photo.uploaded`, `photo.deleted` — reach the
+Frontstage `/dev/gallery-webhook-proof` route (`WEBHOOK_LIVE_PROOF_GALLERY_PATH`)
+through nothing but Backstage's verified webhook delivery: the
+reproduction script (`scripts/ac26.4-live-proof.sh`) never calls
+`revalidatePath` or the receiver directly (only the AC-26.1 receiver,
+reached over the network path AC-26.4.1.1 proved, can move the page), and
+every state transition recorded above is bounded by the script's own
+sub-60s deadline, so the route's `revalidate = 60` safety net is ruled
+out as the explanation. This is the live proof the AC-26.4 test suite
+(`src/__tests__/us26-ac26.4-webhook-live-proof.test.tsx`) pins the
+supporting code against.
+
 ## AC-17.9 — findings recorded honestly, consolidated for the Product Owner
 
 `US-17` AC-17.9 requires that anything AC-17.1 through AC-17.8 found that does
@@ -6641,4 +6790,3 @@ Per AC-14.6, items 1–5 above are to be added to
 Owner decisions rather than left implicit in this audit; `po-requests.md`
 is owned outside this AC's scope, so this document records the questions
 and their routing rather than editing that file directly.
-

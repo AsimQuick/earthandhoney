@@ -31,8 +31,25 @@
  * created-by: dev-team
  * related-story: US-25
  * related-ac: 25.5
+ * updated-by: dev-team
+ * related-story: US-26
+ * related-ac: 26.4
  * ---
  */
+// `loader={createGalleryImageLoader(image)}` below passes a function prop to
+// next/image's `<Image>`, whose implementation is itself a Client Component
+// — a Server Component (this file's default, having no directive) cannot
+// pass an unserializable function prop across that boundary. Jest's
+// `render()` never exercises real RSC serialization, so every unit test
+// against this component passed regardless; the failure only surfaced live,
+// once AC-26.4's proof rendered a real (non-empty) gallery through the
+// actual Next.js server, matching the "Functions cannot be passed directly
+// to Client Components" error observed then. GallerySlideshowLayout.tsx
+// already carries this exact directive for the identical reason (same
+// `createGalleryImageLoader` loader prop) — this brings masonry in line
+// with it rather than inventing a new pattern.
+'use client'
+
 import Image from 'next/image'
 
 import { createGalleryImageLoader } from './galleryImageLoader'

@@ -14,12 +14,26 @@
  *          Not linked from public navigation, not a public marketing page;
  *          excluded from search indexing like every other route under
  *          src/app/(frontend)/dev/.
+ *          AC-26.5 — `export const revalidate` is set to the same
+ *          60-second safety-net cap PAYLOAD_PICPEAK_API_CONTRACT.md commits
+ *          to (and gallery-webhook-proof/page.tsx already carries): this
+ *          route is one of the two gallery-bearing routes
+ *          `getGalleryBearingPathsForSlug` can resolve a webhook delivery
+ *          to, so a dropped/failed delivery for *this* slug must still
+ *          self-heal within the same bound, not stay stale indefinitely
+ *          just because this route predates that convention.
  * created-by: dev-team
  * related-story: US-25
  * related-ac: 25.5
  * updated-by: dev-team
  * related-story: US-25
  * related-ac: 25.6
+ * updated-by: dev-team
+ * related-story: US-26
+ * related-ac: 26.2
+ * updated-by: dev-team
+ * related-story: US-26
+ * related-ac: 26.5
  * ---
  */
 import type { Metadata } from 'next'
@@ -28,6 +42,17 @@ import { GalleryMasonryLayout } from '@/components/gallery/GalleryMasonryLayout'
 import { GallerySlideshowLayout } from '@/components/gallery/GallerySlideshowLayout'
 import { GalleryUnavailablePlaceholder } from '@/components/gallery/GalleryUnavailablePlaceholder'
 import { resolveGalleryPlacementImages } from '@/lib/backstageGalleryPlacement'
+import { PLACEMENT_DEMO_GALLERY_SLUG } from '@/lib/galleryRevalidation'
+
+// Re-exported (not just imported) so existing callers/tests that import this
+// constant from this route module — its home before AC-26.2 re-keyed
+// src/lib/galleryRevalidation.ts to be the single source of truth — keep
+// working unchanged.
+export { PLACEMENT_DEMO_GALLERY_SLUG }
+
+// The contract's own safety-net cap (row 5) — see the file header. Bounds
+// this route's staleness even when a webhook delivery for it is dropped.
+export const revalidate = 60
 
 // Internal-only: excluded from search indexing since this route is not part
 // of the public site.
@@ -35,12 +60,6 @@ export const metadata: Metadata = {
   title: 'Gallery placement demo (internal)',
   robots: { index: false, follow: false },
 }
-
-// The one Backstage gallery both placements below render — kept as a fixed,
-// well-known slug (mirroring src/lib/galleryRevalidation.ts's
-// ISR_DEMO_GALLERY_TITLE convention) so this route and any Backstage-side
-// seed fixture can never drift apart.
-export const PLACEMENT_DEMO_GALLERY_SLUG = 'us-25-ac-25.5-placement-demo'
 
 export default async function GalleryPlacementDemoPage() {
   // AC-25.6: on an unreachable Backstage, a timeout, or a 404 slug, this
