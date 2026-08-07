@@ -9,12 +9,19 @@
  *          title pattern, and default meta description. Every field is a
  *          plain admin-UI control (text/textarea/number/email/array/upload)
  *          so the photographer edits studio identity without a code change.
+ *          Also carries the `branding` group (PRD §12.3), bounded to exactly
+ *          logo, a validated-safe accent colour, and one approved font
+ *          pairing drawn from the design token set — no field for arbitrary
+ *          CSS, layout, margin, padding, or component positioning exists
+ *          anywhere in this global.
  * created-by: dev-team
  * related-story: US-24
- * related-ac: 24.1
+ * related-ac: 24.1, 24.2
  * ---
  */
 import type { GlobalConfig } from 'payload'
+
+import { getApprovedFontPairingOptions } from '../lib/approvedFontPairings'
 
 export const SOCIAL_PROFILE_PLATFORMS = [
   { label: 'Instagram', value: 'instagram' },
@@ -171,6 +178,50 @@ export const StudioProfile: GlobalConfig = {
       admin: {
         description: 'The fallback meta description used when a page defines none.',
       },
+    },
+    {
+      name: 'branding',
+      type: 'group',
+      admin: {
+        description:
+          'Photographer-controlled branding (PRD §12.3) — bounded to exactly logo, accent colour, and one approved font pairing.',
+      },
+      fields: [
+        {
+          name: 'logo',
+          type: 'upload',
+          relationTo: 'media',
+          admin: {
+            description: 'The studio logo shown across the Frontstage and Project Room.',
+          },
+        },
+        {
+          name: 'accentColor',
+          type: 'text',
+          admin: {
+            description:
+              'A single accent colour as a 6-digit hex value (e.g. "#2B6CB0"). Checked against the token ink/surface values for WCAG AA contrast before it can be saved (AC-24.3).',
+          },
+          validate: (value: unknown) => {
+            if (value === undefined || value === null || value === '') {
+              return true
+            }
+            return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value)
+              ? true
+              : 'Accent colour must be a 6-digit hex value, e.g. "#2B6CB0".'
+          },
+        },
+        {
+          name: 'fontPairing',
+          type: 'select',
+          required: true,
+          defaultValue: 'editorial',
+          options: getApprovedFontPairingOptions(),
+          admin: {
+            description: 'One approved font pairing, drawn from the design token set (US-23 AC-23.1).',
+          },
+        },
+      ],
     },
   ],
 }

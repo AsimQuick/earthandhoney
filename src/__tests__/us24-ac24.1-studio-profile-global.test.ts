@@ -38,7 +38,7 @@ describe('US-24 AC-24.1: StudioProfile global carries exactly the central studio
     expect('slug' in StudioProfile).toBe(true)
   })
 
-  it('exposes exactly the twelve PRD §21.1 studio fields, no more, no fewer', () => {
+  it('exposes exactly the twelve PRD §21.1 studio fields, plus the AC-24.2 branding group', () => {
     const expectedFieldNames = [
       'businessName',
       'ownerName',
@@ -54,8 +54,11 @@ describe('US-24 AC-24.1: StudioProfile global carries exactly the central studio
       'defaultMetaDescription',
     ]
     const actualFieldNames = topLevelFieldNames(StudioProfile.fields)
-    expect(actualFieldNames.sort()).toEqual([...expectedFieldNames].sort())
-    expect(actualFieldNames).toHaveLength(12)
+    // The twelve PRD §21.1 fields are exactly present, plus exactly one
+    // additional top-level field: `branding` (PRD §12.3, added by AC-24.2).
+    expect(actualFieldNames).toEqual(expect.arrayContaining(expectedFieldNames))
+    expect(actualFieldNames.filter((name) => !expectedFieldNames.includes(name))).toEqual(['branding'])
+    expect(actualFieldNames).toHaveLength(13)
   })
 
   it('names the business "Earth & Honey Studios" established in 2006 by default', () => {
