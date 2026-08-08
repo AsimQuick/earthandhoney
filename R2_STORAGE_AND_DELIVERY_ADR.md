@@ -23,6 +23,9 @@ related-ac: 29.2.3
 updated-by: dev-team
 related-story: US-29
 related-ac: 29.3
+updated-by: dev-team
+related-story: US-29
+related-ac: 29.4
 ---
 -->
 
@@ -625,3 +628,81 @@ permission-tier check in §2.
    disabled in the Cloudflare dashboard — nothing in code requests or
    relies on public access, but the toggle itself isn't visible through the
    S3-compatible API (§5).
+
+## Delivery-path decision (AC-29.4)
+
+**Outcome: no path is chosen. This decision stays open.** It is made from the
+measurements above, not from preference: "Reading across both measured
+candidates" (AC-29.3) already shows neither measured candidate clears all
+four targets on both representative pages, and this section draws the only
+conclusion that follows from that without picking a least-bad failing
+candidate — the outcome AC-29.6 exists to require.
+
+### Rejected — Candidate 1, serving through the Backstage (`backstage-proxy`)
+
+Rejected as a complete delivery path. It fails two of the four targets, each
+by more than the run-to-run noise floor `REPRODUCIBILITY.md` establishes:
+
+- **Mobile-first performance near ninety** — FAILS on `portfolio-gallery`:
+  measured 0.87 / 0.87 (87/100), 3 points short of ninety. PASSES on
+  `story-gallery` (92–96/100).
+- **LCP around two and a half seconds or better** — FAILS on both pages:
+  `portfolio-gallery` measured 3585ms / 3581ms, about 1.08–1.09s over the
+  ~2.5s target; `story-gallery` measured 3214ms / 2575ms, up to 714ms over
+  (the closer run is only 75ms over).
+- Passes the other two targets on both pages: no image-caused layout shift
+  (CLS 0.0000 / 0.0000) and no unnecessary full-resolution originals
+  requested (0 images flagged oversized).
+
+### Rejected — Candidate 2, direct time-limited links (`presigned-r2`)
+
+Rejected as a complete delivery path, on the same two targets as candidate 1:
+
+- **Mobile-first performance near ninety** — FAILS on `portfolio-gallery`:
+  measured 0.87 / 0.87 (87/100), 3 points short of ninety. PASSES on
+  `story-gallery` (90–97/100).
+- **LCP around two and a half seconds or better** — FAILS on both pages:
+  `portfolio-gallery` measured 3839ms / 3847ms, about 1.34–1.35s over the
+  ~2.5s target; `story-gallery` measured 3497ms / 2543ms, up to 997ms over
+  (the closer run is only 43ms over).
+- Passes the other two targets on both pages: no image-caused layout shift
+  (CLS 0.0000 / 0.0000) and no unnecessary full-resolution originals
+  requested (0 images flagged oversized).
+
+### Not rejected, not chosen — Candidates 3, 4 and 5
+
+Candidates 3 (public delivery through a CDN/custom domain), 4 (an edge
+authorisation Worker) and 5 (a hybrid) remain **unmeasured**, per the
+disposition already recorded under "Candidate disposition — paths 3, 4 and 5
+(AC-29.2.3)" above, each against its own named blocking prerequisite. They
+are not rejected — there is no measurement on record to reject them by — and
+they are not chosen either, for the same reason: an unmet infrastructure
+prerequisite is not evidence a candidate would fail its targets if it
+existed, and treating "unmeasured" as a de facto win over two measured-but-
+failing candidates would be exactly the ranking-by-preference this ADR's
+standing rule forbids. No candidate among the five is silently dropped from
+this decision.
+
+### Why the decision stays open rather than picking the least-bad measured path
+
+Candidates 1 and 2 miss the identical two targets, by a similar margin, on
+the identical page (`portfolio-gallery`'s performance score, and LCP on both
+pages) — neither candidate's failure is smaller or more tolerable than the
+other's. AC-29.6 requires that when no candidate meets all four targets, the
+record says so and stays open with a named next step and blocking
+prerequisite, rather than choosing the least-bad failing path and recording
+its targets as met. Nothing above chooses candidate 1 or candidate 2 as "the"
+delivery path.
+
+### Product Owner sign-off
+
+This is one of the decisions no agent may make alone (PRD §5, Reminder 1).
+
+**Status: PENDING.** Raised in `scrum-master/po-requests.md` for explicit
+Product Owner sign-off on: (a) agreement that candidates 1 and 2 are not
+adopted, given the target misses recorded above, and (b) whether to invest in
+the candidate-3/4 infrastructure prerequisites already itemised in
+`po-requests.md` (item 15) toward a fully-measured candidate, or to hold this
+decision open on the evidence as it stands.
+
+**Product Owner sign-off:** _______________________________ (name, date)
