@@ -158,7 +158,7 @@ describe('AC-4.4: the demo route is internal — not backed by out-of-scope CMS 
 
   it('src/collections/ still excludes the out-of-scope Portfolio/Homepage collections (trip-wire against adding them this sprint)', () => {
     const files = fs.readdirSync(path.join(root, 'src/collections')).sort()
-    expect(files).toEqual(expect.arrayContaining(['Galleries.ts', 'Media.ts', 'Users.ts']))
+    expect(files).toEqual(expect.arrayContaining(['Media.ts', 'Users.ts']))
     expect(files).not.toEqual(expect.arrayContaining(['Portfolio.ts', 'Homepage.ts']))
   })
 })

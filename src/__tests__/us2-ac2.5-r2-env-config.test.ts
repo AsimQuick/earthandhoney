@@ -8,6 +8,9 @@
  * created-by: dev-team
  * related-story: US-2
  * related-ac: 2.5
+ * updated-by: dev-team
+ * related-story: US-28
+ * related-ac: 28.1.2
  * ---
  */
 import fs from 'fs'
@@ -16,7 +19,6 @@ import path from 'path'
 const root = process.cwd()
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8')
 
-const PAYLOAD_CONFIG = 'src/payload.config.ts'
 const R2_VARS = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET', 'R2_ENDPOINT']
 
 // Tool names a developer might otherwise be tempted to `brew install` /
@@ -29,34 +31,9 @@ function valueOf(envFileContents: string, key: string): string | undefined {
 }
 
 describe('AC-2.5: R2 credentials/bucket config come from env vars; no R2-compatible service is installed on the host', () => {
-  describe('bucket configuration and credentials are read from environment variables, not hardcoded', () => {
-    const payloadConfigSrc = read(PAYLOAD_CONFIG)
-    const pluginBlock = payloadConfigSrc.match(/s3Storage\(\{[\s\S]*?\n\}\)/)?.[0]
-
-    it('the storage adapter exists and is configured', () => {
-      expect(pluginBlock).toBeDefined()
-    })
-
-    it.each([
-      ['bucket', 'R2_BUCKET'],
-      ['endpoint', 'R2_ENDPOINT'],
-      ['accessKeyId', 'R2_ACCESS_KEY_ID'],
-      ['secretAccessKey', 'R2_SECRET_ACCESS_KEY'],
-    ])('%s is sourced from process.env.%s', (configKey, envVar) => {
-      expect(pluginBlock).toMatch(new RegExp(`${configKey}:\\s*process\\.env\\.${envVar}`))
-    })
-
-    it('uses path-style addressing, which is what local/dev S3-compatible targets (e.g. a Docker MinIO service) require', () => {
-      // Cloudflare R2 and virtual-hosted-style S3 both tolerate this, but a
-      // local emulator reached via a Docker Compose hostname does not — so
-      // this flag is what actually makes swapping in a local target viable.
-      expect(pluginBlock).toMatch(/forcePathStyle:\s*true/)
-    })
-
-    it('does not hardcode the Cloudflare endpoint domain — an arbitrary local/dev endpoint can be substituted via env var alone', () => {
-      expect(pluginBlock).not.toMatch(/r2\.cloudflarestorage\.com/)
-    })
-  })
+  // The Payload-side s3Storage adapter that used to read these vars was
+  // retired by AC-28.1.2 (US-28) — the R2_* vars themselves are still
+  // consumed by the Backstage/PicPeak backend via docker-compose.yml.
 
   describe('.env.example documents every R2 var with a placeholder, never a real credential', () => {
     const envExample = read('.env.example')

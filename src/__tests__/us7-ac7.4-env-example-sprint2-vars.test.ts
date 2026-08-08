@@ -3,12 +3,15 @@
  * file: src/__tests__/us7-ac7.4-env-example-sprint2-vars.test.ts
  * project: earthandhoney
  * purpose: Verify AC-7.4 — .env.example is authoritative for every variable
- *          required by sprint-2 (RESEND_API_KEY, LEAD_NOTIFICATION_EMAIL,
- *          NEXT_PUBLIC_WHATSAPP_NUMBER, NEXT_PUBLIC_SITE_URL), documented
- *          with placeholder values only and no real secrets committed
+ *          still required post-pivot (NEXT_PUBLIC_SITE_URL), documented
+ *          with a placeholder value only and no real secrets committed.
+ *          RESEND_API_KEY, LEAD_NOTIFICATION_EMAIL and
+ *          NEXT_PUBLIC_WHATSAPP_NUMBER were dropped from this assertion by
+ *          US-28 AC-28.3 — they belonged to the retired US-12/US-13 and
+ *          have no consuming code anywhere in src/.
  * created-by: dev-team
- * related-story: US-7
- * related-ac: 7.4
+ * related-story: US-28
+ * related-ac: 28.3
  * ---
  */
 import fs from 'fs'
@@ -17,12 +20,7 @@ import path from 'path'
 const root = process.cwd()
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8')
 
-const SPRINT2_VARS = [
-  'RESEND_API_KEY',
-  'LEAD_NOTIFICATION_EMAIL',
-  'NEXT_PUBLIC_WHATSAPP_NUMBER',
-  'NEXT_PUBLIC_SITE_URL',
-]
+const SPRINT2_VARS = ['NEXT_PUBLIC_SITE_URL']
 
 function valueOf(envFileContents: string, key: string): string | undefined {
   return envFileContents.match(new RegExp(`^${key}=(.*)$`, 'm'))?.[1]?.trim()
@@ -40,31 +38,19 @@ describe('AC-7.4: .env.example is authoritative for every sprint-2 variable, pla
   })
 
   describe('placeholders do not look like real, live credentials', () => {
-    it('RESEND_API_KEY is not a real Resend key (Resend keys are prefixed "re_")', () => {
-      const value = valueOf(envExample, 'RESEND_API_KEY')!
-      expect(value).not.toMatch(/^re_/)
-      expect(value).toMatch(/change-me-in-production/)
-    })
-
-    it('LEAD_NOTIFICATION_EMAIL is a placeholder, not a plausible real inbox', () => {
-      const value = valueOf(envExample, 'LEAD_NOTIFICATION_EMAIL')!
-      expect(value).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
-      expect(value).toMatch(/change-me-in-production/)
-    })
-
-    it('NEXT_PUBLIC_WHATSAPP_NUMBER is digits-only international format, not a real business number', () => {
-      const value = valueOf(envExample, 'NEXT_PUBLIC_WHATSAPP_NUMBER')!
-      // Digits only, no "+" or separators, per the WhatsApp wa.me deep-link format.
-      expect(value).toMatch(/^\d+$/)
-      // The 555 exchange is reserved for fictional numbers (e.g. North American
-      // Numbering Plan) — guards against an accidental real number leaking in.
-      expect(value).toContain('555')
-    })
-
     it('NEXT_PUBLIC_SITE_URL is a valid absolute URL usable for local/dev out of the box', () => {
       const value = valueOf(envExample, 'NEXT_PUBLIC_SITE_URL')!
       expect(() => new URL(value)).not.toThrow()
     })
+  })
+
+  describe('the retired US-12/US-13 orphaned vars are gone (US-28 AC-28.3)', () => {
+    it.each(['RESEND_API_KEY', 'LEAD_NOTIFICATION_EMAIL', 'NEXT_PUBLIC_WHATSAPP_NUMBER'])(
+      '%s is no longer documented in .env.example',
+      (key) => {
+        expect(valueOf(envExample, key)).toBeUndefined()
+      },
+    )
   })
 
   describe('no real secret patterns leak into the committed template', () => {

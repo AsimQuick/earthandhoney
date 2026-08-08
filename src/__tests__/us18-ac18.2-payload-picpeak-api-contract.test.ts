@@ -165,8 +165,12 @@ describe('AC-18.2: PAYLOAD_PICPEAK_API_CONTRACT.md specifies the Frontstage/Back
 
   describe('the Frontstage cache allowance ties back to this codebase\'s own established ISR convention', () => {
     it('cites the same 60-second safety-net value US-6 already committed to for gallery-bearing routes', () => {
-      const isrDemoPage = read('src/app/(frontend)/dev/gallery-isr-demo/page.tsx')
-      expect(isrDemoPage).toMatch(/export const revalidate = 60/)
+      // The original US-6 ISR demo route (src/app/(frontend)/dev/gallery-isr-demo)
+      // was removed by US-28 AC-28.1.1 along with the Payload Galleries
+      // collection it read from; this later gallery-bearing demo route
+      // carries forward the same `revalidate = 60` convention it established.
+      const placementDemoPage = read('src/app/(frontend)/dev/gallery-placement-demo/page.tsx')
+      expect(placementDemoPage).toMatch(/export const revalidate = 60/)
       expect(doc).toMatch(/60.second|60-second|60 seconds/)
       expect(doc).toMatch(/gallery-isr-demo|US-6/)
     })

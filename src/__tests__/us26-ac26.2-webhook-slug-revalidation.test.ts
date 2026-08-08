@@ -14,19 +14,21 @@
  *          fixed handled-event-type set, cross-checked against contract row
  *          5's real event-type catalog so the "handled" subset is provably
  *          drawn from it, not invented; (2) galleryRevalidation.ts's re-keyed
- *          slug-to-path(s) lookup, alongside the pre-existing title lookup it
- *          leaves untouched; (3) the receiver route end-to-end, with
- *          `payload` and `next/cache` mocked (mirrors
- *          us6-ac6.3-on-demand-revalidation.test.ts's dynamic-import-under-
- *          mock technique, since `payload` is an ESM-only package that
- *          cannot be imported directly from Jest) — a handled event whose
- *          slug has a matching placement revalidates exactly that
- *          placement's path; a handled event with no matching placement, and
- *          an unrecognised event type, both revalidate nothing and still
- *          respond 2xx.
+ *          slug-to-path(s) lookup; (3) the receiver route end-to-end, with
+ *          `payload` and `next/cache` mocked (mirrors the dynamic-import-
+ *          under-mock technique the now-removed
+ *          us6-ac6.3-on-demand-revalidation.test.ts used, since `payload` is
+ *          an ESM-only package that cannot be imported directly from Jest) —
+ *          a handled event whose slug has a matching placement revalidates
+ *          exactly that placement's path; a handled event with no matching
+ *          placement, and an unrecognised event type, both revalidate
+ *          nothing and still respond 2xx.
  * created-by: dev-team
  * related-story: US-26
  * related-ac: 26.2
+ * updated-by: dev-team
+ * related-story: US-28
+ * related-ac: 28.1.1
  * ---
  */
 
@@ -37,11 +39,8 @@ import { NextRequest } from 'next/server'
 
 import {
   getGalleryBearingPathsForSlug,
-  ISR_DEMO_GALLERY_PATH,
-  ISR_DEMO_GALLERY_TITLE,
   PLACEMENT_DEMO_GALLERY_PATH,
   PLACEMENT_DEMO_GALLERY_SLUG,
-  getGalleryBearingPaths,
 } from '@/lib/galleryRevalidation'
 import {
   PICPEAK_WEBHOOK_HANDLED_EVENT_TYPES,
@@ -164,10 +163,6 @@ describe('AC-26.2: getGalleryBearingPathsForSlug — the re-keyed lookup', () =>
   it('returns no paths for a null or undefined slug', () => {
     expect(getGalleryBearingPathsForSlug(null)).toEqual([])
     expect(getGalleryBearingPathsForSlug(undefined)).toEqual([])
-  })
-
-  it('leaves the pre-existing title-keyed lookup untouched', () => {
-    expect(getGalleryBearingPaths(ISR_DEMO_GALLERY_TITLE)).toEqual([ISR_DEMO_GALLERY_PATH])
   })
 })
 

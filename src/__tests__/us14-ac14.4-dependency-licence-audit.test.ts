@@ -88,20 +88,18 @@ describe('AC-14.4: PIVOT_AUDIT.md includes a dependency and licence audit', () =
     expect(noImpact).toMatch(/MIT/)
   })
 
-  it('every dependency named in the Dropped table has a licence that matches its actual installed package.json', () => {
+  it('the sharp row in the Dropped table has a licence that matches its actual installed package.json', () => {
+    // @payloadcms/storage-s3 was fully removed from package.json/node_modules
+    // by AC-28.1.2 (US-28), so its installed package.json can no longer be
+    // cross-checked live — its Dropped-table row (checked above) still stands
+    // as the historical record.
     const dropped = extractSection(section, '### Dropped by the pivot', '### Newly introduced by the pivot')
     const rows = tableRows(dropped)
 
     const sharpPkg = JSON.parse(fs.readFileSync(path.join(root, 'node_modules/sharp/package.json'), 'utf8'))
-    const storageS3Pkg = JSON.parse(
-      fs.readFileSync(path.join(root, 'node_modules/@payloadcms/storage-s3/package.json'), 'utf8'),
-    )
-
     const sharpRow = rows.find((cells) => cells[0].includes('sharp'))
-    const storageRow = rows.find((cells) => cells[0].includes('@payloadcms/storage-s3'))
 
     expect(sharpRow![1]).toBe(sharpPkg.license)
-    expect(storageRow![1]).toBe(storageS3Pkg.license)
   })
 
   it('does not silently drop photoswipe — it is named as kept, not dropped or newly introduced', () => {

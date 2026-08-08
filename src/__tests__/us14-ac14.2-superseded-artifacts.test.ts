@@ -127,12 +127,11 @@ describe('AC-14.2: PIVOT_AUDIT.md names superseded artifacts and orphaned config
 
   describe('consistency with the repo and other locked-in ACs', () => {
     it('every artifact location cited in the audit exists in the repo', () => {
-      const citedPaths = [
-        'src/collections/Galleries.ts',
-        'src/collections/Media.ts',
-        'src/payload.config.ts',
-        'src/components/gallery/',
-      ]
+      // src/collections/Galleries.ts is deliberately excluded: US-28
+      // AC-28.1.1 deleted it, so its disposition above is now "Deleted
+      // now" rather than "Left dormant" — the cited location documents
+      // where the artifact used to live, not a still-existing path.
+      const citedPaths = ['src/collections/Media.ts', 'src/payload.config.ts', 'src/components/gallery/']
       for (const p of citedPaths) {
         expect(fs.existsSync(path.join(root, p))).toBe(true)
       }

@@ -45,10 +45,8 @@ describe('AC-19.4: R2_STORAGE_AND_DELIVERY_ADR.md documents the audit of the exi
       expect(doc).toMatch(/single bucket,?\s*`earthandhoney`/i)
     })
 
-    it('cites payload.config.ts for reading the bucket name from an env var, never hardcoded', () => {
+    it('cites payload.config.ts for reading the bucket name from an env var, never hardcoded (historical: that Payload-side adapter was retired by AC-28.1.2)', () => {
       expect(doc).toMatch(/payload\.config\.ts:63/)
-      const src = read('src/payload.config.ts')
-      expect(src).toMatch(/bucket:\s*process\.env\.R2_BUCKET/)
     })
 
     it('cites docker-compose.yml for Backstage reusing the same bucket via a prefix, not a second bucket', () => {
