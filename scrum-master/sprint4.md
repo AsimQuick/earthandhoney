@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 8/9 stories | 55/69 ACs
-**Last Updated:** 2026-08-08T21:27:07+00:00
+**Last Updated:** 2026-08-08T21:38:05+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -806,6 +806,7 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
 - [ ] **AC-29.3:** The measured numbers are written into `R2_STORAGE_AND_DELIVERY_ADR.md` per candidate path, replacing the `Status: UNDECIDED` block, with the raw harness output retained in the repository so the numbers can be re-derived rather than trusted. The four performance targets the ADR made itself accountable to are restated alongside the measurements, so pass/fail is visible per target per path.
   - Dev: implemented
 - [ ] **AC-29.4:** The delivery-path decision is recorded and is made **from the measurements**: it names the chosen path, every rejected path, and for each rejection which of the four targets it missed and by how much. This is one of the decisions no agent may make alone (PRD §5, Reminder 1), so the record ends with an explicit Product Owner sign-off line and the decision is raised in `po-requests.md` if sign-off is not already recorded.
+  - Dev: implemented
 - [ ] **AC-29.5:** The chosen path is shown to preserve what PRD §19.3 requires of it — access control, logging, watermarks, and revocation where required. Concretely: a password-protected or unreleased gallery's image must not be fetchable without authorisation under the chosen path, proven by an unauthenticated request that is refused; and download/access logging still records a delivery. A faster path that leaks a private gallery fails this criterion outright.
 - [ ] **AC-29.6:** If no candidate meets all four targets, the ADR says exactly that and the decision **stays open** with a named next step and its blocking prerequisite — rather than choosing the least-bad path and recording the targets as met. Sprint 3 recorded this decision as honestly UNDECIDED; closing it dishonestly would be worse than leaving it open a second sprint.
 
@@ -910,6 +911,11 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   **Files changed:**
   - `R2_STORAGE_AND_DELIVERY_ADR.md` — added a new `### Measured results per candidate path (AC-29.3)` subsection (placed between the existing "Performance targets" list and the `## AC-19.4` audit section, so it doesn't disturb AC-29.2.3's disposition subsection or AC-19.5's exact "Status: UNDECIDED" standing-rule sentence, both of which other ACs' tests pin word-for-word). It restates the ADR's four targets verbatim, presents candidate 1 (`backstage-proxy`) and candidate 2 (`presigned-r2`)'s measured numbers per page with a PASS/FAIL verdict per target, and cites the four retained `run-*.json` files (already committed under `scripts/benchmark/results/` by AC-29.2.2.3) so the numbers can be re-derived, not trusted. Updated the front-matter to add `related-ac: 29.3`.
   - `src/__tests__/us29-ac29.3-measured-results-in-adr.test.ts` (new, 25 tests, 2 git-gated skipped in Docker) — re-derives every asserted number directly from the raw run reports via `summariseDeliveryPath`/`loadRunReports` (not by comparing against another hand-typed copy), checks PASS/FAIL verdicts against an explicit threshold rul …
+  AC-29.4 implemented (local checks green): **Implementation summary — AC-29.4**
+  
+  Files changed:
+  - `R2_STORAGE_AND_DELIVERY_ADR.md` — added a new `## Delivery-path decision (AC-29.4)` section (placed after the AC-19.4 audit section, at the end of the file, so it stays outside the span AC-29.3's own test guards against "chosen path" language) and added `related-ac: 29.4` to the front matter. The section records, from the AC-29.3 measurements: **no path is chosen** — candidate 1 (`backstage-proxy`) and candidate 2 (`presigned-r2`) are each explicitly **rejected**, with the specific target and miss magnitude (mobile-first performance: 3 points short of ninety on `portfolio-gallery` for both; LCP: ~1.08–1.09s / ~1.34–1.35s over on `portfolio-gallery`, up to 714ms / 997ms over on `story-gallery`). Candidates 3, 4 and 5 are named as neither rejected nor chosen (still unmeasured per AC-29.2.3, per its own named prerequisites). The decision explicitly **stays open**, consistent with AC-29.6, rather than picking a least-bad failing candidate. It ends with a `### Product Owner sign-off` heading, status **PENDING**, naming PRD §5 Reminder 1 and pointing to `scrum-master/po-requests.md` as where sign-off is raised.
+  - `src/__tests__/us29 …
 
 **Tester Status:** approved
 **Tester Notes:**
