@@ -697,25 +697,12 @@ prerequisite, rather than choosing the least-bad failing path and recording
 its targets as met. Nothing above chooses candidate 1 or candidate 2 as "the"
 delivery path.
 
-### Product Owner sign-off
-
-This is one of the decisions no agent may make alone (PRD §5, Reminder 1).
-
-**Status: PENDING.** Raised in `scrum-master/po-requests.md` for explicit
-Product Owner sign-off on: (a) agreement that candidates 1 and 2 are not
-adopted, given the target misses recorded above, and (b) whether to invest in
-the candidate-3/4 infrastructure prerequisites already itemised in
-`po-requests.md` (item 15) toward a fully-measured candidate, or to hold this
-decision open on the evidence as it stands.
-
-**Product Owner sign-off:** _______________________________ (name, date)
-
 ## PRD §19.3 preservation check (AC-29.5)
 
 **There is no "the chosen path" to certify.** AC-29.4 immediately above
 rejected both measured candidates and left the decision open. This section
 exists anyway, because either rejected candidate could still be revived by
-the pending Product Owner sign-off (§"Product Owner sign-off" above offers
+the pending Product Owner sign-off (§"Product Owner sign-off" below offers
 that as option (b)) — so whichever of the two the decision eventually
 reaches for needs its PRD §19.3 preservation (access control, logging,
 watermarks, revocation) on record now, not discovered after the fact. The
@@ -826,3 +813,16 @@ asymmetry is additional evidence for whoever revisits the still-open AC-29.4
 decision — it was not a factor in AC-29.4's rejection (which was on
 performance grounds only) and should be weighed alongside it if candidate 2
 is ever reconsidered.
+
+### Product Owner sign-off
+
+This is one of the decisions no agent may make alone (PRD §5, Reminder 1).
+
+**Status: PENDING.** Raised in `scrum-master/po-requests.md` for explicit
+Product Owner sign-off on: (a) agreement that candidates 1 and 2 are not
+adopted, given the target misses recorded above, and (b) whether to invest in
+the candidate-3/4 infrastructure prerequisites already itemised in
+`po-requests.md` (item 15) toward a fully-measured candidate, or to hold this
+decision open on the evidence as it stands.
+
+**Product Owner sign-off:** _______________________________ (name, date)
