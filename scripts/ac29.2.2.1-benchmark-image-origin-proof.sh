@@ -66,8 +66,13 @@ fetch_page_images() {
   # slug count — same reasoning as ac29.1.1-benchmark-render-proof.sh: the
   # shared site header's logo <img> is not evidence of anything this AC
   # measures.
+  # `|| true` on the whole substitution: under `set -o pipefail`, an empty
+  # match at any grep stage (e.g. zero gallery <img> tags) makes the
+  # pipeline's exit status non-zero, which — because this is a plain
+  # assignment, not an if/while condition — would trip `set -e` and abort
+  # the script before the explicit empty-`$srcs` check below ever runs.
   local srcs
-  srcs="$(grep -o '<img[^>]*src="[^"]*"' "$target" | grep -o 'src="[^"]*"' | sed 's/^src="//;s/"$//' | grep '/api/gallery/' | sed 's/&amp;/\&/g' | sort -u)"
+  srcs="$(grep -o '<img[^>]*src="[^"]*"' "$target" | grep -o 'src="[^"]*"' | sed 's/^src="//;s/"$//' | grep '/api/gallery/' | sed 's/&amp;/\&/g' | sort -u || true)"
 
   if [ -z "$srcs" ]; then
     echo "FAIL: ${route_path} rendered no gallery <img> at all" >&2

@@ -155,3 +155,25 @@ per-metric spread between two back-to-back invocations, and
 `scripts/benchmark/results/run-*.json` for the raw reports themselves.
 
 To tear down: `docker compose --profile benchmark down`.
+
+### Image-origin live proof (US-29 AC-29.2.2.1.3)
+
+A second, narrower proof against the same `web-benchmark` service: no
+Lighthouse, no report metric — just real image bytes landing from the page
+origin, per gallery `<img>` on both benchmark pages. After the two
+prerequisite steps above (`backstage` profile up with the gallery seeded,
+`web-benchmark` built and healthy):
+
+```
+docker compose --profile benchmark up -d --build --force-recreate web-benchmark
+scripts/ac29.2.2.1-benchmark-image-origin-proof.sh
+```
+
+The rebuild step guarantees the fetch runs against the currently committed
+`next.config.ts` rewrite (AC-29.2.2.1.2), not a stale container from an
+earlier session. The script fetches both benchmark routes' HTML, extracts
+every Backstage gallery `<img src>` (the shared site header's logo is
+excluded), fetches each one individually, and fails unless every one comes
+back `200`, `image/*` and well over the 83-byte 404 body the pre-fix runs
+measured. It writes the fetched HTML plus a per-image transcript to
+`scripts/benchmark/results/ac29.2.2.1-image-origin-proof/`.

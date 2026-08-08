@@ -1,7 +1,7 @@
 {
   "story": "US-29",
   "acceptanceCriterion": "29.2.2.1",
-  "capturedAt": "2026-08-08T17:31:37Z",
+  "capturedAt": "2026-08-08T18:44:20Z",
   "benchmarkUrl": "http://localhost:3102",
   "pages": [{"path":"/dev/benchmark-portfolio-gallery","savedHtml":"benchmark-portfolio-gallery.html","galleryImageCount":2,"images":[{"url":"/api/gallery/us-25-ac-25.5-placement-demo/hero/22","httpStatus":200,"contentType":"image/jpeg","byteLength":7136},{"url":"/api/gallery/us-25-ac-25.5-placement-demo/hero/23","httpStatus":200,"contentType":"image/jpeg","byteLength":7136}]},{"path":"/dev/benchmark-story-gallery","savedHtml":"benchmark-story-gallery.html","galleryImageCount":2,"images":[{"url":"/api/gallery/us-25-ac-25.5-placement-demo/hero/22","httpStatus":200,"contentType":"image/jpeg","byteLength":7136},{"url":"/api/gallery/us-25-ac-25.5-placement-demo/hero/23","httpStatus":200,"contentType":"image/jpeg","byteLength":7136}]}]
 }
