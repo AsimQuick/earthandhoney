@@ -1,0 +1,344 @@
+{
+  "generatedAt": "2026-08-08T15:29:04.854Z",
+  "baseUrl": "http://web-benchmark:3000",
+  "runsPerPage": 3,
+  "deliveryPath": "backstage-proxy",
+  "pages": [
+    {
+      "id": "portfolio-gallery",
+      "path": "/dev/benchmark-portfolio-gallery",
+      "url": "http://web-benchmark:3000/dev/benchmark-portfolio-gallery",
+      "harness": {
+        "runsPerPage": 3,
+        "rawRuns": [
+          {
+            "mobilePerformanceScore": 0.86,
+            "cls": {
+              "total": 0,
+              "imageAttributable": 0,
+              "imageAttributableShare": 0
+            },
+            "lcpMs": 3779.0914999999995,
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            },
+            "formFactor": "mobile",
+            "throttlingMethod": "simulate",
+            "networkPayload": {
+              "images": [
+                {
+                  "url": "http://web-benchmark:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+                  "transferBytes": 1243,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "http://web-benchmark:3000/api/gallery/us-25-ac-25.5-placement-demo/hero/23",
+                  "transferBytes": 8183,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "http://web-benchmark:3000/api/gallery/us-25-ac-25.5-placement-demo/hero/22",
+                  "transferBytes": 8183,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                }
+              ],
+              "oversizedCount": 0
+            }
+          },
+          {
+            "mobilePerformanceScore": 0.89,
+            "cls": {
+              "total": 0,
+              "imageAttributable": 0,
+              "imageAttributableShare": 0
+            },
+            "lcpMs": 3512.113,
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            },
+            "formFactor": "mobile",
+            "throttlingMethod": "simulate",
+            "networkPayload": {
+              "images": [
+                {
+                  "url": "http://web-benchmark:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+                  "transferBytes": 1242,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "http://web-benchmark:3000/api/gallery/us-25-ac-25.5-placement-demo/hero/23",
+                  "transferBytes": 8183,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "http://web-benchmark:3000/api/gallery/us-25-ac-25.5-placement-demo/hero/22",
+                  "transferBytes": 8183,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                }
+              ],
+              "oversizedCount": 0
+            }
+          },
+          {
+            "mobilePerformanceScore": 0.89,
+            "cls": {
+              "total": 0,
+              "imageAttributable": 0,
+              "imageAttributableShare": 0
+            },
+            "lcpMs": 3538.4365,
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            },
+            "formFactor": "mobile",
+            "throttlingMethod": "simulate",
+            "networkPayload": {
+              "images": [
+                {
+                  "url": "http://web-benchmark:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+                  "transferBytes": 1242,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "http://web-benchmark:3000/api/gallery/us-25-ac-25.5-placement-demo/hero/23",
+                  "transferBytes": 8183,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "http://web-benchmark:3000/api/gallery/us-25-ac-25.5-placement-demo/hero/22",
+                  "transferBytes": 8183,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                }
+              ],
+              "oversizedCount": 0
+            }
+          }
+        ],
+        "aggregate": {
+          "runCount": 3,
+          "mobilePerformanceScore": {
+            "median": 0.89,
+            "min": 0.86,
+            "max": 0.89
+          },
+          "clsTotal": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "clsImageAttributable": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "lcpMs": {
+            "median": 3538.4365,
+            "min": 3512.113,
+            "max": 3779.0914999999995
+          }
+        }
+      }
+    },
+    {
+      "id": "story-gallery",
+      "path": "/dev/benchmark-story-gallery",
+      "url": "http://web-benchmark:3000/dev/benchmark-story-gallery",
+      "harness": {
+        "runsPerPage": 3,
+        "rawRuns": [
+          {
+            "mobilePerformanceScore": 0.96,
+            "cls": {
+              "total": 0,
+              "imageAttributable": 0,
+              "imageAttributableShare": 0
+            },
+            "lcpMs": 2735.6179499999994,
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            },
+            "formFactor": "mobile",
+            "throttlingMethod": "simulate",
+            "networkPayload": {
+              "images": [
+                {
+                  "url": "http://web-benchmark:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+                  "transferBytes": 1242,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "http://web-benchmark:3000/api/gallery/us-25-ac-25.5-placement-demo/hero/23",
+                  "transferBytes": 8183,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "http://web-benchmark:3000/api/gallery/us-25-ac-25.5-placement-demo/hero/22",
+                  "transferBytes": 8183,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                }
+              ],
+              "oversizedCount": 0
+            }
+          },
+          {
+            "mobilePerformanceScore": 0.96,
+            "cls": {
+              "total": 0,
+              "imageAttributable": 0,
+              "imageAttributableShare": 0
+            },
+            "lcpMs": 2664.3960000000006,
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            },
+            "formFactor": "mobile",
+            "throttlingMethod": "simulate",
+            "networkPayload": {
+              "images": [
+                {
+                  "url": "http://web-benchmark:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+                  "transferBytes": 1242,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "http://web-benchmark:3000/api/gallery/us-25-ac-25.5-placement-demo/hero/23",
+                  "transferBytes": 8183,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "http://web-benchmark:3000/api/gallery/us-25-ac-25.5-placement-demo/hero/22",
+                  "transferBytes": 8183,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                }
+              ],
+              "oversizedCount": 0
+            }
+          },
+          {
+            "mobilePerformanceScore": 0.91,
+            "cls": {
+              "total": 0,
+              "imageAttributable": 0,
+              "imageAttributableShare": 0
+            },
+            "lcpMs": 3320.9005,
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            },
+            "formFactor": "mobile",
+            "throttlingMethod": "simulate",
+            "networkPayload": {
+              "images": [
+                {
+                  "url": "http://web-benchmark:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+                  "transferBytes": 1242,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "http://web-benchmark:3000/api/gallery/us-25-ac-25.5-placement-demo/hero/23",
+                  "transferBytes": 8183,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "http://web-benchmark:3000/api/gallery/us-25-ac-25.5-placement-demo/hero/22",
+                  "transferBytes": 8183,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                }
+              ],
+              "oversizedCount": 0
+            }
+          }
+        ],
+        "aggregate": {
+          "runCount": 3,
+          "mobilePerformanceScore": {
+            "median": 0.96,
+            "min": 0.91,
+            "max": 0.96
+          },
+          "clsTotal": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "clsImageAttributable": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "lcpMs": {
+            "median": 2735.6179499999994,
+            "min": 2664.3960000000006,
+            "max": 3320.9005
+          }
+        }
+      }
+    }
+  ]
+}
