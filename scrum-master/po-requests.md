@@ -104,6 +104,43 @@ is to be specified for an already-released gallery.
 | 11 | **Disposition of a verified vendor defect: single-image client download is broken against S3/R2 storage** (detail in the section immediately below) | Non-blocking today — it sits ~14 ACs downstream of the task in flight. It does need a decision before AC-17.5 is dispatched, because AC-17.5 as written cannot pass against this stack. Options and my recommendation are in the section below. | **RESOLVED 2026-08-01 — Project Lead decision: patch the vendored fork (route the single-image download through the storage backend the same way `protectedImages.js` already does; fix the swallowed error path to actually respond; move the `download_count`/`access_logs` writes to after a confirmed send) and report the defect to PicPeak upstream so the patch can eventually be dropped. Recorded directly on AC-17.5 in `sprint3.json` so the Dev Team has the disposition when it's dispatched.** |
 | 12 | **The dev-team 40-turn cap, not the requirements, is what has been failing US-17** (detail in the section immediately below) | Raise the per-session turn cap for the Dev Team from 40 to ~80 for audit-shaped criteria, or let a capped session commit its partial work so the next one resumes instead of restarting. This is a Project Lead setting and only you can change it. | **RESOLVED 2026-08-01 — Project Lead decision: raised `agent_max_turns.dev-team` from 40 to 80 in `gitops/config.json` (applies platform-wide). The partial-work-resume mechanism remains a good longer-term idea but was not implemented now.** |
 
+## Upstream findings F1–F9 — routed for Product Owner attention (transcribed 2026-08-09)
+
+_This closes sprint-4's one open defect (**AC-22.2**), and with it sprint-3's AC-17.9 routing gap.
+The register was authored and merge-ready in `PIVOT_AUDIT.md:6479–6518` but was never transcribed
+here, because `scrum-master/` sits outside an implementing AC's write scope — the dev sessions
+behaved correctly and the handoff across that boundary had no mechanism. Transcribed verbatim below
+by the Product Owner. **Sprint-5 adds the missing mechanism**: `sprint5.json` carries a
+`pending_po_routing` array a dev AC writes into and the orchestrator drains at story close
+(retrospective action item 2)._
+
+**Nothing here is a blocking request.** Six of the nine are recorded facts to accept; three name fork
+work that a future story must own. They are listed so no later story silently inherits a false
+premise about the pinned fork's behaviour.
+
+| Finding | One-line statement | PRD section it contradicts | Proposed disposition |
+|---|---|---|---|
+| **F1** | A Gallery created inside a Project does not inherit the Project's Client — the link must be assigned explicitly through the admin edit route. | §6.2 (Project connects "Client → … → Galleries" as one continuous chain) and §17.3 ("Where linked to a Project, prefill rather than retype: … customer name; customer email") | **Accept as-is** — a real gap in a workflow assumption, not a fork defect; Backstage must assign the client explicitly after gallery creation. |
+| **F2** | `PUT /api/admin/events/:id` returns `500` when `customer_account_ids` is the only field sent; it must be sent alongside other event fields. | §17.3 (same admin edit route used to link the client to the gallery) | **Accept as-is** — recorded as upstream's actual validation behaviour, not a defect to patch. |
+| **F3** | Upload processing produces only one derivative (thumbnail) eagerly; the preview and hero tiers exist and work correctly but are not produced until something explicitly requests them. | §19.2 (Storage Objectives lists contact-sheet thumbnail, masonry/grid, slideshow, fullscreen, and other derivatives together) | **Accept as-is** — Fork Discipline forbids editing the vendored processing path for a behaviour, not a defect. |
+| **F4** | The `photos` table has no `aspect_ratio` column; aspect ratio is always a derived value (`width / height`), never persisted. | §19.2 ("Store width, height, aspect ratio, format, size, processing state, and relevant metadata") | **Accept as-is** — a genuine gap against the PRD's literal wording, not a defect; the value is always available, just computed rather than stored. |
+| **F5** | Up to roughly an hour of lag exists between a Gallery's `expires_at` passing and the hourly `expirationChecker` sweep actually denying client access. | §28.1 (the ownership table's "Gallery expiry" row, owned by Backstage/PicPeak, marked "Automatic") and §30 ("expiring access" as a security requirement) | **Accept as-is** — a real gap in the scheduled-process model, not a fork defect; "automatic" does not mean "immediate." |
+| **F6** | A recurring local-filesystem-only storage assumption breaks three upstream routes under this deployment's S3 backend: single-photo download (patched, see F8), archive-restore (`POST /api/admin/archives/:id/restore`, 404s), and Gallery-create's local folder creation (`EACCES` on `/storage`). | §19.1 / §19.3 (R2 credentials are to be "mapped into PicPeak's S3-compatible storage configuration," treated as "proven secure functionality" across the pipeline) | **Schedule fork work** for the two unpatched occurrences (archive-restore, Gallery-create folder creation) — genuine breakage under our own S3 configuration, not just an assumption mismatch, so each should get a fork patch the way the single-photo download route (F8) already did. Not scheduled for sprint 4. |
+| **F7** | The Gallery-create route's `/storage` permission fix is operational, not a source change, and does not survive a `backstage-backend` container recreation — it has already had to be reapplied by hand twice. | §19.1 (storage configuration is assumed to be mapped once, not reapplied per container recreation) | **Schedule fork work** — needs a durable fix (entrypoint/init step or volume permission, or the F6 source-level fix above, which would remove the local `/storage` path entirely) rather than a recurring manual step. |
+| **F8** | The single-photo download route (UD-1) is patched in the fork, openly registered, but its upstream bug report is only prepared, not submitted — filing it requires a human GitHub identity. | §19.3 (PicPeak's S3-compatible path is to be "proven secure functionality") | **Raise upstream** — already tracked as item 16 above and in `FORK_CHANGELOG.md` / `PICPEAK_UPSTREAM_DEFECTS.md` (`UD-1`); listed here only to close out the F1–F9 routing set, not a new ask. |
+| **F9** | The `gallery_expired` and `archive_complete` email templates do not exist in `email_templates`, so those two email types stay `pending` and retry to exhaustion; `gallery_created` is unaffected. | §28.1 (the email-ownership table lists "Gallery expiry" as an owned, automatic email type) | **Schedule fork work** — needs two new template rows (a new migration/seed, not an edit to a shipped migration, per Fork Discipline); left for whichever future AC owns those email types. |
+
+**Product Owner note on scheduling.** F7 was substantially addressed in sprint 4 (US-22 made the
+`/storage` permission fix reproducible in `docker-compose.yml`, proven across `down -v` → rebuild);
+the source-level removal of the local `/storage` path is still open. **F6 and F9 are carried into the
+backlog as fork work, not into sprint 5** — F6's archive-restore route belongs with the private
+gallery lifecycle (backlog item 38, PRD Phase 7) and F9's two missing email templates belong with the
+email ownership matrix (backlog item 34, same phase). Sprint 5 is Frontstage publishing and touches
+neither. Recording them here so they are picked up by the phase that owns them rather than
+rediscovered.
+
+---
+
 ## The real cause of the US-17 stall: a 40-turn session cap (recorded 2026-08-01)
 
 AC-17.4.1.1.1.2.2.2 has now failed on six consecutive dev sessions, across both Sonnet and Opus, and

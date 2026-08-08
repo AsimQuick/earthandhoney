@@ -4,8 +4,8 @@ type: master
 created: 2026-07-18
 last-updated: 2026-08-09
 last-updated-by: product-owner
-current-sprint: sprint-4
-sprint-phase: review
+current-sprint: sprint-5
+sprint-phase: planning
 pivot-date: 2026-07-30
 tech-stack:
   backstage: PicPeak fork (pinned commit)
@@ -21,30 +21,123 @@ tech-stack:
 
 # Scrum Master — earthandhoney
 
-## Current Sprint: sprint-4 (Review — Complete, 2026-08-09)
+## Current Sprint: sprint-5 (Planning, 2026-08-09)
 
 > **The product is NOT feature-complete.** No `*_SPEC.md` feature-specification document exists
-> anywhere in this repository (verified by repo-wide search, excluding `node_modules/` and
-> `vendor/`), so remaining scope comes from the post-pivot PRD's phase plan (§34) and the post-pivot
-> product backlog, exactly as it did for sprints 1–3. Sprint 4 took backlog items 1–7 plus the
-> sprint-3 carry-overs; **backlog items 8–42 remain**, covering Frontstage publishing, the darkroom,
-> the Project cockpit and Project Room, the headless ledger and Stripe, email/contracts/delivery, and
-> hardening/launch. PRD Phases 4–8 are all still open — Phase 2 is now complete and Phase 4 has
-> started.
+> anywhere in this repository — re-verified at sprint-5 planning by repo-wide search excluding
+> `node_modules/` and `vendor/`, which returns no `*_SPEC.md` file at all and no case-insensitive
+> `spec` markdown file other than `retrospective.md`. Remaining scope therefore comes from the
+> post-pivot PRD's phase plan (§34) and the post-pivot product backlog, exactly as it did for
+> sprints 1–4. Sprint 4 took backlog items 1–7 plus the sprint-3 carry-overs; **sprint 5 takes items
+> 8–14** (Frontstage publishing, PRD Phase 4). **Backlog items 15–42 remain**, covering the gallery
+> experience and darkroom, the Project cockpit and Project Room, the headless ledger and Stripe,
+> email/contracts/delivery, and hardening/launch. PRD Phases 3 and 5–8 are all still open.
+
+---
+
+## Sprint-5 (Planning, 2026-08-09)
+
+**Sprint Goal:** Complete **PRD Phase 4 — Frontstage publishing.** Sprint 4 proved the seam; it did
+not build a website. Turn the proven Frontstage↔Backstage boundary and the locked design tokens into
+a real, deterministic, lead-generating public site: a structured `Pages` model with a New Page form
+and a standard template every page inherits, navigation driven by fields, a form builder writing
+durable Inquiries, the homepage / Details / Story templates, and real SEO output in actual HTML.
+
+Full plan: `scrum-master/sprint5.json` (machine-readable, authoritative).
+
+### Why this scope
+
+The Frontstage today is **entirely internal**. `src/collections/` holds only `GalleryPlacements`,
+`Media` and `Users`; `src/globals/` holds only `StudioProfile`; and every route under
+`src/app/(frontend)/` is a `noindex` dev or benchmark page. There is no `Pages` collection, no
+`Forms`, no `Inquiries`, no navigation model, no sitemap — and the site chrome still renders the
+**pre-pivot photobuddy link array** (`home`/`about`/`galleries`/`blog`/`contact`) with five
+placeholder social links pointing at `#`. PRD §2 says the Frontstage exists for lead generation;
+today it cannot generate a lead. Backlog items 8–14 are exactly that gap and are the next contiguous
+block in the phase plan.
+
+### Stories
+
+| ID | Title | Priority | Depends on | Backlog | ACs |
+|----|-------|----------|------------|---------|-----|
+| US-30 | Split the verification suite into a fast parallel lane and a serial live lane | high | — | retro action 6 | 5 |
+| US-31 | Deterministic page model: `Pages` collection, New Page form, standard page template | critical | — | #10 | 7 |
+| US-32 | Navigation driven by structured fields — Weddings, Engagements, Details | high | US-31 | #8 | 5 |
+| US-33 | Forms and durable Inquiries, notified through the Backstage email queue | critical | US-31 | #13 | 7 |
+| US-34 | Homepage template: full-width hero slideshow, curated selections, primary inquiry form | high | US-31, US-32, US-33 | #9 | 6 |
+| US-35 | Details template: minimal copy, full-width masonry placement, inquiry form | medium | US-31, US-33 | #11 | 4 |
+| US-36 | Story template: repeating heading + text + gallery placement — not a blog | medium | US-31, US-33 | #12 | 5 |
+| US-37 | SEO system: metadata, structured data, canonical URLs, sitemap, SEO assistant | high | US-31, US-34, US-36 | #14 | 7 |
+
+8 stories / 46 acceptance criteria, all `draft` and unstarted. Two roots: **US-31** (which everything
+else in Phase 4 hangs off) and **US-30** (which has no dependants, so if it stalls nothing is
+blocked). The graph is acyclic.
+
+### Why a test-infrastructure story sits in a feature sprint
+
+US-30 is the only non-feature story and earns its place on measurement, not tidiness. `npm test` is
+`jest --runInBand` over ~140 suites, measured at **1,169,738 ms wall** (`retrospective.md`, citing
+`logs/20260807_235236_dev-team.json`), and sprint 4 recorded that **AC-28.5 had to be split three
+ways specifically because the runs would not fit in one dev session**. The suite cost is now shaping
+how acceptance criteria are written, and PRD Phases 4–8 will all pay it.
+
+### Why PRD Phase 3 is still excluded
+
+Unchanged from sprint 4: backlog items 22–26 rest on PicPeak's native contract-signing capability,
+whose verification failed on one of seven elements (AC-17.10 — the audit trail ships as a **separate
+sibling PDF**, never merged into the signed contract). `po-requests.md` item 7 is **REOPENED and
+awaiting a human decision**, with the PO recommendation on record as option (a). Building a Project
+Room on an unresolved premise would inherit a known-false assumption (Reminder 1).
+
+### What sprint 5 changes about process, rather than restates
+
+Three failures now have a **mechanism** rather than another DoD sentence:
+
+1. **The routing hole** (AC-17.9 in sprint 3, AC-22.2 in sprint 4). `sprint5.json` carries a
+   `pending_po_routing` array that an implementing AC *does* have write scope over; the orchestrator
+   drains it into `po-requests.md` at story close, and the AC is not closed until `drained` is true.
+   Rewriting the DoD could never fix this, because a DoD cannot grant write scope.
+2. **The retrospective**, missed at close in sprints 1, 3 and 4. A named owner and a written
+   checkpoint have both been tried and both failed; DoD item 9 makes it an orchestrator pipeline step
+   after every second story close-out.
+3. **Merging through red CI** (PR #73). DoD item 8 now states the rule outright: no merge without a
+   green run recorded against the exact head SHA; infra flakes are re-run, never merged through.
+
+DoD items 15–17 additionally require story-level tracker fields to be written as work completes, the
+three Tier-3 regression anchors to stay untouched, and no retired artifact to be reintroduced.
+
+### Explicitly out of scope for sprint-5
+
+The gallery experience and darkroom (PRD Phase 5 — backlog 15–21, including the full masonry
+refinement, the slideshow spec, the shared fullscreen viewer, the verbatim style-template copy, the
+darkroom UI, the New Gallery entry choice, and the alt-text caption model) · the Project cockpit and
+Project Room (Phase 3) · anything financial (Phase 6) · contracts and the wider email matrix beyond
+the single inquiry-notification type US-33 needs (Phase 7) · deployment and hardening (Phase 8) · and
+every standing non-goal, in particular any tax surface, any client-facing ledger surface, automatic
+recurring card charges, WhatsApp lead capture, and any drag-and-drop page builder.
 
 ---
 
 ## Sprint-4 Review Summary (2026-08-09)
 
-**Result: Delivered, with one open defect.** All 9 stories (US-21…US-29) and all 51 acceptance
+**Result: Delivered. Closed clean on 2026-08-09.** All 9 stories (US-21…US-29) and all 51 acceptance
 criteria are `checked` with `dev_status: done`, merged to `main` across 9 PRs (#73–#81). Tester
 sprint gate: **PASS**, recording one AC-level defect (AC-22.2) and one process flag (PR #73's merge).
 Deploy: **PASSED** — all verification tiers passed (`deploy_summary`, `sprint4.json`).
 
+> **CLOSE-OUT COMPLETED 2026-08-09, before sprint-5 planning.** The sprint's one open defect is
+> resolved: the **F1–F9 upstream findings register has been transcribed verbatim** from
+> `PIVOT_AUDIT.md:6479–6518` into `po-requests.md` (section *"Upstream findings F1–F9 — routed for
+> Product Owner attention"*), so DoD item 7 is now met for AC-22.2 and both AC-22.2 and US-22 read
+> `tester_status: done`. `sprint4.json`'s nine stale story-level `dev_status: not-started` fields
+> were advanced to `done` to match their ACs, their merged PRs and the passed deploy (retrospective
+> action item 5). The PR #73 process flag remains recorded and is carried into sprint 5 as a merge
+> rule in the definition of done, not as an open defect.
+
 | Story | Title | ACs | PR | Merged | Story status | Tester |
 |-------|-------|-----|----|--------|--------------|--------|
 | US-21 | Restore the authoritative post-pivot documentation onto `main` and correct the ownership record | 6/6 | [#73](https://github.com/AsimQuick/earthandhoney/pull/73) | 2026-08-06 | done | done |
-| US-22 | Route the sprint-3 findings: reopen contract-signing, register F1–F9 | 5/5 | [#74](https://github.com/AsimQuick/earthandhoney/pull/74) | 2026-08-06 | done | **defect-found** |
+| US-22 | Route the sprint-3 findings: reopen contract-signing, register F1–F9 | 5/5 | [#74](https://github.com/AsimQuick/earthandhoney/pull/74) | 2026-08-06 | done | done _(defect closed 2026-08-09)_ |
 | US-23 | Design-token lock-down | 7/7 | [#75](https://github.com/AsimQuick/earthandhoney/pull/75) | 2026-08-06 | done | done |
 | US-24 | Studio identity: one `StudioProfile` and bounded branding controls | 5/5 | [#76](https://github.com/AsimQuick/earthandhoney/pull/76) | 2026-08-07 | done | done |
 | US-25 | Gallery Placement: a Frontstage page renders a Backstage gallery | 6/6 | [#77](https://github.com/AsimQuick/earthandhoney/pull/77) | 2026-08-07 | done | done |
@@ -113,8 +206,8 @@ sits on top of the fork proven in sprint 3:
 
 **Definition of Done:** 13 of 15 items met with direct evidence. Two unmet:
 
-- **Item 7 (routing to `po-requests.md` is part of closing an AC that requires it) — UNMET for
-  AC-22.2.** This is the sprint's one open defect; see below.
+- **Item 7 (routing to `po-requests.md` is part of closing an AC that requires it) — UNMET at review
+  for AC-22.2, MET as of 2026-08-09.** See the close-out note above.
 - **Item 9 (`retrospective.md` updated incrementally during the sprint, with a named owner and an
   in-sprint checkpoint) — UNMET for the third consecutive sprint.** The file held only sprint-3 and
   sprint-1 content until this review was written. Sprint 3 diagnosed the missing owner/checkpoint and
@@ -124,14 +217,17 @@ Item 8 (existing CI stays green) is met for 8 of 9 PRs and flagged for #73 — s
 
 **Defects and findings (all disclosed):**
 
-- **OPEN — AC-22.2, F1–F9 never reached `po-requests.md`.** The register is fully authored and
-  merge-ready in `PIVOT_AUDIT.md:6479–6518` (finding id, one-line statement, contradicted PRD
-  section, proposed disposition, for all nine findings), but the dev session correctly held that
-  `scrum-master/` is outside an implementing AC's write scope, so the table was never transcribed.
-  `po-requests.md` contains no F1–F9 entries. This is precisely the failure sprint-4's DoD item 7 was
-  written to prevent, repeating sprint 3's AC-17.9 gap one sprint later. **Disposition: a PO/
-  orchestrator transcription task (copy one table), not a dev rework.** AC-22.2 stays `defect-found`
-  until it lands.
+- **CLOSED 2026-08-09 — AC-22.2, F1–F9 never reached `po-requests.md`.** The register was fully
+  authored and merge-ready in `PIVOT_AUDIT.md:6479–6518` (finding id, one-line statement,
+  contradicted PRD section, proposed disposition, for all nine findings), but the dev session
+  correctly held that `scrum-master/` is outside an implementing AC's write scope, so the table was
+  never transcribed. This was precisely the failure sprint-4's DoD item 7 was written to prevent,
+  repeating sprint 3's AC-17.9 gap one sprint later. **Resolved as diagnosed — a PO transcription
+  task, not a dev rework:** the table is now in `po-requests.md` verbatim, and F6 and F9 (the two
+  findings calling for fork work) are explicitly scheduled against the backlog items that own them
+  (#38 private gallery lifecycle, #34 email ownership matrix) rather than left floating. Sprint 5
+  adds the missing mechanism — a `pending_po_routing` array in `sprint5.json` drained by the
+  orchestrator at story close — so the third repeat cannot happen the same way.
 - **PROCESS FLAG — PR #73 was merged with both CI jobs failed.** `gh run view 31129644959` shows the
   only recorded run for head SHA `390f8de` failed in docker buildx (`failed to reserve cache`) — an
   infra flake; lint, type-check and test never executed. No green re-run exists for that SHA. Direct
@@ -142,10 +238,12 @@ Item 8 (existing CI stays green) is met for 8 of 9 PRs and flagged for #73 — s
   mid-sentence waiting on a background task. Each was independently confirmed against
   `git log origin/feature/US-2x` to have been captured by the harness auto-commit (`34ceed5`,
   `d8aaac2`, `bd30706`, `a15b213`, `8e13b64`, `1de4dd2`).
-- **Tracker hygiene repeats.** `sprint4.json` still reads `"phase": "planning"` and story-level
-  `dev_status: "not-started"` on all 9 stories, despite every AC reading `dev_status: done` and the
-  deploy having passed. This is the identical stale-field pattern US-21 AC-21.4 was written to fix in
-  `sprint3.json` — fixed downstream, not fixed at source.
+- **Tracker hygiene repeats — reconciled 2026-08-09.** `sprint4.json` read `"phase": "planning"` and
+  story-level `dev_status: "not-started"` on all 9 stories, despite every AC reading
+  `dev_status: done` and the deploy having passed — the identical stale-field pattern US-21 AC-21.4
+  was written to fix in `sprint3.json`, fixed downstream but not at source. All nine story fields are
+  now `done` and `phase` is `complete`. Sprint 5's DoD item 15 requires these fields to be written as
+  work completes, so the reconciliation is not needed a third time.
 
 **Tier-3 regression anchors for sprint 5 (load-bearing — must not regress):**
 
@@ -162,15 +260,16 @@ live-system proof, not unit tests alone.
 
 **Open follow-ups carried to sprint-5:**
 
-1. **Transcribe the F1–F9 register from `PIVOT_AUDIT.md` into `po-requests.md`** and re-close
-   AC-22.2. Highest priority — it is the only thing between sprint 4 and a clean close.
+1. ~~**Transcribe the F1–F9 register from `PIVOT_AUDIT.md` into `po-requests.md`** and re-close
+   AC-22.2.~~ **DONE 2026-08-09.** Sprint 4 closes clean.
 2. **Two decisions await the human**: the reopened contract-signing decision (po-requests item 7,
    PO recommendation (a) accept the sibling audit PDF for V1) and the R2 delivery path (po-requests
    item 15 — needs a Cloudflare custom domain and/or Worker before candidates 3–4 can be measured).
    Both are "decisions no agent may make alone".
 3. **Design-token sign-off** (po-requests item 14) — the specimen route is built and awaiting a human
    look. Every Phase 4 page is built on whatever is locked there.
-4. **Reconcile `sprint4.json`** — `phase` → `complete`, story-level `dev_status` → `done`.
+4. ~~**Reconcile `sprint4.json`** — `phase` → `complete`, story-level `dev_status` → `done`.~~
+   **DONE 2026-08-09.**
 5. Still standing from sprint 3: the UD-1 upstream report needs a human GitHub identity
    (po-requests item 16); SPF/DKIM/DMARC before any production email (item 17).
 
@@ -311,16 +410,23 @@ numbering stays stable; each carries the story that closed it._
    deliberately still open.** Both measured candidates missed the ADR's targets; candidates 3–5 need
    infrastructure that does not exist yet — `po-requests.md` item 15.)*
 
-### Frontstage publishing (PRD Phase 4)
-8. Navigation: Weddings, Engagements, Details — configurable through structured fields.
+### Frontstage publishing (PRD Phase 4) — _all seven taken by sprint 5_
+8. Navigation: Weddings, Engagements, Details — configurable through structured fields. *(**Sprint 5
+   — US-32.**)*
 9. Homepage template: full-width slideshow hero placement, short introduction, selected galleries
-   or stories, primary inquiry form, footer.
-10. Deterministic **New Page** form and standard page template.
-11. **Details** template: minimal heading, full-width masonry placement, inquiry form.
-12. **Story** template: repeating section heading + text + gallery placement.
+   or stories, primary inquiry form, footer. *(**Sprint 5 — US-34.**)*
+10. Deterministic **New Page** form and standard page template. *(**Sprint 5 — US-31**, the root
+    story every other Phase 4 story depends on.)*
+11. **Details** template: minimal heading, full-width masonry placement, inquiry form. *(**Sprint 5
+    — US-35.**)*
+12. **Story** template: repeating section heading + text + gallery placement. *(**Sprint 5 —
+    US-36.**)*
 13. Form builder + durable Inquiry records, notification, spam protection, source/campaign capture.
+    *(**Sprint 5 — US-33**; the notification is queued through the Backstage email queue, the single
+    authoritative owner of client and photographer email.)*
 14. SEO system: account-level fields, per-page/story SEO assistant, real metadata, structured data,
-    canonical URLs, sitemap and image-sitemap entries.
+    canonical URLs, sitemap and image-sitemap entries. *(**Sprint 5 — US-37**; account-level fields
+    come from the existing `StudioProfile`, not a second settings record.)*
 
 ### Gallery experience and darkroom (PRD Phase 5)
 15. Masonry specification: preserve every aspect ratio and the chosen order, never crop or stretch,
@@ -369,13 +475,18 @@ numbering stays stable; each carries the story that closed it._
 
 ### Email, contracts, delivery (PRD Phase 7)
 34. Email ownership matrix implemented — one owner per email type; duplicate reminders are defects.
+    *Carries upstream finding **F9**: the `gallery_expired` and `archive_complete` templates do not
+    exist in `email_templates`, so those types stay `pending` and retry to exhaustion. Fix is two new
+    template rows via a **new** migration/seed — never an edit to a shipped migration (Reminder 2).*
 35. Template editor, Project-level overrides, merge fields, preview, test send, history, pause.
 36. Reminder matrix with editable defaults that stop when their milestone completes.
 37. Contract flow: chosen e-sign provider **or** manual signed-PDF upload with audit entry
     *(open decision — see `po-requests.md`)*.
 38. Private gallery lifecycle: draft, ready, sent, viewed, download-enabled, expired, archived,
     purged — with noindex, revocable access, logging, and expiry reminders. Purge must never
-    destroy images still referenced by a public gallery.
+    destroy images still referenced by a public gallery. *Carries upstream finding **F6**'s unpatched
+    occurrence: `POST /api/admin/archives/:id/restore` 404s under the S3 backend because of a
+    local-filesystem-only assumption. Needs a fork patch of the same shape as the F8/UD-1 one.*
 
 ### Hardening and launch (PRD Phase 8)
 39. VPS deployment: Docker Compose, one reverse proxy, TLS, monitoring, backups with a **tested**

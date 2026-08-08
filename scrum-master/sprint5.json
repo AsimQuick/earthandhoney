@@ -1,0 +1,519 @@
+{
+  "sprint": "sprint-5",
+  "phase": "planning",
+  "goal": "Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.",
+  "reference_docs": [
+    "scrum-master/PRD.md - section 12 Frontstage Product, section 13 Deterministic Content Creation (the template specs each story implements), section 14 Gallery Placement Model, section 15.1 Masonry, section 19.4 performance targets, section 20 Forms and Inquiries, section 21 SEO System, section 34 Phase 4, section 35.2 V1 Frontstage acceptance criteria",
+    "CLAUDE.md - Product Pillars (3: deterministic beauty; 5: one owner per business function), the System Ownership table, and Retired From the Old Direction",
+    "scrum-master/scrum-master.md - post-pivot Product Backlog items 8-14 (this sprint) and the sixteen Reminders",
+    "scrum-master/retrospective.md - sprint-4 action items 1-10; items 2, 3, 4, 5 and 10 are folded into this sprint's definition of done",
+    "scrum-master/po-requests.md - item 14 (design-token sign-off, still open), item 15 (R2 delivery path, still open), and the newly transcribed F1-F9 upstream findings register",
+    "scrum-master/sprint4.json - sprint-4 outcome, Tester close-out notes, and the three Tier-3 regression anchors",
+    "PAYLOAD_PICPEAK_API_CONTRACT.md - Flow A, the boundary every gallery placement resolves through",
+    "SYSTEM_OWNERSHIP.md - corrected in sprint 4; the authority for who owns email",
+    "R2_STORAGE_AND_DELIVERY_ADR.md - the delivery decision is still OPEN; US-34 measures against it but must not close it",
+    "WEBHOOK_LIVE_PROOF.md - how live-system proof was recorded in sprint 4; the bar for seam-level evidence",
+    "src/styles/tokens.css and exports/design-tokens/tokens.css - the locked token set every surface in this sprint is built from",
+    "scrum-master/PRD-archive.md - historical only, do not build from it"
+  ],
+  "definition_of_done": [
+    "Every acceptance criterion is closed with recorded evidence, not assertion - a command output, a screenshot, a measured number, or a named file and line",
+    "Every claim about the forked upstream is verified against the actual pinned code, never against documentation alone",
+    "No already-shipped upstream migration has been modified; the migration-manifest integrity test stays green",
+    "All services run in Docker; nothing installed on the host",
+    "No secret value is committed anywhere; .env.example stays authoritative for every required variable",
+    "Every decision record names the option chosen, the options rejected, and the reason",
+    "Anything needing human input reaches po-requests.md. NEW MECHANISM this sprint (retrospective action item 2): an implementing AC that produces a finding for the Product Owner writes it into this file's `pending_po_routing` array - which it DOES have write scope over - and the orchestrator drains that array into po-requests.md at story close. The AC is not closed until its entry has been drained and the entry's `drained` field is true. Rewriting the DoD did not fix this in sprint 4 because a DoD cannot grant write scope; the array can.",
+    "Existing CI stays green (lint, types, tests, coverage threshold) - AND no pull request is merged without a green CI run recorded against its exact head SHA. An infra flake (for example the docker buildx 'failed to reserve cache' that let PR #73 merge with both jobs red) is re-run until green; it is never merged through (retrospective action item 4)",
+    "retrospective.md is updated incrementally during the sprint, not at close. NEW MECHANISM this sprint (retrospective action item 3): this is a pipeline step, not a document line - the orchestrator appends to retrospective.md after every second story close-out. Unmet in sprints 1, 3 and 4; a named owner and a written checkpoint have both already been tried and both failed, so nothing short of a self-executing step counts",
+    "No critical or major defect remains open against any story in this sprint",
+    "Coverage threshold met - the existing 80% CI coverage gate on branches, functions and lines is not lowered to pass, including where US-30 re-groups the suites, and src/__tests__/us28-ac28.5-coverage-gate-guard.test.ts stays green",
+    "Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)",
+    "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
+    "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (sprint-3 retrospective action item 3)",
+    "Story-level dev_status and the sprint phase field are written as work completes, so this file is true at a glance. Sprint 3 and sprint 4 both shipped with phase: planning and every story reading dev_status: not-started while every AC read done (retrospective action item 5)",
+    "The three Tier-3 regression anchors named by the sprint-4 Tester must not regress and may not be modified as part of a refactor: src/__tests__/us21-ac21.6-pivot-direction-guard.test.ts, src/__tests__/us26-ac26.1-picpeak-webhook-signature-verification.test.ts with the AC-26.5 idempotency suite, and src/__tests__/us28-ac28.5-coverage-gate-guard.test.ts (retrospective action item 10)",
+    "No retired artifact is reintroduced: Better Auth, Resend, Adobe Sign as a locked provider, Sessions as the central object, Testimonials/Packages/FAQ collections, WhatsApp lead capture, a Payload Galleries collection or Payload-owned upload pipeline, any drag-and-drop page builder, any tax or bookkeeping surface, and any client-facing ledger surface"
+  ],
+  "stories": [
+    {
+      "id": "US-30",
+      "title": "Split the verification suite into a fast parallel lane and a serial live lane so a full run stops shaping how criteria are written",
+      "status": "draft",
+      "priority": "high",
+      "dependencies": [],
+      "backlog_item": null,
+      "acceptance_criteria": [
+        {
+          "id": "30.1",
+          "text": "Produce a recorded classification of every Jest suite under `src/__tests__/` (~140 suites) into exactly two lanes: LIVE (touches the shared Postgres `db` container, spawns a real Next/Payload server, calls a live Backstage or R2 endpoint, or otherwise depends on cross-suite ordering) and UNIT (everything else). The classification is derived by reading each suite, not guessed from the filename: name the specific dependency for every suite placed in the LIVE lane. Evidence: a committed inventory (counts per lane plus the per-suite reason for each LIVE entry) and the mechanism that assigns a suite to a lane (a Jest `projects` entry, a `testPathIgnorePatterns` pair, or a naming convention enforced by a test - state which was chosen and why the others were rejected).",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "30.2",
+          "text": "The UNIT lane runs with Jest's default parallelism and is measurably faster than the current serial baseline. Baseline to beat, from `logs/20260807_235236_dev-team.json` as cited in `retrospective.md`: 1,169,738 ms wall for the whole suite under `jest --runInBand`. Evidence: the measured wall-clock time of the UNIT lane and of the full suite before the change, both taken with `docker compose run --rm web`, reported as real numbers. If the improvement is smaller than expected, report the actual figure - an honestly-measured disappointing result is an acceptable outcome; a rounded or estimated one is not.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "30.3",
+          "text": "The LIVE lane runs serially (`--runInBand` semantics preserved) and the sprint-1 AC-1.2 live-boot flake does not return. Evidence: the LIVE lane run three consecutive times in Docker with identical pass results, including the live-boot suite. `src/test-support/liveApiAuth.ts`'s shared first-register fixture identity must keep working - the AC-6.3 cross-suite race it was written to fix must not reappear now that suites are re-grouped.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "30.4",
+          "text": "Combined coverage across both lanes is still enforced at the existing 80% gate on branches, functions and lines, and the gate itself is not lowered. Evidence: the coverage numbers reported by CI after the split, compared against the pre-split figures recorded in the sprint-4 review (95.85 branches / 96.52 functions / 99.38 lines); `.github/workflows/ci.yml:69` still reads 80 with no `continue-on-error` and no `passWithNoTests`; and `src/__tests__/us28-ac28.5-coverage-gate-guard.test.ts` - a named Tier-3 regression anchor - stays green and unmodified. If merging coverage across two runs is not achievable cleanly, keep a single coverage-producing run and say so explicitly rather than weakening the gate.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "30.5",
+          "text": "`npm test` still runs everything and still fails if either lane fails - no path exists where a developer or CI can believe the suite passed while a lane was skipped. CI runs both lanes. Evidence: `package.json` scripts and `.github/workflows/ci.yml` shown after the change, plus a deliberately-failing test in each lane proven to fail the top-level command (revert the deliberate failures before commit).",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "not-started",
+      "tester_notes": "",
+      "issue": null
+    },
+    {
+      "id": "US-31",
+      "title": "Deterministic page model: a structured `Pages` collection, the New Page form, and the standard page template every new page inherits",
+      "status": "draft",
+      "priority": "critical",
+      "dependencies": [],
+      "backlog_item": 10,
+      "acceptance_criteria": [
+        {
+          "id": "31.1",
+          "text": "A Payload `Pages` collection exists implementing exactly the PRD 13.1 New Page field set and nothing beyond it: internal page name, navigation label, page heading, short introduction, photography type, city/region, venue (optional), URL slug, SEO title, meta description, social image, gallery placements, tags, include-in-menu, index/noindex, draft/published. Follow the shape already proven in `src/collections/GalleryPlacements.ts` and `src/globals/StudioProfile.ts`. Every file carries the CLAUDE.md metadata header convention. Evidence: the field list read back from the collection definition, mapped one-to-one against the PRD 13.1 table with no unmapped field in either direction.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "31.2",
+          "text": "The editing experience is a structured form only - Pillar 3 (deterministic beauty) is enforced, not merely stated. There is no drag-and-drop page builder, no blocks/layout canvas, no page-level CSS field, and no arbitrary margin, padding or positioning control anywhere in `Pages`. Evidence: a standing test that fails if a `blocks` field, a free-text CSS/style field, or a margin/padding/position control is added to `Pages` - the same lock-in pattern US-27 AC-27.4 used to make a scoping decision unreversible. Name the retired non-goal it protects (CLAUDE.md: 'No drag-and-drop page builder').",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "31.3",
+          "text": "The standard page template renders the PRD 13.3 order exactly: H1, short introduction, one or more gallery placements, optional structured text sections, inquiry form region, footer. It is built only from tokens in `src/styles/tokens.css` (locked by US-23) - no hard-coded colour, spacing, radius, font or breakpoint value appears in the template. Evidence: the rendered structure asserted in order, plus a check that the template's stylesheet introduces no raw values outside the token set (reuse or extend `src/lib/style-guard/`). The inquiry form region is a slot in this story; US-33 fills it.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "31.4",
+          "text": "A public dynamic route renders a published page at its URL slug. A draft page is not reachable publicly (404, not a rendered page behind a flag), and a page marked noindex emits a robots noindex directive in the rendered HTML. Evidence: three requests against a running stack in Docker - published (200 with the page heading present), draft (404), noindex (200 with the directive asserted in the returned markup, not in a config object).",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "31.5",
+          "text": "Gallery placements on a page resolve through the existing Flow A boundary - `src/lib/backstageClient.ts` and `src/components/gallery/backstageGalleryMapper.ts`, with the 60s cache cap - and reference the Backstage gallery by external identifier only. There is no Payload `relationship` or `join` field pointing into the Backstage database, per Reminder 4 (one Postgres server, separate logical databases, no cross-database joins) and the rule US-25 established. When the gallery is unavailable the page still renders using `src/components/gallery/GalleryUnavailablePlaceholder.tsx` rather than failing. Evidence: the field definition, a live render against a real Backstage gallery, and a live render with the gallery made unreachable.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "31.6",
+          "text": "Canonical URL, Open Graph data and a correct heading hierarchy (exactly one H1, sections descending without skipping) are generated by the system, not typed by the photographer. Evidence: asserted against the rendered HTML of two different pages. Structured data, sitemap entries and image-sitemap references are explicitly OUT of scope here and owned by US-37 - say so in the story record rather than half-implementing them.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "31.7",
+          "text": "A newly created page inherits the design system with no manual layout work - PRD Phase 4's exit criterion. Evidence: two `Pages` records with materially different content (different heading lengths, different numbers of gallery placements, one with structured text sections and one without) render with an identical structural shell, demonstrated by a committed structural snapshot pair. Style drift between an original and a newly created page is a defect, not a variation.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "not-started",
+      "tester_notes": "",
+      "issue": null
+    },
+    {
+      "id": "US-32",
+      "title": "Navigation driven by structured fields, with Weddings, Engagements and Details as the first public navigation",
+      "status": "draft",
+      "priority": "high",
+      "dependencies": [
+        "US-31"
+      ],
+      "backlog_item": 8,
+      "acceptance_criteria": [
+        {
+          "id": "32.1",
+          "text": "Site navigation is data-driven and configurable through structured fields - either a Payload `Navigation` global or derivation from each page's include-in-menu flag, navigation label and order. Choose one, and record the option chosen, the option rejected and the reason (DoD item 6). The hard-coded photobuddy link array at `src/components/layout/VerticalMenu.tsx:50-54` (home, about, galleries, blog, contact) is removed in the same change - those five entries are pre-pivot template chrome, not this product's navigation. Evidence: the file shown after the change with no hard-coded route list, and the menu rendering from data.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "32.2",
+          "text": "The first public navigation is exactly PRD 12.1 - Weddings, Engagements, Details - in a controlled order, each backed by a real published `Pages` record rather than a placeholder link. Evidence: the three pages listed from the database and the three labels asserted in the rendered nav in order.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "32.3",
+          "text": "A page that is draft, or has include-in-menu off, never appears in the navigation; changing either field changes the menu without a code change. Evidence: a live before/after against a running stack for both cases.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "32.4",
+          "text": "Social profile links in the site chrome come from `StudioProfile.socialProfiles` (US-24) instead of the hard-coded placeholder list at `src/components/layout/VerticalMenu.tsx:58-62`, where all five entries currently point at a '#' href. A studio with no social profiles configured renders no social block at all rather than dead links. Evidence: both states rendered.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "32.5",
+          "text": "Navigation stays mobile-first and accessible: the US-8 mobile menu behaviour (`MobileMenuContext.tsx`, `MobileMenuTrigger.tsx`) and the primary-navigation landmark survive the change, the menu is operable by keyboard alone, and focus order is correct. Evidence: a structural snapshot taken before and after the change with the differences explained, plus a keyboard-navigation assertion.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "not-started",
+      "tester_notes": "",
+      "issue": null
+    },
+    {
+      "id": "US-33",
+      "title": "Forms and durable Inquiries: the form builder, spam protection, and studio notification through the Backstage email queue",
+      "status": "draft",
+      "priority": "critical",
+      "dependencies": [
+        "US-31"
+      ],
+      "backlog_item": 13,
+      "acceptance_criteria": [
+        {
+          "id": "33.1",
+          "text": "A Payload `Forms` collection implements the PRD 20.2 configurable set - internal name, public title, description, recipient(s), success message, field order, labels and helper text, required/optional status, and the Early Booking Benefits footer/link - and offers exactly the seven V1 field types: short text, email, phone, date, dropdown, checkbox/consent, long text. No conditional-logic engine is built (PRD 20.2: 'No complex conditional form engine is required in V1'). Evidence: the field-type list read back from the collection, and a test that fails if an eighth type or a conditional-visibility rule is added.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "33.2",
+          "text": "An `Inquiries` collection stores a durable record, written server-side and committed BEFORE any email is attempted, so a failed or slow notification can never lose a lead. Each record captures the submitted values, the source page, and campaign parameters (utm_*). Evidence: a submission proven to persist with the notification path forced to fail - the inquiry still exists and is readable in the admin.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "33.3",
+          "text": "Validation runs on both client and server, and the server is authoritative: a submission crafted to bypass the browser (a direct POST with a missing required field, a malformed email, and an over-long field) is rejected with no record written. Evidence: the three rejected requests with their responses, run against the stack in Docker.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "33.4",
+          "text": "Spam protection is in place and does not depend on a third-party client-side script or an external service: honeypot field, submission-timing check, and a server-side rate limit per source. Record the options rejected and why (DoD item 6). Evidence: a scripted rapid-fire submission proven to be rate-limited, and a honeypot-filled submission proven to be silently rejected without creating an Inquiry.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "33.5",
+          "text": "The studio notification email is queued through the Backstage email queue - the single authoritative owner of all client and photographer email per CLAUDE.md's System Ownership table and `SYSTEM_OWNERSHIP.md`. It is not sent from Payload or Next directly, and Resend is retired and must not reappear. No SMTP secret is ever exposed to the browser (PRD 20.3). If a new email template row is required, add it via a NEW numbered migration or seed - never by editing an already-shipped upstream migration (Reminder 2) - and check first against finding F9 in `po-requests.md`, which records two email types whose templates do not exist. Record the boundary crossing in `PAYLOAD_PICPEAK_API_CONTRACT.md`, and in `FORK_CHANGELOG.md` plus `PICPEAK_PORT_LEDGER.md` if any file under `vendor/picpeak/` is touched. Evidence: the notification observed queued and then sent, confirmed independently in the mail catcher the way US-17 AC-17.6 did - not inferred from a return code.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "33.6",
+          "text": "An optional branded acknowledgement to the person who submitted the form exists, is off by default, and is owned by the same single system as AC-33.5 - exactly one system sends any given email type, and duplicate sends are a defect (CLAUDE.md, email pragmatic-default note). Evidence: the acknowledgement enabled and observed sent exactly once; and with it disabled, observed not sent.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "33.7",
+          "text": "The rendered form matches the PRD 20.1 visual direction - large readable labels, generous spacing, minimal fields, one clear submit action, responsive, no generic SaaS styling - built only from `src/styles/tokens.css` tokens with no hard-coded values. Labels are correctly associated with their inputs, errors are announced to assistive technology, and the form is fully operable by keyboard. Evidence: the rendered markup asserted plus the token-only check from AC-31.3 applied to this component.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "not-started",
+      "tester_notes": "",
+      "issue": null
+    },
+    {
+      "id": "US-34",
+      "title": "Homepage template: full-width hero slideshow, curated selections, and the primary inquiry form",
+      "status": "draft",
+      "priority": "high",
+      "dependencies": [
+        "US-31",
+        "US-32",
+        "US-33"
+      ],
+      "backlog_item": 9,
+      "acceptance_criteria": [
+        {
+          "id": "34.1",
+          "text": "The homepage renders the PRD 13.2 order exactly: navigation, full-width hero slideshow placement, optional short introduction, selected galleries or stories, primary inquiry form, footer. Evidence: the rendered structure asserted in order against a running stack.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "34.2",
+          "text": "The hero is slideshow-first and full-width, uses the controlled overlay and vignette presets from `src/styles/tokens.css` (US-23) rather than ad hoc gradients, and produces no layout shift: aspect-ratio space is reserved before load. Evidence: a measured CLS figure on a mobile viewport plus the token names actually used, shown from the source.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "34.3",
+          "text": "The hero slideshow placement resolves a real Backstage gallery over the Flow A boundary, and when that gallery is unavailable the homepage still renders - reusing `src/components/gallery/GalleryUnavailablePlaceholder.tsx` rather than showing a blank hero or throwing. Evidence: both states rendered live in Docker.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "34.4",
+          "text": "'Selected galleries or stories' is a curated, ordered, structured selection made by the photographer - not an automatic 'latest N'. Evidence: the field definition and a live reorder changing the rendered order with no code change.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "34.5",
+          "text": "The homepage is produced by the template system, not hand-coded as a one-off route that will drift. It is either a `Pages` record using a homepage template variant or a documented singleton that reuses the same shell and tokens - state which, and why the other was rejected. Evidence: a style-drift check showing the homepage shell is structurally the same shell as a standard page, in the spirit of AC-31.7.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "34.6",
+          "text": "The homepage is measured against the PRD 19.4 performance targets on a mobile profile, and the numbers are reported as measured. A miss is an acceptable outcome and must be recorded, not hidden or tuned away - US-29 set this precedent when both R2 delivery candidates missed the ADR's own targets, and the R2 delivery path is still an open decision (`po-requests.md` item 15), so image-delivery latency is a known, named, unresolved variable. Evidence: the measured LCP and mobile performance figures, the target each is compared against, the gap where one exists, and an explicit statement of whether the open delivery decision is a contributing factor. Do not choose an R2 delivery path here - that decision is not this story's to make (Reminder 1).",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "not-started",
+      "tester_notes": "",
+      "issue": null
+    },
+    {
+      "id": "US-35",
+      "title": "Details template: minimal copy, a full-width masonry placement, and the inquiry form",
+      "status": "draft",
+      "priority": "medium",
+      "dependencies": [
+        "US-31",
+        "US-33"
+      ],
+      "backlog_item": 11,
+      "acceptance_criteria": [
+        {
+          "id": "35.1",
+          "text": "The Details template renders the PRD 13.4 order exactly: minimal H1, optional one-line introduction, full-width masonry placement, inquiry form, footer. Evidence: the rendered structure asserted in order.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "35.2",
+          "text": "The masonry placement preserves every image's received aspect ratio and the photographer's selected order, never crops or stretches, uses the full available width with system-defined gaps from `tokens.css`, reserves aspect-ratio space before load, and uses approximately one column on mobile, two on tablet and three or four on larger screens. Build on the existing `src/components/gallery/GalleryMasonryLayout.tsx` rather than writing a second masonry implementation. Evidence: a gallery of mixed portrait/landscape/panoramic images rendered at three viewport widths with the rendered aspect ratios compared against the source values. IN SCOPE: the PRD 15.1 behaviours listed above. OUT OF SCOPE and left to backlog item 15 (PRD Phase 5): the full masonry refinement pass and the shared fullscreen-viewer specification (backlog item 17) - state the boundary in the story record rather than drifting into Phase 5.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "35.3",
+          "text": "A Details page is created through the same New Page form as any other page - the template is a selection on a `Pages` record, not a bespoke hard-coded route. Evidence: a second Details page created through the admin form alone, with no code change, rendering correctly.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "35.4",
+          "text": "Copy restraint is structural, not advisory: the Details template offers no long-form body field, so the PRD 13.4 instruction 'Do not over-explain in copy' cannot be violated by content entry. Evidence: the template's field list, plus a test that fails if a rich-text or long-form body field is added to it.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "not-started",
+      "tester_notes": "",
+      "issue": null
+    },
+    {
+      "id": "US-36",
+      "title": "Story template: repeating section heading, short text and gallery placement - a visual editorial record, not a blog",
+      "status": "draft",
+      "priority": "medium",
+      "dependencies": [
+        "US-31",
+        "US-33"
+      ],
+      "backlog_item": 12,
+      "acceptance_criteria": [
+        {
+          "id": "36.1",
+          "text": "Stories are modelled per PRD 13.5: title, subtitle/introduction, then a repeating group of (section heading + short text + gallery placement), then the inquiry form. Decide whether this is a separate `Stories` collection or a `Pages` template variant, and record the option chosen, the option rejected and the reason (DoD item 6). Evidence: the field definitions and one real story rendered.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "36.2",
+          "text": "Repeating sections preserve the author's order, and each section's gallery placement resolves over the Flow A boundary by external identifier only - the same no-cross-database-relation rule as AC-31.5. Evidence: a three-section story rendered in order, plus a reorder changing the output with no code change.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "36.3",
+          "text": "Heading hierarchy is generated correctly and automatically: exactly one H1 (the story title), section headings at H2, no skipped levels, regardless of how many sections exist. Evidence: asserted against the rendered HTML of a one-section and a five-section story.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "36.4",
+          "text": "A story index route lists published stories and excludes drafts. Evidence: both states verified live against a running stack.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "36.5",
+          "text": "No generic blog chrome is built - no categories, no archives, no comment system, no author bios, no tag clouds. The controlled vocabulary term is Story, and the retired blog requirements do not return: the blog sample-content requirement and the no-em-tag content rule are listed under CLAUDE.md's 'Retired From the Old Direction (do not build)'. Evidence: the rendered story page and index shown to contain none of the above, plus the story record naming the retired items it deliberately does not implement.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "not-started",
+      "tester_notes": "",
+      "issue": null
+    },
+    {
+      "id": "US-37",
+      "title": "SEO system: real metadata, structured data, canonical URLs, sitemap and image sitemap, and the page/story SEO assistant",
+      "status": "draft",
+      "priority": "high",
+      "dependencies": [
+        "US-31",
+        "US-34",
+        "US-36"
+      ],
+      "backlog_item": 14,
+      "acceptance_criteria": [
+        {
+          "id": "37.1",
+          "text": "Account-level SEO data comes from the existing `StudioProfile` global (US-24) and nowhere else - no studio field is duplicated into a second SEO settings record, per Pillar 5 (one owner per business function). Verify the PRD 21.1 list against the fields already present in `src/globals/StudioProfile.ts` (business name, owner name, description, established year, address, public phone/email, service areas, social profiles, default social image, default title pattern, default meta description) and add only what is genuinely missing. Evidence: the 21.1 list mapped item-by-item to the existing field or to the new field that closes the gap.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "37.2",
+          "text": "Every public page and story emits a real title element, meta description, canonical URL, Open Graph tags and Twitter card, taken from that page's own fields with `StudioProfile` defaults (including the default title pattern) as fallback. Evidence: assertions made against the RENDERED HTML fetched from a running stack, not against a metadata object in code - PRD 35.2 requires SEO fields to be injected into real HTML.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "37.3",
+          "text": "Structured data is emitted per page type, reusing the existing `src/lib/studioStructuredData.ts` builder (LocalBusiness / ProfessionalService) rather than a second implementation, extended as needed for a page and a story. Evidence: the emitted JSON-LD extracted from the rendered HTML of a page and a story, with its shape validated.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "37.4",
+          "text": "`sitemap.xml` contains every published, indexable page and story and excludes every draft and every noindex record, and image-sitemap references are included for placed gallery imagery. Evidence: the generated sitemap fetched from a running stack, cross-checked against the database contents, with a draft page and a noindex page proven absent.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "37.5",
+          "text": "`robots.txt` is correct and noindex is respected end-to-end. The existing internal noindex demo and specimen routes (`/dev/token-specimen`, `/dev/gallery-placement-demo`, `/dev/gallery-demo`, `/dev/gallery-webhook-proof`, `/dev/benchmark-portfolio-gallery`, `/dev/benchmark-story-gallery`) stay excluded from the sitemap and stay non-indexable. Evidence: the fetched robots.txt, and each dev route proven absent from the sitemap and carrying its noindex directive.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "37.6",
+          "text": "A per-page and per-story SEO assistant exists in the admin per PRD 21.2, offering: search-result preview, SEO title, slug, meta description, canonical URL, H1 preview, photography type, city/region, venue, Open Graph image, index/noindex, schema preview, missing-alt-text audit and internal-link suggestions. There is NO meta-keywords field - PRD 21.2 forbids one - and tags remain internal relationships only. Evidence: the assistant shown against a real page, plus a standing test that fails if a meta-keywords field is added anywhere.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        },
+        {
+          "id": "37.7",
+          "text": "The missing-alt-text audit reports which placed images lack alt text and does NOT generate captions. The self-hosted caption-suggestion model (backlog item 21, PRD 21.3 - Florence-2 as first candidate) stays out of scope until it has been benchmarked for quality, speed, memory and licence, and no external paid LLM is introduced. Evidence: the audit output for a gallery with some images missing alt text, and an explicit statement in the story record that no caption model was adopted.",
+          "checked": false,
+          "dev_status": "not-started",
+          "tester_status": "not-started"
+        }
+      ],
+      "dev_status": "not-started",
+      "dev_notes": "",
+      "tester_status": "not-started",
+      "tester_notes": "",
+      "issue": null
+    }
+  ],
+  "pending_po_routing": [],
+  "pending_po_routing_schema": {
+    "purpose": "Closes the two-sprint routing hole (AC-17.9, then AC-22.2). An implementing AC has write scope over this sprint file but not over scrum-master/po-requests.md. It appends an entry here; the orchestrator drains the entry into po-requests.md at story close and sets drained to true. An AC that owes a routing is not closed until its entry is drained.",
+    "entry_fields": {
+      "id": "short identifier, e.g. F10 or a story-scoped label",
+      "raised_by": "the AC id that authored it, e.g. 33.5",
+      "statement": "one line, the finding itself",
+      "source": "file and line where the full text lives",
+      "proposed_disposition": "accept as-is | schedule fork work | raise upstream | needs human decision",
+      "drained": "false until the orchestrator has written it into po-requests.md"
+    }
+  },
+  "last_updated": "2026-08-09T12:00:00+00:00",
+  "last_updated_by": "product-owner",
+  "available_configuration": "Carried from sprint 4 and unchanged: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_ENDPOINT; the full SMTP_* / SENDER_EMAIL / EMAIL_USE_SSL set; DATABASE_URL and REDIS_URL; the Backstage-to-Frontstage webhook shared secret and receiver URL added by US-26; and STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_PRICEMAINT_ID, STRIPE_PRICEEMAIL_ID and STRIPE_PRICEDEV_ID as a coherent test-mode set. NO sprint-5 story touches Stripe or Invoice Ninja - finance is PRD Phase 6. NO NEW VARIABLE IS EXPECTED THIS SPRINT: US-33 sends through the Backstage email queue using the SMTP set that already exists, and AC-33.5 requires the send to be confirmed in the mail catcher rather than against a production inbox. Still outstanding before any production email: SPF, DKIM and DMARC records for the sending domain (po-requests item 17) - blocks launch, not this sprint. Two human decisions remain open and neither blocks a sprint-5 story: the R2 delivery path (po-requests item 15) is a named contributing variable in US-34 AC-34.6 rather than a blocker, and the reopened contract-signing decision (item 7) blocks PRD Phase 3, which is deliberately excluded from this sprint. The design-token sign-off (item 14) is the one item that would be cheaper answered early - every template built this sprint sits on those tokens, and the repaint cost grows with each one. VPS: shared host root@140.82.43.36, project directory /root/earthandhoney, port set to be finalised at the deploy story (backlog item 39, launch phase).",
+  "po_sprint_notes": "WHY PHASE 4 AND WHY NOW. Sprint 4 completed PRD Phase 2 and started Phase 4, and it left the seam proven: Flow A resolves a Backstage gallery onto a Frontstage page, an HMAC-verified idempotent webhook refreshes it, design tokens are locked, and one StudioProfile owns studio identity. But a survey of the repository at sprint-5 planning shows the Frontstage is still entirely internal: src/collections holds only GalleryPlacements, Media and Users; src/globals holds only StudioProfile; and every route under src/app/(frontend) is a noindex dev or benchmark page. There is no Pages collection, no Forms, no Inquiries, no Navigation, no sitemap, and the site chrome still renders the pre-pivot photobuddy link array (home/about/galleries/blog/contact) with five placeholder social links pointing at a '#' href. PRD section 2 states the Frontstage's purpose is lead generation; today it cannot generate a lead. Backlog items 8-14 are exactly this gap and they are the next contiguous block in the phase plan.\n\nNO *_SPEC.md FEATURE SPECIFICATIONS EXIST. Re-verified at sprint-5 planning by repo-wide search excluding node_modules/ and vendor/: there is no file matching *_SPEC.md anywhere in this repository, and no case-insensitive 'spec' markdown file other than scrum-master/retrospective.md. Remaining scope therefore comes from the post-pivot PRD's phase plan (section 34) and the post-pivot product backlog, exactly as it did for sprints 1-4. Backlog items 8-14 are taken by this sprint; items 15-42 remain.\n\nWHY PHASE 3 IS STILL EXCLUDED. Backlog items 22-26 (Project cockpit and Project Room) remain out of scope for the same reason they were excluded from sprint 4, and the reason has not changed: they rest on PicPeak's native contract-signing capability, whose verification failed on one of seven elements (AC-17.10 - the audit trail ships as a separate sibling PDF, never merged into the signed contract). po-requests.md item 7 is REOPENED and awaiting a human decision, with the PO recommendation on record as option (a), accept the sibling PDF for V1. Building a Project Room on an unresolved premise would inherit a known-false assumption. This is a Reminder 1 decision and no agent may make it alone.\n\nWHY US-30 (TEST LANES) IS IN A FEATURE SPRINT. It is the only non-feature story here and it earns its place on evidence, not tidiness. The sprint-4 retrospective measured npm test at 1,169,738 ms wall under jest --runInBand across ~140 suites, and recorded that AC-28.5 had to be split three ways specifically because two coverage runs plus remediation would not fit in one dev session. The suite cost is now shaping acceptance-criterion design, and every one of PRD Phases 4 through 8 will pay it. It has no dependants in this sprint, so if it stalls nothing else is blocked.\n\nSPRINT-4 CLOSE-OUT COMPLETED BEFORE THIS PLAN WAS WRITTEN. Sprint 4's one open defect is closed: the F1-F9 upstream findings register has been transcribed verbatim from PIVOT_AUDIT.md:6479-6518 into po-requests.md, AC-22.2 and US-22 are re-closed, and all nine story-level dev_status fields in sprint4.json have been advanced from the stale not-started to done. Sprint 4 now closes clean.\n\nTHE THREE PROCESS FAILURES THIS PLAN TRIES TO ACTUALLY FIX, RATHER THAN RESTATE. First, the routing hole: for two sprints running an implementing AC authored a finding it had no write scope to route (AC-17.9, then AC-22.2), and rewriting the DoD did not help because a DoD cannot grant write scope. This file therefore carries a pending_po_routing array that a dev AC can write into and the orchestrator drains at story close (retrospective action item 2). Second, the retrospective has now been missed at close in sprints 1, 3 and 4; a named owner and a written checkpoint have both been tried and both failed, so DoD item 9 makes it an orchestrator pipeline step after every second story close-out (action item 3). Third, PR #73 was merged with both CI jobs red on an infra flake, so DoD item 8 now states the merge rule explicitly (action item 4). None of these are new observations; what is new is that each has a mechanism attached instead of a restatement.\n\nWHAT WOULD MAKE THIS SPRINT FAIL QUIETLY. Two things. (1) A page that looks right but was hand-built: AC-31.7, AC-34.5 and AC-35.3 exist to catch a template that has quietly become a bespoke route, because PRD Phase 4's exit criterion is that new content inherits design quality with no manual layout work, and a hand-tuned homepage passes every other check while failing that one. (2) A second owner appearing for email: US-33 is the first story in the project to send mail from a Frontstage action, and the tempting shortcut - send it straight from Next - would create the exact duplicate-owner defect Pillar 5 forbids and would quietly resurrect Resend's role. AC-33.5 names the owner and requires the send to be confirmed in the catcher, not inferred from a return code.\n\nSCOPE DISCIPLINE. Phase 5 is adjacent and easy to drift into. The masonry work in US-35 AC-35.2 is bounded to the PRD 15.1 behaviours needed to render a Details page; the full masonry refinement (backlog 15), the slideshow specification (16), the shared fullscreen viewer (17), the verbatim style-template copy (18), the darkroom (19), the New Gallery entry choice (20) and the alt-text caption model (21) are all Phase 5 and all stay out. US-37 AC-37.7 draws that line explicitly for alt text: audit what is missing, generate nothing. Also out of scope: anything financial (Phase 6), contracts and the email matrix beyond the single inquiry-notification type US-33 needs (Phase 7), and deployment or hardening (Phase 8).",
+  "deploy_summary": "",
+  "tester_sprint_status": "not-started",
+  "tester_sprint_notes": ""
+}
