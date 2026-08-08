@@ -105,3 +105,53 @@ Body: `{"user":{"id":1,"username":"admin","email":"admin@example.com","mustChang
 Result: **PASS** — a clean checkout reached a running Backstage with the
 administrator able to sign in, end to end, through the real nginx front
 door, using only the defaults documented in `.env.example`.
+
+## Benchmark harness (US-29 AC-29.1.3)
+
+The Lighthouse benchmark harness (`scripts/benchmark/`) runs behind its own
+`benchmark` Docker Compose profile, mirroring the `backstage` profile
+convention above so a bare `docker compose up` never builds Chrome. It
+measures the two representative pages `src/lib/benchmarkPages.ts` names,
+served by `web-benchmark` — a dedicated production build/start container,
+never the dev-mode `web` service, since `next dev` is unminified and
+recompiles on demand and would make the measured numbers both artificially
+bad and non-reproducible.
+
+### Prerequisites
+
+1. The `backstage` profile must already be up, with the AC-29.1.1 demo
+   gallery seeded — `web-benchmark` reaches `backstage-backend` for gallery
+   data over the shared Docker network, using `backstageClient.ts`'s own
+   `BACKSTAGE_BACKEND_URL` default (`http://backstage-backend:3000`):
+   ```
+   docker compose --profile backstage up -d
+   scripts/ac29.1.1-benchmark-render-proof.sh
+   ```
+   (idempotent — re-running it against an already-seeded gallery is a
+   no-op skip, not a re-seed).
+2. Build and start the benchmark target once:
+   ```
+   docker compose --profile benchmark up -d --build web-benchmark
+   ```
+   Wait for it to report healthy the same way as `backstage-backend` in the
+   procedure above (container name `<project>-web-benchmark-1`) — first
+   boot runs `npm run build` before `npm run start` starts serving.
+
+### The single command
+
+```
+docker compose --profile benchmark run --rm lighthouse-benchmark
+```
+
+Builds nothing by itself (the image is built once via the prerequisite
+step, or automatically on first `run` if not yet built) — every invocation
+drives real Lighthouse-over-Chrome passes against the already-running
+`web-benchmark` container and writes one timestamped, machine-readable JSON
+report to `scripts/benchmark/results/`, bind-mounted so the output survives
+the container. Two runs of this exact command against the same
+`web-benchmark` build reproduce; see
+`scripts/benchmark/results/REPRODUCIBILITY.md` for the recorded per-page,
+per-metric spread between two back-to-back invocations, and
+`scripts/benchmark/results/run-*.json` for the raw reports themselves.
+
+To tear down: `docker compose --profile benchmark down`.

@@ -199,6 +199,63 @@ services:
     ports:
       - "${WEBHOOK_RECEIVER_PORT:-7107}:8888"
 
+  # --- Benchmark harness (US-29 AC-29.1.3) ---
+  # Two services behind their own "benchmark" profile (mirrors the
+  # "backstage" profile convention above) so a bare `docker compose up`
+  # never builds Chrome. `lighthouse-benchmark` measures pages served by a
+  # dedicated production build/start container — never the "web" service,
+  # which runs `npm run dev`: a dev-mode server is unminified, recompiles
+  # routes on demand, and would make the Lighthouse performance score and
+  # LCP numbers this harness exists to produce both artificially bad and
+  # non-reproducible run to run. "web-benchmark" still reaches
+  # "backstage-backend" for the seeded AC-29.1.1 gallery over the shared
+  # compose network, using backstageClient.ts's own
+  # BACKSTAGE_BACKEND_URL default — so the "backstage" profile must be up
+  # (and the gallery seeded, see scripts/ac29.1.1-benchmark-render-proof.sh)
+  # before this profile is started. See BACKSTAGE_STARTUP.md's "Benchmark
+  # harness" section for the full command.
+  web-benchmark:
+    profiles: ["benchmark"]
+    build: .
+    env_file:
+      - .env
+    environment:
+      # Same PORT override as "web" — .env's generic-scaffold PORT=8000
+      # would otherwise leak in via env_file.
+      PORT: "3000"
+      NODE_ENV: production
+    # Builds once, then serves that exact build for every harness
+    # invocation against this container — "the same build" AC-29.1.3's
+    # reproducibility evidence requires two back-to-back runs to share.
+    command: ["sh", "-c", "npm run build && npm run start"]
+    ports:
+      - "3102:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 60s
+
+  lighthouse-benchmark:
+    profiles: ["benchmark"]
+    build:
+      context: .
+      dockerfile: scripts/benchmark/Dockerfile
+    environment:
+      # Docker-network hostname, never localhost (CLAUDE.md Docker Rules).
+      BENCHMARK_BASE_URL: http://web-benchmark:3000
+    volumes:
+      # Bind-mounted so each invocation's timestamped JSON report survives
+      # the container instead of being lost when it exits.
+      - ./scripts/benchmark/results:/app/scripts/benchmark/results
+    depends_on:
+      web-benchmark:
+        condition: service_healthy
+
 volumes:
   pgdata:
   backstage_pgdata:
