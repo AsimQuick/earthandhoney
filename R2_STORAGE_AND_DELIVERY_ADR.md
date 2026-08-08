@@ -17,6 +17,9 @@ related-ac: 19.4, 19.5
 updated-by: dev-team
 related-story: US-29
 related-ac: 29.2.1
+updated-by: dev-team
+related-story: US-29
+related-ac: 29.2.3
 ---
 -->
 
@@ -192,6 +195,61 @@ with a `presigned-r2` suffix. Its candidate-1 citation is the same
 unreproducible pair addressed above. This file is exactly the kind of
 premature "already exists" claim AC-29.2.1 exists to catch before another
 session is sent to measure against it.
+
+### Candidate disposition — paths 3, 4 and 5 (AC-29.2.3)
+
+**Scope of this subsection.** Candidates 1 and 2 are measured — the committed numbers live in
+`scripts/benchmark/results/MEASURED_PATHS.md` (AC-29.2.2.3) and AC-29.3 restates them in this ADR.
+This subsection dispositions the remaining three: **a closed set of exactly three, not an open
+survey.** Every one of the five candidates named above under "Candidate paths to be benchmarked"
+carries exactly one disposition below, drawn from a closed vocabulary — `measured` or
+`unmeasured — prerequisite named` — never left unstated and never estimated from another
+candidate's numbers.
+
+| Candidate | Disposition |
+| --- | --- |
+| 1 — Serving through the Backstage | measured — see `MEASURED_PATHS.md` (AC-29.2.2.3) |
+| 2 — Direct time-limited links | measured — see `MEASURED_PATHS.md` (AC-29.2.2.3) |
+| 3 — Public delivery through a CDN/custom domain | unmeasured — prerequisite named below |
+| 4 — An edge authorisation layer (Worker) | unmeasured — prerequisite named below |
+| 5 — A hybrid | unmeasured — prerequisite named below |
+
+#### Candidate 3 — public delivery through a CDN/custom domain
+
+**Disposition: unmeasured.** **Blocking prerequisite:** a Cloudflare custom domain, or a public
+bucket binding ("Public Development URL"), configured in front of the `earthandhoney` R2 bucket
+AC-19.4 identified above (§"1. Which bucket is in use"). AC-19.4's own audit (§"5. Which paths are
+public versus private") found `.env.example`, `docker-compose.yml` and every consumer's source
+grepped clean of any `R2_PUBLIC_URL`/`PUBLIC_URL`/`r2.dev`/`CDN_URL`/`CUSTOM_DOMAIN`-shaped
+variable, and left as an open item that the dashboard-only public-access toggle itself has not been
+confirmed off. Nothing in this project exposes the bucket publicly today, so there is no
+CDN/custom-domain edge to measure a candidate-3 page against. Raised as
+`scrum-master/po-requests.md` item 15.
+
+#### Candidate 4 — an edge authorisation layer (Cloudflare Worker)
+
+**Disposition: unmeasured.** **Blocking prerequisite:** a deployed Cloudflare Worker implementing
+an authorisation rule in front of the `earthandhoney` R2 bucket. No Worker script, `wrangler.toml`,
+or Workers binding exists anywhere in this repository. Without a deployed Worker there is no
+edge-authorisation mechanism to measure. Raised as `scrum-master/po-requests.md` item 15.
+
+#### Candidate 5 — a hybrid
+
+**Disposition: unmeasured.** **Blocking prerequisite:** both candidate 3's and candidate 4's
+prerequisites above, **plus** a decided rule for which galleries take which path (e.g.
+Backstage-mediated serving for private/protected client galleries, CDN or edge delivery for
+already-public portfolio/blog galleries). That routing rule is itself part of **AC-29.4's**
+decision — the decision this ADR exists to make *from* the measurements, not before them — so it
+cannot be decided ahead of AC-29.4 and is not a fourth thing to ask of the human now. Only the
+infrastructure half of candidate 5's prerequisite (identical to candidates 3 and 4's) is a blocking
+item, and it is consolidated into the same `scrum-master/po-requests.md` item 15 rather than
+repeated a third time.
+
+No preference is expressed among candidates 3, 4 and 5 by this disposition, consistent with this
+document's own standing rule above: the candidates are listed to be measured, not ranked. Recording
+three candidates as unmeasured with a named prerequisite is the expected outcome given this
+sprint's own `available_configuration` (paths 3 and 4 need infrastructure that does not exist), and
+is a pass on AC-29.2.3, not a failure.
 
 ### Measurements that will decide it
 
