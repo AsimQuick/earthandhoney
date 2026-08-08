@@ -55,7 +55,6 @@ describe('AC-29.2.2.1.3: the proof script fetches real image bytes, no Lighthous
 
   it('is executable', () => {
     const mode = fs.statSync(path.join(root, SCRIPT_FILE)).mode
-    // eslint-disable-next-line no-bitwise -- checking the owner-execute bit is the point of this assertion
     expect(mode & 0o100).not.toBe(0)
   })
 
