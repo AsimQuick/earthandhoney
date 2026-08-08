@@ -26,6 +26,9 @@ related-ac: 29.3
 updated-by: dev-team
 related-story: US-29
 related-ac: 29.4
+updated-by: dev-team
+related-story: US-29
+related-ac: 29.5
 ---
 -->
 
@@ -706,3 +709,120 @@ the candidate-3/4 infrastructure prerequisites already itemised in
 decision open on the evidence as it stands.
 
 **Product Owner sign-off:** _______________________________ (name, date)
+
+## PRD §19.3 preservation check (AC-29.5)
+
+**There is no "the chosen path" to certify.** AC-29.4 immediately above
+rejected both measured candidates and left the decision open. This section
+exists anyway, because either rejected candidate could still be revived by
+the pending Product Owner sign-off (§"Product Owner sign-off" above offers
+that as option (b)) — so whichever of the two the decision eventually
+reaches for needs its PRD §19.3 preservation (access control, logging,
+watermarks, revocation) on record now, not discovered after the fact. The
+proof is `src/__tests__/us29-ac29.5-security-invariants-preserved.test.ts`:
+a live round trip against the running Backstage stack for the access-control
+and logging claims, and independently re-verified static citations against
+the pinned fork's current source for the watermark and revocation claims the
+live run cannot practically exercise (candidate 2's presigned redirect needs
+a pre-generated ZIP, which needs uploaded photos and a completed background
+job — heavier setup than this AC's proof requires when the code path is
+unconditional and already readable directly).
+
+### Access control — both candidates share one gate, live-proven
+
+Candidate 1's only listing route (`GET /:slug/photos`,
+`vendor/picpeak/backend/src/routes/gallery.js:218`) and candidate 2's only
+real call site (`GET /:slug/download-all`, `gallery.js:886`) are both gated
+by the same `verifyGalleryAccess` middleware
+(`vendor/picpeak/backend/src/middleware/gallery.js:20-172`) — there is no
+separate, weaker gate for either. Live against the running stack, self-seeding
+its own galleries (never reusing another AC's fixtures):
+
+- An unauthenticated request to a password-protected, published gallery is
+  refused on **both** routes: `401 {"error":"No token provided"}`
+  (`middleware/gallery.js:62`).
+- An unauthenticated request to a still-**draft** (unreleased) gallery is
+  refused on **both** routes: `404 {"error":"Gallery not found or expired"}`
+  — the `is_draft` filter on the lookup query
+  (`middleware/gallery.js:40`/`93`/`113`) runs before the password check ever
+  does, so an unreleased gallery 404s whether or not it also requires a
+  password.
+- A wrong password against the self-seeded protected gallery is refused
+  (`401`, `POST /api/auth/gallery/verify`).
+- The correct password grants a token, and the same previously-refused
+  `/:slug/photos` route then returns `200` — and the same auth boundary that
+  refused unauthenticated `/:slug/download-all` releases it once the token is
+  presented (no longer `401`/"No token provided"), proving the boundary
+  really is the token and not an incidental block specific to one route.
+
+Neither measured candidate leaks a private gallery's photo to a request that
+never authenticates at all — the "faster path that leaks a private gallery"
+failure condition this AC names does not occur for either.
+
+### Logging — candidate 1 logs every delivery; candidate 2 logs the grant, not the byte fetch
+
+Candidate 1 logs a delivery on every authorized call: `'view'` on every
+`/:slug/photos` listing, **awaited** before the response
+(`gallery.js:420-425`) — proven live above via the running stack's
+`total_views` counter (`GET /api/admin/events/:id`) incrementing across the
+authorized call; and `'download'` on every confirmed single-photo byte send,
+recorded exactly once and only after the bytes are actually confirmed sent
+(`gallery.js:666-691`).
+
+Candidate 2 logs the presigned-URL **grant** — one `access_logs` row,
+`action: 'download_all_presigned'` — immediately before the redirect
+(`gallery.js:909-914`), but that insert is fire-and-forget (`.catch(() =>
+{})`, never `await`ed), unlike candidate 1's awaited `'view'` insert. More
+importantly: once `res.redirect(302, url)` fires, the backend is out of the
+loop — nothing logs the actual byte fetch against R2 itself. The request that
+*generates* the presigned URL is logged; the request that *uses* it is not.
+
+### Watermarks — candidate 1 always applies them; candidate 2 never does on its fast path
+
+Every candidate-1 route that serves photo bytes calls `watermarkService`
+(confirmed for `/:slug/photo/:photoId`, `/:slug/thumbnail/:photoId`,
+`/:slug/hero/:photoId`, `/:slug/preview/:photoId`, `/:slug/download/:photoId`,
+and the streaming/ZIP branches of `/:slug/download-all`). Candidate 2's
+presigned branch (`gallery.js:898-923`) contains **zero** references to
+`watermarkService` and is explicitly gated on `!watermarkOnEvent`
+(`gallery.js:904-906`) — bytes leaving R2 through this path are never
+watermarked by design, exactly the tradeoff the code's own comment records.
+The streaming fallback immediately below it (`gallery.js:940-981`), by
+contrast, does call `watermarkService.getWatermarkSettings()`.
+
+### Revocation — candidate 1 re-checks on every request; candidate 2 has none once issued
+
+`verifyGalleryAccess` re-queries `is_active`/`is_archived`/`is_draft` fresh
+on every request (`middleware/gallery.js:84-93`, `105-113`) — an admin
+revoking a gallery takes effect on the very next request even for a holder
+of an unexpired 24h JWT. Customer-portal-minted tokens get a further live
+check against `event_customer_assignments`
+(`middleware/gallery.js:132-149`) — removing that row 403s
+(`CUSTOMER_ASSIGNMENT_REVOKED`) the very next request.
+
+Candidate 2 has no equivalent. Grepping the entire backend `src/` tree finds
+**exactly one** call site for `.signedUrl(` outside its two method
+definitions — `gallery.js:908`, a fixed 300-second (5-minute) TTL. Once
+issued, the URL is a bare S3-compatible capability held by Cloudflare R2;
+there is no callback to the Backstage database and no way to invalidate that
+specific signature. If a gallery is revoked, archived, or expired 10 seconds
+after a presigned URL was handed out, that URL remains fully fetchable by
+anyone holding it until the TTL naturally lapses. Exposure is bounded (five
+minutes, and only reachable at all behind the same initial
+`verifyGalleryAccess` gate proven above) but real, and is a materially weaker
+guarantee than candidate 1's per-request re-authorization.
+
+### What this means for the still-open decision
+
+Neither candidate fails AC-29.5 outright — the specific failure condition
+this AC names ("a faster path that leaks a private gallery") does not occur
+for either, since both sit behind the same live-revocable, per-request
+`verifyGalleryAccess` gate. But the two candidates are **not** equivalent on
+PRD §19.3 once past that gate: candidate 1 fully preserves access control,
+logging, watermarks and revocation; candidate 2 preserves the initial gate
+and logs the URL grant, but drops watermarking and per-request revocation
+entirely on the actual byte fetch, bounded only by a five-minute TTL. This
+asymmetry is additional evidence for whoever revisits the still-open AC-29.4
+decision — it was not a factor in AC-29.4's rejection (which was on
+performance grounds only) and should be weighed alongside it if candidate 2
+is ever reconsidered.
