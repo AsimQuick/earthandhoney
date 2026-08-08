@@ -183,6 +183,7 @@ describe('AC-29.3: pass/fail is stated per target per path per page, re-derived 
             .split('\n')
             .find((line) => line.includes('full-resolution originals unnecessarily'))
           expect(oversizedLine).toBeDefined()
+          expect(oversizedLine).toMatch(new RegExp(`\\|\\s*${expectVerdict}\\s*—`))
         })
       }
     })
