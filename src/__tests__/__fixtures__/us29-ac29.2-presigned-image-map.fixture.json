@@ -1,8 +1,0 @@
-{
-  "22": {
-    "largeUrl": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_fixture_0001.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=FIXTURE-NOT-A-REAL-KEY%2F20260808%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260808T152142Z&X-Amz-Expires=3600&X-Amz-Signature=fixturesignaturenotarealhmacvalue0000000000000000000000000000&X-Amz-SignedHeaders=host&x-id=GetObject"
-  },
-  "23": {
-    "largeUrl": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_fixture_0002.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=FIXTURE-NOT-A-REAL-KEY%2F20260808%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260808T152142Z&X-Amz-Expires=3600&X-Amz-Signature=fixturesignaturenotarealhmacvalue1111111111111111111111111111&X-Amz-SignedHeaders=host&x-id=GetObject"
-  }
-}
