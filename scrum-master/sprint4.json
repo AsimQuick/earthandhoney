@@ -34,7 +34,7 @@
     "Any direction change or finding is applied to the sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)",
     "Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first (retrospective action item 3)"
   ],
-  "last_updated": "2026-08-08T13:35:19+00:00",
+  "last_updated": "2026-08-08T14:26:44+00:00",
   "stories": [
     {
       "id": "US-21",
@@ -552,7 +552,7 @@
     {
       "id": "US-29",
       "title": "Benchmark the R2 delivery paths and close the deferred delivery decision with evidence",
-      "status": "draft",
+      "status": "in-progress",
       "priority": "high",
       "dependencies": [
         "US-25"
@@ -562,7 +562,7 @@
           "id": "29.1.1",
           "text": "The two representative pages `R2_STORAGE_AND_DELIVERY_ADR.md`'s \"Measurements that will decide it\" section names \u2014 \"a portfolio gallery page and a blog gallery page\" \u2014 exist as internal `noindex` routes and are proven to render real Backstage gallery imagery, because a benchmark page that silently falls back to `GalleryUnavailablePlaceholder` measures nothing. Drafted-but-uncommitted work from the session that hit the turn cap on 2026-08-08 (`logs/20260808_170055_dev-team.json`, `terminal_reason: max_turns`) is already on disk and is the starting point, not a blank page: `src/lib/benchmarkPages.ts` (the two path constants, kept as one source of truth the way `galleryRevalidation.ts`'s placement constants are), `src/app/(frontend)/dev/benchmark-portfolio-gallery/page.tsx` (an all-at-once `GalleryMasonryLayout`) and `src/app/(frontend)/dev/benchmark-story-gallery/page.tsx` (narrative copy wrapped around a `GallerySlideshowLayout`), both resolving through `resolveGalleryPlacementImages(PLACEMENT_DEMO_GALLERY_SLUG)` on the US-25 Flow A path. Review, correct and commit them. The closing criterion is the render proof, not the files' existence: with the Backstage stack up and the US-25 placement gallery seeded, an actual HTTP fetch of each of the two routes returns HTML carrying more than one gallery `<img>` and no placeholder output. The harness output already on disk (`scripts/benchmark/results/run-2026-08-08T13-2*.json`) recorded `imageRequestCount: 1` on both pages \u2014 the site logo alone, with an identical LCP on two structurally different pages \u2014 and is the exact false-green this criterion exists to prevent. Evidence: the fetched HTML of both routes and the seeding command used are saved under `scripts/benchmark/results/`, plus a Jest suite asserting each page renders the resolved images and never substitutes the placeholder on the `ok` path. No Docker image is built and no Lighthouse run is performed in this criterion.",
           "checked": false,
-          "dev_status": "not-started",
+          "dev_status": "implemented",
           "tester_status": "not-started"
         },
         {
@@ -616,7 +616,7 @@
         }
       ],
       "dev_status": "not-started",
-      "dev_notes": "",
+      "dev_notes": "AC-29.1.1 implemented (local checks green): All checks green. AC-29.1.1 is complete and committed.\n\n## What was done\n\nThe previous session's drafted work was on disk but unproven and partly wrong. I reviewed, corrected, ran the live proof, and committed it as `6df4887` on `feature/US-29`.\n\n**Two real defects found and fixed:**\n\n1. **The proof script's pass condition was itself a false-green.** It counted *every* `<img>` and required `> 1`. The shared site header carries a logo `<img>`, so a page rendering nothing but `GalleryUnavailablePlaceholder` plus one stray image would have passed \u2014 the same blind spot that produced `imageRequestCount: 1`. It now counts only `<img>` tags whose `src` is served by the Backstage gallery route for the seeded slug. Verified empirically: on synthetic logo-only-plus-placeholder HTML the old check reports 1, the new check reports 0.\n2. **The story-page test was failing.** It asserted `getAllByRole('img')` equals the photo count, but `GallerySlideshowLayout`'s preload sibling is `aria-hidden=\"true\"` and so is invisible to role queries \u2014 it under-counted by exactly one. Now asserts on DOM `<img>` elements, and matches each photo against either variant URL since the loader picks a different one p \u2026",
       "tester_status": "approved",
       "tester_notes": "Requirements review pass. All 6 ACs testable: a reproducible, machine-readable, dual-run benchmark harness with four named metrics on two named page types (29.1), an explicit measured-or-recorded-unmeasured-with-named-prerequisite rule covering every candidate with no silent drops (29.2), a concrete write-target and reproducibility requirement for the raw data (29.3), a decision record with a named PO sign-off requirement (29.4), a concrete unauthorized-request-refused proof (29.5), and an explicit honest-non-decision path (29.6). No vague wording or missing test criteria found. Note for dev/PO awareness, not a requirements defect: AC-29.4's PO sign-off is inherently a scope/business decision the AC correctly routes to po-requests.md rather than asking dev to decide, consistent with Reminder 1 \u2014 this AC is written exactly as it should be to keep that judgment call out of the Dev Team's hands. No JSON edits required.",
       "issue": 72
