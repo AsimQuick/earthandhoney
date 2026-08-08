@@ -1,0 +1,120 @@
+{
+  "_comment": "AC-29.1.2 — hand-authored minimal LHR subset. Every audit id, field name and configSettings.throttling value here is cited to the pinned lighthouse/@paulirish/trace_engine package source in src/lib/benchmark/types.ts's file header; this fixture is not a real Chrome capture.",
+  "categories": {
+    "performance": {
+      "score": 0.82
+    }
+  },
+  "audits": {
+    "largest-contentful-paint": {
+      "numericValue": 2600
+    },
+    "cumulative-layout-shift": {
+      "numericValue": 0.1
+    },
+    "layout-shifts": {
+      "details": {
+        "items": [
+          {
+            "node": {
+              "type": "node",
+              "nodeLabel": "img.gallery-hero",
+              "snippet": "<img src=\"/galleries/portfolio/hero-full.jpg\" class=\"gallery-hero\">",
+              "selector": "div.gallery-hero-frame > img"
+            },
+            "score": 0.08
+          },
+          {
+            "node": {
+              "type": "node",
+              "nodeLabel": "div.promo-banner",
+              "snippet": "<div class=\"promo-banner\">Book your session</div>",
+              "selector": "body > div.promo-banner"
+            },
+            "score": 0.02
+          }
+        ]
+      }
+    },
+    "network-requests": {
+      "details": {
+        "items": [
+          {
+            "url": "https://cdn.example.com/galleries/portfolio/hero-full.jpg",
+            "resourceType": "Image",
+            "transferSize": 3200000,
+            "resourceSize": 3550000,
+            "mimeType": "image/jpeg"
+          },
+          {
+            "url": "https://cdn.example.com/galleries/portfolio/thumb-1.jpg",
+            "resourceType": "Image",
+            "transferSize": 45000,
+            "resourceSize": 47000,
+            "mimeType": "image/jpeg"
+          },
+          {
+            "url": "https://cdn.example.com/galleries/portfolio/logo.svg",
+            "resourceType": "Image",
+            "transferSize": 2100,
+            "resourceSize": 2100,
+            "mimeType": "image/svg+xml"
+          },
+          {
+            "url": "https://cdn.example.com/_next/static/chunks/main.js",
+            "resourceType": "Script",
+            "transferSize": 88000,
+            "resourceSize": 240000,
+            "mimeType": "application/javascript"
+          }
+        ]
+      }
+    },
+    "image-size-responsive": {
+      "details": {
+        "items": [
+          {
+            "url": "https://cdn.example.com/galleries/portfolio/hero-full.jpg",
+            "node": {
+              "type": "node",
+              "nodeLabel": "img.gallery-hero",
+              "snippet": "<img src=\"/galleries/portfolio/hero-full.jpg\" class=\"gallery-hero\">",
+              "selector": "div.gallery-hero-frame > img"
+            },
+            "displayedSize": "1200 x 900",
+            "actualSize": "4000 x 3000",
+            "actualPixels": 12000000,
+            "expectedSize": "1200 x 900",
+            "expectedPixels": 1080000
+          },
+          {
+            "url": "https://cdn.example.com/galleries/portfolio/thumb-1.jpg",
+            "node": {
+              "type": "node",
+              "nodeLabel": "img.gallery-thumb",
+              "snippet": "<img src=\"/galleries/portfolio/thumb-1.jpg\" class=\"gallery-thumb\">",
+              "selector": "div.gallery-grid > img:nth-child(1)"
+            },
+            "displayedSize": "400 x 300",
+            "actualSize": "400 x 300",
+            "actualPixels": 120000,
+            "expectedSize": "400 x 300",
+            "expectedPixels": 120000
+          }
+        ]
+      }
+    }
+  },
+  "configSettings": {
+    "formFactor": "mobile",
+    "throttlingMethod": "simulate",
+    "throttling": {
+      "rttMs": 150,
+      "throughputKbps": 1638.4,
+      "requestLatencyMs": 562.5,
+      "downloadThroughputKbps": 1474.56,
+      "uploadThroughputKbps": 675,
+      "cpuSlowdownMultiplier": 4
+    }
+  }
+}

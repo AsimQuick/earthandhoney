@@ -1,0 +1,12 @@
+{
+  "story": "US-29",
+  "acceptanceCriterion": "29.1.1",
+  "capturedAt": "2026-08-08T13:59:38Z",
+  "seedingCommand": "scripts/ac29.1.1-benchmark-render-proof.sh",
+  "gallerySlug": "us-25-ac-25.5-placement-demo",
+  "backstageEventId": 21,
+  "seededPhotoCount": 2,
+  "backstageUrl": "http://localhost:3101",
+  "frontstageUrl": "http://localhost:3000",
+  "routes": [{"path":"/dev/benchmark-portfolio-gallery","savedHtml":"benchmark-portfolio-gallery.html","httpStatus":200,"totalImageTags":3,"galleryImageCount":2,"placeholderOccurrences":0},{"path":"/dev/benchmark-story-gallery","savedHtml":"benchmark-story-gallery.html","httpStatus":200,"totalImageTags":3,"galleryImageCount":2,"placeholderOccurrences":0}]
+}

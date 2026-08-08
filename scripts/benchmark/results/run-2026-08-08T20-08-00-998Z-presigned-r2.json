@@ -1,0 +1,344 @@
+{
+  "generatedAt": "2026-08-08T20:08:00.998Z",
+  "baseUrl": "http://web-benchmark:3000",
+  "deliveryPath": "presigned-r2",
+  "runsPerPage": 3,
+  "pages": [
+    {
+      "id": "portfolio-gallery",
+      "path": "/dev/benchmark-portfolio-gallery",
+      "url": "http://web-benchmark:3000/dev/benchmark-portfolio-gallery",
+      "harness": {
+        "runsPerPage": 3,
+        "rawRuns": [
+          {
+            "mobilePerformanceScore": 0.85,
+            "cls": {
+              "total": 0,
+              "imageAttributable": 0,
+              "imageAttributableShare": 0
+            },
+            "lcpMs": 3799.4257500000003,
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            },
+            "formFactor": "mobile",
+            "throttlingMethod": "simulate",
+            "networkPayload": {
+              "images": [
+                {
+                  "url": "http://web-benchmark:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+                  "transferBytes": 1242,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_bdb0136c_25_ac_25_5_placement_demo_individual_0002.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=REDACTED&X-Amz-Date=20260808T200241Z&X-Amz-Expires=3600&X-Amz-Signature=REDACTED&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                  "transferBytes": 7424,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_a1a46c79_25_ac_25_5_placement_demo_individual_0001.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=REDACTED&X-Amz-Date=20260808T200241Z&X-Amz-Expires=3600&X-Amz-Signature=REDACTED&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                  "transferBytes": 7424,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                }
+              ],
+              "oversizedCount": 0
+            }
+          },
+          {
+            "mobilePerformanceScore": 0.87,
+            "cls": {
+              "total": 0,
+              "imageAttributable": 0,
+              "imageAttributableShare": 0
+            },
+            "lcpMs": 3846.5950000000003,
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            },
+            "formFactor": "mobile",
+            "throttlingMethod": "simulate",
+            "networkPayload": {
+              "images": [
+                {
+                  "url": "http://web-benchmark:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+                  "transferBytes": 1242,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_bdb0136c_25_ac_25_5_placement_demo_individual_0002.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=REDACTED&X-Amz-Date=20260808T200241Z&X-Amz-Expires=3600&X-Amz-Signature=REDACTED&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                  "transferBytes": 7424,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_a1a46c79_25_ac_25_5_placement_demo_individual_0001.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=REDACTED&X-Amz-Date=20260808T200241Z&X-Amz-Expires=3600&X-Amz-Signature=REDACTED&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                  "transferBytes": 7424,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                }
+              ],
+              "oversizedCount": 0
+            }
+          },
+          {
+            "mobilePerformanceScore": 0.87,
+            "cls": {
+              "total": 0,
+              "imageAttributable": 0,
+              "imageAttributableShare": 0
+            },
+            "lcpMs": 3847.072,
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            },
+            "formFactor": "mobile",
+            "throttlingMethod": "simulate",
+            "networkPayload": {
+              "images": [
+                {
+                  "url": "http://web-benchmark:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+                  "transferBytes": 1242,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_bdb0136c_25_ac_25_5_placement_demo_individual_0002.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=REDACTED&X-Amz-Date=20260808T200241Z&X-Amz-Expires=3600&X-Amz-Signature=REDACTED&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                  "transferBytes": 7424,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_a1a46c79_25_ac_25_5_placement_demo_individual_0001.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=REDACTED&X-Amz-Date=20260808T200241Z&X-Amz-Expires=3600&X-Amz-Signature=REDACTED&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                  "transferBytes": 7424,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                }
+              ],
+              "oversizedCount": 0
+            }
+          }
+        ],
+        "aggregate": {
+          "runCount": 3,
+          "mobilePerformanceScore": {
+            "median": 0.87,
+            "min": 0.85,
+            "max": 0.87
+          },
+          "clsTotal": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "clsImageAttributable": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "lcpMs": {
+            "median": 3846.5950000000003,
+            "min": 3799.4257500000003,
+            "max": 3847.072
+          }
+        }
+      }
+    },
+    {
+      "id": "story-gallery",
+      "path": "/dev/benchmark-story-gallery",
+      "url": "http://web-benchmark:3000/dev/benchmark-story-gallery",
+      "harness": {
+        "runsPerPage": 3,
+        "rawRuns": [
+          {
+            "mobilePerformanceScore": 0.96,
+            "cls": {
+              "total": 0,
+              "imageAttributable": 0,
+              "imageAttributableShare": 0
+            },
+            "lcpMs": 2607.201,
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            },
+            "formFactor": "mobile",
+            "throttlingMethod": "simulate",
+            "networkPayload": {
+              "images": [
+                {
+                  "url": "http://web-benchmark:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+                  "transferBytes": 1242,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_bdb0136c_25_ac_25_5_placement_demo_individual_0002.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=REDACTED&X-Amz-Date=20260808T200241Z&X-Amz-Expires=3600&X-Amz-Signature=REDACTED&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                  "transferBytes": 7424,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_a1a46c79_25_ac_25_5_placement_demo_individual_0001.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=REDACTED&X-Amz-Date=20260808T200241Z&X-Amz-Expires=3600&X-Amz-Signature=REDACTED&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                  "transferBytes": 7424,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                }
+              ],
+              "oversizedCount": 0
+            }
+          },
+          {
+            "mobilePerformanceScore": 0.97,
+            "cls": {
+              "total": 0,
+              "imageAttributable": 0,
+              "imageAttributableShare": 0
+            },
+            "lcpMs": 2542.562,
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            },
+            "formFactor": "mobile",
+            "throttlingMethod": "simulate",
+            "networkPayload": {
+              "images": [
+                {
+                  "url": "http://web-benchmark:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+                  "transferBytes": 1242,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_bdb0136c_25_ac_25_5_placement_demo_individual_0002.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=REDACTED&X-Amz-Date=20260808T200241Z&X-Amz-Expires=3600&X-Amz-Signature=REDACTED&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                  "transferBytes": 7424,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_a1a46c79_25_ac_25_5_placement_demo_individual_0001.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=REDACTED&X-Amz-Date=20260808T200241Z&X-Amz-Expires=3600&X-Amz-Signature=REDACTED&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                  "transferBytes": 7424,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                }
+              ],
+              "oversizedCount": 0
+            }
+          },
+          {
+            "mobilePerformanceScore": 0.97,
+            "cls": {
+              "total": 0,
+              "imageAttributable": 0,
+              "imageAttributableShare": 0
+            },
+            "lcpMs": 2494.678,
+            "throttling": {
+              "rttMs": 150,
+              "throughputKbps": 1638.4,
+              "requestLatencyMs": 562.5,
+              "downloadThroughputKbps": 1474.5600000000002,
+              "uploadThroughputKbps": 675,
+              "cpuSlowdownMultiplier": 4
+            },
+            "formFactor": "mobile",
+            "throttlingMethod": "simulate",
+            "networkPayload": {
+              "images": [
+                {
+                  "url": "http://web-benchmark:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+                  "transferBytes": 1242,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_bdb0136c_25_ac_25_5_placement_demo_individual_0002.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=REDACTED&X-Amz-Date=20260808T200241Z&X-Amz-Expires=3600&X-Amz-Signature=REDACTED&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                  "transferBytes": 7424,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                },
+                {
+                  "url": "https://d86dc0ad4b73b2f4227b56512192850d.r2.cloudflarestorage.com/earthandhoney/backstage/heroes/hero_a1a46c79_25_ac_25_5_placement_demo_individual_0001.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=REDACTED&X-Amz-Date=20260808T200241Z&X-Amz-Expires=3600&X-Amz-Signature=REDACTED&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+                  "transferBytes": 7424,
+                  "requestedPixels": null,
+                  "expectedPixels": null,
+                  "oversized": false
+                }
+              ],
+              "oversizedCount": 0
+            }
+          }
+        ],
+        "aggregate": {
+          "runCount": 3,
+          "mobilePerformanceScore": {
+            "median": 0.97,
+            "min": 0.96,
+            "max": 0.97
+          },
+          "clsTotal": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "clsImageAttributable": {
+            "median": 0,
+            "min": 0,
+            "max": 0
+          },
+          "lcpMs": {
+            "median": 2542.562,
+            "min": 2494.678,
+            "max": 2607.201
+          }
+        }
+      }
+    }
+  ]
+}

@@ -105,3 +105,135 @@ Body: `{"user":{"id":1,"username":"admin","email":"admin@example.com","mustChang
 Result: **PASS** — a clean checkout reached a running Backstage with the
 administrator able to sign in, end to end, through the real nginx front
 door, using only the defaults documented in `.env.example`.
+
+## Benchmark harness (US-29 AC-29.1.3)
+
+The Lighthouse benchmark harness (`scripts/benchmark/`) runs behind its own
+`benchmark` Docker Compose profile, mirroring the `backstage` profile
+convention above so a bare `docker compose up` never builds Chrome. It
+measures the two representative pages `src/lib/benchmarkPages.ts` names,
+served by `web-benchmark` — a dedicated production build/start container,
+never the dev-mode `web` service, since `next dev` is unminified and
+recompiles on demand and would make the measured numbers both artificially
+bad and non-reproducible.
+
+### Prerequisites
+
+1. The `backstage` profile must already be up, with the AC-29.1.1 demo
+   gallery seeded — `web-benchmark` reaches `backstage-backend` for gallery
+   data over the shared Docker network, using `backstageClient.ts`'s own
+   `BACKSTAGE_BACKEND_URL` default (`http://backstage-backend:3000`):
+   ```
+   docker compose --profile backstage up -d
+   scripts/ac29.1.1-benchmark-render-proof.sh
+   ```
+   (idempotent — re-running it against an already-seeded gallery is a
+   no-op skip, not a re-seed).
+2. Build and start the benchmark target once:
+   ```
+   docker compose --profile benchmark up -d --build web-benchmark
+   ```
+   Wait for it to report healthy the same way as `backstage-backend` in the
+   procedure above (container name `<project>-web-benchmark-1`) — first
+   boot runs `npm run build` before `npm run start` starts serving.
+
+### The single command
+
+```
+docker compose --profile benchmark run --rm lighthouse-benchmark
+```
+
+Builds nothing by itself (the image is built once via the prerequisite
+step, or automatically on first `run` if not yet built) — every invocation
+drives real Lighthouse-over-Chrome passes against the already-running
+`web-benchmark` container and writes one timestamped, machine-readable JSON
+report to `scripts/benchmark/results/`, bind-mounted so the output survives
+the container. Two runs of this exact command against the same
+`web-benchmark` build reproduce; see
+`scripts/benchmark/results/REPRODUCIBILITY.md` for the recorded per-page,
+per-metric spread between two back-to-back invocations, and
+`scripts/benchmark/results/run-*.json` for the raw reports themselves.
+
+By default this measures candidate path 1 (`backstage-proxy`) —
+`BENCHMARK_DELIVERY_PATH`'s documented default in `.env.example`. See below
+for measuring candidate path 2 instead.
+
+To tear down: `docker compose --profile benchmark down`.
+
+### Choosing a delivery path (US-29 AC-29.2.2.2)
+
+`BENCHMARK_DELIVERY_PATH` selects which candidate delivery path the two
+benchmark pages render, and must be set identically for `web-benchmark`
+(which renders the pages) and `lighthouse-benchmark` (which labels the
+report and refuses to write one that contradicts what it actually measured
+— `src/lib/benchmark/observedDeliveryPath.ts`). Rebuild `web-benchmark` after
+changing it — the delivery path is baked into the production build the
+container serves, so a stale build silently keeps measuring the old path.
+
+**Candidate 1 — Backstage proxy (default), one command per profile-up:**
+
+```
+BENCHMARK_DELIVERY_PATH=backstage-proxy docker compose --profile benchmark up -d --build --force-recreate web-benchmark
+BENCHMARK_DELIVERY_PATH=backstage-proxy docker compose --profile benchmark run --rm lighthouse-benchmark
+```
+
+**Candidate 2 — presigned R2 links**, one extra prerequisite: generate the
+presigned URL map first (requires the `backstage` profile up and the
+AC-29.1.1 gallery seeded, per the Prerequisites section above) —
+`scripts/benchmark/presign-r2-urls.sh` calls the pinned fork's own
+`S3StorageBackend.signedUrl` inside the `backstage-backend` container, so no
+AWS SDK dependency is added here. The map it writes,
+`scripts/benchmark/presign-data/presigned-image-map.json`, is gitignored
+(live, short-TTL signed URLs have no evidentiary value once their TTL
+expires) — regenerate it in each new environment:
+
+```
+scripts/benchmark/presign-r2-urls.sh
+BENCHMARK_DELIVERY_PATH=presigned-r2 docker compose --profile benchmark up -d --build --force-recreate web-benchmark
+BENCHMARK_DELIVERY_PATH=presigned-r2 docker compose --profile benchmark run --rm lighthouse-benchmark
+```
+
+Committed `run-*.json` reports redact the `X-Amz-Credential` and
+`X-Amz-Signature` query parameters on every image URL
+(`src/lib/benchmark/redactSignedUrls.ts`) — everything else about the
+presigned URL (the R2 host, the object key, `X-Amz-Expires`) is left intact
+as evidence the request went straight to R2.
+
+**Proving the switch actually switched**, without Lighthouse and without
+writing a report — run this after the `up -d` line of either path above, with
+the same `BENCHMARK_DELIVERY_PATH`:
+
+```
+BENCHMARK_DELIVERY_PATH=<path> scripts/ac29.2.2.2-delivery-path-proof.sh
+```
+
+It fetches both benchmark routes, extracts every gallery image URL the
+markup can request (each `<img src>` **and** every `srcSet` candidate — a
+mixed `srcSet` is not a measurement of either candidate), checks each URL's
+origin against the declared path, and fetches each one to record its status,
+content type and byte length. The recorded transcripts for both paths are
+`scripts/benchmark/results/ac29.2.2.2-delivery-path-proof/backstage-proxy-proof.json`
+and `presigned-r2-proof.json`, with the fetched HTML saved beside them and
+the same two SigV4 parameters redacted.
+
+### Image-origin live proof (US-29 AC-29.2.2.1.3)
+
+A second, narrower proof against the same `web-benchmark` service: no
+Lighthouse, no report metric — just real image bytes landing from the page
+origin, per gallery `<img>` on both benchmark pages. After the two
+prerequisite steps above (`backstage` profile up with the gallery seeded,
+`web-benchmark` built and healthy):
+
+```
+docker compose --profile benchmark up -d --build --force-recreate web-benchmark
+scripts/ac29.2.2.1-benchmark-image-origin-proof.sh
+```
+
+The rebuild step guarantees the fetch runs against the currently committed
+`next.config.ts` rewrite (AC-29.2.2.1.2), not a stale container from an
+earlier session. The script fetches both benchmark routes' HTML, extracts
+every Backstage gallery `<img src>` (the shared site header's logo is
+excluded), fetches each one individually, and fails unless every one comes
+back `200`, `image/*` and well over the 83-byte 404 body the pre-fix runs
+measured. It writes the fetched HTML plus a per-image transcript to
+`scripts/benchmark/results/ac29.2.2.1-image-origin-proof/`.

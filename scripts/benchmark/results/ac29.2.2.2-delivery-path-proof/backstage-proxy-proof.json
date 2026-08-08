@@ -1,0 +1,9 @@
+{
+  "story": "US-29",
+  "acceptanceCriterion": "29.2.2.2",
+  "deliveryPath": "backstage-proxy",
+  "capturedAt": "2026-08-08T19:23:05Z",
+  "benchmarkUrl": "http://localhost:3102",
+  "passed": true,
+  "pages": [{"path":"/dev/benchmark-portfolio-gallery","savedHtml":"backstage-proxy-benchmark-portfolio-gallery.html","galleryImageCount":4,"images":[{"url":"/api/gallery/us-25-ac-25.5-placement-demo/hero/23","matchesDeclaredPath":true,"httpStatus":200,"contentType":"image/jpeg","byteLength":7136},{"url":"/api/gallery/us-25-ac-25.5-placement-demo/thumbnail/23","matchesDeclaredPath":true,"httpStatus":200,"contentType":"image/jpeg","byteLength":1025},{"url":"/api/gallery/us-25-ac-25.5-placement-demo/hero/22","matchesDeclaredPath":true,"httpStatus":200,"contentType":"image/jpeg","byteLength":7136},{"url":"/api/gallery/us-25-ac-25.5-placement-demo/thumbnail/22","matchesDeclaredPath":true,"httpStatus":200,"contentType":"image/jpeg","byteLength":1025}]},{"path":"/dev/benchmark-story-gallery","savedHtml":"backstage-proxy-benchmark-story-gallery.html","galleryImageCount":2,"images":[{"url":"/api/gallery/us-25-ac-25.5-placement-demo/hero/23","matchesDeclaredPath":true,"httpStatus":200,"contentType":"image/jpeg","byteLength":7136},{"url":"/api/gallery/us-25-ac-25.5-placement-demo/hero/22","matchesDeclaredPath":true,"httpStatus":200,"contentType":"image/jpeg","byteLength":7136}]}]
+}

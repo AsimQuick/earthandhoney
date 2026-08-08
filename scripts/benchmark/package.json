@@ -1,0 +1,11 @@
+{
+  "name": "earthandhoney-benchmark-harness",
+  "private": true,
+  "description": "AC-29.1.3 — isolated dependency tree for the Dockerized Lighthouse harness (lighthouse + chrome-launcher pull in Puppeteer/Chrome-DevTools-Protocol tooling only needed inside the lighthouse-benchmark image, deliberately kept out of the app's own package.json/package-lock.json so the production Next.js image never installs them).",
+  "devDependencies": {
+    "chrome-launcher": "^1.2.0",
+    "lighthouse": "^13.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
+  }
+}
