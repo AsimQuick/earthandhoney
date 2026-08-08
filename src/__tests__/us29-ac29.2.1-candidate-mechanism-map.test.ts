@@ -107,17 +107,17 @@ describe('AC-29.2.1: candidate 1 — no existing run file is usable path-1 evide
     expect(reproducibility).toMatch(/Route not found/)
   })
 
-  it("run.ts's committed write shape now carries a deliveryPath field — wired by AC-29.2.2.2 — but keeps the un-suffixed filename", () => {
+  it("run.ts's committed write shape carries the deliveryPath in the report and, since AC-29.2.2.3, in the filename too", () => {
     // At AC-29.2.1's time run.ts wrote no deliveryPath field at all. AC-29.2.2.2
     // wires the declared path into the report (and refuses to write one the
-    // observed image URLs contradict — see observedDeliveryPath.ts), so this
-    // now asserts the field exists rather than asserting its absence. The
-    // filename itself stays un-suffixed: the path is a field inside the
-    // report, not part of its name.
+    // observed image URLs contradict — see observedDeliveryPath.ts), and
+    // AC-29.2.2.3 appends it to the file name as well, so a reader of the
+    // results directory can tell which candidate a report belongs to without
+    // opening it. Both are asserted here rather than either alone.
     const runScript = read('scripts/benchmark/run.ts')
 
     expect(runScript).toMatch(/deliveryPath:\s*DECLARED_DELIVERY_PATH/)
-    expect(runScript).toContain("`run-${new Date().toISOString().replace(/[:.]/g, '-')}.json`")
+    expect(runScript).toContain('`run-${timestamp}-${DECLARED_DELIVERY_PATH}.json`')
   })
 
   it('the origin gap this candidate exposed is now closed by AC-29.2.2.1, not left open', () => {
@@ -138,13 +138,16 @@ describe('AC-29.2.1: candidate 1 — no existing run file is usable path-1 evide
     expect(benchmarkBlock).not.toMatch(/nginx|caddy|reverse[_-]?proxy/i)
   })
 
-  it('the two "-backstage-proxy" run files that cited a deliveryPath field run.ts does not write are withdrawn per AC-29.2.2.1.1', () => {
+  it('the two "-backstage-proxy" run files that cited a deliveryPath field run.ts does not write stay withdrawn per AC-29.2.2.1.1', () => {
     // Previously asserted the files existed and carried a `deliveryPath` key
-    // run.ts (checked above) never writes — proof no committed code produced
-    // them. AC-29.2.2.1.1 withdraws both files rather than leaving
-    // unreproducible evidence on disk; this now asserts the withdrawal.
+    // run.ts (at the time) never wrote — proof no committed code produced
+    // them. AC-29.2.2.1.1 withdrew both. Since AC-29.2.2.3 re-runs candidate 1
+    // against the committed wiring, "-backstage-proxy" files exist again, so
+    // the guard names the withdrawn two rather than banning the suffix.
     const names = fs.readdirSync(path.join(root, RESULTS_DIR)).filter((n) => n.endsWith('-backstage-proxy.json'))
-    expect(names).toEqual([])
+
+    expect(names).not.toContain('run-2026-08-08T15-29-04-854Z-backstage-proxy.json')
+    expect(names).not.toContain('run-2026-08-08T15-30-06-730Z-backstage-proxy.json')
   })
 })
 
@@ -253,9 +256,24 @@ describe('AC-29.2.1: a claim not to carry forward into AC-29.2.2', () => {
     expect(exists('scripts/benchmark/results/CANDIDATE_COVERAGE.md')).toBe(false)
   })
 
-  it('no run-*-presigned-r2.json file exists anywhere in the results directory', () => {
-    const names = fs.readdirSync(path.join(root, 'scripts/benchmark/results'))
-    expect(names.filter((n) => /^run-.*presigned-r2\.json$/.test(n))).toEqual([])
+  it('neither presigned-r2 run file that doc invented has appeared on disk since', () => {
+    // This block originally asserted that *no* run-*-presigned-r2.json existed,
+    // because at AC-29.2.1's time none did and the withdrawn doc cited two by
+    // name anyway. AC-29.2.2.3 measures candidate 2 for real, so the guard now
+    // says what it always meant: those two invented file names never became
+    // real, and every presigned-r2 file that does exist is a report the
+    // harness actually wrote — see the AC-29.2.2.3 suite for the full check.
+    const resultsDir = path.join(root, 'scripts/benchmark/results')
+    const names = fs.readdirSync(resultsDir).filter((n) => /^run-.*presigned-r2\.json$/.test(n))
+
+    expect(names).not.toContain('run-2026-08-08T15-31-59-072Z-presigned-r2.json')
+    expect(names).not.toContain('run-2026-08-08T15-33-01-345Z-presigned-r2.json')
+
+    for (const name of names) {
+      const report = JSON.parse(fs.readFileSync(path.join(resultsDir, name), 'utf8'))
+      expect(report.deliveryPath).toBe('presigned-r2')
+      expect(report.pages.length).toBeGreaterThan(0)
+    }
   })
 })
 

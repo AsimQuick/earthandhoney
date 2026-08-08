@@ -62,3 +62,11 @@ The reproducibility *procedure* documented above (same command, same build,
 same seeded gallery, run twice) is still sound and still the process
 AC-29.2.2.1.3 must satisfy; only these two runs' numbers are disqualified.
 Path 1 is re-run against the AC-29.2.2.1.2 origin fix under AC-29.2.2.3.
+
+**Superseded (AC-29.2.2.3).** That re-run has happened. Every number in the
+table above is withdrawn and is not evidence for anything; the surviving
+measurements — for both candidate paths, each labelled with the path it
+belongs to — are in `MEASURED_PATHS.md` beside this file, generated from the
+retained `run-<timestamp>-<deliveryPath>.json` reports rather than typed in
+by hand. The unlabelled report file names cited above no longer exist on
+disk; nothing named `run-*.json` here lacks a candidate label.

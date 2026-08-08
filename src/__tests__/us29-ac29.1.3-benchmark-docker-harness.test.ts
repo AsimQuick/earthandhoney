@@ -109,7 +109,9 @@ describe('AC-29.1.3: the harness runs in Docker, against Docker hostnames, writi
     const runScript = read(RUN_SCRIPT_FILE)
 
     expect(runScript).toMatch(/JSON\.stringify/)
-    expect(runScript).toMatch(/run-\$\{new Date\(\)\.toISOString\(\)/)
+    // AC-29.2.2.3: the candidate label is appended to the file name too, not
+    // just written inside the report — see loadRunReports.ts.
+    expect(runScript).toMatch(/run-\$\{timestamp\}-\$\{DECLARED_DELIVERY_PATH\}\.json/)
     expect(runScript).toMatch(/generatedAt/)
   })
 
@@ -129,23 +131,32 @@ describe('AC-29.1.3: the harness runs in Docker, against Docker hostnames, writi
   })
 })
 
-describe('AC-29.1.3: the reproducibility evidence — withdrawn by AC-29.2.2.1.1, re-run owed by AC-29.2.2.3', () => {
+describe('AC-29.1.3: the reproducibility evidence — withdrawn by AC-29.2.2.1.1, re-run by AC-29.2.2.3', () => {
   // The two run reports this block originally verified
   // (run-2026-08-08T14-51-01-229Z.json, run-2026-08-08T14-52-16-271Z.json)
   // recorded transferBytes: 83 for every gallery image — the length of
   // Express's `{"message":"Route not found"}` body, not a photograph — so
-  // AC-29.2.2.1.1 withdraws them rather than leaving discredited evidence on
-  // disk. Path 1 therefore has no surviving reproducibility run right now;
-  // that gap is intentional and is closed by AC-29.2.2.3's re-run against
-  // the origin fix, not by this suite.
+  // AC-29.2.2.1.1 withdrew them rather than leaving discredited evidence on
+  // disk. AC-29.2.2.3 supplies the re-run against the origin fix, this time
+  // with every file carrying its candidate label in its own name
+  // (run-<timestamp>-<deliveryPath>.json), so the withdrawn, unlabelled pair
+  // can never be confused with what is committed now.
   const resultsDir = path.join(root, RESULTS_DIR)
   const runFiles = fs
     .readdirSync(resultsDir)
     .filter((name) => /^run-.*\.json$/.test(name))
     .sort()
 
-  it('retains no run-*.json reports right now — the two committed ones were withdrawn, not superseded', () => {
-    expect(runFiles).toEqual([])
+  it('every committed run report carries a candidate-path suffix in its file name', () => {
+    expect(runFiles.length).toBeGreaterThan(0)
+    for (const name of runFiles) {
+      expect(name).toMatch(/^run-.*-(backstage-proxy|presigned-r2)\.json$/)
+    }
+  })
+
+  it('never retains the two withdrawn, unlabelled AC-29.1.3 reports', () => {
+    expect(runFiles).not.toContain('run-2026-08-08T14-51-01-229Z.json')
+    expect(runFiles).not.toContain('run-2026-08-08T14-52-16-271Z.json')
   })
 
   it('never retains the false-green pre-AC-29.1.1 run-2026-08-08T13-2*.json reports', () => {

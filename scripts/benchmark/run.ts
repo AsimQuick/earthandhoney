@@ -29,9 +29,16 @@
  *          written to the report is passed through redactSignedUrl first, so
  *          a committed "presigned-r2" report never carries a live R2
  *          credential or signature.
+ *          AC-29.2.2.3: the declared path is also appended to the report's
+ *          file name (`run-<iso-timestamp>-<deliveryPath>.json`), not just
+ *          written inside it — src/lib/benchmark/loadRunReports.ts selects a
+ *          candidate's retained runs by that file-name suffix and then
+ *          throws if the file's own `deliveryPath` field disagrees, so a
+ *          later reader can never mistake which path a committed report
+ *          belongs to from the file name alone.
  * created-by: dev-team
  * related-story: US-29
- * related-ac: 29.2.2.2
+ * related-ac: 29.2.2.3
  * ---
  */
 import fs from 'fs'
@@ -160,7 +167,8 @@ async function main() {
   }
 
   fs.mkdirSync(RESULTS_DIR, { recursive: true })
-  const outputPath = path.join(RESULTS_DIR, `run-${new Date().toISOString().replace(/[:.]/g, '-')}.json`)
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const outputPath = path.join(RESULTS_DIR, `run-${timestamp}-${DECLARED_DELIVERY_PATH}.json`)
   fs.writeFileSync(
     outputPath,
     JSON.stringify(

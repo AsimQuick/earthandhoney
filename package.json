@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest --runInBand",
-    "tokens:export": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" scripts/generate-design-tokens-export.ts"
+    "tokens:export": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" scripts/generate-design-tokens-export.ts",
+    "benchmark:summarise": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" scripts/benchmark/summarise-measurements.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "^3.86.0",
