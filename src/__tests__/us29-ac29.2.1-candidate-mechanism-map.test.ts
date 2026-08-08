@@ -92,23 +92,19 @@ describe('AC-29.2.1: candidate 1 — the public photos path exists and is what t
 describe('AC-29.2.1: candidate 1 — no existing run file is usable path-1 evidence', () => {
   const RESULTS_DIR = 'scripts/benchmark/results'
 
-  it("the committed AC-29.1.3 runs recorded a 404 body's byte length, not a photograph", () => {
+  it("the committed AC-29.1.3 runs recorded a 404 body's byte length, not a photograph — now withdrawn per AC-29.2.2.1.1", () => {
+    // The two run files this claim was originally read from
+    // (run-2026-08-08T14-51-01-229Z.json, run-2026-08-08T14-52-16-271Z.json)
+    // are withdrawn by AC-29.2.2.1.1, so the 83-byte finding is no longer
+    // re-derivable from a file on disk. It is preserved as prose in
+    // REPRODUCIBILITY.md's withdrawal note instead of a fixture read here.
     for (const name of ['run-2026-08-08T14-51-01-229Z.json', 'run-2026-08-08T14-52-16-271Z.json']) {
-      const report = JSON.parse(readRaw(`${RESULTS_DIR}/${name}`))
-      const galleryImages = report.pages[0].harness.rawRuns[0].networkPayload.images.filter(
-        (image: { url: string }) => !image.url.includes('/_next/image'),
-      )
-
-      expect(galleryImages.length).toBeGreaterThan(0)
-      for (const image of galleryImages) {
-        // 83 bytes over the wire (Lighthouse's transferBytes includes
-        // response headers, not just the 29-byte JSON body) is what both
-        // committed pre-AC-29.2 runs record for every gallery image request —
-        // confirmed by direct inspection, not derived, since a byte-length
-        // computed from the JSON body alone undercounts the transfer.
-        expect(image.transferBytes).toBe(83)
-      }
+      expect(exists(`${RESULTS_DIR}/${name}`)).toBe(false)
     }
+
+    const reproducibility = readRaw(`${RESULTS_DIR}/REPRODUCIBILITY.md`)
+    expect(reproducibility).toMatch(/transferBytes: 83/)
+    expect(reproducibility).toMatch(/Route not found/)
   })
 
   it("run.ts's committed write shape has no deliveryPath field and no candidate-suffixed filename", () => {
@@ -130,16 +126,13 @@ describe('AC-29.2.1: candidate 1 — no existing run file is usable path-1 evide
     expect(benchmarkBlock).not.toMatch(/nginx|caddy|reverse[_-]?proxy/i)
   })
 
-  it('the two uncommitted "-backstage-proxy" run files exist but cite run.ts fields it does not write', () => {
+  it('the two "-backstage-proxy" run files that cited a deliveryPath field run.ts does not write are withdrawn per AC-29.2.2.1.1', () => {
+    // Previously asserted the files existed and carried a `deliveryPath` key
+    // run.ts (checked above) never writes — proof no committed code produced
+    // them. AC-29.2.2.1.1 withdraws both files rather than leaving
+    // unreproducible evidence on disk; this now asserts the withdrawal.
     const names = fs.readdirSync(path.join(root, RESULTS_DIR)).filter((n) => n.endsWith('-backstage-proxy.json'))
-    expect(names.length).toBeGreaterThan(0)
-
-    for (const name of names) {
-      const report = JSON.parse(readRaw(`${RESULTS_DIR}/${name}`))
-      expect(report.deliveryPath).toBe('backstage-proxy')
-    }
-    // The assertion this documents: run.ts (checked above) never writes a
-    // `deliveryPath` key, so a file that has one was not produced by it.
+    expect(names).toEqual([])
   })
 })
 
@@ -233,14 +226,11 @@ describe('AC-29.2.1: candidate 2 — the additive application-layer scaffolding 
 })
 
 describe('AC-29.2.1: a claim not to carry forward into AC-29.2.2', () => {
-  it('CANDIDATE_COVERAGE.md cites two presigned-r2 run files that do not exist on disk', () => {
-    const coverage = readRaw('scripts/benchmark/results/CANDIDATE_COVERAGE.md')
-    const cited = ['run-2026-08-08T15-31-59-072Z-presigned-r2.json', 'run-2026-08-08T15-33-01-345Z-presigned-r2.json']
-
-    for (const name of cited) {
-      expect(coverage).toContain(name)
-      expect(exists(`scripts/benchmark/results/${name}`)).toBe(false)
-    }
+  it('CANDIDATE_COVERAGE.md, which cited two presigned-r2 run files that do not exist on disk, is withdrawn per AC-29.2.2.1.1', () => {
+    // Previously asserted the doc existed and cited two run files that were
+    // never produced. AC-29.2.2.1.1 withdraws the doc itself rather than
+    // leaving an uncorrectable false "Measured" claim on disk.
+    expect(exists('scripts/benchmark/results/CANDIDATE_COVERAGE.md')).toBe(false)
   })
 
   it('no run-*-presigned-r2.json file exists anywhere in the results directory', () => {

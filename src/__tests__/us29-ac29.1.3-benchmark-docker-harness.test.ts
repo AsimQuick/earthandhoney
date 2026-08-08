@@ -129,15 +129,23 @@ describe('AC-29.1.3: the harness runs in Docker, against Docker hostnames, writi
   })
 })
 
-describe('AC-29.1.3: the reproducibility evidence is committed', () => {
+describe('AC-29.1.3: the reproducibility evidence — withdrawn by AC-29.2.2.1.1, re-run owed by AC-29.2.2.3', () => {
+  // The two run reports this block originally verified
+  // (run-2026-08-08T14-51-01-229Z.json, run-2026-08-08T14-52-16-271Z.json)
+  // recorded transferBytes: 83 for every gallery image — the length of
+  // Express's `{"message":"Route not found"}` body, not a photograph — so
+  // AC-29.2.2.1.1 withdraws them rather than leaving discredited evidence on
+  // disk. Path 1 therefore has no surviving reproducibility run right now;
+  // that gap is intentional and is closed by AC-29.2.2.3's re-run against
+  // the origin fix, not by this suite.
   const resultsDir = path.join(root, RESULTS_DIR)
   const runFiles = fs
     .readdirSync(resultsDir)
     .filter((name) => /^run-.*\.json$/.test(name))
     .sort()
 
-  it('retains at least two timestamped run reports from separate invocations', () => {
-    expect(runFiles.length).toBeGreaterThanOrEqual(2)
+  it('retains no run-*.json reports right now — the two committed ones were withdrawn, not superseded', () => {
+    expect(runFiles).toEqual([])
   })
 
   it('never retains the false-green pre-AC-29.1.1 run-2026-08-08T13-2*.json reports', () => {
@@ -148,37 +156,7 @@ describe('AC-29.1.3: the reproducibility evidence is committed', () => {
     expect(runFiles.some((name) => name.startsWith('run-2026-08-08T13-2'))).toBe(false)
   })
 
-  it.each(runFiles)('%s is a valid, self-consistent harness report', (name) => {
-    const report = JSON.parse(fs.readFileSync(path.join(resultsDir, name), 'utf8'))
-
-    expect(report.generatedAt).toEqual(expect.any(String))
-    expect(report.baseUrl).toMatch(/^http:\/\/web-benchmark:3000$/)
-    expect(report.runsPerPage).toBeGreaterThanOrEqual(3)
-    expect(report.pages.map((page: { id: string }) => page.id)).toEqual([
-      'portfolio-gallery',
-      'story-gallery',
-    ])
-
-    for (const page of report.pages) {
-      expect(page.harness.runsPerPage).toBe(report.runsPerPage)
-      expect(page.harness.rawRuns).toHaveLength(report.runsPerPage)
-      expect(page.harness.aggregate.runCount).toBe(report.runsPerPage)
-      // AC-29.1.1's render proof, reproduced at measurement time: the
-      // harness must actually see gallery images, or the numbers are
-      // measuring GalleryUnavailablePlaceholder again.
-      for (const run of page.harness.rawRuns) {
-        expect(run.networkPayload.images.length).toBeGreaterThan(1)
-      }
-    }
-  })
-
-  it('names two distinct invocations of the exact same committed command', () => {
-    expect(runFiles.length).toBeGreaterThanOrEqual(2)
-    const timestamps = runFiles.map((name) => name.replace(/^run-|\.json$/g, ''))
-    expect(new Set(timestamps).size).toBe(timestamps.length)
-  })
-
-  it('records a reproducibility note stating the per-page, per-metric spread between two invocations', () => {
+  it('records a reproducibility note stating the per-page, per-metric spread the withdrawn runs measured, and why they were withdrawn', () => {
     const notePath = path.join(resultsDir, 'REPRODUCIBILITY.md')
     expect(fs.existsSync(notePath)).toBe(true)
 
@@ -188,6 +166,7 @@ describe('AC-29.1.3: the reproducibility evidence is committed', () => {
     expect(note).toMatch(/story-gallery/)
     expect(note).toMatch(/lcpMs/i)
     expect(note).toMatch(/[Ss]pread/)
+    expect(note).toMatch(/withdraw/i)
   })
 })
 
