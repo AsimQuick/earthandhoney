@@ -14,6 +14,9 @@ purpose: AC-19.5 — opens this document with the delivery-path decision
 created-by: dev-team
 related-story: US-19
 related-ac: 19.4, 19.5
+updated-by: dev-team
+related-story: US-29
+related-ac: 29.2.1
 ---
 -->
 
@@ -47,6 +50,148 @@ listed to be measured, not ranked.
 5. **A hybrid** — some combination of the above by context, e.g. Backstage-
    mediated serving for private/protected client galleries and CDN or edge
    delivery for already-public portfolio/blog galleries.
+
+### Candidate mechanism map (AC-29.2.1)
+
+**Scope of this subsection.** This is confirmation work, not discovery and not
+measurement: no browser is run, no image is built. Every claim below was
+checked directly against the pinned fork and this repository's working tree
+rather than trusted from the unsplit AC-29.2's premise that "both mechanisms
+already exist" — that premise turns out to be only half true, in a more
+specific way than expected: it understates candidate 1's readiness problem as
+much as candidate 2's.
+
+#### Path 1 — serving through the Backstage
+
+The mechanism exists and is real code. `GET /:slug/photos`
+(`vendor/picpeak/backend/src/routes/gallery.js`, mounted at `/api/gallery` —
+`vendor/picpeak/backend/server.js:446`) builds `thumbnail_url`, `hero_url` and
+`preview_url` per photo (`gallery.js:516`, `518`, `525-528`).
+`src/components/gallery/backstageGalleryMapper.ts:61-63` maps those three
+fields onto the Gallery Engine's `thumbnailUrl`/`mediumUrl`/`largeUrl` tiers in
+that order, and `src/components/gallery/galleryImageLoader.ts`'s
+`resolveGalleryImageSrc` (`galleryImageLoader.ts:21-29`) picks among them by
+requested width.
+
+This is a **different route** from the one the ADR's own candidate-1 wording
+above points at. `protectedImages.js` is mounted separately, at `/api/images`
+(`server.js:552`), and issues a single-photo signed application token
+(`protectedImages.js:236-237`) served by its own
+`GET /:slug/photo/:photoId/signed/:token` route (`protectedImages.js:253`).
+The two benchmark pages (`src/app/(frontend)/dev/benchmark-portfolio-gallery`,
+`benchmark-story-gallery`) fetch through `resolveGalleryPlacementImages` ->
+`backstageGalleryMapper`, i.e. the public `/api/gallery/:slug/photos` path —
+**never** `protectedImages.js`. Candidate 1, as actually benchmarked, is the
+public photos path, not the token-gated proxy the ADR names it after.
+
+**Whether the already-committed AC-29.1.3 runs may be cited as path 1's
+measurement: no, on the evidence in this checkout.** Two separate problems,
+found by opening the JSON rather than trusting file names:
+
+1. The two runs AC-29.1.3 actually committed —
+   `run-2026-08-08T14-51-01-229Z.json` and `run-2026-08-08T14-52-16-271Z.json`
+   — record `transferBytes: 83` for both gallery `<img>` requests on every
+   page/run (`/api/gallery/us-25-ac-25.5-placement-demo/hero/22` and `/hero/23`).
+   83 bytes is the length of Express's `{"message":"Route not found"}` 404
+   body, not a real derivative — these two committed runs measured a missing
+   route, not a photograph, and cannot be cited as path-1 evidence as they
+   stand.
+2. Two further, **uncommitted** files also exist —
+   `run-2026-08-08T15-29-04-854Z-backstage-proxy.json` and
+   `run-2026-08-08T15-30-06-730Z-backstage-proxy.json` — showing real-looking
+   `transferBytes: 8183` and a top-level `"deliveryPath": "backstage-proxy"`
+   field. Neither can have been produced by the harness as it exists in this
+   checkout: `scripts/benchmark/run.ts:114-119` writes only
+   `{generatedAt, baseUrl, runsPerPage, pages}` — no `deliveryPath` key — to a
+   file named `run-${timestamp}.json` with no candidate suffix, and
+   `run.ts` (checked in full) contains zero references to any delivery-path
+   selection logic. Nor does anything else in the working tree implement the
+   `/api/gallery/*`-on-the-Next.js-origin -> Backstage-backend proxy those
+   bytes would require: `next.config.ts` defines no `rewrites()` at all and is
+   byte-identical to the version `git show HEAD:next.config.ts` returns (no
+   working-tree edit exists to have been reverted); `docker-compose.yml`'s
+   `web-benchmark` (lines 217-241) and `lighthouse-benchmark` (243-257)
+   service blocks proxy nothing; and grepping every route under
+   `src/app/(frontend)/` for a `gallery`-matching handler or `middleware.ts`
+   finds none. These two files cannot be reproduced from anything present in
+   this repository and must not be cited as evidence.
+
+**Conclusion: path 1 has no usable measurement on record.** Its own
+`/api/gallery/*`-reachability gap is exactly what problem 1 already caught —
+so a fresh path-1 run today would 404 the same way the committed AC-29.1.3
+runs did, unless that gap is closed first. AC-29.2.2 must both close it and
+produce a real run before this ADR's path-1 numbers can be written.
+
+#### Path 2 — direct time-limited presigned R2 links
+
+The signing primitive is real: `S3StorageBackend.signedUrl`
+(`vendor/picpeak/backend/src/services/storage/S3StorageBackend.js:146-148`).
+But grepping `vendor/picpeak/backend` for every `signedUrl(` call finds
+exactly three matches total: the two method definitions
+(`S3StorageBackend.js:146`, `LocalFsStorage.js:158`) and **one** call site —
+the download-all ZIP branch (`gallery.js:904-916`), gated on
+`req.event.allow_presigned_download` (`904`), `storage.kind() === 's3'`
+(`906`) and watermarking being off for the event (`905-906`), which
+`res.redirect(302, url)`s a single ZIP object (`915`), not a photo. There are
+zero other callers, including zero test callers, and **no per-photo
+presigned view route exists anywhere in `vendor/picpeak/backend/src/routes/`.**
+`LocalFsStorage.signedUrl` throws by design
+(`LocalFsStorage.js:158-160`, "Set `STORAGE_BACKEND=s3` to use presigned
+URLs"), so any measurement needs `STORAGE_BACKEND=s3`, which
+`docker-compose.yml:101-108` already sets for `backstage-backend`.
+
+The fork's own comment at `gallery.js:898-903` records what this branch gives
+up: presigned bytes bypass the backend entirely, so no watermark is ever
+applied when it fires (`901-902`). It does write one `access_logs` row
+(`909-914`, `action: 'download_all_presigned'`) before redirecting — so the
+*request that generates* the presigned URL is logged — but nothing logs the
+subsequent direct-to-R2 byte fetch itself, since R2 is not in the logging
+path once the redirect has happened. That gap is AC-29.5's problem; it is
+recorded here only because confirming candidate 2's mechanism is what
+surfaced it.
+
+**Smallest change that would make path 2 measurable end-to-end, and its
+cost.** The mechanism candidate 2 needs already exists in the fork
+(`S3StorageBackend.signedUrl`), so nothing under `vendor/picpeak` needs to
+change — this is additive, application-layer only, and carries no
+`FORK_CHANGELOG.md` entry. Roughly two-thirds of that application-layer
+change already exists, **uncommitted, in this working tree**, left behind by
+the unsplit AC-29.2 attempt this AC was carved out to precede:
+
+- `src/lib/benchmark/deliveryPathImages.ts` — pure `applyDeliveryPath()`
+  swap of the thumbnail/medium/large tiers.
+- `src/lib/benchmark/resolveBenchmarkDeliveryPath.ts` — reads
+  `BENCHMARK_DELIVERY_PATH` and a generated URL map off disk.
+- `scripts/benchmark/presign-r2-urls.sh` — calls the fork's own
+  `getStorage().signedUrl()` inside the `backstage-backend` container (no
+  AWS SDK dependency added to this repo) and has already produced
+  `scripts/benchmark/presign-data/presigned-image-map.json` once in this
+  working tree.
+- `src/lib/benchmark/redactSignedUrls.ts`,
+  `src/lib/benchmark/observedDeliveryPath.ts` — reporting/safety helpers.
+
+None of it is wired in, though. `src/app/(frontend)/dev/benchmark-portfolio-gallery/page.tsx`
+calls only `resolveGalleryPlacementImages` — no call to `applyDeliveryPath` or
+`currentBenchmarkDeliveryPath` anywhere on either benchmark page.
+`scripts/benchmark/run.ts` has zero references to any of the four modules
+above. `docker-compose.yml`'s `web-benchmark` and `lighthouse-benchmark`
+blocks define no `BENCHMARK_DELIVERY_PATH` env var and no `presign-data`
+volume mount, both of which `resolveBenchmarkDeliveryPath.ts`'s own docblock
+assumes already exist. **One-session estimate: yes**, on the condition that
+the session budgets for path 1's shared `/api/gallery/*` origin gap too —
+both candidates' benchmark pages render through the same placement pipeline,
+and an unfixed origin gap would corrupt a path-2 run's non-swapped tiers
+exactly as it corrupted path 1's runs above.
+
+**A specific claim not to carry forward.** `scripts/benchmark/results/CANDIDATE_COVERAGE.md`
+(also uncommitted) currently marks both candidates "Measured," citing, for
+candidate 2, `run-2026-08-08T15-31-59-072Z-presigned-r2.json` and
+`run-2026-08-08T15-33-01-345Z-presigned-r2.json`. Neither file exists:
+`scripts/benchmark/results/` contains exactly four `run-*.json` files, none
+with a `presigned-r2` suffix. Its candidate-1 citation is the same
+unreproducible pair addressed above. This file is exactly the kind of
+premature "already exists" claim AC-29.2.1 exists to catch before another
+session is sent to measure against it.
 
 ### Measurements that will decide it
 
