@@ -107,10 +107,16 @@ describe('AC-29.2.1: candidate 1 — no existing run file is usable path-1 evide
     expect(reproducibility).toMatch(/Route not found/)
   })
 
-  it("run.ts's committed write shape has no deliveryPath field and no candidate-suffixed filename", () => {
+  it("run.ts's committed write shape now carries a deliveryPath field — wired by AC-29.2.2.2 — but keeps the un-suffixed filename", () => {
+    // At AC-29.2.1's time run.ts wrote no deliveryPath field at all. AC-29.2.2.2
+    // wires the declared path into the report (and refuses to write one the
+    // observed image URLs contradict — see observedDeliveryPath.ts), so this
+    // now asserts the field exists rather than asserting its absence. The
+    // filename itself stays un-suffixed: the path is a field inside the
+    // report, not part of its name.
     const runScript = read('scripts/benchmark/run.ts')
 
-    expect(runScript).not.toMatch(/deliveryPath/)
+    expect(runScript).toMatch(/deliveryPath:\s*DECLARED_DELIVERY_PATH/)
     expect(runScript).toContain("`run-${new Date().toISOString().replace(/[:.]/g, '-')}.json`")
   })
 
@@ -203,31 +209,39 @@ describe('AC-29.2.1: candidate 2 — signedUrl exists, and its only route caller
   })
 })
 
-describe('AC-29.2.1: candidate 2 — the additive application-layer scaffolding that exists is unwired', () => {
+describe('AC-29.2.1: candidate 2 — the additive application-layer scaffolding, wired by AC-29.2.2.2', () => {
   it('the pure-logic modules and presign script exist in the working tree', () => {
     expect(exists('src/lib/benchmark/deliveryPathImages.ts')).toBe(true)
     expect(exists('src/lib/benchmark/resolveBenchmarkDeliveryPath.ts')).toBe(true)
     expect(exists('scripts/benchmark/presign-r2-urls.sh')).toBe(true)
   })
 
-  it('neither benchmark page calls into the delivery-path selection modules', () => {
+  it('both benchmark pages now call into the delivery-path selection modules (AC-29.2.2.2)', () => {
+    // At AC-29.2.1's time neither page applied the selected path at all —
+    // both pages always rendered candidate 1's Backstage-proxied URLs
+    // regardless of BENCHMARK_DELIVERY_PATH. AC-29.2.2.2 wires both pages
+    // through applyDeliveryPath/currentBenchmarkDeliveryPath, so this now
+    // asserts the call exists rather than asserting its absence.
     for (const page of ['benchmark-portfolio-gallery', 'benchmark-story-gallery']) {
       const src = read(`src/app/(frontend)/dev/${page}/page.tsx`)
-      expect(src).not.toMatch(/applyDeliveryPath|currentBenchmarkDeliveryPath/)
+      expect(src).toMatch(/applyDeliveryPath/)
+      expect(src).toMatch(/currentBenchmarkDeliveryPath/)
     }
   })
 
-  it('run.ts never imports any of the delivery-path modules', () => {
+  it('run.ts now imports the delivery-path modules it declares, asserts and redacts with (AC-29.2.2.2)', () => {
     const runScript = read('scripts/benchmark/run.ts')
-    expect(runScript).not.toMatch(/deliveryPathImages|resolveBenchmarkDeliveryPath|observedDeliveryPath/)
+    expect(runScript).toMatch(/resolveBenchmarkDeliveryPath/)
+    expect(runScript).toMatch(/observedDeliveryPath/)
+    expect(runScript).toMatch(/redactSignedUrls/)
   })
 
-  it("docker-compose.yml's benchmark services define neither BENCHMARK_DELIVERY_PATH nor a presign-data mount", () => {
+  it("docker-compose.yml's benchmark services now define BENCHMARK_DELIVERY_PATH and a presign-data mount (AC-29.2.2.2)", () => {
     const compose = readRaw('docker-compose.yml')
     const benchmarkBlock = compose.slice(compose.indexOf('web-benchmark:'), compose.indexOf('volumes:\n  pgdata:'))
 
-    expect(benchmarkBlock).not.toMatch(/BENCHMARK_DELIVERY_PATH/)
-    expect(benchmarkBlock).not.toMatch(/presign-data/)
+    expect(benchmarkBlock).toMatch(/BENCHMARK_DELIVERY_PATH/)
+    expect(benchmarkBlock).toMatch(/presign-data/)
   })
 })
 

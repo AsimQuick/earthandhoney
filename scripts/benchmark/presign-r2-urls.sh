@@ -17,24 +17,31 @@
 #          docker-compose.yml). Nothing is reimplemented client-side and no
 #          new AWS SDK dependency is added anywhere in this repo.
 #
-#          Only the `hero` tier is presigned by default: both benchmark
-#          pages render `image.largeUrl ?? image.url`
-#          (GalleryMasonryLayout.tsx, GallerySlideshowLayout.tsx) as the
-#          actual `<img src>` at the widths Lighthouse's mobile emulation
-#          requests (galleryImageLoader.ts's `resolveGalleryImageSrc`), so
-#          `hero_path` is the only tier this measurement's rendered <img>
-#          elements ever request. If `hero_path` is empty (never generated
-#          — PicPeak's hero route builds it lazily on first request), this
-#          script requests it once through the Backstage backend's own hero
-#          route first, so the presigned URL points at the same real
-#          derivative object candidate 1 serves, not a 404.
+#          AC-29.2.2.2 correction: every tier the rendered markup can
+#          request is presigned, not just `hero`. Both benchmark pages
+#          render their gallery images through next/image with
+#          `createGalleryImageLoader` (galleryImageLoader.ts), which emits a
+#          full `srcSet` — `thumbnail_path` at the 256w/384w candidates,
+#          `preview_path` (when one exists) up to 1200w, `hero_path` above
+#          that — so presigning only `hero_path` would leave the small
+#          candidates pointing back at the Backstage and make the measured
+#          page a *mixed* one. That is precisely the state
+#          observedDeliveryPath.ts's classifier reports as `null` and run.ts
+#          then refuses to write a report for, so a hero-only map cannot
+#          produce a candidate-2 measurement at all. If `hero_path` is empty
+#          (never generated — PicPeak's hero route builds it lazily on first
+#          request), this script requests it once through the Backstage
+#          backend's own hero route first, so the presigned URL points at the
+#          same real derivative object candidate 1 serves, not a 404.
 #
 #          Output: scripts/benchmark/presign-data/presigned-image-map.json,
-#          shaped `{ "<photoId>": { "largeUrl": "<presigned-url>" } }` —
-#          deliveryPathImages.ts's PresignedImageMap. Gitignored (a live
-#          signed-URL query string has no evidentiary value once its TTL
-#          expires, and committing one is unnecessary exposure of a
-#          time-boxed R2 credential fragment).
+#          shaped
+#          `{ "<photoId>": { "thumbnailUrl": "...", "mediumUrl": "...", "largeUrl": "..." } }`
+#          — deliveryPathImages.ts's PresignedImageMap, which omits any tier
+#          the photo does not have. Gitignored (a live signed-URL query
+#          string has no evidentiary value once its TTL expires, and
+#          committing one is unnecessary exposure of a time-boxed R2
+#          credential fragment).
 # usage:   scripts/benchmark/presign-r2-urls.sh [ttlSeconds]
 # needs:   `docker compose --profile backstage up -d` already running, and
 #          the AC-29.1.1 seeded gallery already present (idempotent —
@@ -42,7 +49,7 @@
 #          it already ran).
 # created-by: dev-team
 # related-story: US-29
-# related-ac: 29.2
+# related-ac: 29.2.2.2
 # ---
 set -euo pipefail
 
@@ -71,13 +78,18 @@ for id in $PHOTO_IDS; do
 done
 
 echo "Reading storage paths from backstage-db..."
+# Every tier the rendered srcSet can request, in galleryImageLoader.ts's own
+# order: thumbnail_path -> thumbnailUrl, preview_path -> mediumUrl,
+# hero_path -> largeUrl. An absent tier comes back as an empty field and is
+# omitted from the map, which applyDeliveryPath already reads as "keep the
+# Backstage-proxied URL for that tier".
 ROWS_JSON=$(docker compose exec -T backstage-db psql -U backstage -d backstage -t -A -F $'\t' -c \
-  "SELECT p.id, p.hero_path FROM photos p JOIN events e ON e.id = p.event_id WHERE e.slug = '${SLUG}' ORDER BY p.id;")
+  "SELECT p.id, COALESCE(p.thumbnail_path,''), COALESCE(p.preview_path,''), COALESCE(p.hero_path,'') FROM photos p JOIN events e ON e.id = p.event_id WHERE e.slug = '${SLUG}' ORDER BY p.id;")
 
-# Builds one JS array literal `[["22","heroes/hero_....png"], ...]` from the
-# tab-separated psql rows above, passed to the node script below as a single
-# argv entry — avoids N separate `docker compose exec` round-trips.
-ROWS_JS=$(printf '%s\n' "$ROWS_JSON" | awk -F'\t' 'BEGIN{printf "["} NF==2{printf "%s[\"%s\",\"%s\"]", (NR>1?",":""), $1, $2} END{printf "]"}')
+# Builds one JS array literal `[["22","thumbnails/...","","heroes/..."], ...]`
+# from the tab-separated psql rows above, passed to the node script below as a
+# single argv entry — avoids N separate `docker compose exec` round-trips.
+ROWS_JS=$(printf '%s\n' "$ROWS_JSON" | awk -F'\t' 'BEGIN{printf "["} NF==4{printf "%s[\"%s\",\"%s\",\"%s\",\"%s\"]", (NR>1?",":""), $1, $2, $3, $4} END{printf "]"}')
 
 echo "Generating presigned R2 URLs (ttl=${TTL_SECONDS}s) via the fork's own S3StorageBackend.signedUrl..."
 docker compose exec -T backstage-backend node -e "
@@ -86,13 +98,21 @@ const rows = ${ROWS_JS};
 (async () => {
   const storage = getStorage();
   const map = {};
-  for (const [id, heroPath] of rows) {
-    if (!heroPath) continue;
-    map[id] = { largeUrl: await storage.signedUrl(heroPath, ${TTL_SECONDS}) };
+  for (const [id, thumbnailPath, previewPath, heroPath] of rows) {
+    const entry = {};
+    if (thumbnailPath) entry.thumbnailUrl = await storage.signedUrl(thumbnailPath, ${TTL_SECONDS});
+    if (previewPath) entry.mediumUrl = await storage.signedUrl(previewPath, ${TTL_SECONDS});
+    if (heroPath) entry.largeUrl = await storage.signedUrl(heroPath, ${TTL_SECONDS});
+    if (Object.keys(entry).length > 0) map[id] = entry;
   }
   process.stdout.write(JSON.stringify(map, null, 2));
 })().catch((err) => { console.error(err); process.exit(1); });
 " > "$OUT_FILE"
 
-echo "Wrote $OUT_FILE:"
-cat "$OUT_FILE"
+# Printed redacted, never raw: this script's own stdout is routinely pasted
+# into a session transcript, and X-Amz-Credential/X-Amz-Signature are exactly
+# the two values this AC's credential-hygiene requirement keeps out of the
+# repository (src/lib/benchmark/redactSignedUrls.ts redacts the same two on
+# every committed run report).
+echo "Wrote $OUT_FILE (printed with X-Amz-Credential/X-Amz-Signature redacted):"
+sed -E 's/(X-Amz-Credential|X-Amz-Signature)=[^&"]*/\1=REDACTED/g' "$OUT_FILE"

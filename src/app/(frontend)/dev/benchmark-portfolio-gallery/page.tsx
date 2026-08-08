@@ -25,15 +25,22 @@
  *          scripts/ac29.1.1-benchmark-render-proof.sh, whose fetched HTML
  *          and seeding summary are retained under
  *          scripts/benchmark/results/ac29.1.1-render-proof/.
+ *          AC-29.2.2.2: renders through whichever delivery path
+ *          BENCHMARK_DELIVERY_PATH selects — applyDeliveryPath swaps the
+ *          Backstage-proxied URLs onto their presigned R2 equivalents when
+ *          the map has one, so this is the exact page a "presigned-r2" run
+ *          measures, not a stand-in for it.
  * created-by: dev-team
  * related-story: US-29
- * related-ac: 29.1.1
+ * related-ac: 29.2.2.2
  * ---
  */
 import type { Metadata } from 'next'
 
 import { GalleryMasonryLayout } from '@/components/gallery/GalleryMasonryLayout'
 import { GalleryUnavailablePlaceholder } from '@/components/gallery/GalleryUnavailablePlaceholder'
+import { applyDeliveryPath } from '@/lib/benchmark/deliveryPathImages'
+import { currentBenchmarkDeliveryPath, loadPresignedImageMap } from '@/lib/benchmark/resolveBenchmarkDeliveryPath'
 import { resolveGalleryPlacementImages } from '@/lib/backstageGalleryPlacement'
 import { PLACEMENT_DEMO_GALLERY_SLUG } from '@/lib/galleryRevalidation'
 
@@ -49,7 +56,15 @@ export const metadata: Metadata = {
 
 export default async function BenchmarkPortfolioGalleryPage() {
   const result = await resolveGalleryPlacementImages(PLACEMENT_DEMO_GALLERY_SLUG)
-  const images = result.status === 'ok' ? result.images : null
+  const deliveryPath = currentBenchmarkDeliveryPath()
+  const images =
+    result.status === 'ok'
+      ? applyDeliveryPath(
+          result.images,
+          deliveryPath,
+          deliveryPath === 'presigned-r2' ? loadPresignedImageMap() : {},
+        )
+      : null
 
   return (
     <main data-testid="benchmark-portfolio-page" className="w-full">

@@ -18,9 +18,20 @@
  *          scripts/benchmark/results/, a bind-mounted volume so the raw
  *          output survives the container (AC-29.3's "raw harness output
  *          retained in the repository" starts here).
+ *          AC-29.2.2.2: reads the same BENCHMARK_DELIVERY_PATH the
+ *          "web-benchmark" service resolved and writes it into the report as
+ *          `deliveryPath`, but only after checking it against what was
+ *          actually fetched — assertObservedDeliveryPath (observedDeliveryPath.ts)
+ *          throws before fs.writeFileSync runs if the measured pages' own
+ *          gallery image URLs contradict the declared label, so a wiring
+ *          mismatch between this container and "web-benchmark" can never
+ *          produce a silently mislabelled report. Every gallery image URL
+ *          written to the report is passed through redactSignedUrl first, so
+ *          a committed "presigned-r2" report never carries a live R2
+ *          credential or signature.
  * created-by: dev-team
  * related-story: US-29
- * related-ac: 29.1.3
+ * related-ac: 29.2.2.2
  * ---
  */
 import fs from 'fs'
@@ -28,6 +39,9 @@ import path from 'path'
 
 import { BENCHMARK_PORTFOLIO_GALLERY_PATH, BENCHMARK_STORY_GALLERY_PATH } from '../../src/lib/benchmarkPages'
 import { MIN_RUNS_PER_PAGE, runHarness } from '../../src/lib/benchmark/runHarness'
+import { assertObservedDeliveryPath } from '../../src/lib/benchmark/observedDeliveryPath'
+import { redactSignedUrl } from '../../src/lib/benchmark/redactSignedUrls'
+import { currentBenchmarkDeliveryPath } from '../../src/lib/benchmark/resolveBenchmarkDeliveryPath'
 import type { HarnessResult, MinimalLighthouseResult } from '../../src/lib/benchmark/types'
 
 // Docker-network hostname, per CLAUDE.md's Docker Rules — the
@@ -46,6 +60,11 @@ const RUNS_PER_PAGE = process.env.BENCHMARK_RUNS_PER_PAGE
 // still land in the same directory docker-compose.yml bind-mounts regardless
 // of the invoking cwd.
 const RESULTS_DIR = path.join(__dirname, 'results')
+// Read once at startup, the same env var "web-benchmark" resolved for the
+// pages it served — see resolveBenchmarkDeliveryPath.ts's docblock for why
+// both containers read the same var independently rather than one passing it
+// to the other.
+const DECLARED_DELIVERY_PATH = currentBenchmarkDeliveryPath()
 
 const PAGES: Array<{ id: string; path: string }> = [
   { id: 'portfolio-gallery', path: BENCHMARK_PORTFOLIO_GALLERY_PATH },
@@ -99,6 +118,29 @@ interface PageReport {
   harness: HarnessResult
 }
 
+// Every gallery-image URL a harness result's raw runs observed, across every
+// run and every page — assertObservedDeliveryPath's input.
+function observedGalleryImageUrls(harness: HarnessResult): string[] {
+  return harness.rawRuns.flatMap((run) => run.networkPayload.images.map((image) => image.url))
+}
+
+// Redacts every image URL in-place before a report reaches disk, so a
+// "presigned-r2" run's committed JSON never carries a live R2 access-key id
+// or SigV4 signature (redactSignedUrl is a no-op on candidate 1's
+// Backstage-proxied URLs, which carry neither).
+function redactHarnessResult(harness: HarnessResult): HarnessResult {
+  return {
+    ...harness,
+    rawRuns: harness.rawRuns.map((run) => ({
+      ...run,
+      networkPayload: {
+        ...run.networkPayload,
+        images: run.networkPayload.images.map((image) => ({ ...image, url: redactSignedUrl(image.url) })),
+      },
+    })),
+  }
+}
+
 async function main() {
   const pages: PageReport[] = []
 
@@ -108,14 +150,30 @@ async function main() {
       runsPerPage: RUNS_PER_PAGE,
       collectRun: () => collectRun(url),
     })
-    pages.push({ id: page.id, path: page.path, url, harness })
+
+    // Refuses to write a report whose observed image URLs contradict the
+    // declared path — a wiring mismatch between "web-benchmark" and
+    // "lighthouse-benchmark" must fail the run, not mislabel it.
+    assertObservedDeliveryPath(DECLARED_DELIVERY_PATH, observedGalleryImageUrls(harness))
+
+    pages.push({ id: page.id, path: page.path, url, harness: redactHarnessResult(harness) })
   }
 
   fs.mkdirSync(RESULTS_DIR, { recursive: true })
   const outputPath = path.join(RESULTS_DIR, `run-${new Date().toISOString().replace(/[:.]/g, '-')}.json`)
   fs.writeFileSync(
     outputPath,
-    JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl: BASE_URL, runsPerPage: RUNS_PER_PAGE, pages }, null, 2),
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        baseUrl: BASE_URL,
+        deliveryPath: DECLARED_DELIVERY_PATH,
+        runsPerPage: RUNS_PER_PAGE,
+        pages,
+      },
+      null,
+      2,
+    ),
   )
 
   console.log(`Wrote ${path.relative(process.cwd(), outputPath)}`)

@@ -224,12 +224,28 @@ services:
       # would otherwise leak in via env_file.
       PORT: "3000"
       NODE_ENV: production
+      # AC-29.2.2.2: which candidate delivery path the two benchmark pages
+      # (resolveBenchmarkDeliveryPath.ts) render. env_file above already
+      # supplies .env's default; this override lets a caller pass a
+      # shell-exported value straight through docker compose without editing
+      # .env, e.g. `BENCHMARK_DELIVERY_PATH=presigned-r2 docker compose
+      # --profile benchmark up -d --build web-benchmark`.
+      BENCHMARK_DELIVERY_PATH: ${BENCHMARK_DELIVERY_PATH:-backstage-proxy}
     # Builds once, then serves that exact build for every harness
     # invocation against this container — "the same build" AC-29.1.3's
     # reproducibility evidence requires two back-to-back runs to share.
     command: ["sh", "-c", "npm run build && npm run start"]
     ports:
       - "3102:3000"
+    volumes:
+      # AC-29.2.2.2: read-only mount of the presigned URL map
+      # scripts/benchmark/presign-r2-urls.sh writes on the host — the same
+      # relative path resolveBenchmarkDeliveryPath.ts's PRESIGN_MAP_PATH
+      # resolves inside the container (WORKDIR /app). Only consulted when
+      # BENCHMARK_DELIVERY_PATH=presigned-r2; a missing/stale file degrades to
+      # an empty map (loadPresignedImageMap's own documented behaviour), not a
+      # crash.
+      - ./scripts/benchmark/presign-data:/app/scripts/benchmark/presign-data:ro
     depends_on:
       db:
         condition: service_healthy
@@ -248,6 +264,14 @@ services:
     environment:
       # Docker-network hostname, never localhost (CLAUDE.md Docker Rules).
       BENCHMARK_BASE_URL: http://web-benchmark:3000
+      # AC-29.2.2.2: must match "web-benchmark"'s own value above — run.ts
+      # writes this into the report's `deliveryPath` field and refuses to
+      # write at all if the pages it measured don't back it up
+      # (observedDeliveryPath.ts's assertObservedDeliveryPath). Not forwarded
+      # from "web-benchmark" itself — each service resolves the same env var
+      # independently, so a caller must set it identically on both, exactly
+      # as documented in resolveBenchmarkDeliveryPath.ts's header.
+      BENCHMARK_DELIVERY_PATH: ${BENCHMARK_DELIVERY_PATH:-backstage-proxy}
     volumes:
       # Bind-mounted so each invocation's timestamped JSON report survives
       # the container instead of being lost when it exits.

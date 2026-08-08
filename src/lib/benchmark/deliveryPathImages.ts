@@ -15,14 +15,35 @@
  *          fork's own `S3StorageBackend.signedUrl` — the exact mechanism
  *          candidate 2 names — and this module only ever consumes the
  *          resulting plain map.
+ *          AC-29.2.2.2: deliberately does not import `GalleryImage` from
+ *          '@/components/gallery/types' — scripts/benchmark/Dockerfile only
+ *          COPYs src/lib/benchmark/ and src/lib/benchmarkPages.ts into the
+ *          "lighthouse-benchmark" image (by design, to keep the
+ *          lighthouse/chrome-launcher dependency tree out of the app's own
+ *          node_modules), and run.ts now imports this module's sibling
+ *          resolveBenchmarkDeliveryPath.ts at runtime, which pulls in this
+ *          file's exported types. A `@/`-aliased import here would fail
+ *          module resolution inside that image, where the app's `src/components/`
+ *          tree does not exist. `DeliveryPathImage` below is the minimal
+ *          structural subset `GalleryImage` already satisfies, so the two
+ *          call sites in src/app/(frontend)/dev/benchmark-*-gallery/page.tsx
+ *          pass their `GalleryImage[]` straight through with no cast.
  * created-by: dev-team
  * related-story: US-29
- * related-ac: 29.2
+ * related-ac: 29.2.2.2
  * ---
  */
-import type { GalleryImage } from '@/components/gallery/types'
 
 export type DeliveryPath = 'backstage-proxy' | 'presigned-r2'
+
+/** The minimal image shape this module reads/writes — see the header note on why this is not `GalleryImage` directly. */
+export interface DeliveryPathImage {
+  id: string
+  url: string
+  thumbnailUrl?: string
+  mediumUrl?: string
+  largeUrl?: string
+}
 
 export interface PresignedImageUrls {
   url?: string
@@ -43,11 +64,11 @@ export type PresignedImageMap = Record<string, PresignedImageUrls>
  * rather than silently disappearing, so a partial presign run degrades to a
  * visibly mixed-path page instead of a broken one.
  */
-export function applyDeliveryPath(
-  images: GalleryImage[],
+export function applyDeliveryPath<T extends DeliveryPathImage>(
+  images: T[],
   path: DeliveryPath,
   presignedByPhotoId: PresignedImageMap = {},
-): GalleryImage[] {
+): T[] {
   if (path === 'backstage-proxy') return images
 
   return images.map((image) => {

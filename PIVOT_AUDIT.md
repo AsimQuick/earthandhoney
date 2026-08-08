@@ -6560,6 +6560,63 @@ item 16 (existing text), and `scrum-master/retrospective.md` action item 9.
 This section adds no new fork behaviour and changes no finding's substance —
 it only completes the human-facing routing AC-22.4 requires.
 
+## AC-29.2.2.2 — a live R2 credential fragment committed to git history, surfaced as a human action item
+
+Wiring the benchmark harness's delivery-path switch (candidate 2, presigned
+R2 links) surfaced that `scripts/benchmark/presign-data/presigned-image-map.json`
+was committed at `a29a33a` (`[US-29] AC-29.2.1: follow-up (auto-committed, dev
+agent did not commit)`) carrying two live SigV4 query-string values for the
+project's real Cloudflare R2 bucket: `X-Amz-Credential` (the R2 access-key id,
+url-encoded) and `X-Amz-Signature` (the HMAC signature that made the URL
+fetchable for its TTL window). Same category of gap as F8/UD-1 above — this AC
+can fix the forward-looking half (nothing generated after this commit is
+tracked, and the file is removed from the working tree — see
+`.gitignore`'s `scripts/benchmark/presign-data/*.json` entry and this
+commit's `git rm --cached`) but **cannot** fix the two things that need a
+human: purging the blob from git history, and rotating the leaked key. Both
+are outside an implementing AC's write scope in the same way F8/UD-1 was
+(no automated step here can rewrite shared git history or touch the live R2
+IAM console), so — following the same precedent AC-22.2/AC-22.4 established —
+this section finishes the merge-ready content for whoever holds write scope
+(the Product Owner or the orchestrator) to transcribe into `po-requests.md`.
+
+### Merge-ready addition to `po-requests.md`
+
+- **What leaked:** `X-Amz-Credential` and `X-Amz-Signature` query-string
+  values for two presigned R2 GET URLs, committed in plaintext at `a29a33a`,
+  path `scripts/benchmark/presign-data/presigned-image-map.json`. The TTL on
+  those specific signatures (`X-Amz-Expires=7200`, generated `20260808T153027Z`)
+  has since lapsed, so the two signed URLs themselves are no longer
+  fetchable — but the **access-key id** is still visible in git history and
+  identifies which R2 credential was in use, which is the part that should
+  be rotated regardless of the individual signature's expiry.
+- **What this AC already did (no human input needed for these):** removed
+  the file from the current working tree and the git index (`git rm --cached`),
+  added `scripts/benchmark/presign-data/*.json` to `.gitignore` so
+  `scripts/benchmark/presign-r2-urls.sh`'s output is never tracked again, and
+  confirmed no other committed file — including every `run-*.json` benchmark
+  report — carries an unredacted `X-Amz-Credential` or `X-Amz-Signature`
+  (`src/lib/benchmark/redactSignedUrls.ts` now redacts both on every report
+  `scripts/benchmark/run.ts` writes going forward).
+- **What needs a human decision:**
+  1. **Rotate the R2 access key** (`R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`)
+     the leaked `X-Amz-Credential` identifies — a live-infrastructure change
+     no agent in this pipeline is authorized to make.
+  2. **Purge the blob from git history** (e.g. `git filter-repo` on the one
+     path) if the project's threat model requires it — a destructive,
+     history-rewriting operation on a shared branch, which CLAUDE.md's git
+     safety rules reserve for explicit human authorization.
+- **Consequence of not acting:** the access-key id stays discoverable in git
+  history indefinitely; until the key is rotated, anyone with read access to
+  this repository's history holds a valid identifier for the project's live
+  R2 credential (though not, by itself, a currently-usable signed URL).
+
+Basis: `git log --oneline -- scripts/benchmark/presign-data/presigned-image-map.json`
+(commit `a29a33a`), the file's contents as committed, and this AC's own
+`.gitignore`/`git rm --cached` changes. This section adds no new fork
+behaviour and changes no other finding's substance — it only completes the
+human-facing routing this AC's credential-hygiene requirement calls for.
+
 ## AC-17.10 — PicPeak's native contract-signing capability, verified against the pinned commit
 
 `po-requests.md` item 7 confirmed, conditionally, that V1 uses "PicPeak's

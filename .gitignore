@@ -58,3 +58,10 @@ devrag-vectors.db
 # Orchestrator runtime / local state (not version controlled)
 project-state.json
 .claude/settings.local.json
+
+# US-29 AC-29.2.2.2: generated presigned R2 URL map — live, short-TTL SigV4
+# signatures with no evidentiary value once their TTL expires; committing one
+# is unnecessary exposure of a time-boxed R2 credential fragment. Regenerated
+# by scripts/benchmark/presign-r2-urls.sh. .gitkeep keeps the directory itself
+# tracked so the docker-compose.yml bind-mount has somewhere to land.
+scripts/benchmark/presign-data/*.json

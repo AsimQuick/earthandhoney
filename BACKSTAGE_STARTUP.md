@@ -154,7 +154,67 @@ the container. Two runs of this exact command against the same
 per-metric spread between two back-to-back invocations, and
 `scripts/benchmark/results/run-*.json` for the raw reports themselves.
 
+By default this measures candidate path 1 (`backstage-proxy`) —
+`BENCHMARK_DELIVERY_PATH`'s documented default in `.env.example`. See below
+for measuring candidate path 2 instead.
+
 To tear down: `docker compose --profile benchmark down`.
+
+### Choosing a delivery path (US-29 AC-29.2.2.2)
+
+`BENCHMARK_DELIVERY_PATH` selects which candidate delivery path the two
+benchmark pages render, and must be set identically for `web-benchmark`
+(which renders the pages) and `lighthouse-benchmark` (which labels the
+report and refuses to write one that contradicts what it actually measured
+— `src/lib/benchmark/observedDeliveryPath.ts`). Rebuild `web-benchmark` after
+changing it — the delivery path is baked into the production build the
+container serves, so a stale build silently keeps measuring the old path.
+
+**Candidate 1 — Backstage proxy (default), one command per profile-up:**
+
+```
+BENCHMARK_DELIVERY_PATH=backstage-proxy docker compose --profile benchmark up -d --build --force-recreate web-benchmark
+BENCHMARK_DELIVERY_PATH=backstage-proxy docker compose --profile benchmark run --rm lighthouse-benchmark
+```
+
+**Candidate 2 — presigned R2 links**, one extra prerequisite: generate the
+presigned URL map first (requires the `backstage` profile up and the
+AC-29.1.1 gallery seeded, per the Prerequisites section above) —
+`scripts/benchmark/presign-r2-urls.sh` calls the pinned fork's own
+`S3StorageBackend.signedUrl` inside the `backstage-backend` container, so no
+AWS SDK dependency is added here. The map it writes,
+`scripts/benchmark/presign-data/presigned-image-map.json`, is gitignored
+(live, short-TTL signed URLs have no evidentiary value once their TTL
+expires) — regenerate it in each new environment:
+
+```
+scripts/benchmark/presign-r2-urls.sh
+BENCHMARK_DELIVERY_PATH=presigned-r2 docker compose --profile benchmark up -d --build --force-recreate web-benchmark
+BENCHMARK_DELIVERY_PATH=presigned-r2 docker compose --profile benchmark run --rm lighthouse-benchmark
+```
+
+Committed `run-*.json` reports redact the `X-Amz-Credential` and
+`X-Amz-Signature` query parameters on every image URL
+(`src/lib/benchmark/redactSignedUrls.ts`) — everything else about the
+presigned URL (the R2 host, the object key, `X-Amz-Expires`) is left intact
+as evidence the request went straight to R2.
+
+**Proving the switch actually switched**, without Lighthouse and without
+writing a report — run this after the `up -d` line of either path above, with
+the same `BENCHMARK_DELIVERY_PATH`:
+
+```
+BENCHMARK_DELIVERY_PATH=<path> scripts/ac29.2.2.2-delivery-path-proof.sh
+```
+
+It fetches both benchmark routes, extracts every gallery image URL the
+markup can request (each `<img src>` **and** every `srcSet` candidate — a
+mixed `srcSet` is not a measurement of either candidate), checks each URL's
+origin against the declared path, and fetches each one to record its status,
+content type and byte length. The recorded transcripts for both paths are
+`scripts/benchmark/results/ac29.2.2.2-delivery-path-proof/backstage-proxy-proof.json`
+and `presigned-r2-proof.json`, with the fetched HTML saved beside them and
+the same two SigV4 parameters redacted.
 
 ### Image-origin live proof (US-29 AC-29.2.2.1.3)
 
