@@ -301,10 +301,23 @@ describe('AC-29.2.2.2 — the switch is actually wired into every surface the AC
   })
 })
 
+// The `git` binary itself is not present in the `web` Docker container (see
+// us20-ac20.5-stripe-port-report-secret-handling.test.ts), so a check that
+// shells out to it can only run where `git` is actually reachable —
+// otherwise it fails not because the presign map is tracked, but because the
+// environment can't run `git` at all.
+let gitAvailable = true
+try {
+  execFileSync('git', ['--version'])
+} catch {
+  gitAvailable = false
+}
+const itIfGitAvailable = gitAvailable ? it : it.skip
+
 describe('AC-29.2.2.2 — credential hygiene and the two saved fetch transcripts', () => {
   const UNREDACTED_SIGV4 = /X-Amz-(?:Credential|Signature)=(?!REDACTED)/
 
-  it('the generated presign map is gitignored, untracked, and absent from the working tree', () => {
+  itIfGitAvailable('the generated presign map is gitignored, untracked, and absent from the working tree', () => {
     expect(readRepo('.gitignore')).toMatch(/^scripts\/benchmark\/presign-data\/\*\.json$/m)
     expect(repoExists(PRESIGN_MAP_PATH)).toBe(false)
 
