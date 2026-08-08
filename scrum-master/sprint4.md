@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 8/9 stories | 55/69 ACs
-**Last Updated:** 2026-08-08T22:04:55+00:00
+**Last Updated:** 2026-08-08T22:08:18+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -810,6 +810,7 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
 - [ ] **AC-29.5:** The chosen path is shown to preserve what PRD §19.3 requires of it — access control, logging, watermarks, and revocation where required. Concretely: a password-protected or unreleased gallery's image must not be fetchable without authorisation under the chosen path, proven by an unauthenticated request that is refused; and download/access logging still records a delivery. A faster path that leaks a private gallery fails this criterion outright.
   - Dev: implemented
 - [ ] **AC-29.6:** If no candidate meets all four targets, the ADR says exactly that and the decision **stays open** with a named next step and its blocking prerequisite — rather than choosing the least-bad path and recording the targets as met. Sprint 3 recorded this decision as honestly UNDECIDED; closing it dishonestly would be worse than leaving it open a second sprint.
+  - Dev: implemented
 
 **Dependencies:** US-25
 
@@ -918,6 +919,14 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   - `R2_STORAGE_AND_DELIVERY_ADR.md` — added a new `## Delivery-path decision (AC-29.4)` section (placed after the AC-19.4 audit section, at the end of the file, so it stays outside the span AC-29.3's own test guards against "chosen path" language) and added `related-ac: 29.4` to the front matter. The section records, from the AC-29.3 measurements: **no path is chosen** — candidate 1 (`backstage-proxy`) and candidate 2 (`presigned-r2`) are each explicitly **rejected**, with the specific target and miss magnitude (mobile-first performance: 3 points short of ninety on `portfolio-gallery` for both; LCP: ~1.08–1.09s / ~1.34–1.35s over on `portfolio-gallery`, up to 714ms / 997ms over on `story-gallery`). Candidates 3, 4 and 5 are named as neither rejected nor chosen (still unmeasured per AC-29.2.3, per its own named prerequisites). The decision explicitly **stays open**, consistent with AC-29.6, rather than picking a least-bad failing candidate. It ends with a `### Product Owner sign-off` heading, status **PENDING**, naming PRD §5 Reminder 1 and pointing to `scrum-master/po-requests.md` as where sign-off is raised.
   - `src/__tests__/us29 …
   AC-29.5 implemented (local checks green): Full test suite with coverage is still running in the background — I'll pick back up once the Monitor notifies me it's finished.
+  AC-29.6 already satisfied on the story branch (no new commit; Tester-verified): AC-29.6: **ALREADY-SATISFIED.**
+  
+  AC-29.4's work (committed in `8e52e94`) already fully implements AC-29.6's requirement, and explicitly says so in the ADR text itself: `R2_STORAGE_AND_DELIVERY_ADR.md:642` reads *"the outcome AC-29.6 exists to require"*.
+  
+  Evidence in `R2_STORAGE_AND_DELIVERY_ADR.md`, section "Delivery-path decision (AC-29.4)":
+  - **States plainly that no candidate meets all four targets**: the "Reading across both measured candidates" table (lines 329–336) and per-candidate rejection sections show both measured paths fail the same two targets (performance on `portfolio-gallery`, LCP on both pages).
+  - **Decision stays open, not the least-bad path chosen**: `"Outcome: no path is chosen. This decision stays open."` (line 637), reinforced by a dedicated subsection `"### Why the decision stays open rather than picking the least-bad measured path"` (lines 689–698) that explicitly rejects picking a least-bad failing candidate.
+  - **Named next step + blocking prerequisite**: the `"### Product Owner sign-off"` section (lines 817–828) names the next step — invest in the candidate-3/4 infrastructure prerequisites (Cloudflare custom domain / Worker deployment, itemised in `scrum- …
 
 **Tester Status:** approved
 **Tester Notes:**
