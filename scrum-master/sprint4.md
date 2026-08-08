@@ -1,8 +1,8 @@
 # Sprint 4
 
-**Phase:** planning
+**Phase:** complete
 **Progress:** 9/9 stories | 69/69 ACs
-**Last Updated:** 2026-08-08T22:18:58+00:00
+**Last Updated:** 2026-08-08T22:35:37+00:00
 
 ## Sprint Goal
 Make the post-pivot direction real on `main`, then lay the Frontstage foundation on top of the fork proven in sprint 3. First restore the authoritative pivot documentation — PRD, CLAUDE.md, the post-pivot product backlog and the closed sprint-2 tracker are all stranded on an unmerged branch, so every agent since the pivot has been reading the retired Gallery-Engine direction — and route the sprint-3 findings that never reached the Product Owner, including reopening the contract-signing decision whose one condition failed. Then complete PRD Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing): lock the design tokens before any new page is built, give the studio a single identity record, render a Backstage gallery on a Frontstage page through the agreed API boundary, refresh it on a verified webhook, disable the duplicate Backstage surfaces, retire the superseded Payload gallery artifacts, and close the deferred R2 delivery-path decision with measurements instead of preference.
@@ -115,9 +115,9 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - **Coverage:** no source code added, only a guard test reading existing docs — no coverage threshold impact
   - **Deps:** none changed, no package-lock.json update needed
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements review (testability/verifiability pass), no code executed. All 6 ACs are testable as written: each names the exact file(s), the exact restored/removed content, and an evidence method (grep-able string, line-count, or Jest guard test) that resolves unambiguously to pass/fail. No vague wording, no missing test criteria, no scope ambiguity found. AC-21.4 bundles a sprint2.json restore with an unrelated sprint3.json dev_status reconciliation, but both halves are independently and objectively verifiable, so this is a minor scope-organization note, not a defect worth blocking on. No JSON edits required.
+  Final quality gate (post-merge verification, not requirements review). PR #73 merged to main (commit 946034d) 2026-08-06. All 6 ACs independently re-verified against actual on-disk content: CLAUDE.md contains 'The Three Surfaces'/'The Ledger Rule'/'Fork, don't rebuild' and the Contracts REOPENED marker (line 126); PRD.md/PRD-archive.md restored; scrum-master.md, sprint2.json, SYSTEM_OWNERSHIP.md corrected; AC-21.6 Jest guard test file present. PROCESS DEFECT FLAGGED (non-blocking, content unaffected): `gh pr checks 73` / `gh run view 31129644959` show BOTH CI jobs (smoke, test) FAILED on the only recorded run for this PR's head SHA (390f8de), yet the PR was merged anyway -- a direct violation of sprint DoD item 'Existing CI stays green'. Root cause was an infra flake ('ERROR: failed to solve: error writing layer blob: failed to reserve cache' in docker buildx), not a code or test failure -- lint/type/test steps never ran. No re-run exists on record for that SHA. Confirmed low residual risk: all 8 subsequent sprint-4 PRs (US-22 through US-29) branched from and built on top of this exact content and every one of their CI runs (16/16 jobs) passed cleanly, which is strong indirect evidence the restored files are not themselves broken. Recorded as a sprint retrospective item: a PR must not be merged without at least one green CI run recorded against its head SHA, regardless of whether the failure looks like infra flake -- rerun and confirm green, don't merge past it. Not re-opening the story for this since the content is independently verified correct and downstream stories have proven it in practice.
 
 ---
 
@@ -193,9 +193,9 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   
   **Proved live**, not just asserted: ran `docker compose --profile backstage down -v` then rebuilt …
 
-**Tester Status:** approved
+**Tester Status:** defect-found
 **Tester Notes:**
-  Requirements review pass. All 5 ACs are documentation-only (writes to po-requests.md / CLAUDE.md / PRD / SYSTEM_OWNERSHIP.md / BACKSTAGE_STARTUP.md) with content requirements specific enough to grep for (exact status strings, finding-id format, named fields per entry) — no pinning test suite needed, consistent with the sprint's own documentation-only-AC convention. AC-22.5 has a genuine either/or outcome (reproducible fix vs. documented manual step) but both branches carry their own concrete proof requirement, so it stays objectively verifiable rather than becoming a PO judgment call. No JSON edits required.
+  Final quality gate. PR #74 merged, CI green (gh pr checks 74: smoke pass, test pass). AC-22.1 verified: po-requests.md item 7 reads 'REOPENED -- awaiting decision (2026-08-07)' with the failed element, PIVOT_AUDIT.md citation, fork file/line citations, all 3 options and PO recommendation -- matches AC text exactly. AC-22.3 verified: CLAUDE.md:126 carries the dated REOPENED marker pointing at po-requests.md item 7; PRD.md carries F1/F5 REOPENED markers per dev_notes. AC-22.4 verified: po-requests.md item 16 names the UD-1 report's on-disk path, the human-GitHub-identity requirement, and the consequence of not filing it -- matches AC text. AC-22.5 verified: docker-compose.yml:151 contains the `mkdir -p /storage && chown -R nodejs:nodejs /storage` fix wired into backstage-backend's `command:`, reproducible without hand intervention, matching dev_notes' live-proof claim. DEFECT (AC-22.2): the AC's own text requires F1-F9 to be 'added to po-requests.md as PO findings.' This did not happen. The dev_notes for AC-22.2 explicitly admit the content was written only to PIVOT_AUDIT.md (confirmed: section '## AC-22.2 -- F1-F9 finalized for routing to the Product Owner', PIVOT_AUDIT.md:6479-6518, a complete, merge-ready table with finding id / one-line statement / PRD section / disposition for all nine findings) because po-requests.md is outside the implementing AC's write scope. Independently confirmed by grep: po-requests.md contains no F1-F9 finding entries anywhere -- only F8/UD-1 is referenced, and only via the separate AC-22.4/item-16 routing, not as part of an F1-F9 set. This is precisely the scenario sprint4.json's own Definition of Done item 7 anticipates and forbids: 'a finding that an AC requires to be routed there is not closed until it has actually been written there.' The content exists and is high quality (PIVOT_AUDIT.md:6498-6510) -- this is a pure transcription gap, not a rework, but AC-22.2 cannot be marked done until the F1-F9 table is actually copied into po-requests.md. Recommend a short PO/orchestrator follow-up (not a new dev session) to transcribe PIVOT_AUDIT.md's AC-22.2 table into po-requests.md verbatim, then re-close AC-22.2.
 
 ---
 
@@ -280,9 +280,9 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - **`src/lib/style-guard/__fixtures__/us23-ac23.7-style-drift-baseline.ts`** — a checked-in ratchet baseline recording the exact per-file, per-category violation counts that already existed under `src/components/`/`src/app/` before this guard (pre-token-lockdown gallery components, the `noindex` dev demo/specimen routes, and `globals.css`'s legacy hex fallback). This lets the guard start green today without masking future drift: it can never fail on already-known debt, but fails the moment a baselined file's count grows or a brand-new file introduces any violation.
   - **`src/__tests__/us23-ac23.7-style-drift-guard.test.ts`** — 19 tests: 7 unit tests proving the detector itself catches each category (and correctly ignores token references and comment prose) on synthetic samples, plus a real repo-wide scan co …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements review pass, 2 minor defects found and fixed directly in this pass (wording/missing test criteria, not scope): AC-23.4 asserted 'rendered output is unchanged in structure' with no stated verification method (only the raw-value lint check had one) — added an explicit before/after structural-snapshot requirement. All other ACs (23.1, 23.2, 23.3, 23.5, 23.6, 23.7) already state an explicit, objective test or reproduction method and were left unchanged. Confirmed AC-23.1's twelve named categories actually enumerate to twelve (font families counts as one category alongside the separate 'font combinations' category) — no miscount. Confirmed AC-23.2/23.3 correctly cite the creative brief already recorded in po-requests.md item 9.
+  Final quality gate. PR #75 merged, CI green (gh pr checks 75: smoke pass, test pass). Spot-verified artifacts on disk: src/styles/tokens.css (token source of truth), src/styles/fonts.css + public/fonts/ (self-hosted Fraunces/Inter), src/app/(frontend)/dev/token-specimen/page.tsx (noindex specimen route), exports/design-tokens/tokens.css (checked-in export). po-requests.md item 14 confirms AC-23.5's human-sign-off routing was actually written (not just claimed in dev_notes) -- 'Sign-off on the design-token specimen... US-23 AC-23.5 builds an internal noindex route...'. All 7 ACs' evidence requirements (12-category test, no-Google-Fonts test, WCAG contrast test, structural-snapshot test, specimen route + PO routing, reproducible export, style-drift guard) match dev_notes' claimed file set. No gaps found.
 
 ---
 
@@ -365,9 +365,9 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - `src/app/(frontend)/layout.tsx` — `generateMetadata()` now sets `openGraph.images` from `defaultSocialImage`; `RootLayout` renders a `<script type="application/ld+json">` built by `buildStudioStructuredData()`. No `keywords` field is read or set anywhere.
   - `src/__tests__/us24-ac24.5-studio-profile-seo-output.test.tsx` (new, 15 tests) — unit tests for the JSON-LD builder (including that its output cha …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements review pass. All 5 ACs testable: exact field lists (24.1), explicit negative-space test for forbidden field types (24.2), a concrete contrast-validation rejection path with named error content (24.3), a grep-based literal-string test (24.4), and an explicit head/structured-data change assertion (24.5). No vague wording or missing test criteria found. No JSON edits required.
+  Final quality gate. PR #76 merged, CI green (gh pr checks 76: smoke pass, test pass). Spot-verified src/globals/StudioProfile.ts exists on disk with the branding/accent-colour fields dev_notes describe. AC-24.1-24.5 all match their stated evidence method (exact field-list test, forbidden-field negative test, contrast-rejection test, hard-coded-literal grep test, head/JSON-LD-change test). No gaps found.
 
 ---
 
@@ -448,9 +448,9 @@ Make the post-pivot direction real on `main`, then lay the Frontstage foundation
   - `src/components/gallery/GalleryUnavailablePlaceholder.tsx` — the placeholder a placement renders on failure, deliberately distinct from the layouts' own "no images" empty state (`role="status"`, `data-testid="gallery-placement-unavailable"`).
   - `src/__tests__/us25-ac25.6-gallery-placement-failure-handling.test.tsx` — 12 tests covering: success path (no log), 404/`not_found`, simulated timeout, network error, a mid-Fl …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements review pass, 1 minor defect found and fixed directly (missing test criteria, not scope): AC-25.5 asserted three behavioral claims (aspect-ratio preservation, order preservation, no crop/stretch, bounded slideshow preloading) but stated an explicit test for only one of them (masonry CLS) — added explicit assertions tying the remaining claims to the photo-list response shape and to network-request inspection. AC-25.1 through 25.4 and 25.6 already carry explicit tests or live-reproduction proof and were left unchanged.
+  Final quality gate. PR #77 merged, CI green (gh pr checks 77: smoke pass, test pass). This is the critical-path story establishing the Payload<->Backstage API boundary; all 6 ACs' claimed deliverables (GalleryPlacements collection with no relation into backstage-db, backstageClient.ts Flow A implementation, backstageGalleryMapper.ts, 60s-cap cache, masonry/slideshow noindex demo route, logged-failure/placeholder handling) are consistent with what US-26 and US-29's later work actually consumes live (confirmed via WEBHOOK_LIVE_PROOF.md and R2_STORAGE_AND_DELIVERY_ADR.md both exercising this story's `resolveGalleryPlacementImages`/Flow A path against a real running Backstage stack -- strong downstream proof this story's boundary genuinely works, not just unit-tested in isolation). No gaps found.
 
 ---
 
@@ -599,9 +599,9 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   - `src/__tests__/us26-ac26.5-webhook-idempotent-dropped-delivery.test.ts` (new, 17 tests) — dedup primitive unit test …
   AC-26.6 implemented (local checks green): Waiting for the background test suite to finish (a monitor and fallback wakeup are both armed) before committing.
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements review pass. All 6 ACs testable: explicit forged-signature test (26.1), a named fixed event catalog with an explicit unknown-event pass condition (26.2), an explicit non-blocking-response test (26.3), a named live-reproduction sequence (26.4), explicit idempotency and bounded-staleness proof (26.5), and a concrete .env.example/secret-naming check (26.6). No vague wording or missing test criteria found. No JSON edits required.
+  Final quality gate. PR #78 merged, CI green (gh pr checks 78: smoke pass, test pass). Several dev_notes entries end mid-sentence with 'I'll stop here and wait for the background task notification' (AC-26.4.1.3.3, AC-26.6) -- verified via `git log origin/feature/US-26` these were not lost: the harness auto-committed the pending work as 'AC-26.4.1.3.3: follow-up (auto-committed, dev agent did not commit)' (34ceed5) and 'AC-26.6: follow-up (auto-committed, dev agent did not commit)' (d8aaac2) -- the deliverables landed, this is tooling noise not a gap. WEBHOOK_LIVE_PROOF.md (1606 lines) independently confirmed on disk with all required sections (a) through (g), including two pre-run out-of-order-fixture findings that were caught and honestly recorded rather than hidden, live delivery read-backs, and reproduction runs for both AC-26.4.1.3.2/.3 and AC-26.4.2/26.4.3 -- this is genuine live-system evidence, not asserted. .env.example documents PICPEAK_WEBHOOK_SECRET per AC-26.6. No gaps found.
 
 ---
 
@@ -663,9 +663,9 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   
   Verified full suite: 146 suites / 3388 tests passing, no skips introduced, coverage 99.6% statements (well ab …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements review pass, 1 minor defect found and fixed directly (missing test criteria, not scope): AC-27.2 described the intended gating behavior but, unlike its sibling 27.1/27.3/27.4, stated no explicit test assertion — added one mirroring the existing quotes-panel RequireFeature test pattern it's explicitly modeled on. AC-27.1, 27.3, 27.4 and 27.5 already state explicit tests/proofs and were left unchanged.
+  Final quality gate. PR #79 merged, CI green (gh pr checks 79: smoke pass, test pass). Fork-discipline requirements independently verified: FORK_CHANGELOG.md and PICPEAK_PORT_LEDGER.md both carry the US-27 AC-27.5 entries with full file-path lists and 'no migration file touched' statements (grep-confirmed); AC-27.5's own dev_notes claim the picpeakMigrationManifest SHA-1 integrity test stays green, consistent with Fork Discipline rules. AC-27.4's deliberate-non-removal decision (static CMS Pages surface stays enabled) is a correct application of the AC-18.5 scoping precedent. No gaps found.
 
 ---
 
@@ -773,9 +773,9 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   coverage_status: all three gated metrics (branches 95.85%, functions 96.52%, lines 99.38-99.59%) remain above the 80% floor per AC-28.5.2 measured output; no metric fell below the floor, so no remediation is owed per this AC.
   ci_evidence_note: the feature-branch run-id citation this AC asks for cannot exist yet under this pipeline design (CI runs once per story, at PR time, never on feature branches pre-merge) — the actual green CI run happens automatically immediately after this AC via the normal story-finalize step; this entry records the no-remediation-needed conclusion per the AC's own 'recorded no-op' framing, per explicit user decision (2026-08-08) on how to unblock this AC-wording/architecture gap.
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements review pass. All 5 ACs testable: explicit removal targets with a named admin/writer-absence test (28.1), a fully enumerated list of lock-in test files to remove with a per-removal justification requirement (28.2), a named env-var removal plus the exact test file to update (28.3), a concrete clean-checkout stack-up reproduction (28.4), and a measured before/after coverage requirement with an explicit no-lowering rule (28.5). No vague wording or missing test criteria found. No JSON edits required.
+  Final quality gate. PR #80 merged, CI green (gh pr checks 80: smoke pass, test pass). Two dev_notes entries ('AC-28.1.3 ... Waiting for the background test run to finish', 'AC-28.4 ... I'll stop here and wait for the background test run to complete') are tooling-session artifacts, not evidence of missing work -- confirmed via `git log origin/feature/US-28` that both were captured by the harness's auto-commit ('AC-28.1.3: follow-up (auto-committed...)' bd30706, 'AC-28.4: follow-up (auto-committed...)' a15b213). Coverage guard (AC-28.5.1-28.5.3) independently spot-checked: .github/workflows/ci.yml:69 still gates --coverageThreshold on branches/functions/lines at 80, no continue-on-error/passWithNoTests; the recorded before/after numbers (branches 96.11%->95.85%, functions 96.58%->96.52%, lines 99.67%->99.38%, all still well above the 80% floor) are consistent with a real, not-lowered gate -- this satisfies DoD item 11 ('coverage gate is not lowered to pass, including where US-28 removes tests') explicitly. No gaps found.
 
 ---
 
@@ -928,9 +928,9 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
   - **Decision stays open, not the least-bad path chosen**: `"Outcome: no path is chosen. This decision stays open."` (line 637), reinforced by a dedicated subsection `"### Why the decision stays open rather than picking the least-bad measured path"` (lines 689–698) that explicitly rejects picking a least-bad failing candidate.
   - **Named next step + blocking prerequisite**: the `"### Product Owner sign-off"` section (lines 817–828) names the next step — invest in the candidate-3/4 infrastructure prerequisites (Cloudflare custom domain / Worker deployment, itemised in `scrum- …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
-  Requirements review pass. All 6 ACs testable: a reproducible, machine-readable, dual-run benchmark harness with four named metrics on two named page types (29.1), an explicit measured-or-recorded-unmeasured-with-named-prerequisite rule covering every candidate with no silent drops (29.2), a concrete write-target and reproducibility requirement for the raw data (29.3), a decision record with a named PO sign-off requirement (29.4), a concrete unauthorized-request-refused proof (29.5), and an explicit honest-non-decision path (29.6). No vague wording or missing test criteria found. Note for dev/PO awareness, not a requirements defect: AC-29.4's PO sign-off is inherently a scope/business decision the AC correctly routes to po-requests.md rather than asking dev to decide, consistent with Reminder 1 — this AC is written exactly as it should be to keep that judgment call out of the Dev Team's hands. No JSON edits required.
+  Final quality gate. PR #81 merged, CI green (gh pr checks 81: smoke pass, test pass). This story closes one of the 'decisions no agent may make alone' (PRD Reminder 1) and does so correctly: R2_STORAGE_AND_DELIVERY_ADR.md independently confirmed on disk with measured results and an explicit 'Delivery-path decision (AC-29.4)' section recording NO path chosen (both measured candidates missed targets, magnitudes stated) and a 'Product Owner sign-off... status PENDING' line pointing at po-requests.md -- this is the honest-non-decision AC-29.6 requires, not a least-bad-path shortcut. po-requests.md item 15 independently confirms the candidate-3/4 infrastructure prerequisite was actually routed there (Cloudflare custom domain / Worker), not just claimed. Dev_notes show the session caught and withdrew its own discredited early benchmark runs (83-byte 404 bodies mistaken for photos, AC-29.2.2.1.1) rather than reporting false numbers -- a strong quality signal for a benchmark-shaped story. Two dev_notes entries end on 'waiting for background task' (AC-29.2.2.1.3, AC-29.5) -- confirmed via `git log origin/feature/US-29` both were captured by the harness auto-commit (8e13b64, 1de4dd2), not lost. No gaps found. PO sign-off on the decision itself remains pending, but that is correctly the PO's action item, not a dev/tester gap.
 
 ---
 
@@ -942,7 +942,15 @@ Fixed scope: at the pinned commit `photo.deleted` is fired from exactly two plac
 _Pending_
 
 ### Tester Sprint Notes
-_Pending_
+SPRINT-4 QUALITY GATE: PASS, with one specific defect and one process flag recorded for follow-up. All 9 stories (US-21 through US-29, 51 acceptance criteria) merged to main via PR #73-#81; 8 of 9 PRs (#74-#81) show fully green CI (`gh pr checks`: smoke pass, test pass) on their final head SHA. 
+
+DEFECT (blocking AC-22.2 only, not the sprint): the F1-F9 upstream findings register required by AC-22.2 was fully authored (PIVOT_AUDIT.md:6479-6518) but never transcribed into po-requests.md, violating the sprint's own DoD item 7 ('a finding that an AC requires to be routed there is not closed until it has actually been written there'). This is a small, well-scoped PO/orchestrator follow-up (copy one table), not a rework -- flagged on US-22/AC-22.2 as defect-found. Recommend closing this before sprint-4 is marked fully complete in scrum-master.md.
+
+PROCESS FLAG (non-blocking, already mitigated by evidence): PR #73 (US-21) was merged despite BOTH CI jobs failing on its only recorded run (`gh run view 31129644959` -- docker buildx 'failed to reserve cache', an infra flake, not a lint/type/test failure). No green re-run exists on record for that PR. Direct violation of DoD item 8 ('Existing CI stays green'). Residual risk assessed as low: all 8 downstream stories branch from and depend on this exact content, and every one of their CI runs (16/16 jobs) passed cleanly against it -- effectively re-validating US-21's content 8 times over. Recommend a retrospective/process fix for sprint 5: the merge step must require a green CI run recorded against the exact head SHA being merged, and must re-run rather than merge through a failed run even when the failure looks like infra flake.
+
+TIER 3 REGRESSION ANCHORS for sprint 5 (load-bearing, must not regress): (1) `src/__tests__/us21-ac21.6-pivot-direction-guard.test.ts` -- the standing Jest guard that fails if PRD.md/CLAUDE.md/scrum-master.md/SYSTEM_OWNERSHIP.md silently lose the pivot direction again; this is the only thing preventing a second recurrence of the exact failure that stalled the pipeline once already (Reminder 15/16). (2) `src/__tests__/us26-ac26.1-picpeak-webhook-signature-verification.test.ts` (plus the idempotency suite for AC-26.5) -- the entire security basis of the Backstage->Frontstage webhook flow rests on the HMAC signature check; every future story that consumes gallery-change events depends on this staying correct. (3) `src/__tests__/us28-ac28.5-coverage-gate-guard.test.ts` -- the guard against the coverage gate itself being silently lowered; given sprint 4 removed a meaningful number of tests (US-28) while keeping coverage above 80%, this guard is what stops a future sprint from 'fixing' a coverage shortfall by editing the threshold instead of the code, which DoD item 11 explicitly forbids.
+
+Systems-thinking note for sprint 5 planning: US-25's Flow A boundary (backstageClient.ts, backstageGalleryMapper.ts, the 60s cache) and US-26's webhook receiver are now the two most-depended-on new integration seams in the codebase -- every future Frontstage-gallery-rendering story inherits both. Both are backed by live-system proof (not just unit tests) in this sprint, which is the right bar for seams at this level.
 
 ### PO Sprint Review Notes
 WHY US-21 IS FIRST AND CRITICAL. Planning this sprint surfaced a documentation-integrity failure that outranks every feature in the backlog. The pivot recovery commit 9624a07 — which restored the post-pivot PRD (1855 lines), the post-pivot CLAUDE.md (218 lines), the post-pivot product backlog in scrum-master.md (486 lines, items 1–42), and the CLOSED sprint2.json with US-10…US-13 marked retired — lives only on branch feature/US-9 and was never merged to `main`. `main` still holds the retired Gallery-Engine PRD (937 lines), the pre-pivot CLAUDE.md (61 lines, naming Better Auth, Resend, Adobe Acrobat Sign, Sessions, Testimonials/Packages/FAQ), a scrum-master.md with no post-pivot backlog, and a sprint2.json reading `phase: planning` with US-10…US-13 still `draft`. Two consequences are already measurable, not hypothetical. First, SYSTEM_OWNERSHIP.md — a sprint-3 deliverable that passed its quality gate — records Better Auth as the auth owner and Resend as the email owner and lists Testimonials/Packages/FAQ as Payload CMS content, because it was written against `main`'s stale CLAUDE.md; all three were retired by the pivot. Second, the orchestrator can still be handed retired sprint-2 work from `main`'s sprint2.json, which is precisely what stalled the pipeline on 2026-07-30. This is Reminder 15 and Reminder 16 failing together, and no sprint-4 story may be dispatched before US-21 closes.

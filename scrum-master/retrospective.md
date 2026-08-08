@@ -1,5 +1,168 @@
 # Sprint Retrospective — earthandhoney
 
+## Sprint-4 — Making the pivot real on `main` + the Frontstage foundation
+
+- **Sprint goal:** Make the post-pivot direction real on `main` (restore the stranded pivot
+  documentation, route the sprint-3 findings that never reached the Product Owner), complete PRD
+  Phase 2 (ownership boundaries) and start Phase 4 (Frontstage publishing) — tokens locked before any
+  page is built, one studio identity record, a Backstage gallery rendered on a Frontstage page
+  through the agreed API boundary, refreshed by a verified webhook, duplicate Backstage surfaces
+  disabled, superseded Payload artifacts retired, and the deferred R2 delivery decision closed with
+  measurements rather than preference.
+- **Outcome:** All 9 stories (US-21…US-29) and all 51 acceptance criteria delivered and merged across
+  9 PRs (#73–#81). Tester sprint gate **PASS** with one AC-level defect (AC-22.2) and one process
+  flag (PR #73). Deploy passed all verification tiers.
+- **Retrospective completed:** 2026-08-09 (at close — see Missed checks item 1)
+
+---
+
+### What went well
+
+- **The single most dangerous thing in the repository was fixed first.** Sprint-4 planning found that
+  the entire pivot lived only on an unmerged branch, so every agent since 2026-07-30 had been reading
+  the retired Gallery-Engine direction — and a sprint-3 deliverable that *passed its quality gate*
+  (`SYSTEM_OWNERSHIP.md`) was wrong in four rows because of it. US-21 was correctly ordered ahead of
+  all seven feature stories rather than treated as documentation chores to fit in later.
+- **The fix was made structural, not just applied.** US-21 AC-21.6 added a standing Jest guard that
+  fails if `PRD.md`, `CLAUDE.md`, `scrum-master.md` or `SYSTEM_OWNERSHIP.md` silently lose the pivot
+  direction again. The direction had already been lost twice — once to a branch switch, once by never
+  reaching `main`. Reminders 15 and 16 finally have an enforcement mechanism instead of a restatement.
+- **An honest non-decision was delivered as the deliverable.** US-29 benchmarked the two measurable
+  R2 delivery candidates, found both missed the ADR's own targets, stated the miss magnitudes, named
+  the infrastructure prerequisite blocking candidates 3–4, and **left the decision open** with PO
+  sign-off `PENDING`. AC-29.6 was written specifically to make this an acceptable outcome, and it was
+  used as intended rather than as cover for picking the least-bad path.
+- **A benchmark session discredited its own numbers.** The US-29 harness initially measured 83-byte
+  404 bodies as though they were photographs; the session caught it, withdrew the runs, and re-ran —
+  rather than publishing fast, false numbers. For a benchmark-shaped story this is the whole ball game.
+- **Live-system proof, not unit-test proof, for the two seams that everything downstream inherits.**
+  `WEBHOOK_LIVE_PROOF.md` (1606 lines) exercises the real webhook against a real running stack and
+  records two out-of-order fixture findings it caught along the way instead of hiding them; US-25's
+  Flow A boundary was independently re-exercised live by both US-26 and US-29's work. Both seams are
+  now the most-depended-on new code in the repo and both are backed at the right bar.
+- **A deletion story deleted its own safety net correctly.** US-28 removed the lock-in tests pinning
+  retired behaviour **in the same commit as the removal that breaks them** — never left failing,
+  never skipped — with each deletion recorded against the accepted AC it belonged to, and it closed
+  sprint-3 action item 8 (the orphaned env vars a test had been preventing anyone from removing).
+  Coverage fell only 96.11→95.85 / 96.58→96.52 / 99.67→99.38, all far above the 80% floor, and a new
+  guard now makes lowering the gate itself a test failure.
+- **A deliberate non-removal was encoded as a test.** US-27 AC-27.4 asserts the static CMS Pages
+  surface is *not* disabled, so the AC-18.5 scoping decision cannot be silently reversed by a future
+  cleanup. Recording why something was kept is as load-bearing as recording why something went.
+- **AC sizing worked.** Sprint-4 criteria named every file to be read or changed and pre-ran searches
+  into the criterion text (retrospective action item 5). Where criteria still needed splitting
+  (US-26, US-28, US-29), the splits were shallow and purposeful — nothing approaching sprint-3's
+  `AC-17.4.1.1.1.2.2.2.1.1`.
+
+---
+
+### Missed checks / what didn't go well
+
+- **DoD item 9 (`retrospective.md` updated incrementally, not at close) was UNMET for the THIRD
+  consecutive sprint.** The file held only sprint-3 and sprint-1 content until this review was
+  written. Sprint 3 correctly diagnosed the cause — the action item had no named owner and no
+  in-sprint checkpoint — and sprint 4 put **both** into the Definition of Done (owner: Product Owner;
+  checkpoint: append after every second story close-out). It still did not happen. _Root cause: the
+  checkpoint is written in a document, but nothing in the pipeline stops or prompts at the checkpoint,
+  so it can only fire if an agent volunteers. Two sprints of evidence now say it will not._
+- **A finding was documented but not routed — again, one sprint after the DoD was rewritten to
+  forbid exactly that.** AC-22.2's F1–F9 register was fully authored in `PIVOT_AUDIT.md:6479–6518`
+  and never transcribed into `po-requests.md`. Sprint-4's DoD item 7 says verbatim that "a finding
+  that an AC requires to be routed there is not closed until it has actually been written there," and
+  US-22 *is* the story created to fix sprint 3's identical AC-17.9 gap. _Root cause: unchanged from
+  sprint 3 — the implementing agent has no write scope over `scrum-master/`, and the handoff across
+  that boundary is a hope, not a mechanism. The dev session behaved correctly; the process has a hole
+  where a step should be._
+- **A PR was merged with both CI jobs red (US-21 / PR #73).** The only recorded run for head SHA
+  `390f8de` failed in docker buildx (`failed to reserve cache`) — an infra flake, so lint, types and
+  tests never ran at all. It was merged anyway, violating DoD item 8. The content happens to be
+  correct (8 downstream stories built on it with 16/16 green jobs), but that is luck-adjacent
+  evidence gathered afterwards, not a gate. _Root cause: "it's just a flake" is currently a judgement
+  call at merge time rather than a rule that says re-run until green._
+- **Tracker staleness recurred at the source while being fixed downstream.** `sprint4.json` still
+  reads `"phase": "planning"` with story-level `dev_status: "not-started"` on all 9 stories, even
+  though every AC reads `done` and the deploy passed. This is the exact defect US-21 AC-21.4 was
+  written to repair in `sprint3.json` — repaired in the old file, reproduced in the new one, because
+  nothing writes those fields as work completes.
+- **Six dev sessions ended mid-sentence waiting on a background task.** In US-26, US-28 and US-29,
+  `dev_notes` trail off with "I'll stop here and wait for the background test run." Every one was
+  rescued by the harness's auto-commit (`34ceed5`, `d8aaac2`, `bd30706`, `a15b213`, `8e13b64`,
+  `1de4dd2`), so nothing was lost — but the Tester had to verify six times via `git log` that work
+  which *looked* abandoned was not. The auto-commit is doing real work; the session notes do not
+  reflect it, which costs review time on every story.
+- **A twenty-minute serial test suite is now shaping how criteria are written.** `npm test` is
+  `jest --runInBand` over ~140 suites, measured at 1,169,738 ms wall against 395,331 ms of API time
+  (`logs/20260807_235236_dev-team.json`). AC-28.5 had to be split into three explicitly *because* two
+  coverage runs plus remediation would not fit in one session. The runInBand fix that stabilised the
+  sprint-1 live-boot flake is now the dominant cost in every dev session.
+- **The Phase 4 foundation is built on tokens no human has looked at yet.** US-23 delivered the
+  specimen route and correctly routed it to `po-requests.md` item 14, but sign-off is still open while
+  US-24 and US-25 have already been built on the tokens. That was the accepted sequencing, not a
+  mistake — but the repaint cost grows with every page added before the look is confirmed.
+
+---
+
+### Tester (Quality Gate) feedback
+
+Recorded from the Tester's sprint-level close-out notes in `sprint4.json`:
+
+- **Sprint gate: PASS**, with one defect and one process flag. All 9 stories merged via PRs #73–#81;
+  **8 of 9 PRs show fully green CI** (`smoke` + `test`) on their final head SHA.
+- **Defect, AC-22.2 only, not the sprint:** the F1–F9 register "was fully authored
+  (`PIVOT_AUDIT.md:6479–6518`) but never transcribed into `po-requests.md`, violating the sprint's own
+  DoD item 7." Independently confirmed by grep — `po-requests.md` contains no F1–F9 entries; only
+  F8/UD-1 appears, and only via the separate AC-22.4 routing. Judged "a small, well-scoped
+  PO/orchestrator follow-up (copy one table), not a rework." Recommendation: close it **before**
+  sprint-4 is marked fully complete.
+- **Process flag, PR #73:** merged despite both CI jobs failing on its only recorded run
+  (`gh run view 31129644959`). Residual risk assessed **low** — 8 downstream stories depend on that
+  exact content and all 16 of their jobs passed, "effectively re-validating US-21's content 8 times
+  over." Recommendation for sprint 5: "the merge step must require a green CI run recorded against
+  the exact head SHA being merged, and must re-run rather than merge through a failed run even when
+  the failure looks like infra flake."
+- **On US-25/US-26:** the Flow A boundary and the webhook receiver are "the two most-depended-on new
+  integration seams in the codebase… Both are backed by live-system proof (not just unit tests) in
+  this sprint, which is the right bar for seams at this level."
+- **On US-29:** the story "closes one of the 'decisions no agent may make alone' and does so
+  correctly" — the ADR records no path chosen with miss magnitudes stated and PO sign-off PENDING,
+  "the honest-non-decision AC-29.6 requires, not a least-bad-path shortcut." The withdrawn
+  discredited benchmark runs are called out as "a strong quality signal for a benchmark-shaped story."
+- **On US-28:** the coverage gate was independently spot-checked at `.github/workflows/ci.yml:69` —
+  still at 80 on branches/functions/lines, no `continue-on-error`, no `passWithNoTests` — satisfying
+  DoD item 11 explicitly where the story removed tests.
+- **On the mid-sentence `dev_notes`:** verified via `git log` on each feature branch as harness
+  auto-commits — "tooling noise, not a gap." **No gaps found** on US-23, US-24, US-25, US-26, US-27,
+  US-28 or US-29.
+- **Three Tier-3 regression anchors named for sprint 5** (must not regress): the pivot-direction
+  guard, the webhook signature-verification + idempotency suites, and the coverage-gate guard.
+
+---
+
+### Process improvements / action items
+
+| # | Action | Rationale | Owner |
+|---|--------|-----------|-------|
+| 1 | **Transcribe the F1–F9 register from `PIVOT_AUDIT.md:6479–6518` into `po-requests.md` verbatim and re-close AC-22.2.** Do it before sprint-4 is marked fully complete. | The sprint's one open defect. The content exists and is merge-ready; only the copy is missing. | Product Owner |
+| 2 | **Give the routing handoff a mechanism instead of an intention: add a `pending-po-routing` block to the sprint JSON that a dev AC writes into, and make the orchestrator drain it into `po-requests.md` at story close.** | Two sprints running, an AC has authored a finding it had no write scope to route (AC-17.9, then AC-22.2). Rewriting the DoD did not fix it because the DoD cannot grant write scope. | Product Owner / Project Lead |
+| 3 | **Make the retrospective checkpoint a pipeline step, not a document line — the orchestrator appends to `retrospective.md` after every second story close-out.** | Unmet in sprints 1, 3 and 4. Sprint 3 added the diagnosis, sprint 4 added the owner *and* the checkpoint to the DoD, and it still did not fire. Nothing self-executing has been tried yet. | Project Lead |
+| 4 | **Never merge a PR without a green CI run recorded against its exact head SHA — re-run infra flakes, do not merge through them.** | PR #73 was merged on a doubly-failed run where lint/types/tests never executed. It happened to be fine; that is not a gate. | Project Lead / Tester |
+| 5 | **Have the story-close step write the story-level `dev_status`/`phase` fields, so the sprint JSON is true at a glance.** | `sprint4.json` reproduced the exact staleness US-21 AC-21.4 was written to repair in `sprint3.json`. Fixing files downstream while the source keeps producing them is not a fix. | Project Lead |
+| 6 | **Reduce the cost of a full verification run** — investigate parallelising the suites that do not touch shared Postgres state, or split a fast unit lane from the serial live lane. | `jest --runInBand` over ~140 suites now costs ~20 minutes wall clock and is directly shaping AC decomposition (AC-28.5 was split three ways because of it). | Dev Team |
+| 7 | **Have the harness auto-commit annotate the session notes it rescues**, so a story whose `dev_notes` end mid-sentence does not read as abandoned. | The Tester had to reconstruct six such cases from `git log` this sprint. The work was always there; only the record looked broken. | Project Lead |
+| 8 | **Get design-token sign-off (`po-requests.md` item 14) before any further Phase 4 page is built.** | Two stories are already on the tokens and every remaining Phase 4 page will be. The repaint cost only grows. | Project Lead (human decision) |
+| 9 | **Decide the two open "no agent may decide alone" items**: contract signing (item 7 — PO recommends accepting the sibling audit PDF for V1) and the R2 delivery path (item 15 — needs a Cloudflare custom domain and/or Worker before candidates 3–4 can be measured). | PRD Phase 3 is deliberately excluded from sprint 4 because of item 7; item 15 is the only thing keeping the delivery decision open. | Project Lead (human decision) |
+| 10 | **Protect the three Tier-3 regression anchors named by the Tester** — treat a change to the pivot-direction guard, the webhook signature/idempotency suites, or the coverage-gate guard as a decision, not a refactor. | Each one exists because the failure it guards against has already happened or is explicitly forbidden by the DoD. | Dev Team / Tester |
+
+**Still open from sprint-3's action list:** items 4 (capped sessions committing partial work — the
+harness auto-commit now covers much of it in practice, see action 7 above), 9 (the UD-1 upstream
+report still needs a human GitHub identity — `po-requests.md` item 16) and 10 (SPF/DKIM/DMARC before
+production email — item 17). Sprint-3 item 1 is **half delivered** — the AC-17.10 reopening landed
+(US-22 AC-22.1), the F1–F9 routing did not, and it is carried here as action 1. Items 6 and 7 were
+delivered by US-21 and US-22 AC-22.5, item 8 by US-28; items 2, 3 and 5 are superseded by actions 3,
+5 and the AC-sizing result above.
+
+---
+
 ## Sprint-3 — Pivot De-risking (PicPeak Backstage fork)
 
 - **Sprint goal:** De-risk the pivot before any feature is built on it — an approved pivot map, a licence-compliant fork pinned to a verified commit, proof that the fork really delivers the photography flow on PostgreSQL + the existing R2 bucket in Docker, and the four decisions sprint-4 cannot start without (system ownership, the Frontstage↔Backstage API boundary, the media-reuse model, the R2 delivery path). Plus extraction of the proven Stripe environment/key-pairing convention. No new public pages.

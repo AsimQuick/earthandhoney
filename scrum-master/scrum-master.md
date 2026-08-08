@@ -2,10 +2,10 @@
 project: earthandhoney
 type: master
 created: 2026-07-18
-last-updated: 2026-08-07
+last-updated: 2026-08-09
 last-updated-by: product-owner
 current-sprint: sprint-4
-sprint-phase: planning
+sprint-phase: review
 pivot-date: 2026-07-30
 tech-stack:
   backstage: PicPeak fork (pinned commit)
@@ -21,15 +21,158 @@ tech-stack:
 
 # Scrum Master — earthandhoney
 
-## Current Sprint: sprint-4 (Planning — ready for dev pickup, 2026-08-07)
+## Current Sprint: sprint-4 (Review — Complete, 2026-08-09)
 
 > **The product is NOT feature-complete.** No `*_SPEC.md` feature-specification document exists
 > anywhere in this repository (verified by repo-wide search, excluding `node_modules/` and
 > `vendor/`), so remaining scope comes from the post-pivot PRD's phase plan (§34) and the post-pivot
-> product backlog, exactly as it did for sprints 1–3. Sprint 4 takes backlog items 1–7 plus the
+> product backlog, exactly as it did for sprints 1–3. Sprint 4 took backlog items 1–7 plus the
 > sprint-3 carry-overs; **backlog items 8–42 remain**, covering Frontstage publishing, the darkroom,
 > the Project cockpit and Project Room, the headless ledger and Stripe, email/contracts/delivery, and
-> hardening/launch. PRD Phases 4–8 are all still open.
+> hardening/launch. PRD Phases 4–8 are all still open — Phase 2 is now complete and Phase 4 has
+> started.
+
+---
+
+## Sprint-4 Review Summary (2026-08-09)
+
+**Result: Delivered, with one open defect.** All 9 stories (US-21…US-29) and all 51 acceptance
+criteria are `checked` with `dev_status: done`, merged to `main` across 9 PRs (#73–#81). Tester
+sprint gate: **PASS**, recording one AC-level defect (AC-22.2) and one process flag (PR #73's merge).
+Deploy: **PASSED** — all verification tiers passed (`deploy_summary`, `sprint4.json`).
+
+| Story | Title | ACs | PR | Merged | Story status | Tester |
+|-------|-------|-----|----|--------|--------------|--------|
+| US-21 | Restore the authoritative post-pivot documentation onto `main` and correct the ownership record | 6/6 | [#73](https://github.com/AsimQuick/earthandhoney/pull/73) | 2026-08-06 | done | done |
+| US-22 | Route the sprint-3 findings: reopen contract-signing, register F1–F9 | 5/5 | [#74](https://github.com/AsimQuick/earthandhoney/pull/74) | 2026-08-06 | done | **defect-found** |
+| US-23 | Design-token lock-down | 7/7 | [#75](https://github.com/AsimQuick/earthandhoney/pull/75) | 2026-08-06 | done | done |
+| US-24 | Studio identity: one `StudioProfile` and bounded branding controls | 5/5 | [#76](https://github.com/AsimQuick/earthandhoney/pull/76) | 2026-08-07 | done | done |
+| US-25 | Gallery Placement: a Frontstage page renders a Backstage gallery | 6/6 | [#77](https://github.com/AsimQuick/earthandhoney/pull/77) | 2026-08-07 | done | done |
+| US-26 | Backstage change triggers a Frontstage refresh via verified webhook | 12/12 | [#78](https://github.com/AsimQuick/earthandhoney/pull/78) | 2026-08-07 | done | done |
+| US-27 | Disable the duplicate Backstage surfaces | 5/5 | [#79](https://github.com/AsimQuick/earthandhoney/pull/79) | 2026-08-07 | done | done |
+| US-28 | Pivot execution: retire superseded gallery artifacts and orphaned config | 9/9 | [#80](https://github.com/AsimQuick/earthandhoney/pull/80) | 2026-08-08 | done | done |
+| US-29 | Benchmark the R2 delivery paths and close the delivery decision | 14/14 | [#81](https://github.com/AsimQuick/earthandhoney/pull/81) | 2026-08-08 | done | done |
+
+**Sprint goal met.** The post-pivot direction is now real on `main`, and the Frontstage foundation
+sits on top of the fork proven in sprint 3:
+
+- **The pivot reached `main` (US-21).** The post-pivot `PRD.md` (1855 lines), `CLAUDE.md`, the
+  post-pivot backlog (items 1–42) and the sixteen Reminders, and the closed `sprint2.json` (US-10…
+  US-13 `retired` in place) were restored verbatim from `9624a07`. `SYSTEM_OWNERSHIP.md`'s four
+  wrong rows (Better Auth, Resend, Testimonials/Packages/FAQ, pre-Ledger-Rule payments) were
+  corrected against the restored `CLAUDE.md`, each citing the line it now matches. A standing Jest
+  guard (`us21-ac21.6-pivot-direction-guard.test.ts`) now fails if any of those documents silently
+  loses the pivot direction a third time — the enforcement Reminders 15 and 16 have been asking for.
+- **The sprint-3 findings were routed (US-22), except one.** `po-requests.md` item 7 is
+  **REOPENED — awaiting decision**, naming the failed element (an audit page baked into the delivered
+  PDF), citing `PIVOT_AUDIT.md` and three fork call sites, listing all three options and the PO
+  recommendation. The reopening is propagated to `CLAUDE.md`, PRD §29 (plus F1/F5 markers at §6.2,
+  §17.3, §28.1, §30) and `SYSTEM_OWNERSHIP.md`. The drafted UD-1 upstream report is surfaced as
+  po-requests item 16. The F7 `/storage` permission fix is now reproducible in `docker-compose.yml`
+  and proven live across `down -v` → rebuild, with no file under `vendor/picpeak/` touched.
+  **Not routed: F1–F9** — see the open defect below.
+- **Design tokens are locked (US-23).** One token source of truth (`src/styles/tokens.css`) covering
+  all twelve PRD §12.2 categories, self-hosted Fraunces + Inter with no Google Fonts request,
+  near-black ink and a neutral grey scale with **no accent colour**, WCAG AA contrast computed from
+  the token values themselves, the US-8 shell re-parameterised onto tokens with an identical
+  structural snapshot, a `noindex` specimen route, and a reproducible framework-free export
+  (`exports/design-tokens/tokens.css`) so Backstage/Project Room templates are consumers from day one.
+- **The Frontstage↔Backstage seam exists and is proven live (US-24, US-25, US-26).** A single
+  `StudioProfile` global owns every studio detail with bounded branding controls; a
+  `GalleryPlacements` collection references a Backstage gallery **by external identifier with no
+  relation into the Backstage database**, resolved over Flow A (`backstageClient.ts`,
+  `backstageGalleryMapper.ts`, 60s cache cap) and rendered on a `noindex` demo route; a Backstage
+  change triggers a Frontstage refresh through an **HMAC-verified, idempotent** webhook, evidenced by
+  `WEBHOOK_LIVE_PROOF.md` (1606 lines) against a real running stack — including two out-of-order
+  fixture findings caught and recorded rather than hidden.
+- **One owner per business function (US-27).** A new `publicSite` feature flag defaults `false` and
+  is checked server-side before `app_settings`; the raw HTML/CSS "Public Site" panel is hidden behind
+  the fork's own `RequireFeature` gate; the native quote/invoice/tax-report subsystem is *shown* off
+  by default (403 with the flag off) rather than assumed off. The static CMS Pages surface
+  (impressum/privacy/terms) deliberately stays **enabled**, encoded as a test so a future cleanup
+  cannot silently reverse the AC-18.5 decision. All changes additive; the migration-manifest SHA-1
+  integrity test stays green; recorded in `FORK_CHANGELOG.md`, `PICPEAK_PORT_LEDGER.md` and
+  `UPSTREAM_SYNC.md`.
+- **The pivot was executed, not just documented (US-28).** The Payload `Galleries` collection, the
+  Payload-owned Sharp derivative pipeline and the Payload-owned R2 upload path are removed, with
+  their lock-in tests deleted **in the same commit as the removal that breaks them** — never left
+  failing, never skipped — and each deletion recorded against the accepted AC it belonged to. The
+  three orphaned env vars (`RESEND_API_KEY`, `LEAD_NOTIFICATION_EMAIL`,
+  `NEXT_PUBLIC_WHATSAPP_NUMBER`) are finally out of `.env.example`, closing sprint-3 action item 8.
+  Coverage moved 96.11→95.85 branches, 96.58→96.52 functions, 99.67→99.38 lines — all far above the
+  80% floor, and the gate itself is now guarded against being lowered.
+- **The R2 delivery decision was closed honestly, not conveniently (US-29).** Both measurable
+  candidates were benchmarked and **both were rejected against the ADR's own targets** —
+  `backstage-proxy` and `presigned-r2` each fell 3 points short of the mobile performance target on
+  `portfolio-gallery` and missed LCP by ~1.08–1.35s there and up to 714–997ms on `story-gallery`.
+  Candidates 3–5 are recorded as unmeasured with their infrastructure prerequisite named (po-requests
+  item 15: Cloudflare custom domain / Worker). **No path is chosen; the decision stays open** with a
+  named next step and PO sign-off `PENDING` — exactly what AC-29.6 exists to permit. The session also
+  caught and withdrew its own discredited early runs (83-byte 404 bodies mistaken for photographs)
+  rather than reporting false numbers.
+
+**Definition of Done:** 13 of 15 items met with direct evidence. Two unmet:
+
+- **Item 7 (routing to `po-requests.md` is part of closing an AC that requires it) — UNMET for
+  AC-22.2.** This is the sprint's one open defect; see below.
+- **Item 9 (`retrospective.md` updated incrementally during the sprint, with a named owner and an
+  in-sprint checkpoint) — UNMET for the third consecutive sprint.** The file held only sprint-3 and
+  sprint-1 content until this review was written. Sprint 3 diagnosed the missing owner/checkpoint and
+  sprint 4 added both to the DoD; the checkpoint still did not fire.
+
+Item 8 (existing CI stays green) is met for 8 of 9 PRs and flagged for #73 — see below.
+
+**Defects and findings (all disclosed):**
+
+- **OPEN — AC-22.2, F1–F9 never reached `po-requests.md`.** The register is fully authored and
+  merge-ready in `PIVOT_AUDIT.md:6479–6518` (finding id, one-line statement, contradicted PRD
+  section, proposed disposition, for all nine findings), but the dev session correctly held that
+  `scrum-master/` is outside an implementing AC's write scope, so the table was never transcribed.
+  `po-requests.md` contains no F1–F9 entries. This is precisely the failure sprint-4's DoD item 7 was
+  written to prevent, repeating sprint 3's AC-17.9 gap one sprint later. **Disposition: a PO/
+  orchestrator transcription task (copy one table), not a dev rework.** AC-22.2 stays `defect-found`
+  until it lands.
+- **PROCESS FLAG — PR #73 was merged with both CI jobs failed.** `gh run view 31129644959` shows the
+  only recorded run for head SHA `390f8de` failed in docker buildx (`failed to reserve cache`) — an
+  infra flake; lint, type-check and test never executed. No green re-run exists for that SHA. Direct
+  violation of DoD item 8. Residual risk assessed low: all 8 downstream stories branch from that
+  exact content and all 16 of their CI jobs passed, re-validating it eight times over. Not re-opened;
+  carried as a process action item.
+- **Tooling noise, not delivery gaps.** Several `dev_notes` entries in US-26, US-28 and US-29 end
+  mid-sentence waiting on a background task. Each was independently confirmed against
+  `git log origin/feature/US-2x` to have been captured by the harness auto-commit (`34ceed5`,
+  `d8aaac2`, `bd30706`, `a15b213`, `8e13b64`, `1de4dd2`).
+- **Tracker hygiene repeats.** `sprint4.json` still reads `"phase": "planning"` and story-level
+  `dev_status: "not-started"` on all 9 stories, despite every AC reading `dev_status: done` and the
+  deploy having passed. This is the identical stale-field pattern US-21 AC-21.4 was written to fix in
+  `sprint3.json` — fixed downstream, not fixed at source.
+
+**Tier-3 regression anchors for sprint 5 (load-bearing — must not regress):**
+
+1. `src/__tests__/us21-ac21.6-pivot-direction-guard.test.ts` — the only thing preventing a second
+   loss of the pivot direction.
+2. `src/__tests__/us26-ac26.1-picpeak-webhook-signature-verification.test.ts` and the AC-26.5
+   idempotency suite — the entire security basis of the Backstage→Frontstage webhook flow.
+3. `src/__tests__/us28-ac28.5-coverage-gate-guard.test.ts` — stops a future coverage shortfall being
+   "fixed" by editing the threshold.
+
+The two most-depended-on new seams are US-25's Flow A boundary (`backstageClient.ts`,
+`backstageGalleryMapper.ts`, the 60s cache) and US-26's webhook receiver. Both are backed by
+live-system proof, not unit tests alone.
+
+**Open follow-ups carried to sprint-5:**
+
+1. **Transcribe the F1–F9 register from `PIVOT_AUDIT.md` into `po-requests.md`** and re-close
+   AC-22.2. Highest priority — it is the only thing between sprint 4 and a clean close.
+2. **Two decisions await the human**: the reopened contract-signing decision (po-requests item 7,
+   PO recommendation (a) accept the sibling audit PDF for V1) and the R2 delivery path (po-requests
+   item 15 — needs a Cloudflare custom domain and/or Worker before candidates 3–4 can be measured).
+   Both are "decisions no agent may make alone".
+3. **Design-token sign-off** (po-requests item 14) — the specimen route is built and awaiting a human
+   look. Every Phase 4 page is built on whatever is locked there.
+4. **Reconcile `sprint4.json`** — `phase` → `complete`, story-level `dev_status` → `done`.
+5. Still standing from sprint 3: the UD-1 upstream report needs a human GitHub identity
+   (po-requests item 16); SPF/DKIM/DMARC before any production email (item 17).
 
 ---
 
@@ -146,17 +289,27 @@ Detailed acceptance criteria exist for the **current sprint only**. Sprint-4 can
 one-liners here and get full criteria when sprint 3 closes. Ordering follows the PRD phase plan.
 
 ### Sprint-4 candidates — Frontstage foundation (PRD Phase 2 completion + Phase 4 start)
+
+_All seven delivered in sprint 4 (2026-08-09). Kept numbered in place so the backlog's 1–42
+numbering stays stable; each carries the story that closed it._
+
 1. **Design-token lock-down** — establish and lock the shared token set before any new page is
-   built. *(Product Owner recommendation, **pending human confirmation** — see `po-requests.md`.)*
+   built. *(**Delivered — US-23.** Human sign-off on the specimen route is still open: `po-requests.md` item 14.)*
 2. Disable the duplicate Backstage surfaces identified in US-18 (its landing-page CMS, its native
-   billing screens, its page-building capability).
+   billing screens, its page-building capability). *(**Delivered — US-27**; static CMS Pages
+   deliberately left enabled per AC-18.5.)*
 3. Studio identity: a single `StudioProfile` owning business name, contact details, service areas,
    social profiles, default social image, and default metadata patterns — no studio detail scattered
-   through code.
+   through code. *(**Delivered — US-24.**)*
 4. Gallery Placement model: reference a Backstage gallery from a Frontstage page and render it.
+   *(**Delivered — US-25**, over Flow A with no relation into the Backstage database.)*
 5. Retire or repurpose the superseded Payload gallery artifacts per the US-14 decision.
-6. Backstage change triggers a Frontstage content refresh via webhook.
-7. R2 delivery-path benchmark and decision (deferred from US-19).
+   *(**Delivered — US-28**, together with the three orphaned env vars.)*
+6. Backstage change triggers a Frontstage content refresh via webhook. *(**Delivered — US-26**,
+   HMAC-verified and idempotent, proven live in `WEBHOOK_LIVE_PROOF.md`.)*
+7. R2 delivery-path benchmark and decision (deferred from US-19). *(**Benchmarked — US-29; decision
+   deliberately still open.** Both measured candidates missed the ADR's targets; candidates 3–5 need
+   infrastructure that does not exist yet — `po-requests.md` item 15.)*
 
 ### Frontstage publishing (PRD Phase 4)
 8. Navigation: Weddings, Engagements, Details — configurable through structured fields.
