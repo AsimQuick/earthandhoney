@@ -114,7 +114,13 @@ describe('AC-29.2.1: candidate 1 — no existing run file is usable path-1 evide
     expect(runScript).toContain("`run-${new Date().toISOString().replace(/[:.]/g, '-')}.json`")
   })
 
-  it('nothing in the working tree proxies /api/gallery/* from the Next.js origin to the Backstage backend', () => {
+  it('the origin gap this candidate exposed is now closed by AC-29.2.2.1, not left open', () => {
+    // At AC-29.2.1's time nothing proxied /api/gallery/* from the Next.js
+    // origin to the Backstage backend — that gap was the finding. AC-29.2.2.1
+    // closes it with next.config.ts rewrites (see
+    // us29-ac29.2.2.1-benchmark-image-origin-fix.test.ts for the full
+    // assertion of that fix's shape), so this now asserts the fix exists
+    // rather than asserting the gap is still open.
     const nextConfig = read('next.config.ts')
     const compose = readRaw('docker-compose.yml')
     // Scoped to the two benchmark services only — docker-compose.yml's
@@ -122,7 +128,7 @@ describe('AC-29.2.1: candidate 1 — no existing run file is usable path-1 evide
     // fork's own nginx, which is not this claim.
     const benchmarkBlock = compose.slice(compose.indexOf('web-benchmark:'), compose.indexOf('volumes:\n  pgdata:'))
 
-    expect(nextConfig).not.toMatch(/rewrites\s*\(/)
+    expect(nextConfig).toMatch(/rewrites\s*\(/)
     expect(benchmarkBlock).not.toMatch(/nginx|caddy|reverse[_-]?proxy/i)
   })
 
