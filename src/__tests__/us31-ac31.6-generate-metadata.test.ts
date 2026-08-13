@@ -92,7 +92,10 @@ describe('US-31 AC-31.6: generateMetadata computes canonical URL and Open Graph 
   it('the Pages collection has no canonical-URL or Open Graph input field — this data is system-generated only', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Pages } = require('@/collections/Pages') as typeof import('@/collections/Pages')
-    const fieldNames = Pages.fields.filter((field): field is { name: string } => 'name' in field).map((f) => f.name)
+    type NamedField = Extract<(typeof Pages.fields)[number], { name: string }>
+    const fieldNames = Pages.fields
+      .filter((field): field is NamedField => 'name' in field)
+      .map((f) => f.name)
     expect(fieldNames).not.toContain('canonicalUrl')
     expect(fieldNames).not.toContain('openGraphTitle')
     expect(fieldNames).not.toContain('openGraphDescription')
