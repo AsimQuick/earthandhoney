@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 168,
+  "totalSuites": 169,
   "counts": {
     "live": 7,
-    "unit": 161
+    "unit": 162
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -708,6 +708,11 @@
       "path": "src/__tests__/us29-ac29.5-security-invariants-preserved.test.ts",
       "lane": "LIVE",
       "reason": "a describe block gated on dns.lookup('backstage-backend') resolving performs real fetch calls against process.env.BACKSTAGE_BACKEND_URL (default http://backstage-backend:3000) to log in, create/publish galleries, and verify auth against the live Backstage/PicPeak API"
+    },
+    {
+      "path": "src/__tests__/us32-ac32.1-data-driven-navigation.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom component rendering of VerticalMenu via @testing-library/react plus source/schema assertions on Navigation global, getNavItems.ts, and NAVIGATION_ADR.md, no network/db"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",

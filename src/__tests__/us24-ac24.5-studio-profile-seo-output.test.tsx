@@ -31,10 +31,23 @@ jest.mock('@/lib/getStudioProfile', () => ({
   getStudioProfile: jest.fn(),
 }))
 
+// The (frontend) root layout also fetches the primary nav (AC-32.1) via
+// src/lib/getNavItems.ts — another module that isolates the `payload`
+// ESM-import boundary, so it needs the same mock treatment as
+// getStudioProfile above, even though this suite's assertions are all about
+// <head>/JSON-LD, not navigation.
+jest.mock('@/lib/getNavItems', () => ({
+  getNavItems: jest.fn(),
+}))
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getStudioProfile } = require('@/lib/getStudioProfile') as { getStudioProfile: jest.Mock }
-// Imported after the mock is declared so generateMetadata/RootLayout call the
-// mocked getStudioProfile rather than the real one (which imports `payload`).
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { getNavItems } = require('@/lib/getNavItems') as { getNavItems: jest.Mock }
+getNavItems.mockResolvedValue([])
+// Imported after the mocks are declared so generateMetadata/RootLayout call
+// the mocked getStudioProfile/getNavItems rather than the real ones (which
+// import `payload`).
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const RootLayoutModule = require('@/app/(frontend)/layout')
 const { generateMetadata, default: RootLayout } = RootLayoutModule as {
