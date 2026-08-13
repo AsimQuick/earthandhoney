@@ -82,8 +82,8 @@
       ],
       "dev_status": "not-started",
       "dev_notes": "",
-      "tester_status": "not-started",
-      "tester_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "PLAN REVIEW: All 5 ACs are directly testable - each carries measured, numeric or file-level evidence (wall-clock lane timings against the named 1,169,738 ms baseline, three consecutive identical-pass Docker runs including the AC-1.2 live-boot suite, named coverage figures against the 80% gate, and a deliberately-failing test proven to fail `npm test` in each lane). No scope issues, no wording changes needed. Approved.",
       "issue": null
     },
     {
@@ -146,8 +146,8 @@
       ],
       "dev_status": "not-started",
       "dev_notes": "",
-      "tester_status": "not-started",
-      "tester_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "PLAN REVIEW: All 7 ACs are directly testable against rendered HTML, live requests against a running stack, or standing lock-in tests (AC-31.2, protecting Pillar 3 the same way AC-27.4 locked a scoping decision; AC-31.4's three-request 200/404/noindex triad; AC-31.7's structural snapshot pair). AC-31.1's field-list mapping and AC-31.5's field-definition + dual live-render evidence are the model the rest of the sprint's Flow A ACs were tightened to match. No scope issues. Approved.",
       "issue": null
     },
     {
@@ -198,8 +198,8 @@
       ],
       "dev_status": "not-started",
       "dev_notes": "",
-      "tester_status": "not-started",
-      "tester_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "PLAN REVIEW: All 5 ACs are directly testable via live before/after against a running stack and structural snapshots. No scope issues. Approved.",
       "issue": null
     },
     {
@@ -214,14 +214,14 @@
       "acceptance_criteria": [
         {
           "id": "33.1",
-          "text": "A Payload `Forms` collection implements the PRD 20.2 configurable set - internal name, public title, description, recipient(s), success message, field order, labels and helper text, required/optional status, and the Early Booking Benefits footer/link - and offers exactly the seven V1 field types: short text, email, phone, date, dropdown, checkbox/consent, long text. No conditional-logic engine is built (PRD 20.2: 'No complex conditional form engine is required in V1'). Evidence: the field-type list read back from the collection, and a test that fails if an eighth type or a conditional-visibility rule is added.",
+          "text": "A Payload `Forms` collection implements the PRD 20.2 configurable set - internal name, public title, description, recipient(s), success message, field order, labels and helper text, required/optional status, and the Early Booking Benefits footer/link - and offers exactly the seven V1 field types: short text, email, phone, date, dropdown, checkbox/consent, long text. No conditional-logic engine is built (PRD 20.2: 'No complex conditional form engine is required in V1'). Evidence: the PRD 20.2 configurable-set list mapped one-to-one against the collection definition (as AC-31.1 did for `Pages`), the field-type list read back from the collection, and a test that fails if an eighth type or a conditional-visibility rule is added.",
           "checked": false,
           "dev_status": "not-started",
           "tester_status": "not-started"
         },
         {
           "id": "33.2",
-          "text": "An `Inquiries` collection stores a durable record, written server-side and committed BEFORE any email is attempted, so a failed or slow notification can never lose a lead. Each record captures the submitted values, the source page, and campaign parameters (utm_*). Evidence: a submission proven to persist with the notification path forced to fail - the inquiry still exists and is readable in the admin.",
+          "text": "An `Inquiries` collection stores a durable record, written server-side and committed BEFORE any email is attempted, so a failed or slow notification can never lose a lead. Each record captures the submitted values, the source page, and campaign parameters (utm_*). Evidence: a submission proven to persist with the notification path forced to fail - the inquiry still exists and is readable in the admin, with the submitted field values, source page and utm_* parameters all present on the stored record.",
           "checked": false,
           "dev_status": "not-started",
           "tester_status": "not-started"
@@ -235,14 +235,14 @@
         },
         {
           "id": "33.4",
-          "text": "Spam protection is in place and does not depend on a third-party client-side script or an external service: honeypot field, submission-timing check, and a server-side rate limit per source. Record the options rejected and why (DoD item 6). Evidence: a scripted rapid-fire submission proven to be rate-limited, and a honeypot-filled submission proven to be silently rejected without creating an Inquiry.",
+          "text": "Spam protection is in place and does not depend on a third-party client-side script or an external service: honeypot field, submission-timing check, and a server-side rate limit per source. Record the options rejected and why (DoD item 6). Evidence: a scripted rapid-fire submission proven to be rate-limited, a honeypot-filled submission proven to be silently rejected without creating an Inquiry, and a submission completed faster than the timing threshold proven to be rejected without creating an Inquiry.",
           "checked": false,
           "dev_status": "not-started",
           "tester_status": "not-started"
         },
         {
           "id": "33.5",
-          "text": "The studio notification email is queued through the Backstage email queue - the single authoritative owner of all client and photographer email per CLAUDE.md's System Ownership table and `SYSTEM_OWNERSHIP.md`. It is not sent from Payload or Next directly, and Resend is retired and must not reappear. No SMTP secret is ever exposed to the browser (PRD 20.3). If a new email template row is required, add it via a NEW numbered migration or seed - never by editing an already-shipped upstream migration (Reminder 2) - and check first against finding F9 in `po-requests.md`, which records two email types whose templates do not exist. Record the boundary crossing in `PAYLOAD_PICPEAK_API_CONTRACT.md`, and in `FORK_CHANGELOG.md` plus `PICPEAK_PORT_LEDGER.md` if any file under `vendor/picpeak/` is touched. Evidence: the notification observed queued and then sent, confirmed independently in the mail catcher the way US-17 AC-17.6 did - not inferred from a return code.",
+          "text": "The studio notification email is queued through the Backstage email queue - the single authoritative owner of all client and photographer email per CLAUDE.md's System Ownership table and `SYSTEM_OWNERSHIP.md`. It is not sent from Payload or Next directly, and Resend is retired and must not reappear. No SMTP secret is ever exposed to the browser (PRD 20.3). If a new email template row is required, add it via a NEW numbered migration or seed - never by editing an already-shipped upstream migration (Reminder 2) - and check first against finding F9 in `po-requests.md`, which records two email types whose templates do not exist. Record the boundary crossing in `PAYLOAD_PICPEAK_API_CONTRACT.md`, and in `FORK_CHANGELOG.md` plus `PICPEAK_PORT_LEDGER.md` if any file under `vendor/picpeak/` is touched. Evidence: the notification observed queued and then sent, confirmed independently in the mail catcher the way US-17 AC-17.6 did - not inferred from a return code - and the client-side bundle/network requests checked to confirm no SMTP secret is ever sent to or present in the browser.",
           "checked": false,
           "dev_status": "not-started",
           "tester_status": "not-started"
@@ -264,8 +264,8 @@
       ],
       "dev_status": "not-started",
       "dev_notes": "",
-      "tester_status": "not-started",
-      "tester_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "PLAN REVIEW: Found and fixed four missing-test-criteria gaps where the AC's evidence clause was narrower than its claim, and corrected them directly (minor wording, no scope change): AC-33.1's evidence tested only the seven field types, not the PRD 20.2 configurable-set list itself - added a one-to-one field mapping matching the AC-31.1 pattern. AC-33.2 claimed captured values/source/utm but evidence only proved persistence-before-send - added an assertion that those fields are actually on the stored record. AC-33.4 named three spam defenses (honeypot, timing check, rate limit) but evidence exercised only two - added a timing-threshold rejection test. AC-33.5 required no SMTP secret reach the browser but had no evidence for it - added a client-bundle/network check. All 7 ACs are testable now. Approved.",
       "issue": null
     },
     {
@@ -325,8 +325,8 @@
       ],
       "dev_status": "not-started",
       "dev_notes": "",
-      "tester_status": "not-started",
-      "tester_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "PLAN REVIEW: All 6 ACs are testable against a running stack with measured figures (CLS on mobile, LCP against the PRD 19.4 targets with an honest-miss clause carried from US-29's precedent). AC-34.6 correctly keeps the R2 delivery decision open rather than choosing it (Reminder 1). No scope issues. Approved.",
       "issue": null
     },
     {
@@ -349,7 +349,7 @@
         },
         {
           "id": "35.2",
-          "text": "The masonry placement preserves every image's received aspect ratio and the photographer's selected order, never crops or stretches, uses the full available width with system-defined gaps from `tokens.css`, reserves aspect-ratio space before load, and uses approximately one column on mobile, two on tablet and three or four on larger screens. Build on the existing `src/components/gallery/GalleryMasonryLayout.tsx` rather than writing a second masonry implementation. Evidence: a gallery of mixed portrait/landscape/panoramic images rendered at three viewport widths with the rendered aspect ratios compared against the source values. IN SCOPE: the PRD 15.1 behaviours listed above. OUT OF SCOPE and left to backlog item 15 (PRD Phase 5): the full masonry refinement pass and the shared fullscreen-viewer specification (backlog item 17) - state the boundary in the story record rather than drifting into Phase 5.",
+          "text": "The masonry placement preserves every image's received aspect ratio and the photographer's selected order, never crops or stretches, uses the full available width with system-defined gaps from `tokens.css`, reserves aspect-ratio space before load, and uses approximately one column on mobile, two on tablet and three or four on larger screens. Build on the existing `src/components/gallery/GalleryMasonryLayout.tsx` rather than writing a second masonry implementation. Evidence: a gallery of mixed portrait/landscape/panoramic images rendered at three viewport widths (mobile, tablet, larger) with, at each width: the rendered aspect ratios compared against the source values, the rendered column count recorded, the photographer's selected order asserted unchanged, the rendered gap measured against the token value, and the reserved layout space at each image slot asserted present before the image loads. IN SCOPE: the PRD 15.1 behaviours listed above. OUT OF SCOPE and left to backlog item 15 (PRD Phase 5): the full masonry refinement pass and the shared fullscreen-viewer specification (backlog item 17) - state the boundary in the story record rather than drifting into Phase 5.",
           "checked": false,
           "dev_status": "not-started",
           "tester_status": "not-started"
@@ -371,8 +371,8 @@
       ],
       "dev_status": "not-started",
       "dev_notes": "",
-      "tester_status": "not-started",
-      "tester_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "PLAN REVIEW: Fixed one missing-test-criteria gap in AC-35.2 (minor wording, no scope change): the AC claims aspect-ratio preservation, order preservation, token-driven gaps, pre-load reserved space, and responsive column count, but the original evidence exercised only aspect ratio. Evidence now names all five, checked at each of the three tested viewport widths. Phase-5 boundary in AC-35.2 and AC-35.4's copy-restraint lock-in test are both testable as written. Approved.",
       "issue": null
     },
     {
@@ -395,7 +395,7 @@
         },
         {
           "id": "36.2",
-          "text": "Repeating sections preserve the author's order, and each section's gallery placement resolves over the Flow A boundary by external identifier only - the same no-cross-database-relation rule as AC-31.5. Evidence: a three-section story rendered in order, plus a reorder changing the output with no code change.",
+          "text": "Repeating sections preserve the author's order, and each section's gallery placement resolves over the Flow A boundary by external identifier only - the same no-cross-database-relation rule as AC-31.5. Evidence: the gallery-placement field definition showing an external identifier only with no relation/join field into the Backstage database, a three-section story rendered in order, plus a reorder changing the output with no code change.",
           "checked": false,
           "dev_status": "not-started",
           "tester_status": "not-started"
@@ -424,8 +424,8 @@
       ],
       "dev_status": "not-started",
       "dev_notes": "",
-      "tester_status": "not-started",
-      "tester_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "PLAN REVIEW: Fixed one missing-test-criteria gap in AC-36.2 (minor wording, no scope change): the AC asserts gallery placements resolve by external identifier only (the same no-cross-database-relation rule as AC-31.5), but the evidence only checked rendered order, not the field definition itself. Added the field-definition check, matching AC-31.5's pattern. AC-36.3's heading-hierarchy and AC-36.5's no-blog-chrome ACs are both cleanly falsifiable as written. Approved.",
       "issue": null
     },
     {
@@ -463,7 +463,7 @@
         },
         {
           "id": "37.4",
-          "text": "`sitemap.xml` contains every published, indexable page and story and excludes every draft and every noindex record, and image-sitemap references are included for placed gallery imagery. Evidence: the generated sitemap fetched from a running stack, cross-checked against the database contents, with a draft page and a noindex page proven absent.",
+          "text": "`sitemap.xml` contains every published, indexable page and story and excludes every draft and every noindex record, and image-sitemap references are included for placed gallery imagery. Evidence: the generated sitemap fetched from a running stack, cross-checked against the database contents, with a draft page and a noindex page proven absent, and the image-sitemap entries for a page with placed gallery imagery checked present and pointing at the correct image URLs.",
           "checked": false,
           "dev_status": "not-started",
           "tester_status": "not-started"
@@ -477,7 +477,7 @@
         },
         {
           "id": "37.6",
-          "text": "A per-page and per-story SEO assistant exists in the admin per PRD 21.2, offering: search-result preview, SEO title, slug, meta description, canonical URL, H1 preview, photography type, city/region, venue, Open Graph image, index/noindex, schema preview, missing-alt-text audit and internal-link suggestions. There is NO meta-keywords field - PRD 21.2 forbids one - and tags remain internal relationships only. Evidence: the assistant shown against a real page, plus a standing test that fails if a meta-keywords field is added anywhere.",
+          "text": "A per-page and per-story SEO assistant exists in the admin per PRD 21.2, offering: search-result preview, SEO title, slug, meta description, canonical URL, H1 preview, photography type, city/region, venue, Open Graph image, index/noindex, schema preview, missing-alt-text audit and internal-link suggestions. There is NO meta-keywords field - PRD 21.2 forbids one - and tags remain internal relationships only. Evidence: each of the fourteen listed controls (search-result preview, SEO title, slug, meta description, canonical URL, H1 preview, photography type, city/region, venue, Open Graph image, index/noindex, schema preview, missing-alt-text audit, internal-link suggestions) shown present and functional against a real page, plus a standing test that fails if a meta-keywords field is added anywhere.",
           "checked": false,
           "dev_status": "not-started",
           "tester_status": "not-started"
@@ -492,8 +492,8 @@
       ],
       "dev_status": "not-started",
       "dev_notes": "",
-      "tester_status": "not-started",
-      "tester_notes": "",
+      "tester_status": "approved",
+      "tester_notes": "PLAN REVIEW: Fixed two missing-test-criteria gaps (minor wording, no scope change): AC-37.4 claimed image-sitemap references for placed gallery imagery but the evidence only checked page/story presence in the sitemap - added an explicit image-sitemap-entry check. AC-37.6 lists fourteen SEO-assistant controls but the evidence was a generic 'shown against a real page' - it now names each of the fourteen so the AC can't be closed on a partial implementation. AC-37.1's StudioProfile-only mapping and AC-37.5's robots/dev-route exclusion checks were already complete as written. Approved.",
       "issue": null
     }
   ],

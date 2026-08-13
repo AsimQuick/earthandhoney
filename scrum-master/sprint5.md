@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 0/8 stories | 0/46 ACs
-**Last Updated:** 2026-08-09T12:00:00+00:00
+**Last Updated:** 2026-08-13T00:00:00+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -12,13 +12,13 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - `CLAUDE.md - Product Pillars (3: deterministic beauty; 5: one owner per business function), the System Ownership table, and Retired From the Old Direction`
 - `scrum-master/scrum-master.md - post-pivot Product Backlog items 8-14 (this sprint) and the sixteen Reminders`
 - `scrum-master/retrospective.md - sprint-4 action items 1-10; items 2, 3, 4, 5 and 10 are folded into this sprint's definition of done`
-- `scrum-master/po-requests.md - item 14 (design-token sign-off, still open), item 15 (R2 delivery path, still open), and the newly transcribed F1-F9 upstream findings register`
+- `scrum-master/po-requests.md - RE-READ AT 2026-08-13: two decisions that this plan was first written around have been RESOLVED by the human since planning (commit 449f31c). Item 14 (design-token sign-off) is signed off as-is - the token set is locked as the visual spec for every Frontstage and Project Room surface, so no Phase 4 story in this sprint is building on a provisional palette. Items 7 and 13 (contract e-signature) are resolved as option (a): the sibling-PDF audit trail is accepted for V1, no fork patch, no external provider - which unblocks PRD Phase 3 for a future sprint but changes nothing inside sprint 5. Item 15 (the R2 delivery path) is STILL OPEN and remains a named variable for US-34 AC-34.6. The file also carries the F1-F9 upstream findings register transcribed at sprint-4 close-out.`
 - `scrum-master/sprint4.json - sprint-4 outcome, Tester close-out notes, and the three Tier-3 regression anchors`
 - `PAYLOAD_PICPEAK_API_CONTRACT.md - Flow A, the boundary every gallery placement resolves through`
 - `SYSTEM_OWNERSHIP.md - corrected in sprint 4; the authority for who owns email`
 - `R2_STORAGE_AND_DELIVERY_ADR.md - the delivery decision is still OPEN; US-34 measures against it but must not close it`
 - `WEBHOOK_LIVE_PROOF.md - how live-system proof was recorded in sprint 4; the bar for seam-level evidence`
-- `src/styles/tokens.css and exports/design-tokens/tokens.css - the locked token set every surface in this sprint is built from`
+- `src/styles/tokens.css and exports/design-tokens/tokens.css - the token set every surface in this sprint is built from. Human sign-off landed 2026-08-13 (po-requests item 14): locked as-is with no changes requested, so these values are a specification, not a proposal. A story that finds them inadequate raises it through pending_po_routing rather than editing them.`
 - `scrum-master/PRD-archive.md - historical only, do not build from it`
 
 ## Definition of Done
@@ -54,7 +54,9 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: All 5 ACs are directly testable - each carries measured, numeric or file-level evidence (wall-clock lane timings against the named 1,169,738 ms baseline, three consecutive identical-pass Docker runs including the AC-1.2 live-boot suite, named coverage figures against the 80% gate, and a deliberately-failing test proven to fail `npm test` in each lane). No scope issues, no wording changes needed. Approved.
 
 ---
 
@@ -72,7 +74,9 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: All 7 ACs are directly testable against rendered HTML, live requests against a running stack, or standing lock-in tests (AC-31.2, protecting Pillar 3 the same way AC-27.4 locked a scoping decision; AC-31.4's three-request 200/404/noindex triad; AC-31.7's structural snapshot pair). AC-31.1's field-list mapping and AC-31.5's field-definition + dual live-render evidence are the model the rest of the sprint's Flow A ACs were tightened to match. No scope issues. Approved.
 
 ---
 
@@ -90,7 +94,9 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: All 5 ACs are directly testable via live before/after against a running stack and structural snapshots. No scope issues. Approved.
 
 ---
 
@@ -98,11 +104,11 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 **Status:** draft | **Priority:** critical
 
 #### Acceptance Criteria
-- [ ] **AC-33.1:** A Payload `Forms` collection implements the PRD 20.2 configurable set - internal name, public title, description, recipient(s), success message, field order, labels and helper text, required/optional status, and the Early Booking Benefits footer/link - and offers exactly the seven V1 field types: short text, email, phone, date, dropdown, checkbox/consent, long text. No conditional-logic engine is built (PRD 20.2: 'No complex conditional form engine is required in V1'). Evidence: the field-type list read back from the collection, and a test that fails if an eighth type or a conditional-visibility rule is added.
-- [ ] **AC-33.2:** An `Inquiries` collection stores a durable record, written server-side and committed BEFORE any email is attempted, so a failed or slow notification can never lose a lead. Each record captures the submitted values, the source page, and campaign parameters (utm_*). Evidence: a submission proven to persist with the notification path forced to fail - the inquiry still exists and is readable in the admin.
+- [ ] **AC-33.1:** A Payload `Forms` collection implements the PRD 20.2 configurable set - internal name, public title, description, recipient(s), success message, field order, labels and helper text, required/optional status, and the Early Booking Benefits footer/link - and offers exactly the seven V1 field types: short text, email, phone, date, dropdown, checkbox/consent, long text. No conditional-logic engine is built (PRD 20.2: 'No complex conditional form engine is required in V1'). Evidence: the PRD 20.2 configurable-set list mapped one-to-one against the collection definition (as AC-31.1 did for `Pages`), the field-type list read back from the collection, and a test that fails if an eighth type or a conditional-visibility rule is added.
+- [ ] **AC-33.2:** An `Inquiries` collection stores a durable record, written server-side and committed BEFORE any email is attempted, so a failed or slow notification can never lose a lead. Each record captures the submitted values, the source page, and campaign parameters (utm_*). Evidence: a submission proven to persist with the notification path forced to fail - the inquiry still exists and is readable in the admin, with the submitted field values, source page and utm_* parameters all present on the stored record.
 - [ ] **AC-33.3:** Validation runs on both client and server, and the server is authoritative: a submission crafted to bypass the browser (a direct POST with a missing required field, a malformed email, and an over-long field) is rejected with no record written. Evidence: the three rejected requests with their responses, run against the stack in Docker.
-- [ ] **AC-33.4:** Spam protection is in place and does not depend on a third-party client-side script or an external service: honeypot field, submission-timing check, and a server-side rate limit per source. Record the options rejected and why (DoD item 6). Evidence: a scripted rapid-fire submission proven to be rate-limited, and a honeypot-filled submission proven to be silently rejected without creating an Inquiry.
-- [ ] **AC-33.5:** The studio notification email is queued through the Backstage email queue - the single authoritative owner of all client and photographer email per CLAUDE.md's System Ownership table and `SYSTEM_OWNERSHIP.md`. It is not sent from Payload or Next directly, and Resend is retired and must not reappear. No SMTP secret is ever exposed to the browser (PRD 20.3). If a new email template row is required, add it via a NEW numbered migration or seed - never by editing an already-shipped upstream migration (Reminder 2) - and check first against finding F9 in `po-requests.md`, which records two email types whose templates do not exist. Record the boundary crossing in `PAYLOAD_PICPEAK_API_CONTRACT.md`, and in `FORK_CHANGELOG.md` plus `PICPEAK_PORT_LEDGER.md` if any file under `vendor/picpeak/` is touched. Evidence: the notification observed queued and then sent, confirmed independently in the mail catcher the way US-17 AC-17.6 did - not inferred from a return code.
+- [ ] **AC-33.4:** Spam protection is in place and does not depend on a third-party client-side script or an external service: honeypot field, submission-timing check, and a server-side rate limit per source. Record the options rejected and why (DoD item 6). Evidence: a scripted rapid-fire submission proven to be rate-limited, a honeypot-filled submission proven to be silently rejected without creating an Inquiry, and a submission completed faster than the timing threshold proven to be rejected without creating an Inquiry.
+- [ ] **AC-33.5:** The studio notification email is queued through the Backstage email queue - the single authoritative owner of all client and photographer email per CLAUDE.md's System Ownership table and `SYSTEM_OWNERSHIP.md`. It is not sent from Payload or Next directly, and Resend is retired and must not reappear. No SMTP secret is ever exposed to the browser (PRD 20.3). If a new email template row is required, add it via a NEW numbered migration or seed - never by editing an already-shipped upstream migration (Reminder 2) - and check first against finding F9 in `po-requests.md`, which records two email types whose templates do not exist. Record the boundary crossing in `PAYLOAD_PICPEAK_API_CONTRACT.md`, and in `FORK_CHANGELOG.md` plus `PICPEAK_PORT_LEDGER.md` if any file under `vendor/picpeak/` is touched. Evidence: the notification observed queued and then sent, confirmed independently in the mail catcher the way US-17 AC-17.6 did - not inferred from a return code - and the client-side bundle/network requests checked to confirm no SMTP secret is ever sent to or present in the browser.
 - [ ] **AC-33.6:** An optional branded acknowledgement to the person who submitted the form exists, is off by default, and is owned by the same single system as AC-33.5 - exactly one system sends any given email type, and duplicate sends are a defect (CLAUDE.md, email pragmatic-default note). Evidence: the acknowledgement enabled and observed sent exactly once; and with it disabled, observed not sent.
 - [ ] **AC-33.7:** The rendered form matches the PRD 20.1 visual direction - large readable labels, generous spacing, minimal fields, one clear submit action, responsive, no generic SaaS styling - built only from `src/styles/tokens.css` tokens with no hard-coded values. Labels are correctly associated with their inputs, errors are announced to assistive technology, and the form is fully operable by keyboard. Evidence: the rendered markup asserted plus the token-only check from AC-31.3 applied to this component.
 
@@ -110,7 +116,9 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: Found and fixed four missing-test-criteria gaps where the AC's evidence clause was narrower than its claim, and corrected them directly (minor wording, no scope change): AC-33.1's evidence tested only the seven field types, not the PRD 20.2 configurable-set list itself - added a one-to-one field mapping matching the AC-31.1 pattern. AC-33.2 claimed captured values/source/utm but evidence only proved persistence-before-send - added an assertion that those fields are actually on the stored record. AC-33.4 named three spam defenses (honeypot, timing check, rate limit) but evidence exercised only two - added a timing-threshold rejection test. AC-33.5 required no SMTP secret reach the browser but had no evidence for it - added a client-bundle/network check. All 7 ACs are testable now. Approved.
 
 ---
 
@@ -129,7 +137,9 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: All 6 ACs are testable against a running stack with measured figures (CLS on mobile, LCP against the PRD 19.4 targets with an honest-miss clause carried from US-29's precedent). AC-34.6 correctly keeps the R2 delivery decision open rather than choosing it (Reminder 1). No scope issues. Approved.
 
 ---
 
@@ -138,7 +148,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 #### Acceptance Criteria
 - [ ] **AC-35.1:** The Details template renders the PRD 13.4 order exactly: minimal H1, optional one-line introduction, full-width masonry placement, inquiry form, footer. Evidence: the rendered structure asserted in order.
-- [ ] **AC-35.2:** The masonry placement preserves every image's received aspect ratio and the photographer's selected order, never crops or stretches, uses the full available width with system-defined gaps from `tokens.css`, reserves aspect-ratio space before load, and uses approximately one column on mobile, two on tablet and three or four on larger screens. Build on the existing `src/components/gallery/GalleryMasonryLayout.tsx` rather than writing a second masonry implementation. Evidence: a gallery of mixed portrait/landscape/panoramic images rendered at three viewport widths with the rendered aspect ratios compared against the source values. IN SCOPE: the PRD 15.1 behaviours listed above. OUT OF SCOPE and left to backlog item 15 (PRD Phase 5): the full masonry refinement pass and the shared fullscreen-viewer specification (backlog item 17) - state the boundary in the story record rather than drifting into Phase 5.
+- [ ] **AC-35.2:** The masonry placement preserves every image's received aspect ratio and the photographer's selected order, never crops or stretches, uses the full available width with system-defined gaps from `tokens.css`, reserves aspect-ratio space before load, and uses approximately one column on mobile, two on tablet and three or four on larger screens. Build on the existing `src/components/gallery/GalleryMasonryLayout.tsx` rather than writing a second masonry implementation. Evidence: a gallery of mixed portrait/landscape/panoramic images rendered at three viewport widths (mobile, tablet, larger) with, at each width: the rendered aspect ratios compared against the source values, the rendered column count recorded, the photographer's selected order asserted unchanged, the rendered gap measured against the token value, and the reserved layout space at each image slot asserted present before the image loads. IN SCOPE: the PRD 15.1 behaviours listed above. OUT OF SCOPE and left to backlog item 15 (PRD Phase 5): the full masonry refinement pass and the shared fullscreen-viewer specification (backlog item 17) - state the boundary in the story record rather than drifting into Phase 5.
 - [ ] **AC-35.3:** A Details page is created through the same New Page form as any other page - the template is a selection on a `Pages` record, not a bespoke hard-coded route. Evidence: a second Details page created through the admin form alone, with no code change, rendering correctly.
 - [ ] **AC-35.4:** Copy restraint is structural, not advisory: the Details template offers no long-form body field, so the PRD 13.4 instruction 'Do not over-explain in copy' cannot be violated by content entry. Evidence: the template's field list, plus a test that fails if a rich-text or long-form body field is added to it.
 
@@ -146,7 +156,9 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: Fixed one missing-test-criteria gap in AC-35.2 (minor wording, no scope change): the AC claims aspect-ratio preservation, order preservation, token-driven gaps, pre-load reserved space, and responsive column count, but the original evidence exercised only aspect ratio. Evidence now names all five, checked at each of the three tested viewport widths. Phase-5 boundary in AC-35.2 and AC-35.4's copy-restraint lock-in test are both testable as written. Approved.
 
 ---
 
@@ -155,7 +167,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 #### Acceptance Criteria
 - [ ] **AC-36.1:** Stories are modelled per PRD 13.5: title, subtitle/introduction, then a repeating group of (section heading + short text + gallery placement), then the inquiry form. Decide whether this is a separate `Stories` collection or a `Pages` template variant, and record the option chosen, the option rejected and the reason (DoD item 6). Evidence: the field definitions and one real story rendered.
-- [ ] **AC-36.2:** Repeating sections preserve the author's order, and each section's gallery placement resolves over the Flow A boundary by external identifier only - the same no-cross-database-relation rule as AC-31.5. Evidence: a three-section story rendered in order, plus a reorder changing the output with no code change.
+- [ ] **AC-36.2:** Repeating sections preserve the author's order, and each section's gallery placement resolves over the Flow A boundary by external identifier only - the same no-cross-database-relation rule as AC-31.5. Evidence: the gallery-placement field definition showing an external identifier only with no relation/join field into the Backstage database, a three-section story rendered in order, plus a reorder changing the output with no code change.
 - [ ] **AC-36.3:** Heading hierarchy is generated correctly and automatically: exactly one H1 (the story title), section headings at H2, no skipped levels, regardless of how many sections exist. Evidence: asserted against the rendered HTML of a one-section and a five-section story.
 - [ ] **AC-36.4:** A story index route lists published stories and excludes drafts. Evidence: both states verified live against a running stack.
 - [ ] **AC-36.5:** No generic blog chrome is built - no categories, no archives, no comment system, no author bios, no tag clouds. The controlled vocabulary term is Story, and the retired blog requirements do not return: the blog sample-content requirement and the no-em-tag content rule are listed under CLAUDE.md's 'Retired From the Old Direction (do not build)'. Evidence: the rendered story page and index shown to contain none of the above, plus the story record naming the retired items it deliberately does not implement.
@@ -164,7 +176,9 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: Fixed one missing-test-criteria gap in AC-36.2 (minor wording, no scope change): the AC asserts gallery placements resolve by external identifier only (the same no-cross-database-relation rule as AC-31.5), but the evidence only checked rendered order, not the field definition itself. Added the field-definition check, matching AC-31.5's pattern. AC-36.3's heading-hierarchy and AC-36.5's no-blog-chrome ACs are both cleanly falsifiable as written. Approved.
 
 ---
 
@@ -175,16 +189,18 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [ ] **AC-37.1:** Account-level SEO data comes from the existing `StudioProfile` global (US-24) and nowhere else - no studio field is duplicated into a second SEO settings record, per Pillar 5 (one owner per business function). Verify the PRD 21.1 list against the fields already present in `src/globals/StudioProfile.ts` (business name, owner name, description, established year, address, public phone/email, service areas, social profiles, default social image, default title pattern, default meta description) and add only what is genuinely missing. Evidence: the 21.1 list mapped item-by-item to the existing field or to the new field that closes the gap.
 - [ ] **AC-37.2:** Every public page and story emits a real title element, meta description, canonical URL, Open Graph tags and Twitter card, taken from that page's own fields with `StudioProfile` defaults (including the default title pattern) as fallback. Evidence: assertions made against the RENDERED HTML fetched from a running stack, not against a metadata object in code - PRD 35.2 requires SEO fields to be injected into real HTML.
 - [ ] **AC-37.3:** Structured data is emitted per page type, reusing the existing `src/lib/studioStructuredData.ts` builder (LocalBusiness / ProfessionalService) rather than a second implementation, extended as needed for a page and a story. Evidence: the emitted JSON-LD extracted from the rendered HTML of a page and a story, with its shape validated.
-- [ ] **AC-37.4:** `sitemap.xml` contains every published, indexable page and story and excludes every draft and every noindex record, and image-sitemap references are included for placed gallery imagery. Evidence: the generated sitemap fetched from a running stack, cross-checked against the database contents, with a draft page and a noindex page proven absent.
+- [ ] **AC-37.4:** `sitemap.xml` contains every published, indexable page and story and excludes every draft and every noindex record, and image-sitemap references are included for placed gallery imagery. Evidence: the generated sitemap fetched from a running stack, cross-checked against the database contents, with a draft page and a noindex page proven absent, and the image-sitemap entries for a page with placed gallery imagery checked present and pointing at the correct image URLs.
 - [ ] **AC-37.5:** `robots.txt` is correct and noindex is respected end-to-end. The existing internal noindex demo and specimen routes (`/dev/token-specimen`, `/dev/gallery-placement-demo`, `/dev/gallery-demo`, `/dev/gallery-webhook-proof`, `/dev/benchmark-portfolio-gallery`, `/dev/benchmark-story-gallery`) stay excluded from the sitemap and stay non-indexable. Evidence: the fetched robots.txt, and each dev route proven absent from the sitemap and carrying its noindex directive.
-- [ ] **AC-37.6:** A per-page and per-story SEO assistant exists in the admin per PRD 21.2, offering: search-result preview, SEO title, slug, meta description, canonical URL, H1 preview, photography type, city/region, venue, Open Graph image, index/noindex, schema preview, missing-alt-text audit and internal-link suggestions. There is NO meta-keywords field - PRD 21.2 forbids one - and tags remain internal relationships only. Evidence: the assistant shown against a real page, plus a standing test that fails if a meta-keywords field is added anywhere.
+- [ ] **AC-37.6:** A per-page and per-story SEO assistant exists in the admin per PRD 21.2, offering: search-result preview, SEO title, slug, meta description, canonical URL, H1 preview, photography type, city/region, venue, Open Graph image, index/noindex, schema preview, missing-alt-text audit and internal-link suggestions. There is NO meta-keywords field - PRD 21.2 forbids one - and tags remain internal relationships only. Evidence: each of the fourteen listed controls (search-result preview, SEO title, slug, meta description, canonical URL, H1 preview, photography type, city/region, venue, Open Graph image, index/noindex, schema preview, missing-alt-text audit, internal-link suggestions) shown present and functional against a real page, plus a standing test that fails if a meta-keywords field is added anywhere.
 - [ ] **AC-37.7:** The missing-alt-text audit reports which placed images lack alt text and does NOT generate captions. The self-hosted caption-suggestion model (backlog item 21, PRD 21.3 - Florence-2 as first candidate) stays out of scope until it has been benchmarked for quality, speed, memory and licence, and no external paid LLM is introduced. Evidence: the audit output for a gallery with some images missing alt text, and an explicit statement in the story record that no caption model was adopted.
 
 **Dependencies:** US-31, US-34, US-36
 
 **Dev Team Status:** not-started
 
-**Tester Status:** not-started
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: Fixed two missing-test-criteria gaps (minor wording, no scope change): AC-37.4 claimed image-sitemap references for placed gallery imagery but the evidence only checked page/story presence in the sitemap - added an explicit image-sitemap-entry check. AC-37.6 lists fourteen SEO-assistant controls but the evidence was a generic 'shown against a real page' - it now names each of the fourteen so the AC can't be closed on a partial implementation. AC-37.1's StudioProfile-only mapping and AC-37.5's robots/dev-route exclusion checks were already complete as written. Approved.
 
 ---
 
@@ -203,7 +219,9 @@ WHY PHASE 4 AND WHY NOW. Sprint 4 completed PRD Phase 2 and started Phase 4, and
 
 NO *_SPEC.md FEATURE SPECIFICATIONS EXIST. Re-verified at sprint-5 planning by repo-wide search excluding node_modules/ and vendor/: there is no file matching *_SPEC.md anywhere in this repository, and no case-insensitive 'spec' markdown file other than scrum-master/retrospective.md. Remaining scope therefore comes from the post-pivot PRD's phase plan (section 34) and the post-pivot product backlog, exactly as it did for sprints 1-4. Backlog items 8-14 are taken by this sprint; items 15-42 remain.
 
-WHY PHASE 3 IS STILL EXCLUDED. Backlog items 22-26 (Project cockpit and Project Room) remain out of scope for the same reason they were excluded from sprint 4, and the reason has not changed: they rest on PicPeak's native contract-signing capability, whose verification failed on one of seven elements (AC-17.10 - the audit trail ships as a separate sibling PDF, never merged into the signed contract). po-requests.md item 7 is REOPENED and awaiting a human decision, with the PO recommendation on record as option (a), accept the sibling PDF for V1. Building a Project Room on an unresolved premise would inherit a known-false assumption. This is a Reminder 1 decision and no agent may make it alone.
+WHY PHASE 3 IS STILL EXCLUDED - AND WHY THE REASON HAS CHANGED. The previous reason no longer holds and must not be repeated: po-requests items 7 and 13 were RESOLVED by the human on 2026-08-13, after this plan was first written, as option (a) - the sibling-PDF audit trail is accepted as sufficient for V1, the fork is not patched to merge the audit page, and no external e-sign provider is adopted. PRD Phase 3 (Project cockpit and Project Room, backlog items 22-26) is therefore no longer blocked by an unresolved premise. It stays out of sprint 5 for a different and simpler reason: capacity and sequencing. This sprint already carries 8 stories and 46 acceptance criteria; items 22-26 need new fork migrations for events, venues, milestones, documents and integration status, a photographer cockpit with a computed next action, and a client-safe Project Room - a sprint's worth of work on its own, with no dependency in either direction on the Phase 4 stories here. Phase 3 is hereby designated the sprint-6 candidate block, and the backlog records it as unblocked rather than as awaiting a decision. Restating the old blocked-by-contract-signing rationale in a later plan would be building on a stale premise - the exact failure mode Reminder 1 and DoD item 2 exist to prevent.
+
+TWO HUMAN DECISIONS LANDED AFTER THIS PLAN WAS FIRST WRITTEN (2026-08-13, commit 449f31c), AND THE PLAN WAS RE-READ AGAINST BOTH. First, the design-token specimen is signed off as-is with no changes requested (item 14), and the token set is now locked as the visual spec for every later Frontstage and Project Room surface. This retires the largest standing risk to this sprint: every one of US-31, US-33, US-34 and US-35 builds directly on tokens.css, and had the sign-off come back with changes, each of those surfaces would have needed a repaint. No acceptance criterion changes as a result - AC-31.3, AC-33.7 and AC-34.2 already required token-only construction - but they are now building on a confirmed specification rather than a provisional one. Second, the contract e-signature decision is resolved (items 7 and 13); its only effect on sprint 5 is the Phase 3 rationale rewritten above. What is still open is the R2 delivery path (item 15), because candidates 3 and 4 need Cloudflare infrastructure that does not exist yet. US-34 AC-34.6 therefore keeps its instruction intact: measure the homepage against the PRD 19.4 targets, report the numbers as measured, name the open delivery decision where it is a contributing factor, and do not close that decision here.
 
 WHY US-30 (TEST LANES) IS IN A FEATURE SPRINT. It is the only non-feature story here and it earns its place on evidence, not tidiness. The sprint-4 retrospective measured npm test at 1,169,738 ms wall under jest --runInBand across ~140 suites, and recorded that AC-28.5 had to be split three ways specifically because two coverage runs plus remediation would not fit in one dev session. The suite cost is now shaping acceptance-criterion design, and every one of PRD Phases 4 through 8 will pay it. It has no dependants in this sprint, so if it stalls nothing else is blocked.
 
