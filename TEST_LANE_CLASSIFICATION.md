@@ -30,10 +30,10 @@ The full per-suite mapping lives in [`TEST_LANE_INVENTORY.json`](TEST_LANE_INVEN
 | Lane | Count |
 |---|---|
 | LIVE | 4 |
-| UNIT | 155 |
-| **Total** | **159** |
+| UNIT | 156 |
+| **Total** | **160** |
 
-(155 UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, AC-30.2's
+(156 UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, AC-30.2's
 `us30-ac30.2-unit-lane-parallelism.test.ts` guard, and AC-30.3's `us30-ac30.3-live-lane-serial.test.ts` guard, all of
 which read the manifest and local files only.)
 
