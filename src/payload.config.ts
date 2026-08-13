@@ -27,6 +27,9 @@
  * updated-by: dev-team
  * related-story: US-28
  * related-ac: 28.1.2
+ * updated-by: dev-team
+ * related-story: US-31
+ * related-ac: 31.1
  * ---
  */
 import { postgresAdapter } from '@payloadcms/db-postgres'
@@ -37,6 +40,7 @@ import { fileURLToPath } from 'url'
 
 import { GalleryPlacements } from './collections/GalleryPlacements'
 import { Media } from './collections/Media'
+import { Pages } from './collections/Pages'
 import { Users } from './collections/Users'
 import { StudioProfile } from './globals/StudioProfile'
 
@@ -50,7 +54,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname, 'app', '(payload)', 'admin'),
     },
   },
-  collections: [Users, Media, GalleryPlacements],
+  collections: [Users, Media, GalleryPlacements, Pages],
   globals: [StudioProfile],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
