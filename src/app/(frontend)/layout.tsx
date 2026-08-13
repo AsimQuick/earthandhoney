@@ -24,6 +24,9 @@
  * updated-by: dev-team
  * related-story: US-24
  * related-ac: 24.5
+ * updated-by: dev-team
+ * related-story: US-31
+ * related-ac: 31.6
  * ---
  */
 import type { Metadata } from "next";
@@ -68,6 +71,11 @@ export async function generateMetadata(): Promise<Metadata> {
   const studioProfile = await getStudioProfile();
 
   return {
+    // AC-31.6: the one place a relative canonical/Open Graph URL a route
+    // returns (e.g. `alternates.canonical: "/${slug}"`) is resolved into an
+    // absolute one — system-computed from the deployment's own public URL,
+    // never typed by the photographer on a per-page basis.
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
     title: {
       default: studioProfile.businessName,
       template: studioProfile.defaultTitlePattern,

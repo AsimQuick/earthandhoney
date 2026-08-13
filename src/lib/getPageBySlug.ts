@@ -20,13 +20,19 @@
  *          Backstage `gallerySlug`/`layout`/`heading`, never a level deeper
  *          into anything Backstage-owned (that collection holds no relation
  *          into the separate Backstage database in the first place; see
- *          src/collections/GalleryPlacements.ts).
+ *          src/collections/GalleryPlacements.ts). The same `depth: 1` also
+ *          resolves the `socialImage` upload relation (AC-31.6) to its
+ *          media document so the caller can read `url` without a second
+ *          query.
  * created-by: dev-team
  * related-story: US-31
  * related-ac: 31.4
  * updated-by: dev-team
  * related-story: US-31
  * related-ac: 31.5
+ * updated-by: dev-team
+ * related-story: US-31
+ * related-ac: 31.6
  * ---
  */
 import { getPayload } from 'payload'
@@ -43,6 +49,8 @@ export interface ResolvedPage {
   status: 'draft' | 'published'
   indexing: 'index' | 'noindex'
   galleryPlacements: PageGalleryPlacementConfig[]
+  /** The Open Graph image URL (AC-31.6), or null when the page defines none. */
+  socialImage: string | null
 }
 
 export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> {
@@ -67,12 +75,16 @@ export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> 
           layout?: string
           heading?: string
         } | null>
+        socialImage?: { url?: string } | number | null
       }
     | undefined
 
   if (!doc) {
     return null
   }
+
+  const socialImage =
+    doc.socialImage && typeof doc.socialImage === 'object' && doc.socialImage.url ? doc.socialImage.url : null
 
   const galleryPlacements: PageGalleryPlacementConfig[] = (doc.galleryPlacements ?? [])
     .filter((placement): placement is NonNullable<typeof placement> => Boolean(placement?.gallerySlug))
@@ -90,5 +102,6 @@ export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> 
     status: doc.status === 'published' ? 'published' : 'draft',
     indexing: doc.indexing === 'noindex' ? 'noindex' : 'index',
     galleryPlacements,
+    socialImage,
   }
 }

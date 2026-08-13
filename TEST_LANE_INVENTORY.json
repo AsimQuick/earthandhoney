@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 165,
+  "totalSuites": 167,
   "counts": {
-    "live": 6,
-    "unit": 159
+    "live": 7,
+    "unit": 160
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -848,6 +848,16 @@
       "path": "src/__tests__/us31-ac31.5-public-page-gallery-placement.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('db') and dns.lookup('backstage-backend') resolving, then self-seeds a real published gallery via live Backstage admin API fetch() calls, spawns a real next dev child process, and fetches the rendered [slug] route against the real Postgres db container and the real Backstage stack"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.6-generate-metadata.test.ts",
+      "lane": "UNIT",
+      "reason": "jest.mock('@/lib/getPageBySlug')/jest.mock('@/lib/getStudioProfile') mock the only I/O generateMetadata performs; calls the route's generateMetadata function directly against in-memory fixtures, no network/db"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.6-live-seo-metadata.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, calls getLiveApiAuthToken to create two real Pages documents over http://localhost:4284/api/pages, and fetches each one's rendered [slug] route to assert on the real response HTML, exercising Payload's live schema/connection and the live Next.js route against the real Postgres db container"
     }
   ]
 }
