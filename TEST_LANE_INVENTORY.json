@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 160,
+  "totalSuites": 161,
   "counts": {
     "live": 4,
-    "unit": 156
+    "unit": 157
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -823,6 +823,11 @@
       "path": "src/__tests__/us31-ac31.1-pages-field-set.test.ts",
       "lane": "UNIT",
       "reason": "reads src/collections/Pages.ts and src/payload.config.ts as text and asserts on the in-memory collection definition, no network/db"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.2-pages-no-layout-builder-lock-in.test.ts",
+      "lane": "UNIT",
+      "reason": "reads src/collections/Pages.ts and CLAUDE.md as text and walks the in-memory Pages field tree, no network/db"
     }
   ]
 }
