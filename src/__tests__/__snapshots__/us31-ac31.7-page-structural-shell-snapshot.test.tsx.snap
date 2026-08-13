@@ -1,0 +1,707 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`US-31 AC-31.7: a newly created page inherits the design system with no manual layout work the long page (4 placements, 3 structured text sections) matches its committed structural snapshot 1`] = `
+"{
+  "tag": "div",
+  "children": [
+    {
+      "tag": "header",
+      "children": [],
+      "testid": "site-header",
+      "class": "photobuddy_fl_header"
+    },
+    {
+      "tag": "div",
+      "children": [
+        {
+          "tag": "div",
+          "children": [
+            {
+              "tag": "div",
+              "children": [
+                {
+                  "tag": "div",
+                  "children": [
+                    {
+                      "tag": "a",
+                      "children": [
+                        {
+                          "tag": "img",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ],
+                  "class": "photobuddy_fl_logo"
+                },
+                {
+                  "tag": "nav",
+                  "children": [
+                    {
+                      "tag": "ul",
+                      "children": [
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "span",
+                                  "children": [],
+                                  "class": "line"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "span",
+                                  "children": [],
+                                  "class": "line"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "span",
+                                  "children": [],
+                                  "class": "line"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "span",
+                                  "children": [],
+                                  "class": "line"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "span",
+                                  "children": [],
+                                  "class": "line"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "testid": "primary-nav",
+                  "class": "photobuddy_fl_vertical_menu_nav_list",
+                  "ariaLabel": "Primary"
+                },
+                {
+                  "tag": "div",
+                  "children": [
+                    {
+                      "tag": "span",
+                      "children": [
+                        {
+                          "tag": "br",
+                          "children": []
+                        },
+                        {
+                          "tag": "span",
+                          "children": [],
+                          "class": "autor"
+                        }
+                      ],
+                      "class": "cright"
+                    }
+                  ],
+                  "class": "photobuddy_fl_copyright"
+                },
+                {
+                  "tag": "div",
+                  "children": [
+                    {
+                      "tag": "ul",
+                      "children": [
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "i",
+                                  "children": [],
+                                  "class": "xcon-facebook"
+                                }
+                              ],
+                              "ariaLabel": "Facebook"
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "i",
+                                  "children": [],
+                                  "class": "xcon-twitter"
+                                }
+                              ],
+                              "ariaLabel": "Twitter"
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "i",
+                                  "children": [],
+                                  "class": "xcon-instagram"
+                                }
+                              ],
+                              "ariaLabel": "Instagram"
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "i",
+                                  "children": [],
+                                  "class": "xcon-pinterest"
+                                }
+                              ],
+                              "ariaLabel": "Pinterest"
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "i",
+                                  "children": [],
+                                  "class": "xcon-gplus"
+                                }
+                              ],
+                              "ariaLabel": "Google+"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "testid": "social-icons",
+                  "class": "photobuddy_fl_social_icons"
+                }
+              ],
+              "class": "photobuddy_fl_vertical_menu_in scrollable"
+            }
+          ],
+          "testid": "vertical-menu",
+          "class": "photobuddy_fl_vertical_menu fixed inset-y-0 left-0 z-40 w-72 -translate-x-full overflow-y-auto transition-transform lg:static lg:z-auto lg:w-80 lg:translate-x-0 "
+        },
+        {
+          "tag": "div",
+          "children": [
+            {
+              "tag": "div",
+              "children": [
+                {
+                  "tag": "button",
+                  "children": [
+                    {
+                      "tag": "span",
+                      "children": [
+                        {
+                          "tag": "span",
+                          "children": [],
+                          "class": "menu_a"
+                        },
+                        {
+                          "tag": "span",
+                          "children": [],
+                          "class": "menu_b"
+                        },
+                        {
+                          "tag": "span",
+                          "children": [],
+                          "class": "menu_c"
+                        }
+                      ],
+                      "class": "menu_on"
+                    }
+                  ],
+                  "ariaLabel": "Open menu"
+                }
+              ],
+              "testid": "mobile-menu-trigger",
+              "class": "photobuddy_fl_menu_trigger default lg:hidden"
+            },
+            {
+              "tag": "article",
+              "children": [
+                {
+                  "tag": "h1",
+                  "children": [],
+                  "testid": "page-heading",
+                  "class": "font-display text-3xl leading-tight text-ink"
+                },
+                {
+                  "tag": "p",
+                  "children": [],
+                  "testid": "page-introduction",
+                  "class": "text-lg leading-relaxed text-ink-secondary"
+                },
+                {
+                  "tag": "section",
+                  "children": [
+                    {
+                      "tag": "div",
+                      "children": [
+                        {
+                          "tag": "div",
+                          "children": [],
+                          "testid": "stub-gallery-content"
+                        }
+                      ],
+                      "testid": "page-gallery-placement"
+                    }
+                  ],
+                  "testid": "page-gallery-placements",
+                  "class": "flex flex-col gap-lg",
+                  "ariaLabel": "Galleries"
+                },
+                {
+                  "tag": "section",
+                  "children": [
+                    {
+                      "tag": "div",
+                      "children": [
+                        {
+                          "tag": "h2",
+                          "children": [],
+                          "class": "font-display text-xl leading-snug text-ink"
+                        },
+                        {
+                          "tag": "p",
+                          "children": [],
+                          "class": "text-base leading-relaxed text-ink-secondary"
+                        }
+                      ],
+                      "testid": "page-structured-text-section",
+                      "class": "flex flex-col gap-sm"
+                    }
+                  ],
+                  "testid": "page-structured-text-sections",
+                  "class": "flex flex-col gap-xl"
+                },
+                {
+                  "tag": "div",
+                  "children": [],
+                  "testid": "page-inquiry-form-region",
+                  "ariaLabel": "Inquiry form"
+                }
+              ],
+              "testid": "standard-page-template",
+              "class": "flex flex-col gap-2xl bg-surface p-lg text-ink"
+            }
+          ],
+          "class": "photobuddy_fl_content_in"
+        }
+      ],
+      "class": "photobuddy_fl_content"
+    },
+    {
+      "tag": "footer",
+      "children": [],
+      "testid": "site-footer",
+      "class": "photobuddy_fl_footer"
+    }
+  ],
+  "testid": "site-shell",
+  "class": "photobuddy_fl_wrapper_all"
+}"
+`;
+
+exports[`US-31 AC-31.7: a newly created page inherits the design system with no manual layout work the short page (1 placement, no structured text sections) matches its committed structural snapshot 1`] = `
+"{
+  "tag": "div",
+  "children": [
+    {
+      "tag": "header",
+      "children": [],
+      "testid": "site-header",
+      "class": "photobuddy_fl_header"
+    },
+    {
+      "tag": "div",
+      "children": [
+        {
+          "tag": "div",
+          "children": [
+            {
+              "tag": "div",
+              "children": [
+                {
+                  "tag": "div",
+                  "children": [
+                    {
+                      "tag": "a",
+                      "children": [
+                        {
+                          "tag": "img",
+                          "children": []
+                        }
+                      ]
+                    }
+                  ],
+                  "class": "photobuddy_fl_logo"
+                },
+                {
+                  "tag": "nav",
+                  "children": [
+                    {
+                      "tag": "ul",
+                      "children": [
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "span",
+                                  "children": [],
+                                  "class": "line"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "span",
+                                  "children": [],
+                                  "class": "line"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "span",
+                                  "children": [],
+                                  "class": "line"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "span",
+                                  "children": [],
+                                  "class": "line"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "span",
+                                  "children": [],
+                                  "class": "line"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "testid": "primary-nav",
+                  "class": "photobuddy_fl_vertical_menu_nav_list",
+                  "ariaLabel": "Primary"
+                },
+                {
+                  "tag": "div",
+                  "children": [
+                    {
+                      "tag": "span",
+                      "children": [
+                        {
+                          "tag": "br",
+                          "children": []
+                        },
+                        {
+                          "tag": "span",
+                          "children": [],
+                          "class": "autor"
+                        }
+                      ],
+                      "class": "cright"
+                    }
+                  ],
+                  "class": "photobuddy_fl_copyright"
+                },
+                {
+                  "tag": "div",
+                  "children": [
+                    {
+                      "tag": "ul",
+                      "children": [
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "i",
+                                  "children": [],
+                                  "class": "xcon-facebook"
+                                }
+                              ],
+                              "ariaLabel": "Facebook"
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "i",
+                                  "children": [],
+                                  "class": "xcon-twitter"
+                                }
+                              ],
+                              "ariaLabel": "Twitter"
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "i",
+                                  "children": [],
+                                  "class": "xcon-instagram"
+                                }
+                              ],
+                              "ariaLabel": "Instagram"
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "i",
+                                  "children": [],
+                                  "class": "xcon-pinterest"
+                                }
+                              ],
+                              "ariaLabel": "Pinterest"
+                            }
+                          ]
+                        },
+                        {
+                          "tag": "li",
+                          "children": [
+                            {
+                              "tag": "a",
+                              "children": [
+                                {
+                                  "tag": "i",
+                                  "children": [],
+                                  "class": "xcon-gplus"
+                                }
+                              ],
+                              "ariaLabel": "Google+"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "testid": "social-icons",
+                  "class": "photobuddy_fl_social_icons"
+                }
+              ],
+              "class": "photobuddy_fl_vertical_menu_in scrollable"
+            }
+          ],
+          "testid": "vertical-menu",
+          "class": "photobuddy_fl_vertical_menu fixed inset-y-0 left-0 z-40 w-72 -translate-x-full overflow-y-auto transition-transform lg:static lg:z-auto lg:w-80 lg:translate-x-0 "
+        },
+        {
+          "tag": "div",
+          "children": [
+            {
+              "tag": "div",
+              "children": [
+                {
+                  "tag": "button",
+                  "children": [
+                    {
+                      "tag": "span",
+                      "children": [
+                        {
+                          "tag": "span",
+                          "children": [],
+                          "class": "menu_a"
+                        },
+                        {
+                          "tag": "span",
+                          "children": [],
+                          "class": "menu_b"
+                        },
+                        {
+                          "tag": "span",
+                          "children": [],
+                          "class": "menu_c"
+                        }
+                      ],
+                      "class": "menu_on"
+                    }
+                  ],
+                  "ariaLabel": "Open menu"
+                }
+              ],
+              "testid": "mobile-menu-trigger",
+              "class": "photobuddy_fl_menu_trigger default lg:hidden"
+            },
+            {
+              "tag": "article",
+              "children": [
+                {
+                  "tag": "h1",
+                  "children": [],
+                  "testid": "page-heading",
+                  "class": "font-display text-3xl leading-tight text-ink"
+                },
+                {
+                  "tag": "p",
+                  "children": [],
+                  "testid": "page-introduction",
+                  "class": "text-lg leading-relaxed text-ink-secondary"
+                },
+                {
+                  "tag": "section",
+                  "children": [
+                    {
+                      "tag": "div",
+                      "children": [
+                        {
+                          "tag": "div",
+                          "children": [],
+                          "testid": "stub-gallery-content"
+                        }
+                      ],
+                      "testid": "page-gallery-placement"
+                    }
+                  ],
+                  "testid": "page-gallery-placements",
+                  "class": "flex flex-col gap-lg",
+                  "ariaLabel": "Galleries"
+                },
+                {
+                  "tag": "div",
+                  "children": [],
+                  "testid": "page-inquiry-form-region",
+                  "ariaLabel": "Inquiry form"
+                }
+              ],
+              "testid": "standard-page-template",
+              "class": "flex flex-col gap-2xl bg-surface p-lg text-ink"
+            }
+          ],
+          "class": "photobuddy_fl_content_in"
+        }
+      ],
+      "class": "photobuddy_fl_content"
+    },
+    {
+      "tag": "footer",
+      "children": [],
+      "testid": "site-footer",
+      "class": "photobuddy_fl_footer"
+    }
+  ],
+  "testid": "site-shell",
+  "class": "photobuddy_fl_wrapper_all"
+}"
+`;

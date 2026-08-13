@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 167,
+  "totalSuites": 168,
   "counts": {
     "live": 7,
-    "unit": 160
+    "unit": 161
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -858,6 +858,11 @@
       "path": "src/__tests__/us31-ac31.6-live-seo-metadata.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, calls getLiveApiAuthToken to create two real Pages documents over http://localhost:4284/api/pages, and fetches each one's rendered [slug] route to assert on the real response HTML, exercising Payload's live schema/connection and the live Next.js route against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.7-page-structural-shell-snapshot.test.tsx",
+      "lane": "UNIT",
+      "reason": "renders PublicShell/StandardPageTemplate with @testing-library/react (jsdom) against two in-memory fixtures and compares normalized DOM structure, no network/db"
     }
   ]
 }
