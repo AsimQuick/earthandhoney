@@ -1,9 +1,9 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 170,
+  "totalSuites": 171,
   "counts": {
-    "live": 8,
+    "live": 9,
     "unit": 162
   },
   "mechanism": {
@@ -718,6 +718,11 @@
       "path": "src/__tests__/us32-ac32.2-first-public-navigation.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, calls getLiveApiAuthToken to create three real published Pages documents over http://localhost:4286/api/pages, wires them into the Navigation global over http://localhost:4286/api/globals/navigation, reads them back via a filtered http://localhost:4286/api/pages list query, and fetches the rendered [slug] route to assert the nav markup, exercising Payload's live schema/connection and the live Next.js route against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us32-ac32.3-navigation-gate-live-toggle.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, calls getLiveApiAuthToken to create a draft (includeInMenu true) and a published-but-excluded (includeInMenu false) Pages document over http://localhost:4288/api/pages, wires both into the Navigation global over http://localhost:4288/api/globals/navigation, fetches the rendered [slug] route to assert both are absent from the nav markup, then PATCHes each page's single gating field over http://localhost:4288/api/pages/:id and re-fetches the same route to assert both now appear, exercising Payload's live schema/connection and the live Next.js route against the real Postgres db container"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",
