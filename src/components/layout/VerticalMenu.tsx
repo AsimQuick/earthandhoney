@@ -33,12 +33,17 @@
  * updated-by: dev-team
  * related-story: US-32
  * related-ac: 32.1
+ * updated-by: dev-team
+ * related-story: US-32
+ * related-ac: 32.4
  * ---
  */
 'use client'
 
 import Image from 'next/image'
 import Link from 'next/link'
+
+import type { StudioSocialProfile } from '@/lib/getStudioProfile'
 
 import { useMobileMenu } from './MobileMenuContext'
 
@@ -58,19 +63,35 @@ export interface NavItem {
 interface VerticalMenuProps {
   businessName?: string
   navItems?: NavItem[]
+  socialProfiles?: StudioSocialProfile[]
 }
 
-const SOCIAL_LINKS = [
-  { href: '#', name: 'Facebook', icon: 'xcon-facebook' },
-  { href: '#', name: 'Twitter', icon: 'xcon-twitter' },
-  { href: '#', name: 'Instagram', icon: 'xcon-instagram' },
-  { href: '#', name: 'Pinterest', icon: 'xcon-pinterest' },
-  { href: '#', name: 'Google+', icon: 'xcon-gplus' },
-]
+// Icon font class + accessible label for each StudioProfile.socialProfiles
+// platform value (src/globals/StudioProfile.ts SOCIAL_PROFILE_PLATFORMS).
+// 'tiktok' and any unrecognised platform fall back to a generic glyph — the
+// photobuddy fontello icon font (public/photobuddy/css/fontello.css) ships
+// no dedicated TikTok mark.
+const SOCIAL_PLATFORM_META: Record<string, { icon: string; label: string }> = {
+  instagram: { icon: 'xcon-instagram', label: 'Instagram' },
+  facebook: { icon: 'xcon-facebook', label: 'Facebook' },
+  pinterest: { icon: 'xcon-pinterest', label: 'Pinterest' },
+  tiktok: { icon: 'xcon-globe', label: 'TikTok' },
+  youtube: { icon: 'xcon-youtube', label: 'YouTube' },
+}
+
+function socialIconClass(platform: string): string {
+  return SOCIAL_PLATFORM_META[platform]?.icon ?? 'xcon-globe'
+}
+
+function socialLabel(platform: string): string {
+  if (SOCIAL_PLATFORM_META[platform]) return SOCIAL_PLATFORM_META[platform].label
+  return platform.charAt(0).toUpperCase() + platform.slice(1)
+}
 
 export function VerticalMenu({
   businessName = FALLBACK_BUSINESS_NAME,
   navItems = [],
+  socialProfiles = [],
 }: Readonly<VerticalMenuProps>) {
   const { isOpen } = useMobileMenu()
 
@@ -117,17 +138,19 @@ export function VerticalMenu({
             Designed by <span className="autor">{businessName}</span>
           </span>
         </div>
-        <div className="photobuddy_fl_social_icons" data-testid="social-icons">
-          <ul>
-            {SOCIAL_LINKS.map((social) => (
-              <li key={social.icon}>
-                <a href={social.href} aria-label={social.name}>
-                  <i className={social.icon} aria-hidden="true" />
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {socialProfiles.length > 0 && (
+          <div className="photobuddy_fl_social_icons" data-testid="social-icons">
+            <ul>
+              {socialProfiles.map((social) => (
+                <li key={`${social.platform}-${social.url}`}>
+                  <a href={social.url} aria-label={socialLabel(social.platform)}>
+                    <i className={socialIconClass(social.platform)} aria-hidden="true" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   )

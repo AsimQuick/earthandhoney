@@ -57,11 +57,29 @@ describe('AC-8.1: VerticalMenu renders the photobuddy left-menu chrome', () => {
     expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
   })
 
-  it('renders 5 social icon links', () => {
-    render(<VerticalMenu />)
+  it('renders social icon links from the socialProfiles prop (AC-32.4: no hard-coded placeholder list)', () => {
+    render(
+      <VerticalMenu
+        socialProfiles={[
+          { platform: 'instagram', url: 'https://instagram.com/earthandhoney' },
+          { platform: 'facebook', url: 'https://facebook.com/earthandhoney' },
+        ]}
+      />,
+    )
 
     const social = within(screen.getByTestId('social-icons'))
-    expect(social.getAllByRole('link')).toHaveLength(5)
+    const links = social.getAllByRole('link')
+    expect(links).toHaveLength(2)
+    expect(links.map((l) => l.getAttribute('href'))).toEqual([
+      'https://instagram.com/earthandhoney',
+      'https://facebook.com/earthandhoney',
+    ])
+  })
+
+  it('renders no social block when no social profiles are configured', () => {
+    render(<VerticalMenu />)
+
+    expect(screen.queryByTestId('social-icons')).not.toBeInTheDocument()
   })
 
   it('renders a copyright notice with the current year', () => {

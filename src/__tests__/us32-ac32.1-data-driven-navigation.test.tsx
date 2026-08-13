@@ -91,14 +91,14 @@ describe('AC-32.1: the nav data flows from the root layout, through PublicShell,
   it('PublicShell accepts a navItems prop and forwards it to VerticalMenu', () => {
     const src = read(PUBLIC_SHELL_PATH)
     expect(src).toMatch(/navItems/)
-    expect(src).toMatch(/<VerticalMenu\s+businessName=\{businessName\}\s+navItems=\{navItems\}\s*\/>/)
+    expect(src).toMatch(/<VerticalMenu\s+businessName=\{businessName\}\s+navItems=\{navItems\}/)
   })
 
   it('the root layout fetches nav items via src/lib/getNavItems.ts and passes them into PublicShell', () => {
     const src = read(LAYOUT_PATH)
     expect(src).toMatch(/from ["']@\/lib\/getNavItems["']/)
     expect(src).toMatch(/await getNavItems\(\)/)
-    expect(src).toMatch(/<PublicShell\s+businessName=\{studioProfile\.businessName\}\s+navItems=\{navItems\}>/)
+    expect(src).toMatch(/<PublicShell\s+businessName=\{studioProfile\.businessName\}\s+navItems=\{navItems\}/)
   })
 })
 

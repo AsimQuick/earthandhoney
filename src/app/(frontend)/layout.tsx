@@ -30,6 +30,9 @@
  * updated-by: dev-team
  * related-story: US-32
  * related-ac: 32.1
+ * updated-by: dev-team
+ * related-story: US-32
+ * related-ac: 32.4
  * ---
  */
 import type { Metadata } from "next";
@@ -121,7 +124,11 @@ export default async function RootLayout({
           data-testid="studio-structured-data"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
-        <PublicShell businessName={studioProfile.businessName} navItems={navItems}>
+        <PublicShell
+          businessName={studioProfile.businessName}
+          navItems={navItems}
+          socialProfiles={studioProfile.socialProfiles}
+        >
           {children}
         </PublicShell>
       </body>
