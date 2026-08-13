@@ -12,12 +12,23 @@
  *          Next renders as a `<meta name="robots" content="noindex">` tag
  *          in the actual response HTML — the directive this AC's evidence
  *          requires is visible in the returned markup, not only in a
- *          metadata object in source. Gallery-placement resolution
- *          (Flow A, AC-31.5) is out of scope here; this route renders with
- *          an empty gallery-placements list until that AC fills it in.
+ *          metadata object in source.
+ *          AC-31.5 — each of the page's `galleryPlacements` is resolved
+ *          through the existing Flow A boundary
+ *          (resolvePageGalleryPlacements -> backstageGalleryPlacement ->
+ *          backstageClient/backstageGalleryMapper), by Backstage gallery
+ *          `slug` only — never a relation into the Backstage database
+ *          (Reminder 4). `export const revalidate = 60` gives this route the
+ *          same 60-second safety-net cap every other gallery-bearing route
+ *          already carries (src/lib/backstageGalleryCache.ts's `CACHE_TTL_MS`).
+ *          A placement whose gallery is unreachable renders
+ *          GalleryUnavailablePlaceholder instead of failing the page.
  * created-by: dev-team
  * related-story: US-31
  * related-ac: 31.4
+ * updated-by: dev-team
+ * related-story: US-31
+ * related-ac: 31.5
  * ---
  */
 import type { Metadata } from 'next'
@@ -25,6 +36,11 @@ import { notFound } from 'next/navigation'
 
 import { StandardPageTemplate } from '@/components/page-template/StandardPageTemplate'
 import { getPageBySlug } from '@/lib/getPageBySlug'
+import { resolvePageGalleryPlacements } from '@/lib/resolvePageGalleryPlacements'
+
+// AC-31.5: the same 60-second safety-net cap the contract commits every
+// gallery-bearing route to (see file header).
+export const revalidate = 60
 
 interface PageRouteProps {
   params: Promise<{ slug: string }>
@@ -53,11 +69,13 @@ export default async function PublicPageRoute({ params }: PageRouteProps) {
     notFound()
   }
 
+  const galleryPlacements = await resolvePageGalleryPlacements(page.galleryPlacements)
+
   return (
     <StandardPageTemplate
       heading={page.heading}
       shortIntroduction={page.shortIntroduction || undefined}
-      galleryPlacements={[]}
+      galleryPlacements={galleryPlacements}
     />
   )
 }

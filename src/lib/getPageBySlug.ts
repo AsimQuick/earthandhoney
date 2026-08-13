@@ -14,12 +14,24 @@
  *          imported directly (see us3-ac3.5-galleries-api-read.test.ts), so
  *          this module is exercised only via the route that imports it,
  *          never imported directly by a Jest test.
+ *          `depth: 1` on the query (AC-31.5) resolves `galleryPlacements`
+ *          one level — the related `gallery-placements` document's own
+ *          fields — which is exactly enough to read each placement's
+ *          Backstage `gallerySlug`/`layout`/`heading`, never a level deeper
+ *          into anything Backstage-owned (that collection holds no relation
+ *          into the separate Backstage database in the first place; see
+ *          src/collections/GalleryPlacements.ts).
  * created-by: dev-team
  * related-story: US-31
  * related-ac: 31.4
+ * updated-by: dev-team
+ * related-story: US-31
+ * related-ac: 31.5
  * ---
  */
 import { getPayload } from 'payload'
+
+import type { PageGalleryPlacementConfig } from '@/lib/resolvePageGalleryPlacements'
 
 import config from '@payload-config'
 
@@ -30,6 +42,7 @@ export interface ResolvedPage {
   metaDescription: string
   status: 'draft' | 'published'
   indexing: 'index' | 'noindex'
+  galleryPlacements: PageGalleryPlacementConfig[]
 }
 
 export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> {
@@ -38,7 +51,7 @@ export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> 
     collection: 'pages',
     where: { slug: { equals: slug } },
     limit: 1,
-    depth: 0,
+    depth: 1,
   })
 
   const doc = result.docs[0] as
@@ -49,12 +62,25 @@ export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> 
         metaDescription?: string
         status?: string
         indexing?: string
+        galleryPlacements?: Array<{
+          gallerySlug?: string
+          layout?: string
+          heading?: string
+        } | null>
       }
     | undefined
 
   if (!doc) {
     return null
   }
+
+  const galleryPlacements: PageGalleryPlacementConfig[] = (doc.galleryPlacements ?? [])
+    .filter((placement): placement is NonNullable<typeof placement> => Boolean(placement?.gallerySlug))
+    .map((placement) => ({
+      gallerySlug: placement.gallerySlug as string,
+      layout: placement.layout === 'slideshow' ? 'slideshow' : 'masonry',
+      heading: placement.heading || undefined,
+    }))
 
   return {
     heading: doc.heading || '',
@@ -63,5 +89,6 @@ export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> 
     metaDescription: doc.metaDescription || '',
     status: doc.status === 'published' ? 'published' : 'draft',
     indexing: doc.indexing === 'noindex' ? 'noindex' : 'index',
+    galleryPlacements,
   }
 }
