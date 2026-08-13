@@ -1,0 +1,813 @@
+{
+  "$schema": "committed test-lane classification for US-30 AC-30.1",
+  "generatedFor": "US-30 AC-30.1",
+  "totalSuites": 157,
+  "counts": {
+    "live": 4,
+    "unit": 153
+  },
+  "mechanism": {
+    "chosen": "jest-projects",
+    "chosenLabel": "Jest `projects` entry",
+    "rejected": [
+      {
+        "option": "naming-convention",
+        "label": "Naming convention enforced by a test (e.g. a `.live.test.ts` suffix)",
+        "reason": "Only 4 of 156 suites are LIVE and several LIVE-sounding filenames (webhook-live-proof, backstage-client-flow-a's sibling files, r2-storage) are actually UNIT once read \u2014 baking the lane into the filename would conflate 'reads about live behaviour' with 'is live behaviour', which is exactly the guessing-from-filename failure mode AC-30.1 forbids. It would also require renaming files across git history for no functional gain over an explicit manifest."
+      },
+      {
+        "option": "testPathIgnorePatterns-pair",
+        "label": "A testPathIgnorePatterns pair (two Jest configs/invocations, each ignoring the other lane's suites)",
+        "reason": "Works, but the LIVE and UNIT suite sets aren't derivable from a path pattern (see naming-convention rejection above), so each config would need its own explicit include/exclude list duplicating the same manifest in two places, and running both lanes from one `npm test` would require chaining two separate `jest --config` invocations rather than one Jest run \u2014 more moving parts than a single `projects` config needs."
+      }
+    ],
+    "notes": "This AC records the classification and the mechanism decision only. Wiring jest.config.ts's `projects` array to the two lanes, and the package.json/CI scripts that select them, is scoped to AC-30.2/30.3/30.5."
+  },
+  "suites": [
+    {
+      "path": "src/__tests__/payloadGalleryMapper.test.ts",
+      "lane": "UNIT",
+      "reason": "pure function test on mapPayloadGalleryToImages with in-memory fixture objects, no I/O at all"
+    },
+    {
+      "path": "src/__tests__/us1-ac1.1-payload-admin.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local source files (next.config.ts, payload.config.ts, tsconfig.json, route files) and asserts on their text content"
+    },
+    {
+      "path": "src/__tests__/us1-ac1.2-postgres-migration.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process (child_process.spawn) and fetches http://localhost:4278/api/users, exercising Payload's live schema/connection against the real Postgres `db` container"
+    },
+    {
+      "path": "src/__tests__/us1-ac1.3-docker-compose-up.test.ts",
+      "lane": "UNIT",
+      "reason": "parses docker-compose.yml/Dockerfile/.dockerignore as YAML/text and asserts on static config values"
+    },
+    {
+      "path": "src/__tests__/us1-ac1.4-env-config.test.ts",
+      "lane": "UNIT",
+      "reason": "reads .env.example, payload.config.ts, and source files via fs and asserts on string patterns"
+    },
+    {
+      "path": "src/__tests__/us1-ac1.5-code-file-headers.test.ts",
+      "lane": "UNIT",
+      "reason": "walks the repo file tree with fs and regex-matches header comments"
+    },
+    {
+      "path": "src/__tests__/us14-ac14.1-pivot-audit.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and scrum-master/sprint*.json and asserts on table/text content"
+    },
+    {
+      "path": "src/__tests__/us14-ac14.2-superseded-artifacts.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and .env.example, parses markdown tables as strings"
+    },
+    {
+      "path": "src/__tests__/us14-ac14.3-duplicate-ownership.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and CLAUDE.md and asserts on markdown table text"
+    },
+    {
+      "path": "src/__tests__/us14-ac14.4-dependency-licence-audit.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and node_modules/sharp/package.json (local file) and asserts on text/JSON content"
+    },
+    {
+      "path": "src/__tests__/us14-ac14.5-migration-risk.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and asserts on markdown table content"
+    },
+    {
+      "path": "src/__tests__/us14-ac14.6-recommendation-open-questions.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and scrum-master/po-requests.md and asserts on text/section content"
+    },
+    {
+      "path": "src/__tests__/us15-ac15.1-picpeak-licence-verification.test.ts",
+      "lane": "UNIT",
+      "reason": "tests the pure classifyLicenceText function with inline fixtures and reads local markdown as static text, no network call to GitHub is made"
+    },
+    {
+      "path": "src/__tests__/us15-ac15.2-picpeak-capability-audit.test.ts",
+      "lane": "UNIT",
+      "reason": "tests the pure auditCapabilities function with inline fixture data and reads local markdown as static text"
+    },
+    {
+      "path": "src/__tests__/us15-ac15.3-picpeak-upstream-pin.test.ts",
+      "lane": "UNIT",
+      "reason": "tests the pure validatePin function with inline fixtures and reads local markdown as static text"
+    },
+    {
+      "path": "src/__tests__/us15-ac15.4-third-party-notices.test.ts",
+      "lane": "UNIT",
+      "reason": "tests the pure checkNoticeCompleteness function and reads local markdown/public files as static text"
+    },
+    {
+      "path": "src/__tests__/us15-ac15.5-fork-changelog-upstream-sync.test.ts",
+      "lane": "UNIT",
+      "reason": "tests pure validateChangelogEntry/validateSyncPolicy functions with inline fixtures and reads local markdown as static text"
+    },
+    {
+      "path": "src/__tests__/us15-ac15.6-picpeak-vendored-fork.test.ts",
+      "lane": "UNIT",
+      "reason": "walks the local vendor/picpeak tree with fs and computes git blob SHAs locally, all local filesystem/hash comparisons"
+    },
+    {
+      "path": "src/__tests__/us16-ac16.1-backstage-docker-services.test.ts",
+      "lane": "UNIT",
+      "reason": "parses docker-compose.yml and reads vendored package.json/nginx.conf as static text/YAML, starts no containers"
+    },
+    {
+      "path": "src/__tests__/us16-ac16.2-backstage-postgres-migrations.test.ts",
+      "lane": "UNIT",
+      "reason": "parses docker-compose.yml and reads vendored knexfile.js/wait-for-db.sh source as static text; the live migration proof is pasted as a code comment, not executed"
+    },
+    {
+      "path": "src/__tests__/us16-ac16.3-backstage-r2-storage.test.ts",
+      "lane": "UNIT",
+      "reason": "parses docker-compose.yml, reads .env.example and vendored storage/index.js source; no live R2 network call is made"
+    },
+    {
+      "path": "src/__tests__/us16-ac16.4-env-example-backstage-vars.test.ts",
+      "lane": "UNIT",
+      "reason": "parses docker-compose.yml and .env.example, cross-checks referenced variable names as strings"
+    },
+    {
+      "path": "src/__tests__/us16-ac16.5-backstage-startup-runbook.test.ts",
+      "lane": "UNIT",
+      "reason": "reads BACKSTAGE_STARTUP.md and .env.example and regex-matches recorded runbook text, does not itself start services"
+    },
+    {
+      "path": "src/__tests__/us16-ac16.6-migration-idempotency.test.ts",
+      "lane": "UNIT",
+      "reason": "reads MIGRATION_IDEMPOTENCY.md and UPSTREAM_SYNC.md; the live migration run is only quoted in a code comment, not executed"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.1.1-client-create-persist.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored source/migration files by line number to cross-check citations; the API/db proof is pasted recorded evidence, not exercised live"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.1.2-project-client-link.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored route/service/migration source files; the live Postgres FK/API proof is pasted recorded evidence, not executed"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.1.3.1-gallery-create-in-project.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored source files from disk and asserts on their text"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.1.3.2-project-lists-gallery.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and one vendored route file, asserts on static text"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.1.3.3-gallery-project-client-direction.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored backend/migration files, asserts on their content"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.10-contract-signing-verified.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored contract-signing source plus a local `git status --porcelain` check, no live server/db"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.2-batch-upload-processing.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored image-processing/route source, including a local execSync('grep ...') over local files"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.3-gallery-password-protection.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored auth/gallery route/middleware source, asserts on static text"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.1.1.1.1.1-expiry-search.test.ts",
+      "lane": "UNIT",
+      "reason": "walks local vendor/picpeak files with fs.readdirSync to recompute grep-style counts, purely local filesystem"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.1.1.1.1.2-migration-name-dedup.test.ts",
+      "lane": "UNIT",
+      "reason": "local-filesystem grep re-implementation over vendored migrations directory"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.1.1.1.1.3-backend-source-merged-inventory.test.ts",
+      "lane": "UNIT",
+      "reason": "local-filesystem grep re-implementation over vendored backend src directory"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.1.1.1.2-ruled-out-non-gallery-occurrences.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and cited vendored source files, checks citations against local file content"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.1.1.1.3-candidate-shortlist-reconciled.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and cited vendored source files, checks citations against local file content"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.1.1.2.1-shortlist-settled.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored source files (adminSystem.js, expirationChecker.js), asserts on content"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.1.1.2.2.1-creation-path-write-evidence.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored route files, checks file:line citations against local content"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.1.1.2.2.2-edit-path-write-evidence.test.ts",
+      "lane": "UNIT",
+      "reason": "reproduces a grep scope over vendored backend/src with fs, checks citations against local file content"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.1.1.2.2.3-write-path-disposition.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md sections and vendored source, cross-checks derived dispositions from local file content"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.1.2-scheduled-process-trigger.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md, vendored expirationChecker.js/server.js/docker-compose.yml as static text, no live process started"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.1.3-expiry-model-vs-prd.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md, scrum-master/PRD.md, and vendored source files; only shells out to a local `git status --porcelain`"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.2-pre-expiry-client-baseline.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored middleware/route files, asserts on pinned recorded evidence text"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.1.3-pre-expiry-photographer-baseline.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored frontend/backend source files, asserts on static text"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.2-post-expiry-client-refusal.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored route/middleware files, asserts on pinned recorded evidence text"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.4.3-photographer-visible-expired-state.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored frontend/backend source files, asserts on pinned recorded evidence text"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.5.3-download-recorded-on-confirmed-delivery.test.ts",
+      "lane": "UNIT",
+      "reason": "reads vendored gallery.js route source and register docs, imports a local @/lib/forkChangelog validator function, no db/server/network"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.6-operational-gallery-email-sent.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md, vendored email route/migration/processor files, and docker-compose.yml as text; asserts on pinned recorded evidence, does not itself send email or hit MailHog"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.7-webhook-fired-and-received.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and vendored webhook source files; uses local crypto.createHmac to recompute a signature over a hardcoded string, no live webhook delivery"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.8-gallery-style-template-baseline.test.ts",
+      "lane": "UNIT",
+      "reason": "requires local vendored migration JS files to read exported CSS string constants and compares to baseline files on disk, no migration execution"
+    },
+    {
+      "path": "src/__tests__/us17-ac17.9-pivot-audit-findings-register.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PIVOT_AUDIT.md and scrum-master/po-requests.md, parses markdown tables and asserts on structure/content"
+    },
+    {
+      "path": "src/__tests__/us18-ac18.1-system-ownership.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown files (SYSTEM_OWNERSHIP.md, CLAUDE.md, PIVOT_AUDIT.md) and a local `git status --porcelain` check"
+    },
+    {
+      "path": "src/__tests__/us18-ac18.2-payload-picpeak-api-contract.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown/vendor source files and asserts on their text content"
+    },
+    {
+      "path": "src/__tests__/us18-ac18.3-no-cross-database-access.test.ts",
+      "lane": "UNIT",
+      "reason": "reads docker-compose.yml, .env.example, and src files as static text/YAML, no real DB connection made"
+    },
+    {
+      "path": "src/__tests__/us18-ac18.4-three-flows.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown/vendor source files and asserts on their text content"
+    },
+    {
+      "path": "src/__tests__/us18-ac18.5-backstage-surfaces-disabled.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown/vendor source/package.json files and asserts on their text content"
+    },
+    {
+      "path": "src/__tests__/us18-ac18.6-terminology-mapping.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown and vendor source/JSON files and asserts on their text content"
+    },
+    {
+      "path": "src/__tests__/us19-ac19.1-media-reuse-adr.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown and vendor PicPeak source files as static text"
+    },
+    {
+      "path": "src/__tests__/us19-ac19.2-media-reuse-decision.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown files (MEDIA_REUSE_ADR.md, UPSTREAM_SYNC.md, etc.) and asserts on text content"
+    },
+    {
+      "path": "src/__tests__/us19-ac19.3-media-reuse-guarantees.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown and vendor source files as static text"
+    },
+    {
+      "path": "src/__tests__/us19-ac19.4-r2-storage-audit-adr.test.ts",
+      "lane": "UNIT",
+      "reason": "reads a local markdown ADR and vendor source/config files; the recorded 'live' aws s3api findings are pre-recorded prose in the ADR, not a live call made by the test"
+    },
+    {
+      "path": "src/__tests__/us19-ac19.5-r2-delivery-path-undecided-adr.test.ts",
+      "lane": "UNIT",
+      "reason": "reads a local markdown ADR file and asserts on its text content"
+    },
+    {
+      "path": "src/__tests__/us2-ac2.1-media-collection.test.ts",
+      "lane": "UNIT",
+      "reason": "imports the Media collection config object and reads local source files for static string checks"
+    },
+    {
+      "path": "src/__tests__/us2-ac2.4-alt-text-required.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') and a real (non-placeholder) R2 config; spawns a real `next dev` server via child_process, calls getLiveApiAuthToken (shared fixture in src/test-support/liveApiAuth.ts) and fetches http://localhost:4280/api/media, exercising a live server, live Postgres db, and live R2 storage"
+    },
+    {
+      "path": "src/__tests__/us2-ac2.5-r2-env-config.test.ts",
+      "lane": "UNIT",
+      "reason": "reads .env.example, Dockerfile, package.json, and docker-compose.yml as static text, no network/db calls"
+    },
+    {
+      "path": "src/__tests__/us20-ac20.1-stripe-port-report-files-inspected.test.ts",
+      "lane": "UNIT",
+      "reason": "reads STRIPE_PORT_REPORT.md and local reference-project files via fs"
+    },
+    {
+      "path": "src/__tests__/us20-ac20.2-stripe-port-report-env-convention.test.ts",
+      "lane": "UNIT",
+      "reason": "reads STRIPE_PORT_REPORT.md and local reference-project files via fs"
+    },
+    {
+      "path": "src/__tests__/us20-ac20.3-stripe-port-report-key-pairing-rule.test.ts",
+      "lane": "UNIT",
+      "reason": "reads STRIPE_PORT_REPORT.md and asserts on its text content"
+    },
+    {
+      "path": "src/__tests__/us20-ac20.4-stripe-port-report-startup-validation.test.ts",
+      "lane": "UNIT",
+      "reason": "reads STRIPE_PORT_REPORT.md and asserts on its text content"
+    },
+    {
+      "path": "src/__tests__/us20-ac20.5-stripe-port-report-secret-handling.test.ts",
+      "lane": "UNIT",
+      "reason": "reads STRIPE_PORT_REPORT.md, .gitignore, and runs local `git ls-files`/`git --version` to check tracked files"
+    },
+    {
+      "path": "src/__tests__/us20-ac20.6-stripe-port-report-preserved-behaviours.test.ts",
+      "lane": "UNIT",
+      "reason": "reads STRIPE_PORT_REPORT.md and asserts on its text content"
+    },
+    {
+      "path": "src/__tests__/us20-ac20.7-stripe-port-report-settled-architecture.test.ts",
+      "lane": "UNIT",
+      "reason": "reads STRIPE_PORT_REPORT.md and asserts on its text content"
+    },
+    {
+      "path": "src/__tests__/us20-ac20.8-env-example-stripe-vars.test.ts",
+      "lane": "UNIT",
+      "reason": "reads .env.example and .gitignore as static text and checks fs.existsSync"
+    },
+    {
+      "path": "src/__tests__/us20-ac20.9-stripe-port-report-faithful-port-boundary.test.ts",
+      "lane": "UNIT",
+      "reason": "reads STRIPE_PORT_REPORT.md and asserts on its text content"
+    },
+    {
+      "path": "src/__tests__/us21-ac21.1-prd-restore.test.ts",
+      "lane": "UNIT",
+      "reason": "reads scrum-master/PRD.md and scrum-master/PRD-archive.md as static text"
+    },
+    {
+      "path": "src/__tests__/us21-ac21.2-claude-md-restore.test.ts",
+      "lane": "UNIT",
+      "reason": "reads CLAUDE.md as static text and asserts on headings/content"
+    },
+    {
+      "path": "src/__tests__/us21-ac21.3-scrum-master-backlog-restore.test.ts",
+      "lane": "UNIT",
+      "reason": "reads scrum-master/scrum-master.md as static text and asserts on headings/content"
+    },
+    {
+      "path": "src/__tests__/us21-ac21.4-sprint-json-reconciliation.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local scrum-master/sprint2.json and sprint3.json and asserts on their JSON content"
+    },
+    {
+      "path": "src/__tests__/us21-ac21.5-system-ownership-correction.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local SYSTEM_OWNERSHIP.md and CLAUDE.md and asserts on their text/table content"
+    },
+    {
+      "path": "src/__tests__/us21-ac21.6-pivot-direction-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local PRD.md, CLAUDE.md, scrum-master.md, SYSTEM_OWNERSHIP.md and asserts on their text content"
+    },
+    {
+      "path": "src/__tests__/us22-ac22.1-contract-signing-reopened.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local po-requests.md and PIVOT_AUDIT.md and asserts on their text/table content"
+    },
+    {
+      "path": "src/__tests__/us22-ac22.2-f1-f9-routed.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local PIVOT_AUDIT.md and asserts on a markdown table's rows"
+    },
+    {
+      "path": "src/__tests__/us22-ac22.3-reopened-status-propagated.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local CLAUDE.md, PRD.md, SYSTEM_OWNERSHIP.md and asserts on their text content"
+    },
+    {
+      "path": "src/__tests__/us22-ac22.4-ud1-report-surfaced.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local PIVOT_AUDIT.md, FORK_CHANGELOG.md, PICPEAK_UPSTREAM_DEFECTS.md, retrospective.md, po-requests.md and checks file existence"
+    },
+    {
+      "path": "src/__tests__/us22-ac22.5-storage-permission-fix.test.ts",
+      "lane": "UNIT",
+      "reason": "parses local docker-compose.yml and vendored Dockerfile/wait-for-db.sh text with the yaml package, never starts or connects to a container"
+    },
+    {
+      "path": "src/__tests__/us23-ac23.1-design-token-source-of-truth.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local src/styles/tokens.css and globals.css and asserts on CSS custom-property declarations via regex"
+    },
+    {
+      "path": "src/__tests__/us23-ac23.2-self-hosted-fonts.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local CSS/layout source files and font binary files from disk, checks header bytes"
+    },
+    {
+      "path": "src/__tests__/us23-ac23.3-contrast-ratios.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local tokens.css and computes WCAG contrast ratios in pure JS from parsed hex values"
+    },
+    {
+      "path": "src/__tests__/us23-ac23.4-shell-rewired-to-tokens.test.tsx",
+      "lane": "UNIT",
+      "reason": "reads local component source for raw-value regex checks and renders components with react-dom/server for snapshot comparison"
+    },
+    {
+      "path": "src/__tests__/us23-ac23.5-token-specimen-route.test.tsx",
+      "lane": "UNIT",
+      "reason": "renders a page component with @testing-library/react (jsdom) and reads a local source file for a header check"
+    },
+    {
+      "path": "src/__tests__/us23-ac23.6-token-export.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local generated CSS export file and regenerates it in-process via generateTokenExportCss, comparing strings"
+    },
+    {
+      "path": "src/__tests__/us23-ac23.7-style-drift-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "runs a local regex-based detector over synthetic strings and walks src/components and src/app on disk comparing counts to a fixture baseline"
+    },
+    {
+      "path": "src/__tests__/us24-ac24.1-studio-profile-global.test.ts",
+      "lane": "UNIT",
+      "reason": "imports the Payload StudioProfile config object directly and asserts on its field definitions in-process"
+    },
+    {
+      "path": "src/__tests__/us24-ac24.2-studio-profile-branding-bounds.test.ts",
+      "lane": "UNIT",
+      "reason": "imports the Payload StudioProfile config object and calls its field validator functions directly in-process"
+    },
+    {
+      "path": "src/__tests__/us24-ac24.3-accent-color-contrast.test.ts",
+      "lane": "UNIT",
+      "reason": "calls local contrast-checking functions and the StudioProfile field validator directly in-process"
+    },
+    {
+      "path": "src/__tests__/us24-ac24.4-no-hardcoded-studio-strings.test.ts",
+      "lane": "UNIT",
+      "reason": "walks src/ on disk checking file contents for banned/owned string literals"
+    },
+    {
+      "path": "src/__tests__/us24-ac24.5-studio-profile-seo-output.test.tsx",
+      "lane": "UNIT",
+      "reason": "mocks @/lib/getStudioProfile with jest.mock and calls generateMetadata()/RootLayout() directly, rendering with react-dom/server"
+    },
+    {
+      "path": "src/__tests__/us25-ac25.1-gallery-placement-model.test.ts",
+      "lane": "UNIT",
+      "reason": "imports the Payload GalleryPlacements collection config object and asserts on its field definitions in-process"
+    },
+    {
+      "path": "src/__tests__/us25-ac25.2-backstage-client-flow-a.test.ts",
+      "lane": "LIVE",
+      "reason": "a describe block gated on dns.lookup('backstage-backend') resolving performs real fetch calls to http://backstage-backend:3000 \u2014 admin login, gallery search/create/publish, and fetchPublishedGallery \u2014 against the live Backstage/PicPeak API"
+    },
+    {
+      "path": "src/__tests__/us25-ac25.3-backstage-gallery-mapper.test.ts",
+      "lane": "UNIT",
+      "reason": "calls the pure mapBackstageGalleryToImages function on hand-built objects and reads local files for directory-listing/text checks"
+    },
+    {
+      "path": "src/__tests__/us25-ac25.4-backstage-cache-contract.test.ts",
+      "lane": "UNIT",
+      "reason": "exercises an in-memory cache module (backstageGalleryCache) with injected timestamps, no real fetch/db/timers"
+    },
+    {
+      "path": "src/__tests__/us25-ac25.5-gallery-placement-layouts.test.tsx",
+      "lane": "UNIT",
+      "reason": "mocks @/lib/backstageClient with jest.mock and renders layout components with @testing-library/react (jsdom)"
+    },
+    {
+      "path": "src/__tests__/us25-ac25.6-gallery-placement-failure-handling.test.tsx",
+      "lane": "UNIT",
+      "reason": "mocks @/lib/backstageClient with jest.mock and exercises failure-handling logic plus jsdom rendering"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.1-picpeak-webhook-signature-verification.test.ts",
+      "lane": "UNIT",
+      "reason": "calls the route handler directly in-process with a mocked galleryPlacementLookup module, pure HMAC/route-logic assertions"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.2-webhook-slug-revalidation.test.ts",
+      "lane": "UNIT",
+      "reason": "mocks next/cache and @/lib/galleryPlacementLookup via jest.doMock, calls POST in-process; reads a local markdown contract doc for cross-checks"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.3-webhook-non-blocking-response.test.ts",
+      "lane": "UNIT",
+      "reason": "in-process route call with mocked next/cache and galleryPlacementLookup, uses a manually-controlled pending Promise"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.4-webhook-live-proof.test.tsx",
+      "lane": "UNIT",
+      "reason": "mocks @/lib/backstageGalleryPlacement and renders the page component with @testing-library/react; reads local shell script and PIVOT_AUDIT.md text \u2014 despite the filename, no live request is issued"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.4.1.1-webhook-live-proof-harness.test.ts",
+      "lane": "UNIT",
+      "reason": "only reads local WEBHOOK_LIVE_PROOF.md and a shell script from disk and asserts on their static text content"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.4.1.2-webhook-live-proof-fixtures.test.ts",
+      "lane": "UNIT",
+      "reason": "only reads local WEBHOOK_LIVE_PROOF.md and asserts on section text, a documentation report parser"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.4.1.3.1-webhook-live-proof-readonly.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown doc and shell script text and asserts on string contents, no HTTP calls issued"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.4.1.3.2-webhook-live-proof-publish.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown doc and shell script text and asserts on string contents, no HTTP calls issued"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.4.1.3.3-webhook-live-proof-reproduce.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown doc and shell script text and asserts on string contents, no HTTP calls issued"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.4.2-webhook-live-proof-upload.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown doc, shell script, and vendored JS source files by line number, all static file/text assertions"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.4.3-webhook-live-proof-delete.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local markdown doc, shell script, and vendored JS source files by line number, all static file/text assertions"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.5-webhook-idempotent-dropped-delivery.test.ts",
+      "lane": "UNIT",
+      "reason": "exercises claimWebhookDelivery directly and POSTs to the route in-process with mocked next/cache/galleryPlacementLookup"
+    },
+    {
+      "path": "src/__tests__/us26-ac26.6-env-example-webhook-vars.test.ts",
+      "lane": "UNIT",
+      "reason": "reads .env.example, route source, and walks src/ on disk asserting on text patterns"
+    },
+    {
+      "path": "src/__tests__/us27-ac27.2-cms-public-site-panel-flag-gated.test.ts",
+      "lane": "UNIT",
+      "reason": "reads vendored frontend .tsx/.ts source files as raw text and asserts on string/regex patterns, no rendering or live server"
+    },
+    {
+      "path": "src/__tests__/us27-ac27.5-additive-deviation-recorded.test.ts",
+      "lane": "UNIT",
+      "reason": "calls validateChangelogEntry and verifyVendoredMigrations (local SHA-1 file-hash check) plus reads local markdown docs"
+    },
+    {
+      "path": "src/__tests__/us28-ac28.1-pivot-artifact-removal.test.ts",
+      "lane": "UNIT",
+      "reason": "imports local Media collection object and reads source/config files from disk to assert absence of removed code"
+    },
+    {
+      "path": "src/__tests__/us28-ac28.1.2-retire-sharp-r2-upload-path.test.ts",
+      "lane": "UNIT",
+      "reason": "imports local Media collection object and reads source/package files from disk"
+    },
+    {
+      "path": "src/__tests__/us28-ac28.4-live-stack-env-preserved.test.ts",
+      "lane": "UNIT",
+      "reason": "reads .env.example, docker-compose.yml (parsed with yaml), and PIVOT_AUDIT.md as static text, no live containers/network"
+    },
+    {
+      "path": "src/__tests__/us28-ac28.5-coverage-gate-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "reads CI workflow YAML and jest.config.ts as raw text and asserts on regex-extracted values, no live CI run"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.1.1-benchmark-pages-render-real-images.test.tsx",
+      "lane": "UNIT",
+      "reason": "mocks @/lib/backstageClient via jest.mock, renders pages with @testing-library/react, and reads committed static HTML/JSON proof transcripts from disk"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.1.2-benchmark-measurement-extraction.test.ts",
+      "lane": "UNIT",
+      "reason": "pure-function tests (extractMeasurements, aggregateRuns, runHarness) against a checked-in JSON fixture, no Chrome/DB/live server"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.1.3-benchmark-docker-harness.test.ts",
+      "lane": "UNIT",
+      "reason": "parses docker-compose.yml with yaml and reads local scripts/markdown/package.json as static text, does not launch Docker or Chrome itself"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.2.1-candidate-mechanism-map.test.ts",
+      "lane": "UNIT",
+      "reason": "reads vendored backend/frontend source files and local JSON/markdown reports as raw text; explicitly runs no browser, builds no image, measures nothing"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.2.2.1-benchmark-image-origin-fix.test.ts",
+      "lane": "UNIT",
+      "reason": "reads next.config.ts, .env.example, and a committed JSON transcript from disk; explicitly runs no browser, builds no report, measures nothing"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.2.2.1.1-withdraw-discredited-benchmark-runs.test.ts",
+      "lane": "UNIT",
+      "reason": "pure filesystem existence/content checks (fs.existsSync/readFileSync) on the results directory; explicitly runs no browser, builds no report, measures nothing"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.2.2.1.2-rewrite-config-verified-statically.test.ts",
+      "lane": "UNIT",
+      "reason": "statically parses next.config.ts/docker-compose.yml/.env.example text and a committed HTML transcript; explicitly verified statically, no browser run, nothing measured"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.2.2.1.3-image-origin-live-proof.test.ts",
+      "lane": "UNIT",
+      "reason": "reads a committed bash script, a committed JSON transcript, and BACKSTAGE_STARTUP.md and asserts on their text/shape; the docblock states the HTTP round trips are not repeatable inside plain jest"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.2.2.2-delivery-path-switch-wiring.test.ts",
+      "lane": "UNIT",
+      "reason": "tests pure functions (applyDeliveryPath, redactSignedUrl, classifyObservedDeliveryPath, currentBenchmarkDeliveryPath) and reads local repo/JSON fixture files; only shell-out is local `git ls-files`"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.2.2.3-measured-paths-and-summary.test.ts",
+      "lane": "UNIT",
+      "reason": "reads committed run-*.json reports from disk and calls pure summarisation/render functions"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.2.3-candidate-disposition.test.ts",
+      "lane": "UNIT",
+      "reason": "reads R2_STORAGE_AND_DELIVERY_ADR.md and scrum-master/po-requests.md and asserts on their text content only"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.3-measured-results-in-adr.test.ts",
+      "lane": "UNIT",
+      "reason": "reads the ADR file and committed run-*.json reports, re-derives numbers via pure functions; only shell-out is local `git ls-files --error-unmatch`"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.4-decision-record-in-adr.test.ts",
+      "lane": "UNIT",
+      "reason": "reads the ADR markdown and committed run-*.json reports, pure re-derivation logic"
+    },
+    {
+      "path": "src/__tests__/us29-ac29.5-security-invariants-preserved.test.ts",
+      "lane": "LIVE",
+      "reason": "a describe block gated on dns.lookup('backstage-backend') resolving performs real fetch calls against process.env.BACKSTAGE_BACKEND_URL (default http://backstage-backend:3000) to log in, create/publish galleries, and verify auth against the live Backstage/PicPeak API"
+    },
+    {
+      "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom component rendering of GalleryEngine/MainImageDisplay/etc. via @testing-library/react"
+    },
+    {
+      "path": "src/__tests__/us4-ac4.2-gradient-overlay.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering and CSS-style assertions on the GradientOverlay component"
+    },
+    {
+      "path": "src/__tests__/us4-ac4.3-responsive-images.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering plus pure function tests (resolveGalleryImageSrc, createGalleryImageLoader)"
+    },
+    {
+      "path": "src/__tests__/us4-ac4.4-gallery-engine-reuse-demo.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering of the demo page component and local file reads/greps of source files"
+    },
+    {
+      "path": "src/__tests__/us4-ac4.5-visual-parity.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering plus reading local CSS/HTML template files for string/regex comparison"
+    },
+    {
+      "path": "src/__tests__/us5-ac5.1-fullscreen-viewer.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering with photoswipe/lightbox explicitly mocked via jest.mock"
+    },
+    {
+      "path": "src/__tests__/us5-ac5.2-mobile-touch-thumbnail-drawer.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering with mocked PhotoSwipe, simulated touch events"
+    },
+    {
+      "path": "src/__tests__/us5-ac5.3-desktop-hover-thumbnail-preview.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering with mocked PhotoSwipe, simulated mouse events"
+    },
+    {
+      "path": "src/__tests__/us5-ac5.4-display-mode-settings.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering with mocked PhotoSwipe and Jest fake timers"
+    },
+    {
+      "path": "src/__tests__/us6-ac6.1-progressive-loading.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering with a mocked IntersectionObserver class"
+    },
+    {
+      "path": "src/__tests__/us6-ac6.4-lazy-loading.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering of gallery components checking loading=lazy/srcset attributes"
+    },
+    {
+      "path": "src/__tests__/us7-ac7.1-deploy-workflow.test.ts",
+      "lane": "UNIT",
+      "reason": "reads and YAML-parses .github/workflows/deploy.yml and asserts on its structure"
+    },
+    {
+      "path": "src/__tests__/us7-ac7.2-ci-clean-checkout-smoke.test.ts",
+      "lane": "UNIT",
+      "reason": "reads and YAML-parses .github/workflows/ci.yml and docker-compose.yml, asserting on step structure/order; does not itself run Docker"
+    },
+    {
+      "path": "src/__tests__/us7-ac7.3-live-boot-isolation.test.ts",
+      "lane": "UNIT",
+      "reason": "reads package.json/jest.config.ts/other test source files and asserts on their text (e.g. --runInBand, timeout margins); despite the name, never spawns a server itself"
+    },
+    {
+      "path": "src/__tests__/us7-ac7.4-env-example-sprint2-vars.test.ts",
+      "lane": "UNIT",
+      "reason": "reads .env.example and walks src/ for process.env.* references, pure string/text assertions"
+    },
+    {
+      "path": "src/__tests__/us8-ac8.1-public-layout-chrome.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering of layout components plus local file reads of layout/template source"
+    },
+    {
+      "path": "src/__tests__/us8-ac8.2-global-styling-and-font.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering of the Home page plus reading local layout/CSS files for font/color assertions"
+    },
+    {
+      "path": "src/__tests__/us8-ac8.3-mobile-menu-trigger.test.tsx",
+      "lane": "UNIT",
+      "reason": "jsdom rendering of the mobile menu components with simulated clicks"
+    },
+    {
+      "path": "src/__tests__/us8-ac8.4-metadata-and-favicon.test.tsx",
+      "lane": "UNIT",
+      "reason": "reads source files and does a byte-for-byte favicon file comparison on disk"
+    },
+    {
+      "path": "src/__tests__/us30-ac30.1-test-lane-classification.test.ts",
+      "lane": "UNIT",
+      "reason": "reads TEST_LANE_INVENTORY.json and TEST_LANE_CLASSIFICATION.md and walks src/__tests__ on disk to compare against the manifest, no network/db"
+    }
+  ]
+}
