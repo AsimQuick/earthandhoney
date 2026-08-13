@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 0/8 stories | 0/46 ACs
-**Last Updated:** 2026-08-13T00:00:00+00:00
+**Last Updated:** 2026-08-13T18:30:31+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -43,16 +43,19 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 ## User Stories
 
 ### US-30: Split the verification suite into a fast parallel lane and a serial live lane so a full run stops shaping how criteria are written
-**Status:** draft | **Priority:** high
+**Status:** in-progress | **Priority:** high
 
 #### Acceptance Criteria
 - [ ] **AC-30.1:** Produce a recorded classification of every Jest suite under `src/__tests__/` (~140 suites) into exactly two lanes: LIVE (touches the shared Postgres `db` container, spawns a real Next/Payload server, calls a live Backstage or R2 endpoint, or otherwise depends on cross-suite ordering) and UNIT (everything else). The classification is derived by reading each suite, not guessed from the filename: name the specific dependency for every suite placed in the LIVE lane. Evidence: a committed inventory (counts per lane plus the per-suite reason for each LIVE entry) and the mechanism that assigns a suite to a lane (a Jest `projects` entry, a `testPathIgnorePatterns` pair, or a naming convention enforced by a test - state which was chosen and why the others were rejected).
+  - Dev: implemented
 - [ ] **AC-30.2:** The UNIT lane runs with Jest's default parallelism and is measurably faster than the current serial baseline. Baseline to beat, from `logs/20260807_235236_dev-team.json` as cited in `retrospective.md`: 1,169,738 ms wall for the whole suite under `jest --runInBand`. Evidence: the measured wall-clock time of the UNIT lane and of the full suite before the change, both taken with `docker compose run --rm web`, reported as real numbers. If the improvement is smaller than expected, report the actual figure - an honestly-measured disappointing result is an acceptable outcome; a rounded or estimated one is not.
 - [ ] **AC-30.3:** The LIVE lane runs serially (`--runInBand` semantics preserved) and the sprint-1 AC-1.2 live-boot flake does not return. Evidence: the LIVE lane run three consecutive times in Docker with identical pass results, including the live-boot suite. `src/test-support/liveApiAuth.ts`'s shared first-register fixture identity must keep working - the AC-6.3 cross-suite race it was written to fix must not reappear now that suites are re-grouped.
 - [ ] **AC-30.4:** Combined coverage across both lanes is still enforced at the existing 80% gate on branches, functions and lines, and the gate itself is not lowered. Evidence: the coverage numbers reported by CI after the split, compared against the pre-split figures recorded in the sprint-4 review (95.85 branches / 96.52 functions / 99.38 lines); `.github/workflows/ci.yml:69` still reads 80 with no `continue-on-error` and no `passWithNoTests`; and `src/__tests__/us28-ac28.5-coverage-gate-guard.test.ts` - a named Tier-3 regression anchor - stays green and unmodified. If merging coverage across two runs is not achievable cleanly, keep a single coverage-producing run and say so explicitly rather than weakening the gate.
 - [ ] **AC-30.5:** `npm test` still runs everything and still fails if either lane fails - no path exists where a developer or CI can believe the suite passed while a lane was skipped. CI runs both lanes. Evidence: `package.json` scripts and `.github/workflows/ci.yml` shown after the change, plus a deliberately-failing test in each lane proven to fail the top-level command (revert the deliberate failures before commit).
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-30.1 implemented (local checks green): Full coverage run kicked off in the background — it takes roughly 20 minutes at the documented `--runInBand` baseline. I'll resume as soon as it finishes (or my fallback check fires) to confirm the pass/coverage numbers before wrapping up AC-30.1.
 
 **Tester Status:** approved
 **Tester Notes:**
