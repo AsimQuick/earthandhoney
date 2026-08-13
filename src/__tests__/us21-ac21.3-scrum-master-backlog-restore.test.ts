@@ -14,6 +14,12 @@
  * created-by: dev-team
  * related-story: US-21
  * related-ac: 21.3
+ *
+ * note: the front-matter check was pinned to a literal `sprint-4` at write
+ *       time; sprint-5 planning has since landed legitimately (sprint5.md /
+ *       sprint5.json exist), so the check now verifies current-sprint names
+ *       the latest sprint on disk rather than a value that can only ever
+ *       regress as sprints progress.
  * ---
  */
 
@@ -67,10 +73,25 @@ describe('AC-21.3: scrum-master.md carries the restored post-pivot backlog merge
     expect(scrumMasterMd).toMatch(/^## Sprint-4 \(Planning/m)
   })
 
-  it("has front-matter current-sprint: sprint-4", () => {
+  it('has front-matter current-sprint naming the latest sprint on disk (not a stale value)', () => {
     const frontMatterMatch = scrumMasterMd.match(/^---\n([\s\S]*?)\n---/)
     expect(frontMatterMatch).not.toBeNull()
     const frontMatter = frontMatterMatch ? frontMatterMatch[1] : ''
-    expect(frontMatter).toMatch(/^current-sprint: sprint-4$/m)
+
+    const currentSprintMatch = frontMatter.match(/^current-sprint: sprint-(\d+)$/m)
+    expect(currentSprintMatch).not.toBeNull()
+    const currentSprintNum = currentSprintMatch ? Number(currentSprintMatch[1]) : NaN
+
+    const sprintDir = path.join(root, 'scrum-master')
+    const highestSprintNum = fs
+      .readdirSync(sprintDir)
+      .map((name) => name.match(/^sprint(\d+)\.md$/))
+      .filter((m): m is RegExpMatchArray => m !== null)
+      .map((m) => Number(m[1]))
+      .reduce((max, n) => Math.max(max, n), 0)
+
+    expect(fs.existsSync(path.join(sprintDir, `sprint${currentSprintNum}.md`))).toBe(true)
+    expect(fs.existsSync(path.join(sprintDir, `sprint${currentSprintNum}.json`))).toBe(true)
+    expect(currentSprintNum).toBe(highestSprintNum)
   })
 })

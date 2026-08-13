@@ -16,6 +16,12 @@
  * created-by: dev-team
  * related-story: US-22
  * related-ac: 22.4
+ *
+ * note: retrospective.md now carries more than one sprint's "Process
+ *       improvements / action items" table, each numbered from 1, so more
+ *       than one "| 9 |" row exists. The row this AC cross-references is
+ *       identified by its content (the F8/UD-1 submission decision), not by
+ *       being the first "| 9 |" match in the file.
  * ---
  */
 import fs from 'fs'
@@ -90,9 +96,12 @@ describe('AC-22.4: the drafted UD-1 upstream report is surfaced as a human actio
   })
 
   it('retrospective.md action item 9 is in fact the UD-1 submission decision', () => {
-    const match = retrospective.match(/\|\s*9\s*\|([^|]*)\|([^|]*)\|([^|]*)\|/)
-    expect(match).not.toBeNull()
-    const [, action] = match as RegExpMatchArray
+    const rowPattern = /\|\s*9\s*\|([^|]*)\|([^|]*)\|([^|]*)\|/g
+    const rows = [...retrospective.matchAll(rowPattern)]
+    expect(rows.length).toBeGreaterThan(0)
+    const ud1Row = rows.find(([, action]) => /F8\/UD-1/.test(action))
+    expect(ud1Row).not.toBeUndefined()
+    const [, action] = ud1Row as RegExpMatchArray
     expect(action).toMatch(/prepared upstream defect report/)
     expect(action).toMatch(/F8\/UD-1/)
   })
