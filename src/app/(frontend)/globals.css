@@ -18,6 +18,9 @@
  * updated-by: dev-team
  * related-story: US-23
  * related-ac: 23.4
+ * updated-by: dev-team
+ * related-story: US-32
+ * related-ac: 32.5
  * ---
  */
 @import "tailwindcss";
@@ -61,4 +64,35 @@ body {
 .photobuddy_fl_vertical_menu {
   transition-duration: var(--motion-duration-base);
   transition-timing-function: var(--motion-ease-standard);
+  transition-property: transform, visibility;
+}
+
+/*
+ * AC-32.5: below `lg` the closed drawer is only pushed off-canvas via
+ * `transform: translateX(-100%)` (VerticalMenu.tsx) — a transform alone
+ * does not remove its logo/nav/social links from the keyboard tab order, so
+ * a keyboard user could tab into content that is invisible on screen.
+ * `visibility: hidden` does remove an element from the tab order; delaying
+ * it (rather than switching instantly) keeps the AC-23.4 slide-out
+ * animation visible for its full duration when closing, while opening
+ * restores visibility with no delay so the drawer is tabbable the instant
+ * it starts sliding in. At `lg` and above the drawer is always visible
+ * regardless of open/closed state (VerticalMenu ignores `isOpen` there via
+ * its own `lg:translate-x-0`), so visibility is forced back on there too.
+ */
+.photobuddy_fl_vertical_menu[data-state='closed'] {
+  visibility: hidden;
+  transition-delay: 0s, var(--motion-duration-base);
+}
+
+.photobuddy_fl_vertical_menu[data-state='open'] {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+@variant lg {
+  .photobuddy_fl_vertical_menu[data-state='closed'],
+  .photobuddy_fl_vertical_menu[data-state='open'] {
+    visibility: visible;
+  }
 }
