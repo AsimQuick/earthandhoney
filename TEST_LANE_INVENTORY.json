@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 161,
+  "totalSuites": 162,
   "counts": {
     "live": 4,
-    "unit": 157
+    "unit": 158
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -828,6 +828,11 @@
       "path": "src/__tests__/us31-ac31.2-pages-no-layout-builder-lock-in.test.ts",
       "lane": "UNIT",
       "reason": "reads src/collections/Pages.ts and CLAUDE.md as text and walks the in-memory Pages field tree, no network/db"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.3-standard-page-template.test.tsx",
+      "lane": "UNIT",
+      "reason": "renders StandardPageTemplate/PublicShell with react-testing-library/renderToStaticMarkup and compiles a local Tailwind/postcss CSS string in-process, no network/db"
     }
   ]
 }
