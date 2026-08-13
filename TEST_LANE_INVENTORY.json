@@ -1,9 +1,9 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 162,
+  "totalSuites": 163,
   "counts": {
-    "live": 4,
+    "live": 5,
     "unit": 158
   },
   "mechanism": {
@@ -833,6 +833,11 @@
       "path": "src/__tests__/us31-ac31.3-standard-page-template.test.tsx",
       "lane": "UNIT",
       "reason": "renders StandardPageTemplate/PublicShell with react-testing-library/renderToStaticMarkup and compiles a local Tailwind/postcss CSS string in-process, no network/db"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.4-public-page-route.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process and fetches http://localhost:4282/api/pages and the rendered [slug] route, exercising Payload's live schema/connection against the real Postgres `db` container"
     }
   ]
 }
