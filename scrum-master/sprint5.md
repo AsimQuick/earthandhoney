@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 1/8 stories | 5/46 ACs
-**Last Updated:** 2026-08-13T19:31:52+00:00
+**Last Updated:** 2026-08-13T19:40:46+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -95,10 +95,11 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 ---
 
 ### US-31: Deterministic page model: a structured `Pages` collection, the New Page form, and the standard page template every new page inherits
-**Status:** draft | **Priority:** critical
+**Status:** in-progress | **Priority:** critical
 
 #### Acceptance Criteria
 - [ ] **AC-31.1:** A Payload `Pages` collection exists implementing exactly the PRD 13.1 New Page field set and nothing beyond it: internal page name, navigation label, page heading, short introduction, photography type, city/region, venue (optional), URL slug, SEO title, meta description, social image, gallery placements, tags, include-in-menu, index/noindex, draft/published. Follow the shape already proven in `src/collections/GalleryPlacements.ts` and `src/globals/StudioProfile.ts`. Every file carries the CLAUDE.md metadata header convention. Evidence: the field list read back from the collection definition, mapped one-to-one against the PRD 13.1 table with no unmapped field in either direction.
+  - Dev: implemented
 - [ ] **AC-31.2:** The editing experience is a structured form only - Pillar 3 (deterministic beauty) is enforced, not merely stated. There is no drag-and-drop page builder, no blocks/layout canvas, no page-level CSS field, and no arbitrary margin, padding or positioning control anywhere in `Pages`. Evidence: a standing test that fails if a `blocks` field, a free-text CSS/style field, or a margin/padding/position control is added to `Pages` - the same lock-in pattern US-27 AC-27.4 used to make a scoping decision unreversible. Name the retired non-goal it protects (CLAUDE.md: 'No drag-and-drop page builder').
 - [ ] **AC-31.3:** The standard page template renders the PRD 13.3 order exactly: H1, short introduction, one or more gallery placements, optional structured text sections, inquiry form region, footer. It is built only from tokens in `src/styles/tokens.css` (locked by US-23) - no hard-coded colour, spacing, radius, font or breakpoint value appears in the template. Evidence: the rendered structure asserted in order, plus a check that the template's stylesheet introduces no raw values outside the token set (reuse or extend `src/lib/style-guard/`). The inquiry form region is a slot in this story; US-33 fills it.
 - [ ] **AC-31.4:** A public dynamic route renders a published page at its URL slug. A draft page is not reachable publicly (404, not a rendered page behind a flag), and a page marked noindex emits a robots noindex directive in the rendered HTML. Evidence: three requests against a running stack in Docker - published (200 with the page heading present), draft (404), noindex (200 with the directive asserted in the returned markup, not in a config object).
@@ -107,6 +108,13 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [ ] **AC-31.7:** A newly created page inherits the design system with no manual layout work - PRD Phase 4's exit criterion. Evidence: two `Pages` records with materially different content (different heading lengths, different numbers of gallery placements, one with structured text sections and one without) render with an identical structural shell, demonstrated by a committed structural snapshot pair. Style drift between an original and a newly created page is a defect, not a variation.
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-31.1 implemented (local checks green): **Summary — AC-31.1 implemented, commit `5fbe7aa`.**
+  
+  Files changed:
+  - `src/collections/Pages.ts` (new) — Payload `Pages` collection with exactly the 16 PRD §13.1 fields: `internalName`, `navigationLabel`, `heading`, `shortIntroduction`, `photographyType` (select: Wedding/Engagement/Details/Other, drawn from PRD §12.1's nav categories), `cityRegion`, `venue` (optional, per the PRD table), `slug` (required, unique), `seoTitle`, `metaDescription`, `socialImage` (upload → media), `galleryPlacements` (hasMany relationship → Payload's own `gallery-placements` collection, never the Backstage database), `tags` (array of text), `includeInMenu` (checkbox), `indexing` (select: index/noindex), `status` (select: draft/published). No `blocks`/layout/CSS/margin-padding field exists. Carries the CLAUDE.md metadata header.
+  - `src/payload.config.ts` — registers `Pages` as a collection.
+  - `src/__tests__/us31-ac31.1-pages-field-set.test.ts` (new, 20 tests) — maps every PRD §13.1 row to a collection field in both directions (no unmapped PRD row, no extra field), asserts field shapes (required/optional/select options/relationTo), the metadata header, config registration, and that no field is a `join`/r …
 
 **Tester Status:** approved
 **Tester Notes:**
