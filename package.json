@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest --runInBand",
+    "test:unit": "jest --selectProjects unit",
     "tokens:export": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" scripts/generate-design-tokens-export.ts",
     "benchmark:summarise": "ts-node --compiler-options \"{\\\"module\\\":\\\"commonjs\\\",\\\"moduleResolution\\\":\\\"node\\\"}\" scripts/benchmark/summarise-measurements.ts"
   },

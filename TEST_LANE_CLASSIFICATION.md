@@ -30,10 +30,11 @@ The full per-suite mapping lives in [`TEST_LANE_INVENTORY.json`](TEST_LANE_INVEN
 | Lane | Count |
 |---|---|
 | LIVE | 4 |
-| UNIT | 153 |
-| **Total** | **157** |
+| UNIT | 154 |
+| **Total** | **158** |
 
-(153 UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, which reads the manifest and local files only.)
+(154 UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, and AC-30.2's
+`us30-ac30.2-unit-lane-parallelism.test.ts` guard, both of which read the manifest and local files only.)
 
 The lane split was reached by reading every suite's actual code (imports, `fetch`/`dns.lookup`/
 `child_process` usage, whether Postgres/Payload/Backstage/R2 is real or mocked), then

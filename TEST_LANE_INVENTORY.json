@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 157,
+  "totalSuites": 158,
   "counts": {
     "live": 4,
-    "unit": 153
+    "unit": 154
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -808,6 +808,11 @@
       "path": "src/__tests__/us30-ac30.1-test-lane-classification.test.ts",
       "lane": "UNIT",
       "reason": "reads TEST_LANE_INVENTORY.json and TEST_LANE_CLASSIFICATION.md and walks src/__tests__ on disk to compare against the manifest, no network/db"
+    },
+    {
+      "path": "src/__tests__/us30-ac30.2-unit-lane-parallelism.test.ts",
+      "lane": "UNIT",
+      "reason": "reads jest.config.ts, TEST_LANE_INVENTORY.json and package.json as text/JSON and asserts on their contents, no network/db"
     }
   ]
 }
