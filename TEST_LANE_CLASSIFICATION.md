@@ -1,0 +1,111 @@
+<!--
+---
+file: TEST_LANE_CLASSIFICATION.md
+project: earthandhoney
+purpose: Human-readable summary of the US-30 AC-30.1 LIVE/UNIT classification
+         of every Jest suite under src/__tests__/. The machine-readable
+         per-suite manifest this doc summarises is TEST_LANE_INVENTORY.json;
+         both are kept in sync by src/__tests__/us30-ac30.1-test-lane-classification.test.ts.
+created-by: dev-team
+related-story: US-30
+related-ac: 30.1
+---
+-->
+
+# Test lane classification (US-30 AC-30.1)
+
+Every Jest suite under `src/__tests__/` was read in full — not guessed from its filename — and
+classified into exactly two lanes:
+
+- **LIVE** — touches the shared Postgres `db` Docker container, spawns a real Next.js/Payload
+  server, calls a live Backstage/PicPeak API or a live Cloudflare R2 endpoint, or otherwise
+  depends on cross-suite ordering/shared external state.
+- **UNIT** — everything else: pure logic, mocked fetch/db, jsdom rendering, or assertions against
+  local repository files (markdown, JSON, YAML, vendored source).
+
+The full per-suite mapping lives in [`TEST_LANE_INVENTORY.json`](TEST_LANE_INVENTORY.json).
+
+## Counts
+
+| Lane | Count |
+|---|---|
+| LIVE | 4 |
+| UNIT | 155 |
+| **Total** | **159** |
+
+(155 UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, AC-30.2's
+`us30-ac30.2-unit-lane-parallelism.test.ts` guard, and AC-30.3's `us30-ac30.3-live-lane-serial.test.ts` guard, all of
+which read the manifest and local files only.)
+
+The lane split was reached by reading every suite's actual code (imports, `fetch`/`dns.lookup`/
+`child_process` usage, whether Postgres/Payload/Backstage/R2 is real or mocked), then
+cross-validated with repo-wide greps for `dns.lookup`, `child_process`/`spawn`, `getLiveApiAuthToken`,
+and `await fetch(` — the four LIVE suites below are exactly the suites those greps surface as
+performing a genuine network round trip; every other match was a string embedded in a markdown/YAML
+citation or an in-process `NextRequest` object handed straight to a route handler, not a live call.
+
+Many suites whose filenames suggest live behaviour (`*-webhook-live-proof-*`, `*-r2-storage`,
+`*-backstage-*`) are UNIT: this codebase's dominant evidence pattern is "the live proof was run
+once by hand against Docker and its result pasted into a committed report/markdown file; the Jest
+suite re-verifies the citations in that report against the checked-in source," which is a real but
+static assertion, not a live round trip. That distinction is exactly why AC-30.1 requires reading
+each suite rather than trusting its name.
+
+## LIVE lane — per-suite reason
+
+| Suite | Reason |
+|---|---|
+| `src/__tests__/us1-ac1.2-postgres-migration.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process (`child_process.spawn`) and fetches `http://localhost:4278/api/users`, exercising Payload's live schema/connection against the real Postgres `db` container. This is the sprint-1 live-boot suite named in AC-30.3. |
+| `src/__tests__/us2-ac2.4-alt-text-required.test.ts` | Gated on `dns.lookup('db')` and a real (non-placeholder) R2 config; spawns a real `next dev` server via `child_process`, calls `getLiveApiAuthToken` (the shared cross-suite fixture identity in `src/test-support/liveApiAuth.ts`) and fetches `http://localhost:4280/api/media`, exercising a live server, live Postgres `db`, and live R2 storage. |
+| `src/__tests__/us25-ac25.2-backstage-client-flow-a.test.ts` | A `describe` block gated on `dns.lookup('backstage-backend')` resolving performs real `fetch` calls to `http://backstage-backend:3000` — admin login, gallery search/create/publish, and `fetchPublishedGallery` — against the live Backstage/PicPeak API. |
+| `src/__tests__/us29-ac29.5-security-invariants-preserved.test.ts` | A `describe` block gated on `dns.lookup('backstage-backend')` resolving performs real `fetch` calls against `process.env.BACKSTAGE_BACKEND_URL` (default `http://backstage-backend:3000`) to log in, create/publish galleries, and verify auth against the live Backstage/PicPeak API. |
+
+All four gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
+depend on (`db` or `backstage-backend`) and return early — i.e. pass trivially — when that hostname
+doesn't resolve, so they are also safe to run on a bare host `npm test` outside Docker; they only
+become truly LIVE when the Docker network is up.
+
+`src/__tests__/us2-ac2.4-alt-text-required.test.ts` is currently the only suite that imports
+`getLiveApiAuthToken` from `src/test-support/liveApiAuth.ts`. That helper exists specifically
+because Payload only honors one `first-register` call per Postgres volume — if a second live suite
+starts making its own first-register/login calls in the future, it must go through the same shared
+fixture helper (per its own docblock) or the AC-6.3 cross-suite race it was written to fix will
+reappear, which is exactly what AC-30.3 requires to keep not reappearing once suites are re-grouped
+into lanes.
+
+## Mechanism: how a suite is assigned to a lane
+
+Three candidate mechanisms were considered, per AC-30.1: a Jest `projects` entry, a
+`testPathIgnorePatterns` pair, or a naming convention enforced by a test.
+
+**Chosen: a Jest `projects` entry**, driven by the one committed manifest
+(`TEST_LANE_INVENTORY.json`) as the single source of truth for lane membership. A `projects` array
+lets `jest.config.ts` declare two named projects (`unit`, `live`), each with an explicit
+`testMatch`/`testPathIgnorePatterns` built from the manifest's LIVE list — no suite's lane is
+inferred from its path or name. `jest --selectProjects unit` runs the fast lane, `jest
+--selectProjects live --runInBand` runs the serial lane, and a bare `jest` invocation (already
+`npm test`) runs both projects, which satisfies AC-30.5's "`npm test` still runs everything and
+still fails if either lane fails" without inventing a second command-composition mechanism.
+
+**Rejected: naming convention enforced by a test** (e.g. a `.live.test.ts` suffix). Only 4 of 157
+suites are LIVE, and several LIVE-*sounding* filenames (the `webhook-live-proof-*` family,
+`backstage-r2-storage`, `backstage-startup-runbook`) are UNIT once actually read — encoding the
+lane into the filename would conflate "documents live behaviour" with "is live behaviour," which is
+precisely the filename-guessing failure mode AC-30.1 forbids. It would also require renaming files
+across git history for no functional gain over an explicit manifest, and nothing stops a future
+suite's filename from drifting out of sync with its actual behaviour (the manifest guard test in
+this AC checks that; a naming convention self-polices only in the sense that the guard test would
+have to duplicate the same read-every-suite logic anyway).
+
+**Rejected: a `testPathIgnorePatterns` pair** (two separate Jest configs/invocations, each ignoring
+the other lane's suites). This works, but since the LIVE/UNIT split isn't derivable from a path
+pattern (see above), each config would still need its own explicit include/exclude list — duplicating
+the same manifest in two places instead of one. Running both lanes from a single `npm test` would
+then require chaining two separate `jest --config ... && jest --config ...` invocations rather than
+one Jest run with per-project settings, which is more moving parts than a single `projects` config
+needs, and makes it easier for the two lists to silently drift out of sync with each other.
+
+This AC records the classification and the mechanism decision only. Actually wiring
+`jest.config.ts`'s `projects` array to the two lanes, and the `package.json`/CI script changes that
+select and run them, is scoped to AC-30.2 (fast UNIT lane), AC-30.3 (serial LIVE lane), and AC-30.5
+(`npm test` still runs and gates on both).

@@ -32,9 +32,13 @@ describe('AC-7.3: live-boot suites are isolated from parallel jest', () => {
     expect(testScript).not.toMatch(/&&|\|\||;|\|/)
   })
 
-  it('jest.config.ts does not exclude any test files via testPathIgnorePatterns as a substitute for real isolation', () => {
+  it('jest.config.ts never uses testPathIgnorePatterns to drop a suite from the default test command outright — only to route it into another project that the default command still runs (US-30 AC-30.2 unit/live split)', () => {
     const jestConfigSrc = read('jest.config.ts')
-    expect(jestConfigSrc).not.toMatch(/testPathIgnorePatterns/)
+    if (!jestConfigSrc.match(/testPathIgnorePatterns/)) return
+    // A config that excludes suites from one project must declare `projects`,
+    // so a bare `jest --runInBand` (npm test) still runs every project and no
+    // suite silently vanishes from the default command.
+    expect(jestConfigSrc).toMatch(/projects:/)
   })
 
   describe('every server-spawning suite (forks a real `next dev` process) still runs under the default test command', () => {
