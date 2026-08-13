@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/8 stories | 12/46 ACs
-**Last Updated:** 2026-08-13T22:43:25+00:00
+**Last Updated:** 2026-08-13T22:59:43+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -174,6 +174,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [ ] **AC-32.1:** Site navigation is data-driven and configurable through structured fields - either a Payload `Navigation` global or derivation from each page's include-in-menu flag, navigation label and order. Choose one, and record the option chosen, the option rejected and the reason (DoD item 6). The hard-coded photobuddy link array at `src/components/layout/VerticalMenu.tsx:50-54` (home, about, galleries, blog, contact) is removed in the same change - those five entries are pre-pivot template chrome, not this product's navigation. Evidence: the file shown after the change with no hard-coded route list, and the menu rendering from data.
   - Dev: implemented
 - [ ] **AC-32.2:** The first public navigation is exactly PRD 12.1 - Weddings, Engagements, Details - in a controlled order, each backed by a real published `Pages` record rather than a placeholder link. Evidence: the three pages listed from the database and the three labels asserted in the rendered nav in order.
+  - Dev: implemented
 - [ ] **AC-32.3:** A page that is draft, or has include-in-menu off, never appears in the navigation; changing either field changes the menu without a code change. Evidence: a live before/after against a running stack for both cases.
 - [ ] **AC-32.4:** Social profile links in the site chrome come from `StudioProfile.socialProfiles` (US-24) instead of the hard-coded placeholder list at `src/components/layout/VerticalMenu.tsx:58-62`, where all five entries currently point at a '#' href. A studio with no social profiles configured renders no social block at all rather than dead links. Evidence: both states rendered.
 - [ ] **AC-32.5:** Navigation stays mobile-first and accessible: the US-8 mobile menu behaviour (`MobileMenuContext.tsx`, `MobileMenuTrigger.tsx`) and the primary-navigation landmark survive the change, the menu is operable by keyboard alone, and focus order is correct. Evidence: a structural snapshot taken before and after the change with the differences explained, plus a keyboard-navigation assertion.
@@ -191,6 +192,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   **Files changed**
   - `src/globals/Navigation.ts` (new) — global with an ordered `items[]` array of required relationships into `pages`; array row position is display order (drag to reorder, no numeric field to collide on).
   - `src/lib/getNavItems.ts` (new) — server-only reader; resolves `items[].page` at `depth: 1` and keeps only pages that are `status: 'published'` and `includeInMenu !== false` (matches the field's `defaultValue: true`), labelling from `navigationLabel` → `heading` → `slug`. Follows the repo's Payload-ESM convention: never importe …
+  AC-32.2 implemented (local checks green): The full `npm test -- --coverage` run (both lanes) is in progress in the background — this typically takes ~20 minutes based on the sprint baseline. I'll report back with results once it completes.
 
 **Tester Status:** approved
 **Tester Notes:**
