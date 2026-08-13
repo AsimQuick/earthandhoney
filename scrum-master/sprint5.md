@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 0/8 stories | 0/46 ACs
-**Last Updated:** 2026-08-13T19:00:21+00:00
+**Last Updated:** 2026-08-13T19:12:55+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -53,6 +53,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [ ] **AC-30.3:** The LIVE lane runs serially (`--runInBand` semantics preserved) and the sprint-1 AC-1.2 live-boot flake does not return. Evidence: the LIVE lane run three consecutive times in Docker with identical pass results, including the live-boot suite. `src/test-support/liveApiAuth.ts`'s shared first-register fixture identity must keep working - the AC-6.3 cross-suite race it was written to fix must not reappear now that suites are re-grouped.
   - Dev: implemented
 - [ ] **AC-30.4:** Combined coverage across both lanes is still enforced at the existing 80% gate on branches, functions and lines, and the gate itself is not lowered. Evidence: the coverage numbers reported by CI after the split, compared against the pre-split figures recorded in the sprint-4 review (95.85 branches / 96.52 functions / 99.38 lines); `.github/workflows/ci.yml:69` still reads 80 with no `continue-on-error` and no `passWithNoTests`; and `src/__tests__/us28-ac28.5-coverage-gate-guard.test.ts` - a named Tier-3 regression anchor - stays green and unmodified. If merging coverage across two runs is not achievable cleanly, keep a single coverage-producing run and say so explicitly rather than weakening the gate.
+  - Dev: implemented
 - [ ] **AC-30.5:** `npm test` still runs everything and still fails if either lane fails - no path exists where a developer or CI can believe the suite passed while a lane was skipped. CI runs both lanes. Evidence: `package.json` scripts and `.github/workflows/ci.yml` shown after the change, plus a deliberately-failing test in each lane proven to fail the top-level command (revert the deliberate failures before commit).
 
 **Dev Team Status:** not-started
@@ -71,6 +72,12 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   - `TEST_LANE_INVENTORY.json`, `TEST_LANE_CLASSIFICATION.md` — registered the new guard suite as UNIT, updated counts (155 UNIT / 4 LIVE / 159 total).
   
   **Empirical evidence (the AC's core requirement):** ran `docker compose run --rm web npm run test:live` four consec …
+  AC-30.4 data recorded on the story (no code change required):
+  coverage_branches: 95.85% (pre-split) -> 95.37%
+  coverage_functions: 96.52% (pre-split) -> 94.66%
+  coverage_lines: 99.38% (pre-split) -> 98.2%
+  coverage_statements: 98.2% (not previously gated, reported for completeness)
+  coverage_gate_mechanism: single Jest invocation across both `unit`/`live` projects (no two-run merge needed) — gate stays at 80/80/80, unweakened
 
 **Tester Status:** approved
 **Tester Notes:**
