@@ -20,7 +20,15 @@
  *          mirror dev/gallery-demo/page.tsx's already-baselined heading
  *          style — reused idioms, not new debt shapes. AC-26.4 added
  *          dev/gallery-webhook-proof/page.tsx's two `tracking-[3px]`
- *          headings the same way, mirroring the same heading idiom.
+ *          headings the same way, mirroring the same heading idiom. AC-35.2
+ *          added GalleryMasonryLayout.tsx's `gap-[var(--gallery-gap-md)]`/
+ *          `mb-[var(--gallery-gap-md)]` — both reference a tokens.css custom
+ *          property via Tailwind's arbitrary-value syntax (the same
+ *          token-reference-through-brackets idiom already baselined for
+ *          MainImageDisplay.tsx/GallerySlideshowLayout.tsx's aspect-ratio
+ *          brackets); the detector's regex can't distinguish a bracket
+ *          holding a `var(--token)` from one holding a raw literal, so it
+ *          still counts as debt here even though it isn't a raw value.
  * created-by: dev-team
  * related-story: US-23
  * related-ac: 23.7
@@ -91,6 +99,11 @@ export const STYLE_DRIFT_BASELINE: Record<string, StyleDriftViolationCounts> = {
     arbitraryTailwindBracket: 2,
   },
   'src/app/(frontend)/dev/gallery-webhook-proof/page.tsx': {
+    hex: 0,
+    rawPxFontSize: 0,
+    arbitraryTailwindBracket: 2,
+  },
+  'src/components/gallery/GalleryMasonryLayout.tsx': {
     hex: 0,
     rawPxFontSize: 0,
     arbitraryTailwindBracket: 2,
