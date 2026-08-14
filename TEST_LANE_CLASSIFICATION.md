@@ -29,9 +29,9 @@ The full per-suite mapping lives in [`TEST_LANE_INVENTORY.json`](TEST_LANE_INVEN
 
 | Lane | Count |
 |---|---|
-| LIVE | 16 |
-| UNIT | 188 |
-| **Total** | **204** |
+| LIVE | 17 |
+| UNIT | 193 |
+| **Total** | **210** |
 
 (UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, AC-30.2's
 `us30-ac30.2-unit-lane-parallelism.test.ts` guard, and AC-30.3's `us30-ac30.3-live-lane-serial.test.ts` guard, all of
@@ -71,8 +71,9 @@ each suite rather than trusting its name.
 | `src/__tests__/us34-ac34.3-hero-gallery-live.test.ts` | Gated on both `dns.lookup('db')` and `dns.lookup('backstage-backend')` resolving. Self-seeds a real published gallery via live Backstage admin API `fetch()` calls (the same technique `us31-ac31.5-public-page-gallery-placement.test.ts` uses), spawns a real `next dev` child process, `PATCH`es the live `StudioProfile` global's `homeHeroGallerySlug` over `http://localhost:4296/api/globals/studio-profile`, and fetches the rendered homepage route for both the real reachable gallery and a gallery slug that does not exist, exercising the real Postgres `db` container and the real Backstage stack together. |
 | `src/__tests__/us34-ac34.4-home-selected-galleries-reorder-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, creates two real published `Pages` documents over `http://localhost:4297/api/pages`, `PATCH`es the live `StudioProfile` global's `homeSelectedGalleriesOrStories` polymorphic array over `http://localhost:4297/api/globals/studio-profile` to `[A, B]`, fetches the rendered homepage and asserts the story-card heading order is `[A, B]`, then `PATCH`es the identical two entries to `[B, A]` and re-fetches the same route to assert the rendered order flipped — with no code change between the two fetches — exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
 | `src/__tests__/us35-ac35.3-live-details-page-creation.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, creates two real published `Pages` documents over `http://localhost:4298/api/pages` both with `template: 'details'` (one with no gallery placement, one with a real `gallery-placements` document) plus a third with `template: 'standard'`, and fetches each one's rendered `[slug]` route to assert the Details pages render `data-testid="details-page-template"` and the standard page renders `data-testid="standard-page-template"` — with no code change between the pages — exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
+| `src/__tests__/us36-ac36.4-story-index-route.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a real `gallery-placements` document plus a published and a draft `Stories` document over `http://localhost:4299/api/stories`, and fetches the rendered `/stories` route to assert the published story's title is present in the markup and the draft story's title is absent, exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
 
-All sixteen gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
+All seventeen gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
 depend on (`db` or `backstage-backend`) and return early — i.e. pass trivially — when that hostname
 doesn't resolve, so they are also safe to run on a bare host `npm test` outside Docker; they only
 become truly LIVE when the Docker network is up.
