@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 189,
+  "totalSuites": 190,
   "counts": {
     "live": 12,
-    "unit": 177
+    "unit": 178
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -968,6 +968,11 @@
       "path": "src/__tests__/us8-ac8.4-metadata-and-favicon.test.tsx",
       "lane": "UNIT",
       "reason": "reads source files and does a byte-for-byte favicon file comparison on disk"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.7-inquiry-form-rendered.test.tsx",
+      "lane": "UNIT",
+      "reason": "renders InquiryForm with @testing-library/react and user-event, and compiles a local Tailwind/postcss CSS string in-process, no network/db"
     }
   ]
 }
