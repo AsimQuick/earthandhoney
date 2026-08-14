@@ -258,7 +258,6 @@ describe('AC-33.5.2.2: the live proof is a committed, re-runnable script', () =>
   it('is executable and carries the project metadata header', () => {
     expect(script.startsWith('#!/usr/bin/env bash')).toBe(true)
     expect(script).toContain('related-ac: 33.5.2.2')
-    // eslint-disable-next-line no-bitwise
     expect(fs.statSync(path.join(root, PROOF_SCRIPT)).mode & 0o111).not.toBe(0)
   })
 
