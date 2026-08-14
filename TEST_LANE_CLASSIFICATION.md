@@ -29,9 +29,9 @@ The full per-suite mapping lives in [`TEST_LANE_INVENTORY.json`](TEST_LANE_INVEN
 
 | Lane | Count |
 |---|---|
-| LIVE | 18 |
-| UNIT | 195 |
-| **Total** | **213** |
+| LIVE | 19 |
+| UNIT | 196 |
+| **Total** | **215** |
 
 (UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, AC-30.2's
 `us30-ac30.2-unit-lane-parallelism.test.ts` guard, and AC-30.3's `us30-ac30.3-live-lane-serial.test.ts` guard, all of
@@ -73,8 +73,9 @@ each suite rather than trusting its name.
 | `src/__tests__/us35-ac35.3-live-details-page-creation.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, creates two real published `Pages` documents over `http://localhost:4298/api/pages` both with `template: 'details'` (one with no gallery placement, one with a real `gallery-placements` document) plus a third with `template: 'standard'`, and fetches each one's rendered `[slug]` route to assert the Details pages render `data-testid="details-page-template"` and the standard page renders `data-testid="standard-page-template"` — with no code change between the pages — exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
 | `src/__tests__/us36-ac36.4-story-index-route.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a real `gallery-placements` document plus a published and a draft `Stories` document over `http://localhost:4299/api/stories`, and fetches the rendered `/stories` route to assert the published story's title is present in the markup and the draft story's title is absent, exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
 | `src/__tests__/us37-ac37.2-live-seo-metadata.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create two `Pages` documents (one with its own `seoTitle`/`metaDescription`, one without) and two `Stories` documents (one with its own `subtitleIntroduction`, one without) over `http://localhost:4300/api/pages` and `/api/stories`, and fetches each one's rendered `[slug]`/`stories/[slug]` route to assert a real `<title>` element, `<meta name="description">`, `<link rel="canonical">`, `og:*` and `twitter:*` `<meta>` tags in the response HTML, with the two fallback-only records proving the `StudioProfile` default title pattern/meta description land in real markup, exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
+| `src/__tests__/us37-ac37.3-live-structured-data.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a `Pages` document carrying `photographyType`/`cityRegion`/`venue` plus a `Stories` document and its `gallery-placements` section target over `http://localhost:4301/api/pages` and `/api/stories`, and fetches each one's rendered `[slug]`/`stories/[slug]` route to extract the `<script type="application/ld+json">` blocks from the real response HTML and validate their shape — the page's LocalBusiness/ProfessionalService block with its `makesOffer`/`location`/`areaServed` extensions, and the story's `CreativeWork` whose `publisher` equals the root layout's studio block byte for byte — exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
 
-All eighteen gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
+All nineteen gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
 depend on (`db` or `backstage-backend`) and return early — i.e. pass trivially — when that hostname
 doesn't resolve, so they are also safe to run on a bare host `npm test` outside Docker; they only
 become truly LIVE when the Docker network is up.

@@ -36,6 +36,9 @@
  * updated-by: dev-team
  * related-story: US-37
  * related-ac: 37.2
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.3
  * ---
  */
 import type { Metadata } from "next";
@@ -43,6 +46,7 @@ import { Rubik } from "next/font/google";
 import { preload } from "react-dom";
 import "./globals.css";
 import { PublicShell } from "@/components/layout/PublicShell";
+import { siteOrigin } from "@/lib/absoluteSiteUrl";
 import { getNavItems } from "@/lib/getNavItems";
 import { getStudioProfile } from "@/lib/getStudioProfile";
 import { buildStudioStructuredData } from "@/lib/studioStructuredData";
@@ -84,8 +88,11 @@ export async function generateMetadata(): Promise<Metadata> {
     // AC-31.6: the one place a relative canonical/Open Graph URL a route
     // returns (e.g. `alternates.canonical: "/${slug}"`) is resolved into an
     // absolute one — system-computed from the deployment's own public URL,
-    // never typed by the photographer on a per-page basis.
-    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+    // never typed by the photographer on a per-page basis. AC-37.3: that
+    // public URL now has a single owner (src/lib/absoluteSiteUrl.ts), shared
+    // with the page/story JSON-LD blocks, which must write absolute URLs
+    // themselves because structured data has no `metadataBase` equivalent.
+    metadataBase: new URL(siteOrigin()),
     title: {
       default: studioProfile.businessName,
       template: studioProfile.defaultTitlePattern,

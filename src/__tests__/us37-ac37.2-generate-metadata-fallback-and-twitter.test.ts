@@ -76,6 +76,9 @@ function page(overrides: Partial<ResolvedPage> = {}): ResolvedPage {
     galleryPlacements: [],
     socialImage: null,
     template: 'standard',
+    photographyType: '',
+    cityRegion: '',
+    venue: '',
     ...overrides,
   }
 }

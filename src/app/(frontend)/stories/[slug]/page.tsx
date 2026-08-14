@@ -27,18 +27,31 @@
  *          `title`/`subtitleIntroduction`, and the Open Graph/Twitter image
  *          always falls back to `StudioProfile.defaultSocialImage` since no
  *          per-story override field exists to prefer.
+ *          AC-37.3 — the rendered story also carries its own JSON-LD block,
+ *          built by `buildStoryStructuredData` (src/lib/studioStructuredData.ts):
+ *          a `CreativeWork` whose `headline`/`description` are the story's
+ *          own `title`/`subtitleIntroduction` and whose `publisher` reuses
+ *          the same studio LocalBusiness/ProfessionalService block
+ *          `buildStudioStructuredData` already builds for the root layout
+ *          (AC-24.5), rather than a second, independent JSON-LD
+ *          implementation for stories.
  * created-by: dev-team
  * related-story: US-37
  * related-ac: 37.2
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.3
  * ---
  */
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { StoryPageTemplate } from '@/components/page-template/StoryPageTemplate'
+import { absoluteSiteUrl } from '@/lib/absoluteSiteUrl'
 import { getStoryBySlug } from '@/lib/getStoryBySlug'
 import { getStudioProfile } from '@/lib/getStudioProfile'
 import { resolveStoryGalleryPlacements } from '@/lib/resolveStoryGalleryPlacements'
+import { buildStoryStructuredData } from '@/lib/studioStructuredData'
 
 // The same 60-second safety-net cap every other gallery-bearing route in
 // this project carries (src/lib/backstageGalleryCache.ts's `CACHE_TTL_MS`).
@@ -89,13 +102,31 @@ export default async function PublicStoryRoute({ params }: StoryRouteProps) {
     notFound()
   }
 
+  const studioProfile = await getStudioProfile()
+  // AC-37.3: absolute, since JSON-LD has no `metadataBase` equivalent — via
+  // the one origin owner (src/lib/absoluteSiteUrl.ts) the layout also uses.
+  const canonicalUrl = absoluteSiteUrl(`/stories/${slug}`)
+  const structuredData = buildStoryStructuredData(studioProfile, {
+    url: canonicalUrl,
+    title: story.title,
+    description: story.subtitleIntroduction || undefined,
+    image: studioProfile.defaultSocialImage?.url || undefined,
+  })
+
   const sections = await resolveStoryGalleryPlacements(story.sections)
 
   return (
-    <StoryPageTemplate
-      title={story.title}
-      subtitleIntroduction={story.subtitleIntroduction || undefined}
-      sections={sections}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        data-testid="story-structured-data"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
+      <StoryPageTemplate
+        title={story.title}
+        subtitleIntroduction={story.subtitleIntroduction || undefined}
+        sections={sections}
+      />
+    </>
   )
 }

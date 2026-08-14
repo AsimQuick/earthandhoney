@@ -57,6 +57,12 @@
  *          left for "every public page ... emits a real title element, meta
  *          description, canonical URL, Open Graph tags and Twitter card ...
  *          with StudioProfile defaults ... as fallback".
+ *          AC-37.3 — the rendered page also carries its own JSON-LD block,
+ *          built by `buildPageStructuredData` (src/lib/studioStructuredData.ts)
+ *          from the same `StudioProfile` plus this page's own
+ *          `photographyType`/`cityRegion`/`venue` fields, mirroring the root
+ *          layout's site-wide `buildStudioStructuredData` script
+ *          (AC-24.5) but scoped to this page.
  * created-by: dev-team
  * related-story: US-31
  * related-ac: 31.4
@@ -72,6 +78,9 @@
  * updated-by: dev-team
  * related-story: US-37
  * related-ac: 37.2
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.3
  * ---
  */
 import type { Metadata } from 'next'
@@ -79,10 +88,12 @@ import { notFound } from 'next/navigation'
 
 import { DetailsPageTemplate } from '@/components/page-template/DetailsPageTemplate'
 import { StandardPageTemplate } from '@/components/page-template/StandardPageTemplate'
+import { absoluteSiteUrl } from '@/lib/absoluteSiteUrl'
 import { getPageBySlug } from '@/lib/getPageBySlug'
 import { getStudioProfile } from '@/lib/getStudioProfile'
 import { resolveDetailsMasonryPlacement } from '@/lib/resolveDetailsMasonryPlacement'
 import { resolvePageGalleryPlacements } from '@/lib/resolvePageGalleryPlacements'
+import { buildPageStructuredData } from '@/lib/studioStructuredData'
 
 // AC-31.5: the same 60-second safety-net cap the contract commits every
 // gallery-bearing route to (see file header).
@@ -145,25 +156,52 @@ export default async function PublicPageRoute({ params }: PageRouteProps) {
     notFound()
   }
 
+  const studioProfile = await getStudioProfile()
+  // AC-37.3: the same absolute-URL resolution the root layout's
+  // `metadataBase` performs for the Metadata API, applied here because JSON-LD
+  // has no such field of its own — through the one origin owner
+  // (src/lib/absoluteSiteUrl.ts) the layout itself now calls, never a second
+  // copy of the env read and its fallback.
+  const canonicalUrl = absoluteSiteUrl(`/${slug}`)
+  const structuredData = buildPageStructuredData(studioProfile, {
+    url: canonicalUrl,
+    photographyType: page.photographyType || undefined,
+    cityRegion: page.cityRegion || undefined,
+    venue: page.venue || undefined,
+  })
+  const structuredDataScript = (
+    <script
+      type="application/ld+json"
+      data-testid="page-structured-data"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+    />
+  )
+
   if (page.template === 'details') {
     const masonryPlacement = await resolveDetailsMasonryPlacement(page.galleryPlacements)
 
     return (
-      <DetailsPageTemplate
-        heading={page.heading}
-        oneLineIntroduction={page.shortIntroduction || undefined}
-        masonryPlacement={masonryPlacement}
-      />
+      <>
+        {structuredDataScript}
+        <DetailsPageTemplate
+          heading={page.heading}
+          oneLineIntroduction={page.shortIntroduction || undefined}
+          masonryPlacement={masonryPlacement}
+        />
+      </>
     )
   }
 
   const galleryPlacements = await resolvePageGalleryPlacements(page.galleryPlacements)
 
   return (
-    <StandardPageTemplate
-      heading={page.heading}
-      shortIntroduction={page.shortIntroduction || undefined}
-      galleryPlacements={galleryPlacements}
-    />
+    <>
+      {structuredDataScript}
+      <StandardPageTemplate
+        heading={page.heading}
+        shortIntroduction={page.shortIntroduction || undefined}
+        galleryPlacements={galleryPlacements}
+      />
+    </>
   )
 }

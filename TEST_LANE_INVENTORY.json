@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 213,
+  "totalSuites": 215,
   "counts": {
-    "live": 18,
-    "unit": 195
+    "live": 19,
+    "unit": 196
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -888,6 +888,16 @@
       "path": "src/__tests__/us37-ac37.2-live-seo-metadata.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process, calls getLiveApiAuthToken to create real Pages/Stories/gallery-placements documents, and fetches the rendered [slug] and stories/[slug] routes to assert title/description/canonical/og/twitter tags in real response HTML against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.3-live-structured-data.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process, calls getLiveApiAuthToken to create a real Pages document with photographyType/cityRegion/venue plus a real Stories/gallery-placements pair, and fetches the rendered [slug] and stories/[slug] routes to extract and shape-validate the application/ld+json blocks in real response HTML against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.3-structured-data-per-page-type.test.tsx",
+      "lane": "UNIT",
+      "reason": "unit tests on the pure buildPageStructuredData/buildStoryStructuredData/absoluteSiteUrl functions plus mocks of @/lib/getPageBySlug, @/lib/getStoryBySlug, @/lib/getStudioProfile and the gallery-placement resolvers, then renders the [slug]/stories[slug] routes via @testing-library/react against in-memory fixtures and regex-extracts the JSON-LD <script> from container.innerHTML, with fs reads of the layout/page/story sources for a static duplication check, no network/db"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",

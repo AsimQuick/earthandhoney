@@ -21,9 +21,18 @@
  *          and `@/lib/resolvePageGalleryPlacements` are also mocked: neither
  *          performs I/O here, since AC-35.2's real gallery-resolution
  *          behaviour is covered by its own suite, not this one.
+ *          `getStudioProfile` is given a resolved fixture in `beforeEach`
+ *          (AC-37.3): the route's default export now also builds a JSON-LD
+ *          block from it (src/lib/studioStructuredData.ts's
+ *          `buildPageStructuredData`), covered by its own suite, not this
+ *          one — this file only needs the call to resolve so template
+ *          dispatch keeps rendering.
  * created-by: dev-team
  * related-story: US-35
  * related-ac: 35.3
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.3
  * ---
  */
 import { render } from '@testing-library/react'
@@ -50,6 +59,8 @@ jest.mock('@/lib/resolvePageGalleryPlacements', () => ({
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getPageBySlug } = require('@/lib/getPageBySlug') as { getPageBySlug: jest.Mock }
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { getStudioProfile } = require('@/lib/getStudioProfile') as { getStudioProfile: jest.Mock }
 // Imported after the mocks are declared, matching
 // us31-ac31.6-generate-metadata.test.ts's ordering — the route must call the
 // mocked readers, not the real ones.
@@ -70,6 +81,9 @@ function page(overrides: Partial<ResolvedPage> = {}): ResolvedPage {
     galleryPlacements: [],
     socialImage: null,
     template: 'standard',
+    photographyType: '',
+    cityRegion: '',
+    venue: '',
     ...overrides,
   }
 }
@@ -81,8 +95,28 @@ async function routeFor(slug: string): Promise<Element> {
 }
 
 describe('US-35 AC-35.3: a Details page is a template selection on a Pages record, not a bespoke route', () => {
+  beforeEach(() => {
+    // AC-37.3: the route's default export now also builds a JSON-LD block
+    // from the StudioProfile — resolve the mock so template dispatch renders.
+    getStudioProfile.mockResolvedValue({
+      businessName: 'Earth & Honey Studios',
+      description: '',
+      defaultTitlePattern: '%s | Earth & Honey Studios',
+      defaultMetaDescription: '',
+      publicPhone: '',
+      publicEmail: '',
+      address: { street: '', city: '', region: '', postalCode: '', country: '' },
+      serviceAreas: [],
+      socialProfiles: [],
+      defaultSocialImage: null,
+      homeHeroGallerySlug: null,
+      homeSelectedGalleriesOrStories: [],
+    })
+  })
+
   afterEach(() => {
     getPageBySlug.mockReset()
+    getStudioProfile.mockReset()
   })
 
   it("the Pages collection defines a 'template' field, distinct from photographyType, offering standard/details and defaulting to standard", () => {
