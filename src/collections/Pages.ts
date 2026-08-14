@@ -21,6 +21,9 @@
  * created-by: dev-team
  * related-story: US-31
  * related-ac: 31.1
+ * updated-by: dev-team
+ * related-story: US-35
+ * related-ac: 35.3
  * ---
  */
 import type { CollectionConfig } from 'payload'
@@ -30,6 +33,14 @@ export const PHOTOGRAPHY_TYPE_OPTIONS = [
   { label: 'Engagement', value: 'engagement' },
   { label: 'Details', value: 'details' },
   { label: 'Other', value: 'other' },
+]
+
+// AC-35.3: which template a `Pages` record renders through — a selection on
+// the record itself, read by the generic src/app/(frontend)/[slug]/page.tsx
+// route, never a bespoke hard-coded route per template.
+export const PAGE_TEMPLATE_OPTIONS = [
+  { label: 'Standard', value: 'standard' },
+  { label: 'Details', value: 'details' },
 ]
 
 export const Pages: CollectionConfig = {
@@ -45,6 +56,20 @@ export const Pages: CollectionConfig = {
       required: true,
       admin: {
         description: 'Internal page name used to organize pages in Backstage. Not shown publicly.',
+      },
+    },
+    {
+      // AC-35.3: Standard (PRD §13.3) or Details (PRD §13.4). The public
+      // [slug] route reads this field to pick which template component
+      // renders the page — adding a template here never requires a code
+      // change to create a page that uses it.
+      name: 'template',
+      type: 'select',
+      required: true,
+      defaultValue: 'standard',
+      options: PAGE_TEMPLATE_OPTIONS,
+      admin: {
+        description: 'Which page template this record renders through.',
       },
     },
     {

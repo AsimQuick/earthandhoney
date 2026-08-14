@@ -95,6 +95,7 @@ describe('AC-30.1: test lane classification inventory', () => {
         'src/__tests__/us34-ac34.1-homepage-order-live.test.ts',
         'src/__tests__/us34-ac34.3-hero-gallery-live.test.ts',
         'src/__tests__/us34-ac34.4-home-selected-galleries-reorder-live.test.ts',
+        'src/__tests__/us35-ac35.3-live-details-page-creation.test.ts',
       ].sort(),
     )
   })

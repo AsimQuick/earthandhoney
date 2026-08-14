@@ -38,6 +38,16 @@
  *          no skipped levels — AC-31.3) is unchanged by this AC; it already
  *          holds structurally since only the H1 and, when structured text
  *          sections exist, H2s are ever rendered.
+ *          AC-35.3 — this route also reads the page's own `template` field
+ *          (src/collections/Pages.ts) to pick which template component
+ *          renders it: `'details'` renders DetailsPageTemplate, with its
+ *          single masonry slot resolved by resolveDetailsMasonryPlacement
+ *          (AC-35.2's GalleryMasonryLayout); every other value renders
+ *          StandardPageTemplate as before. The template is a selection on
+ *          the `Pages` record read here, not a second hard-coded route — a
+ *          new Details page needs no code change, only a `Pages` record with
+ *          `template: 'details'` created through the same New Page form as
+ *          any other page.
  * created-by: dev-team
  * related-story: US-31
  * related-ac: 31.4
@@ -47,14 +57,19 @@
  * updated-by: dev-team
  * related-story: US-31
  * related-ac: 31.6
+ * updated-by: dev-team
+ * related-story: US-35
+ * related-ac: 35.3
  * ---
  */
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
+import { DetailsPageTemplate } from '@/components/page-template/DetailsPageTemplate'
 import { StandardPageTemplate } from '@/components/page-template/StandardPageTemplate'
 import { getPageBySlug } from '@/lib/getPageBySlug'
 import { getStudioProfile } from '@/lib/getStudioProfile'
+import { resolveDetailsMasonryPlacement } from '@/lib/resolveDetailsMasonryPlacement'
 import { resolvePageGalleryPlacements } from '@/lib/resolvePageGalleryPlacements'
 
 // AC-31.5: the same 60-second safety-net cap the contract commits every
@@ -102,6 +117,18 @@ export default async function PublicPageRoute({ params }: PageRouteProps) {
 
   if (!page || page.status !== 'published') {
     notFound()
+  }
+
+  if (page.template === 'details') {
+    const masonryPlacement = await resolveDetailsMasonryPlacement(page.galleryPlacements)
+
+    return (
+      <DetailsPageTemplate
+        heading={page.heading}
+        oneLineIntroduction={page.shortIntroduction || undefined}
+        masonryPlacement={masonryPlacement}
+      />
+    )
   }
 
   const galleryPlacements = await resolvePageGalleryPlacements(page.galleryPlacements)

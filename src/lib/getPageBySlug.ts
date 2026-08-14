@@ -14,6 +14,9 @@
  *          imported directly (see us3-ac3.5-galleries-api-read.test.ts), so
  *          this module is exercised only via the route that imports it,
  *          never imported directly by a Jest test.
+ *          `template` (AC-35.3) is read straight through, defaulting to
+ *          `'standard'` for any record predating that field, so the
+ *          [slug] route can dispatch on it without a migration backfill.
  *          `depth: 1` on the query (AC-31.5) resolves `galleryPlacements`
  *          one level — the related `gallery-placements` document's own
  *          fields — which is exactly enough to read each placement's
@@ -33,6 +36,9 @@
  * updated-by: dev-team
  * related-story: US-31
  * related-ac: 31.6
+ * updated-by: dev-team
+ * related-story: US-35
+ * related-ac: 35.3
  * ---
  */
 import { getPayload } from 'payload'
@@ -51,6 +57,8 @@ export interface ResolvedPage {
   galleryPlacements: PageGalleryPlacementConfig[]
   /** The Open Graph image URL (AC-31.6), or null when the page defines none. */
   socialImage: string | null
+  /** AC-35.3: which template this page renders through — 'standard' or 'details'. */
+  template: 'standard' | 'details'
 }
 
 export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> {
@@ -76,6 +84,7 @@ export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> 
           heading?: string
         } | null>
         socialImage?: { url?: string } | number | null
+        template?: string
       }
     | undefined
 
@@ -103,5 +112,6 @@ export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> 
     indexing: doc.indexing === 'noindex' ? 'noindex' : 'index',
     galleryPlacements,
     socialImage,
+    template: doc.template === 'details' ? 'details' : 'standard',
   }
 }

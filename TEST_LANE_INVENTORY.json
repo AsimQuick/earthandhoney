@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 201,
+  "totalSuites": 203,
   "counts": {
-    "live": 15,
-    "unit": 186
+    "live": 16,
+    "unit": 187
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1028,6 +1028,16 @@
       "path": "src/__tests__/us35-ac35.2-masonry-placement-behaviours.test.tsx",
       "lane": "UNIT",
       "reason": "renders GalleryMasonryLayout with @testing-library/react (jsdom) against in-memory fixtures and compiles the component's own Tailwind classes through @tailwindcss/postcss + tokens.css in-process, no network/db"
+    },
+    {
+      "path": "src/__tests__/us35-ac35.3-page-template-dispatch.test.tsx",
+      "lane": "UNIT",
+      "reason": "jest.mock('@/lib/getPageBySlug')/jest.mock('@/lib/getStudioProfile')/jest.mock('@/lib/resolveDetailsMasonryPlacement')/jest.mock('@/lib/resolvePageGalleryPlacements') mock the only I/O the route performs; calls the [slug] route's default export directly against in-memory fixtures and renders the result with @testing-library/react (jsdom), no network/db"
+    },
+    {
+      "path": "src/__tests__/us35-ac35.3-live-details-page-creation.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process and creates real Pages/gallery-placements documents over http://localhost:4298/api/pages and /api/gallery-placements, fetching the rendered [slug] route against the real Postgres db container"
     }
   ]
 }
