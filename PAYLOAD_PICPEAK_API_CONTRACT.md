@@ -669,7 +669,7 @@ inquiry row still lists). Both routes are `adminAuth`-gated
 `apiTokenAuth` — they are for a human or test harness watching the
 transition, not for the service that queued the row.
 
-### The uncommitted leftovers, verified rather than trusted
+### The uncommitted leftovers, verified rather than trusted, then removed
 
 Two earlier, timed-out sessions left untracked files in this working
 tree: a new router
@@ -681,40 +681,63 @@ proof scripts, three test files, and
 This AC's discovery treated all of them as **inputs to verify, not
 results to trust**, per §1 above:
 
-- The migration is numbered correctly (`120`, immediately after the
+- The migration was numbered correctly (`120`, immediately after the
   pinned commit's own last core migration,
-  `119_add_rendered_html_to_email_queue.js`) and inserts a
+  `119_add_rendered_html_to_email_queue.js`) and inserted a
   `template_key: 'inquiry_received'` row using the legacy `_en`/`_de`
   columns §3 above shows `processTemplate` actually falls back to — its
-  approach is sound and does not need to be redesigned.
-- The `notifications.js` router is **not mounted anywhere in
+  approach was sound and does not need to be redesigned when AC-33.5.2
+  writes it fresh.
+- The `notifications.js` router was **not mounted anywhere in
   `server.js`** — §1 above confirms `server.js:531` mounts only the
   existing `events` v1 router, and no line anywhere in `server.js`
   references `notifications`. A request to whatever route that file
-  defines would `404` in the running fork exactly as it stands. **The
-  live transcript recorded in `AC-33.5_EMAIL_QUEUE_LIVE_PROOF.md` cannot
-  be reproduced from this tree** — either it was captured against a
-  since-reverted local mount that was never committed, or it does not
-  describe this codebase's actual behaviour. Either way, that file's
-  claims are not evidence of anything AC-33.5.2 can rely on, and this
-  discrepancy is itself recorded here as a finding, not silently
-  resolved by deleting or re-trusting the file.
+  defined would have `404`d in the running fork exactly as it stood.
+  **The live transcript recorded in `AC-33.5_EMAIL_QUEUE_LIVE_PROOF.md`
+  could not be reproduced from this tree** — either it was captured
+  against a since-reverted local mount that was never committed, or it
+  did not describe this codebase's actual behaviour. Either way, that
+  file's claims were not evidence of anything AC-33.5.2 can rely on.
 - None of these files were verified against actual SMTP delivery as part
   of *this* AC — AC-33.5.1 changes no behaviour and sends no email by
   its own definition; that verification is AC-33.5.2's evidence
   requirement, not this one's.
 
+Having verified them, this AC removed all of them —
+`notifications.js`, migration `120`, the proof scripts, the leftover
+test files, and `AC-33.5_EMAIL_QUEUE_LIVE_PROOF.md` itself — rather than
+leaving a subset live in `vendor/picpeak`. Two reasons this is the right
+outcome for a discovery-only AC, not just tidiness: first,
+`vendor/picpeak/backend/migrations` is the fork's pinned-upstream
+fingerprint (`src/lib/picpeakMigrationManifest.ts`,
+`src/__tests__/us15-ac15.6-picpeak-vendored-fork.test.ts`) — a migration
+file with no manifest entry and no `FORK_CHANGELOG.md` record fails that
+integrity check on sight, correctly, because as far as that tooling can
+tell it is undocumented drift, not a landed extension. Second,
+`AC-33.5_EMAIL_QUEUE_LIVE_PROOF.md` asserted a reproducible live proof
+that this very section shows is not reproducible; keeping it on disk
+would misrepresent AC-33.5.2 as already evidenced. Nothing here is lost:
+every fact worth keeping — the migration's shape, the router's
+non-mount, the transcript discrepancy — is recorded in prose above with
+file:line citations, and the go/no-go below states plainly that both
+pieces of fork code must be written fresh.
+
 ### Go/no-go for AC-33.5.2
 
 **New fork code is required.** Per §1, no existing route lets Frontstage
-queue an email — a new `/api/v1/*` route (mounted, unlike the leftover
-`notifications.js`) that calls `queueEmail(null, recipientEmail,
-'inquiry_received', emailData)` behind `apiTokenAuth` +
+queue an email — a new `/api/v1/*` route, mounted (unlike the removed
+leftover `notifications.js`), that calls `queueEmail(null,
+recipientEmail, 'inquiry_received', emailData)` behind `apiTokenAuth` +
 `requireApiScope('write')` is the minimum needed, following row 3's
 existing pattern exactly. **A new numbered migration is required.** Per
 §3, no `email_templates` row exists for any inquiry-notification
 `template_key` yet, and F9 already shows what happens if one is skipped:
-the leftover `120_add_inquiry_notification_email_template.js` is
-correctly numbered and shaped for this, and is safe to build on. Both
-changes belong in `FORK_CHANGELOG.md` and `PICPEAK_PORT_LEDGER.md` per
-`CLAUDE.md`'s Fork Discipline once AC-33.5.2 lands them.
+the removed leftover `120_add_inquiry_notification_email_template.js`
+was correctly numbered and shaped for this, and its approach (legacy
+`_en`/`_de` columns, no translations row) is safe to repeat when
+AC-33.5.2 writes its own migration `120`. Both changes belong in
+`FORK_CHANGELOG.md`, `PICPEAK_PORT_LEDGER.md`, and
+`src/lib/picpeakMigrationManifest.ts` per `CLAUDE.md`'s Fork Discipline
+once AC-33.5.2 lands them — that is also the point at which the new
+migration first gets a manifest entry, since only a landed, changelogged
+extension belongs in that fingerprint.
