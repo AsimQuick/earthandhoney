@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 7/8 stories | 45/52 ACs
-**Last Updated:** 2026-08-14T15:24:22+00:00
+**Last Updated:** 2026-08-14T16:02:52+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -518,6 +518,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [ ] **AC-37.2:** Every public page and story emits a real title element, meta description, canonical URL, Open Graph tags and Twitter card, taken from that page's own fields with `StudioProfile` defaults (including the default title pattern) as fallback. Evidence: assertions made against the RENDERED HTML fetched from a running stack, not against a metadata object in code - PRD 35.2 requires SEO fields to be injected into real HTML.
   - Dev: implemented
 - [ ] **AC-37.3:** Structured data is emitted per page type, reusing the existing `src/lib/studioStructuredData.ts` builder (LocalBusiness / ProfessionalService) rather than a second implementation, extended as needed for a page and a story. Evidence: the emitted JSON-LD extracted from the rendered HTML of a page and a story, with its shape validated.
+  - Dev: implemented
 - [ ] **AC-37.4:** `sitemap.xml` contains every published, indexable page and story and excludes every draft and every noindex record, and image-sitemap references are included for placed gallery imagery. Evidence: the generated sitemap fetched from a running stack, cross-checked against the database contents, with a draft page and a noindex page proven absent, and the image-sitemap entries for a page with placed gallery imagery checked present and pointing at the correct image URLs.
 - [ ] **AC-37.5:** `robots.txt` is correct and noindex is respected end-to-end. The existing internal noindex demo and specimen routes (`/dev/token-specimen`, `/dev/gallery-placement-demo`, `/dev/gallery-demo`, `/dev/gallery-webhook-proof`, `/dev/benchmark-portfolio-gallery`, `/dev/benchmark-story-gallery`) stay excluded from the sitemap and stay non-indexable. Evidence: the fetched robots.txt, and each dev route proven absent from the sitemap and carrying its noindex directive.
 - [ ] **AC-37.6:** A per-page and per-story SEO assistant exists in the admin per PRD 21.2, offering: search-result preview, SEO title, slug, meta description, canonical URL, H1 preview, photography type, city/region, venue, Open Graph image, index/noindex, schema preview, missing-alt-text audit and internal-link suggestions. There is NO meta-keywords field - PRD 21.2 forbids one - and tags remain internal relationships only. Evidence: each of the fourteen listed controls (search-result preview, SEO title, slug, meta description, canonical URL, H1 preview, photography type, city/region, venue, Open Graph image, index/noindex, schema preview, missing-alt-text audit, internal-link suggestions) shown present and functional against a real page, plus a standing test that fails if a meta-keywords field is added anywhere.
@@ -529,6 +530,13 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 **Dev Team Notes:**
   AC-37.1 implemented (local checks green): I'll pause here and resume once the background test run notifies me it's complete.
   AC-37.2 implemented (local checks green): Waiting for the background test run to complete.
+  AC-37.3 implemented (local checks green): I'll report back once the full suite finishes. Current state of the work:
+  
+  **Done so far** (building on the previous agent's partial work):
+  - `src/lib/studioStructuredData.ts` — `buildPageStructuredData` / `buildStoryStructuredData` extend the existing `buildStudioStructuredData` (previous agent).
+  - `src/lib/absoluteSiteUrl.ts` — new; single owner of the public origin, replacing the `NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'` literal that had been copied into both routes and the layout.
+  - `src/__tests__/us37-ac37.3-live-structured-data.test.ts` — new LIVE suite that boots a real `next dev`, creates a real page + story, and extracts/validates the JSON-LD from actual response HTML (passes: 1/1, 29s).
+  - Lane registry, its guard test, and the classification doc updated for the new LIVE suite; typecheck and lint clean.
 
 **Tester Status:** approved
 **Tester Notes:**
