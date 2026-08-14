@@ -235,24 +235,28 @@ describe('AC-37.2: every public page and story emits a real title, description, 
           sections: storySection,
         })
 
-        const [pageOwnRes, pageFallbackRes, storyOwnRes, storyFallbackRes] = await Promise.all([
-          fetch(`${base}/${pageOwnSlug}`),
-          fetch(`${base}/${pageFallbackSlug}`),
-          fetch(`${base}/stories/${storyOwnSlug}`),
-          fetch(`${base}/stories/${storyFallbackSlug}`),
-        ])
+        // Sequential, not Promise.all: these are the first-ever hits to the
+        // `[slug]` and `stories/[slug]` routes on a cold `next dev` server,
+        // and every other live test in this suite (e.g.
+        // us31-ac31.6-live-seo-metadata.test.ts) fetches its first-touch
+        // routes one at a time for the same reason — concurrent first
+        // requests to distinct not-yet-compiled routes can race Next's
+        // dev-mode on-demand compilation and return a transient 500 instead
+        // of the real response this assertion needs.
+        const pageOwnRes = await fetch(`${base}/${pageOwnSlug}`)
+        const pageFallbackRes = await fetch(`${base}/${pageFallbackSlug}`)
+        const storyOwnRes = await fetch(`${base}/stories/${storyOwnSlug}`)
+        const storyFallbackRes = await fetch(`${base}/stories/${storyFallbackSlug}`)
 
         expect(pageOwnRes.status).toBe(200)
         expect(pageFallbackRes.status).toBe(200)
         expect(storyOwnRes.status).toBe(200)
         expect(storyFallbackRes.status).toBe(200)
 
-        const [pageOwnHtml, pageFallbackHtml, storyOwnHtml, storyFallbackHtml] = await Promise.all([
-          pageOwnRes.text(),
-          pageFallbackRes.text(),
-          storyOwnRes.text(),
-          storyFallbackRes.text(),
-        ])
+        const pageOwnHtml = await pageOwnRes.text()
+        const pageFallbackHtml = await pageFallbackRes.text()
+        const storyOwnHtml = await storyOwnRes.text()
+        const storyFallbackHtml = await storyFallbackRes.text()
 
         // --- Page with its own fields: a real <title>, description, canonical, OG and Twitter card. ---
         expect(titleTagText(pageOwnHtml)).toBe(expectedTitle(pageOwnSeoTitle))
