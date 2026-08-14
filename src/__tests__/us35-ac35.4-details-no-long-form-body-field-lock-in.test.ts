@@ -27,7 +27,6 @@ import type { Field } from 'payload'
 
 import { Pages } from '@/collections/Pages'
 
-const PAGES_FILE_PATH = path.join(process.cwd(), 'src/collections/Pages.ts')
 const TEMPLATE_FILE_PATH = path.join(process.cwd(), 'src/components/page-template/DetailsPageTemplate.tsx')
 const PRD_FILE_PATH = path.join(process.cwd(), 'scrum-master/PRD.md')
 const templateSource = fs.readFileSync(TEMPLATE_FILE_PATH, 'utf8')
