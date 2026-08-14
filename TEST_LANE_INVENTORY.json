@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 203,
+  "totalSuites": 204,
   "counts": {
     "live": 16,
-    "unit": 187
+    "unit": 188
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1038,6 +1038,11 @@
       "path": "src/__tests__/us35-ac35.3-live-details-page-creation.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process and creates real Pages/gallery-placements documents over http://localhost:4298/api/pages and /api/gallery-placements, fetching the rendered [slug] route against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us35-ac35.4-details-no-long-form-body-field-lock-in.test.ts",
+      "lane": "UNIT",
+      "reason": "walks the in-memory Pages.fields tree and reads DetailsPageTemplate.tsx/PRD.md from disk with fs, asserting on static field/prop shapes and file text, no network/db"
     }
   ]
 }
