@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 199,
+  "totalSuites": 204,
   "counts": {
-    "live": 15,
-    "unit": 184
+    "live": 16,
+    "unit": 188
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1018,6 +1018,31 @@
       "path": "src/__tests__/us34-ac34.6-homepage-performance-measured.test.ts",
       "lane": "UNIT",
       "reason": "reads the committed AC-34.6 report and its retained raw Lighthouse JSON from disk and re-derives the medians through the pure aggregateRuns helper; the Lighthouse pass itself was run out-of-band by the benchmark profile, so this suite makes no network/db call"
+    },
+    {
+      "path": "src/__tests__/us35-ac35.1-details-page-template.test.tsx",
+      "lane": "UNIT",
+      "reason": "renders DetailsPageTemplate/PublicShell with @testing-library/react (jsdom) and react-dom/server against in-memory fixtures and reads the template source from disk for the style-drift checks, no network/db"
+    },
+    {
+      "path": "src/__tests__/us35-ac35.2-masonry-placement-behaviours.test.tsx",
+      "lane": "UNIT",
+      "reason": "renders GalleryMasonryLayout with @testing-library/react (jsdom) against in-memory fixtures and compiles the component's own Tailwind classes through @tailwindcss/postcss + tokens.css in-process, no network/db"
+    },
+    {
+      "path": "src/__tests__/us35-ac35.3-page-template-dispatch.test.tsx",
+      "lane": "UNIT",
+      "reason": "jest.mock('@/lib/getPageBySlug')/jest.mock('@/lib/getStudioProfile')/jest.mock('@/lib/resolveDetailsMasonryPlacement')/jest.mock('@/lib/resolvePageGalleryPlacements') mock the only I/O the route performs; calls the [slug] route's default export directly against in-memory fixtures and renders the result with @testing-library/react (jsdom), no network/db"
+    },
+    {
+      "path": "src/__tests__/us35-ac35.3-live-details-page-creation.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process and creates real Pages/gallery-placements documents over http://localhost:4298/api/pages and /api/gallery-placements, fetching the rendered [slug] route against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us35-ac35.4-details-no-long-form-body-field-lock-in.test.ts",
+      "lane": "UNIT",
+      "reason": "walks the in-memory Pages.fields tree and reads DetailsPageTemplate.tsx/PRD.md from disk with fs, asserting on static field/prop shapes and file text, no network/db"
     }
   ]
 }

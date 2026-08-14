@@ -6,10 +6,15 @@
  *          exactly the PRD §13.1 New Page field set and nothing beyond it.
  *          Maps every PRD §13.1 table row one-to-one against the collection
  *          field list in both directions: no PRD row is unmapped, and no
- *          collection field exists outside the PRD row set.
+ *          collection field exists outside the PRD row set — plus the one
+ *          explicitly sanctioned exception, `template` (AC-35.3), tracked
+ *          separately below rather than silently loosening this guard.
  * created-by: dev-team
  * related-story: US-31
  * related-ac: 31.1
+ * updated-by: dev-team
+ * related-story: US-35
+ * related-ac: 35.3
  * ---
  */
 import fs from 'fs'
@@ -60,6 +65,16 @@ const PRD_13_1_FIELD_MAP: Array<{ prdField: string; collectionField: string }> =
   { prdField: 'Draft/published', collectionField: 'status' },
 ]
 
+// AC-35.3 (sprint5.json) requires the Details template (PRD §13.4) to be
+// "a selection on a Pages record, not a bespoke hard-coded route" — a
+// requirement PRD §13.1's table predates and doesn't itself enumerate as a
+// row. Tracked explicitly here, rather than folded into PRD_13_1_FIELD_MAP
+// above, so this guard keeps meaning exactly what its own name says: no
+// *undocumented* field exists beyond the PRD §13.1 set.
+const FIELDS_BEYOND_PRD_13_1: Array<{ collectionField: string; sanctionedBy: string }> = [
+  { collectionField: 'template', sanctionedBy: 'AC-35.3' },
+]
+
 describe('US-31 AC-31.1: Pages carries the CLAUDE.md structured metadata header', () => {
   it('carries the CLAUDE.md structured metadata header', () => {
     const header = fileSource.match(/^\/\*[\s\S]*?\*\//)?.[0] ?? ''
@@ -97,14 +112,16 @@ describe('US-31 AC-31.1: the field list maps one-to-one onto PRD §13.1', () => 
     }
   })
 
-  it('every collection field maps back to a PRD §13.1 row (no field beyond the PRD set)', () => {
+  it('every collection field maps back to a PRD §13.1 row or a sanctioned, explicitly tracked exception', () => {
     const mappedFieldNames = PRD_13_1_FIELD_MAP.map((entry) => entry.collectionField)
-    expect(actualFieldNames.sort()).toEqual(mappedFieldNames.sort())
+    const sanctionedFieldNames = FIELDS_BEYOND_PRD_13_1.map((entry) => entry.collectionField)
+    expect(actualFieldNames.sort()).toEqual([...mappedFieldNames, ...sanctionedFieldNames].sort())
   })
 
-  it('carries exactly 16 fields — the PRD §13.1 row count, no more, no fewer', () => {
+  it('carries exactly 17 fields — the 16 PRD §13.1 rows plus AC-35.3\'s sanctioned template selection', () => {
     expect(PRD_13_1_FIELD_MAP.length).toBe(16)
-    expect(actualFieldNames.length).toBe(16)
+    expect(FIELDS_BEYOND_PRD_13_1.length).toBe(1)
+    expect(actualFieldNames.length).toBe(17)
   })
 })
 

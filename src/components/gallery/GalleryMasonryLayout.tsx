@@ -34,6 +34,21 @@
  * updated-by: dev-team
  * related-story: US-26
  * related-ac: 26.4
+ * updated-by: dev-team
+ * related-story: US-35
+ * related-ac: 35.2
+ * update-note: both gaps now read `--gallery-gap-md` (tokens.css §8, the
+ *              scale dedicated to gallery grids) via Tailwind's
+ *              arbitrary-value syntax — the container's `gap` (the
+ *              column-gap CSS multi-column layout renders between columns)
+ *              and each item's `margin-bottom` (multi-column layout has no
+ *              row-gap equivalent, so vertical spacing between stacked items
+ *              in the same column has always needed a margin) — replacing
+ *              the bare `gap-4`/`mb-4` utilities that happened to compile to
+ *              the same 1rem by coincidence (Tailwind's default spacing
+ *              step, not a token reference). PRD §15.1 requires the masonry
+ *              gap be system-defined from tokens.css, not an accidental
+ *              match.
  * ---
  */
 // `loader={createGalleryImageLoader(image)}` below passes a function prop to
@@ -56,8 +71,10 @@ import { createGalleryImageLoader } from './galleryImageLoader'
 import type { GalleryImage } from './types'
 
 // Full available width, one column on mobile up to four on larger screens,
-// per PRD §15.1.
-const MASONRY_COLUMNS_CLASS = 'columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4'
+// per PRD §15.1. The gap is `--gallery-gap-md` from tokens.css §8 — the
+// scale dedicated to gallery grids — not a bare Tailwind spacing default.
+const MASONRY_COLUMNS_CLASS =
+  'columns-1 gap-[var(--gallery-gap-md)] sm:columns-2 lg:columns-3 xl:columns-4'
 
 // Mirrors MASONRY_COLUMNS_CLASS's breakpoints so next/image requests a
 // variant sized for the column the browser will actually place this item in,
@@ -90,7 +107,7 @@ export function GalleryMasonryLayout({ images }: GalleryMasonryLayoutProps) {
           key={image.id}
           data-testid={`masonry-item-${index}`}
           data-image-id={image.id}
-          className="relative mb-4 w-full break-inside-avoid"
+          className="relative mb-[var(--gallery-gap-md)] w-full break-inside-avoid"
           style={{ aspectRatio: aspectRatioValue(image) }}
         >
           <Image
