@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 5/8 stories | 36/52 ACs
-**Last Updated:** 2026-08-14T12:21:45+00:00
+**Last Updated:** 2026-08-14T12:36:57+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -439,6 +439,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [ ] **AC-35.3:** A Details page is created through the same New Page form as any other page - the template is a selection on a `Pages` record, not a bespoke hard-coded route. Evidence: a second Details page created through the admin form alone, with no code change, rendering correctly.
   - Dev: implemented
 - [ ] **AC-35.4:** Copy restraint is structural, not advisory: the Details template offers no long-form body field, so the PRD 13.4 instruction 'Do not over-explain in copy' cannot be violated by content entry. Evidence: the template's field list, plus a test that fails if a rich-text or long-form body field is added to it.
+  - Dev: implemented
 
 **Dependencies:** US-31, US-33
 
@@ -447,6 +448,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   AC-35.1 implemented (local checks green): Waiting for the background test run to complete.
   AC-35.2 implemented (local checks green): I'll wait for that background task to signal the test run has finished.
   AC-35.3 implemented (local checks green): I'll pause here until the background live-lane run finishes or the scheduled check-in fires.
+  AC-35.4 implemented (local checks green): I'll pause here and wait for the background test task (ID `beri0345t`) to complete before finalizing.
 
 **Tester Status:** approved
 **Tester Notes:**
