@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 215,
+  "totalSuites": 217,
   "counts": {
-    "live": 19,
-    "unit": 196
+    "live": 20,
+    "unit": 197
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -898,6 +898,16 @@
       "path": "src/__tests__/us37-ac37.3-structured-data-per-page-type.test.tsx",
       "lane": "UNIT",
       "reason": "unit tests on the pure buildPageStructuredData/buildStoryStructuredData/absoluteSiteUrl functions plus mocks of @/lib/getPageBySlug, @/lib/getStoryBySlug, @/lib/getStudioProfile and the gallery-placement resolvers, then renders the [slug]/stories[slug] routes via @testing-library/react against in-memory fixtures and regex-extracts the JSON-LD <script> from container.innerHTML, with fs reads of the layout/page/story sources for a static duplication check, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.4.1-sitemap-closed-set-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process, calls getLiveApiAuthToken to create two real published Pages documents and one published Stories/gallery-placements pair, fetches the real /sitemap.xml over HTTP and the live Payload REST API's filtered pages/stories lists, and asserts <loc> set equality in both directions against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.4.1-sitemap-source-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "fs reads of src/app/(frontend)/sitemap.ts and src/lib/getSitemapEntries.ts and regex assertions on their static source text, no network/db"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",
