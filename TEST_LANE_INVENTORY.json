@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 174,
+  "totalSuites": 177,
   "counts": {
-    "live": 9,
-    "unit": 165
+    "live": 10,
+    "unit": 167
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -738,6 +738,21 @@
       "path": "src/__tests__/us33-ac33.1-forms-field-set.test.ts",
       "lane": "UNIT",
       "reason": "reads src/collections/Forms.ts and src/payload.config.ts via fs and asserts on the imported CollectionConfig object shape and the source text, no network/db"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.2-inquiries-collection-fields.test.ts",
+      "lane": "UNIT",
+      "reason": "imports the Inquiries collection object and asserts on its field config in-memory, no I/O at all"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.2-submit-inquiry-ordering.test.ts",
+      "lane": "UNIT",
+      "reason": "calls submitInquiry() with jest.fn() mocked createInquiry/notify dependencies, no payload import, no I/O"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.2-inquiry-durable-persist-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, creates a real Forms document and POSTs a real submission to /api/inquiries, exercising Payload's live schema/connection against the real Postgres db container"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",

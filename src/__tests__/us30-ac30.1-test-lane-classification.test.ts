@@ -76,7 +76,7 @@ describe('AC-30.1: test lane classification inventory', () => {
     }
   })
 
-  it('the LIVE lane is exactly the nine suites known to gate on a live dependency', () => {
+  it('the LIVE lane is exactly the ten suites known to gate on a live dependency', () => {
     const liveOfSuites = inventory.suites.filter((s) => s.lane === 'LIVE').map((s) => s.path).sort()
     expect(liveOfSuites).toEqual(
       [
@@ -89,6 +89,7 @@ describe('AC-30.1: test lane classification inventory', () => {
         'src/__tests__/us31-ac31.6-live-seo-metadata.test.ts',
         'src/__tests__/us32-ac32.2-first-public-navigation.test.ts',
         'src/__tests__/us32-ac32.3-navigation-gate-live-toggle.test.ts',
+        'src/__tests__/us33-ac33.2-inquiry-durable-persist-live.test.ts',
       ].sort(),
     )
   })

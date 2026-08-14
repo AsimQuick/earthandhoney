@@ -29,9 +29,9 @@ The full per-suite mapping lives in [`TEST_LANE_INVENTORY.json`](TEST_LANE_INVEN
 
 | Lane | Count |
 |---|---|
-| LIVE | 9 |
-| UNIT | 165 |
-| **Total** | **174** |
+| LIVE | 10 |
+| UNIT | 167 |
+| **Total** | **177** |
 
 (UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, AC-30.2's
 `us30-ac30.2-unit-lane-parallelism.test.ts` guard, and AC-30.3's `us30-ac30.3-live-lane-serial.test.ts` guard, all of
@@ -64,8 +64,9 @@ each suite rather than trusting its name.
 | `src/__tests__/us31-ac31.6-live-seo-metadata.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create two real `Pages` documents over `http://localhost:4284/api/pages`, and fetches each one's rendered `[slug]` route to assert the canonical `<link>`, `og:*` `<meta>` tags and heading-level sequence in the real response HTML, exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
 | `src/__tests__/us32-ac32.2-first-public-navigation.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create three real published `Pages` documents (Weddings, Engagements, Details, per PRD §12.1) over `http://localhost:4286/api/pages`, wires them into the `Navigation` global's ordered `items` array over `http://localhost:4286/api/globals/navigation`, reads them back via a filtered `http://localhost:4286/api/pages` list query, and fetches the rendered `[slug]` route to assert the three labels appear in the nav markup in order, exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
 | `src/__tests__/us32-ac32.3-navigation-gate-live-toggle.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a draft (`includeInMenu` true) and a published-but-excluded (`includeInMenu` false) `Pages` document over `http://localhost:4288/api/pages`, wires both into the `Navigation` global over `http://localhost:4288/api/globals/navigation`, fetches the rendered `[slug]` route to assert both labels are absent from the nav markup (before), then `PATCH`es each page's single gating field over `http://localhost:4288/api/pages/:id` and re-fetches the same route to assert both labels now appear (after) — with no code change between the two fetches — exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
+| `src/__tests__/us33-ac33.2-inquiry-durable-persist-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a real `Forms` document, `POST`s a real submission to `http://localhost:4290/api/inquiries` (whose notification step fails on every call — `sendInquiryNotification` isn't wired to the Backstage email queue until AC-33.5), and reads the created `Inquiries` document back over `http://localhost:4290/api/inquiries/:id`, exercising Payload's live schema/connection against the real Postgres `db` container. |
 
-All nine gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
+All ten gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
 depend on (`db` or `backstage-backend`) and return early — i.e. pass trivially — when that hostname
 doesn't resolve, so they are also safe to run on a bare host `npm test` outside Docker; they only
 become truly LIVE when the Docker network is up.
