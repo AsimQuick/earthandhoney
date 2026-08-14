@@ -6,7 +6,18 @@
  *          central studio fact (PRD §21.1): business name, owner name,
  *          description, established year, address, public phone/email,
  *          service areas, social profiles, default social image, default
- *          title pattern, and default meta description. Every field is a
+ *          title pattern, default meta description, and business hours
+ *          (AC-37.1 — the one PRD §21.1 bullet, "business hours/contact
+ *          details where appropriate", that had no field until this AC;
+ *          "contact details" was already covered by publicPhone/publicEmail/
+ *          address, so `businessHours` closes the remaining gap; free text
+ *          because "where appropriate" means some studios have none, e.g.
+ *          "By appointment only"). This account-level data has exactly one
+ *          owner: this global. No second SEO-settings global/collection
+ *          exists anywhere in this codebase (see `globals` in
+ *          src/payload.config.ts) — per Pillar 5, duplicating any of these
+ *          fields into a second record is a defect, not a valid extension
+ *          point. Every field is a
  *          plain admin-UI control (text/textarea/number/email/array/upload)
  *          so the photographer edits studio identity without a code change.
  *          Also carries the `branding` group (PRD §12.3), bounded to exactly
@@ -47,6 +58,9 @@
  * updated-by: dev-team
  * related-story: US-34
  * related-ac: 34.4
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.1
  * ---
  */
 import type { GlobalConfig } from 'payload'
@@ -143,6 +157,19 @@ export const StudioProfile: GlobalConfig = {
       type: 'email',
       admin: {
         description: 'The email address shown publicly to prospective clients.',
+      },
+    },
+    {
+      // AC-37.1: closes the one PRD §21.1 bullet ("business hours/contact
+      // details where appropriate") with no field until now. Free text, not
+      // a structured day/time schedule, because "where appropriate" means
+      // many studios (e.g. by-appointment-only wedding photographers) have
+      // no fixed hours to structure.
+      name: 'businessHours',
+      type: 'textarea',
+      admin: {
+        description:
+          'Public business hours, if the studio has any (e.g. "By appointment only", or a day/time schedule). Leave blank where not appropriate.',
       },
     },
     {
