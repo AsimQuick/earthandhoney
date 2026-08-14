@@ -30,15 +30,20 @@
  *          a too-fast submission is each accepted with the same 201 shape a
  *          real success gets but with no Inquiry ever created — a bot
  *          scripted against this endpoint's responses cannot distinguish a
- *          silently-dropped submission from a real one.
+ *          silently-dropped submission from a real one. The already-fetched
+ *          `form` document supplies the data fields AC-33.5.2.3's real
+ *          `sendInquiryNotification` hands to Backstage: `recipients[].email`,
+ *          `publicTitle`, and the submitted values formatted by
+ *          src/lib/buildInquirySubmissionSummary.ts — no second lookup.
  * created-by: dev-team
  * related-story: US-33
- * related-ac: 33.4
+ * related-ac: 33.5.2.3
  * ---
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 
+import { buildInquirySubmissionSummary } from '@/lib/buildInquirySubmissionSummary'
 import { sendInquiryNotification } from '@/lib/inquiryNotification'
 import {
   createSourceRateLimiter,
@@ -121,9 +126,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const payload = await getPayload({ config })
 
   let formFields: InquiryFormFieldDef[]
+  let formTitle: string
+  let recipientEmails: string[]
   try {
     const form = await payload.findByID({ collection: 'forms', id: input.formId })
     formFields = (form.fields ?? []) as InquiryFormFieldDef[]
+    formTitle = (form.publicTitle as string | undefined) ?? String(input.formId)
+    const recipients = (form.recipients ?? []) as Array<{ email?: string | null }>
+    recipientEmails = recipients
+      .map((recipient) => recipient.email)
+      .filter((email): email is string => typeof email === 'string' && email.length > 0)
   } catch {
     return NextResponse.json({ error: 'form not found' }, { status: 404 })
   }
@@ -132,6 +144,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (fieldErrors.length > 0) {
     return NextResponse.json({ error: 'validation failed', fieldErrors }, { status: 400 })
   }
+
+  const submissionSummary = buildInquirySubmissionSummary(formFields, input.values)
 
   const result = await submitInquiry(
     {
@@ -147,7 +161,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         })
         return { id: doc.id }
       },
-      notify: sendInquiryNotification,
+      notify: (created) =>
+        sendInquiryNotification({
+          ...created,
+          recipientEmails,
+          formTitle,
+          submissionSummary,
+        }),
     },
     input,
   )

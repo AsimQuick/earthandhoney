@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 183,
+  "totalSuites": 186,
   "counts": {
     "live": 12,
-    "unit": 171
+    "unit": 174
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -843,6 +843,21 @@
       "path": "src/__tests__/us33-ac33.5.2.2.2-inquiry-notification-route.test.ts",
       "lane": "UNIT",
       "reason": "fs reads of the local vendor/picpeak route/server files, repo docs, and verifyVendoredMigrations against the local tree \u2014 no network or live service dependency"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.5.2.3-inquiry-notification-client.test.ts",
+      "lane": "UNIT",
+      "reason": "mocked-fetch unit tests (jest.spyOn(global, 'fetch')) pinning request shape and failure modes, no real network call, no I/O"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.5.2.3-build-inquiry-submission-summary.test.ts",
+      "lane": "UNIT",
+      "reason": "calls buildInquirySubmissionSummary() with in-memory field definitions and values, no payload import, no I/O"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.5.2.3-end-to-end-proof-script.test.ts",
+      "lane": "UNIT",
+      "reason": "fs read of the committed proof script in the local tree — asserts the script's contract, never runs Docker, psql, or the network"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",

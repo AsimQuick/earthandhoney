@@ -12,9 +12,19 @@
  *          live-round-trip technique). Creates a real `Forms` document,
  *          POSTs a real submission to `/api/inquiries` — the notification
  *          path is forced to fail simply by exercising the real, current
- *          server: src/lib/inquiryNotification.ts's `sendInquiryNotification`
- *          is not yet wired to the Backstage email queue (AC-33.5), so it
- *          rejects on every call — then reads the created Inquiry back over
+ *          server: since AC-33.5.2.3, src/lib/inquiryNotification.ts's
+ *          `sendInquiryNotification` is a real client of Backstage's
+ *          `POST /api/v1/notifications/inquiry`, and it is failed here the
+ *          way a real deployment would fail — by pointing the spawned
+ *          server's `BACKSTAGE_BACKEND_URL` at an unreachable host, so the
+ *          module's own `fetch` genuinely cannot reach Backstage. No test
+ *          hook exists in the product code any more (the AC-33.2 stub that
+ *          unconditionally rejected is gone), and nothing here depends on
+ *          whether the `backstage` compose profile happens to be up: with
+ *          Backstage running and a valid `BACKSTAGE_API_TOKEN` in `.env`,
+ *          the notification would otherwise succeed and this suite would
+ *          stop proving anything about a failing notification at all.
+ *          The suite then reads the created Inquiry back over
  *          the live Payload REST API and asserts the submitted field
  *          values, source page, and utm_* parameters are all present on the
  *          stored record, proving persistence never depended on the
@@ -77,7 +87,19 @@ describe('AC-33.2: a submission persists as a durable Inquiry even when notifica
       const child = spawn(
         path.join(root, 'node_modules/.bin/next'),
         ['dev', '-p', String(LIVE_TEST_PORT)],
-        { cwd: root, env: process.env },
+        {
+          cwd: root,
+          env: {
+            ...process.env,
+            // The real cause of the notification failure this AC needs, set
+            // where a deployment would set it rather than in product code:
+            // ".invalid" is reserved by RFC 2606 and never resolves, so
+            // sendInquiryNotification()'s own fetch fails on an unreachable
+            // Backstage on every run, whether or not the "backstage" compose
+            // profile is up.
+            BACKSTAGE_BACKEND_URL: 'http://backstage-backend.invalid:3000',
+          },
+        },
       )
 
       const base = `http://localhost:${LIVE_TEST_PORT}`
@@ -124,10 +146,11 @@ describe('AC-33.2: a submission persists as a durable Inquiry even when notifica
           },
         }
 
-        // The notification path is forced to fail here without any test-only
-        // hook: sendInquiryNotification() unconditionally rejects until
-        // AC-33.5 wires the real Backstage email queue, so this real POST
-        // against the real server already exercises a failing notification.
+        // The notification path fails here with no test-only hook in the
+        // product code: the spawned server's BACKSTAGE_BACKEND_URL points at
+        // an unresolvable host (see the spawn above), so the real
+        // sendInquiryNotification() call this real POST triggers fails on an
+        // unreachable Backstage — a real cause, not a stub.
         const submitRes = await fetch(`${base}/api/inquiries`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
