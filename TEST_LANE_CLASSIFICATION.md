@@ -29,9 +29,9 @@ The full per-suite mapping lives in [`TEST_LANE_INVENTORY.json`](TEST_LANE_INVEN
 
 | Lane | Count |
 |---|---|
-| LIVE | 22 |
-| UNIT | 199 |
-| **Total** | **221** |
+| LIVE | 23 |
+| UNIT | 200 |
+| **Total** | **223** |
 
 (UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, AC-30.2's
 `us30-ac30.2-unit-lane-parallelism.test.ts` guard, and AC-30.3's `us30-ac30.3-live-lane-serial.test.ts` guard, all of
@@ -77,6 +77,7 @@ each suite rather than trusting its name.
 | `src/__tests__/us37-ac37.4.1-sitemap-closed-set-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create two real published `Pages` documents and one published `Stories`/`gallery-placements` pair over `http://localhost:4302/api/pages`, `/api/stories` and `/api/gallery-placements`, fetches the real `/sitemap.xml` and parses its `<loc>` values, and separately reads the closed set back from the live Payload REST API with the same `status`/`indexing` filters the reader uses, asserting set equality in both directions — exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
 | `src/__tests__/us37-ac37.4.2-sitemap-excludes-draft-and-noindex-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a draft `Pages` document, a published+`noindex` `Pages` document, a draft `Stories`/`gallery-placements` pair, and a published+`index` control `Pages` document over `http://localhost:4303/api/pages`, `/api/stories` and `/api/gallery-placements`, fetches the real `/sitemap.xml`, and asserts the three excluded slugs are absent from it while the control page's slug is present — exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
 | `src/__tests__/us37-ac37.4.3-sitemap-image-references-live.test.ts` | Gated on `dns.lookup('db')` **and** `dns.lookup('backstage-backend')` resolving, then self-seeds a real published Backstage gallery and find-or-uploads a real photo into it via live admin API `fetch()` calls (polling `resolveGalleryPlacementImages` until the async upload pipeline has processed it), spawns a real `next dev` child process with its own `NEXT_PUBLIC_SITE_URL`, calls `getLiveApiAuthToken` to create a real `gallery-placements`/published `Pages` pair over `http://localhost:4304/api/gallery-placements` and `/api/pages`, fetches the real `/sitemap.xml` and asserts that page's `<url>` block's `<image:loc>` set equals the Flow A photo URLs made absolute, then fetches one of those absolute URLs for real and asserts HTTP 200 with an `image/*` content type — exercising Payload's live schema/connection, the live Next.js route and the `next.config.ts` image rewrite against the real Postgres `db` container and the real Backstage stack. |
+| `src/__tests__/us37-ac37.5-robots-and-dev-routes-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process` on `http://localhost:4305`, fetches the real `/robots.txt` and asserts its `User-Agent`/`Allow`/`Disallow: /dev/`/`Sitemap:` lines, fetches the real `/sitemap.xml` and asserts none of the six internal `/dev/*` demo/specimen routes appear in it, and fetches each of those six routes in turn to assert HTTP 200 with a real `<meta name="robots" content="...noindex...">` tag in its own rendered HTML — exercising the live Next.js routes against the real Postgres `db` container. No Payload fixtures are created since neither route reads from the database. |
 
 All twenty-two gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
 depend on (`db` or `backstage-backend`) and return early — i.e. pass trivially — when that hostname
