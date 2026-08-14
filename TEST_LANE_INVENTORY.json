@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 173,
+  "totalSuites": 174,
   "counts": {
     "live": 9,
-    "unit": 164
+    "unit": 165
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -733,6 +733,11 @@
       "path": "src/__tests__/us32-ac32.5-mobile-menu-accessibility-survives.test.tsx",
       "lane": "UNIT",
       "reason": "jsdom component rendering plus keyboard simulation via @testing-library/user-event, git show for structural diffs, and an in-process Tailwind/postcss compile of globals.css \u2014 no network/db"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.1-forms-field-set.test.ts",
+      "lane": "UNIT",
+      "reason": "reads src/collections/Forms.ts and src/payload.config.ts via fs and asserts on the imported CollectionConfig object shape and the source text, no network/db"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",
