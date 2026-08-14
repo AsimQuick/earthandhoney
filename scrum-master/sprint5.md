@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/8 stories | 17/46 ACs
-**Last Updated:** 2026-08-14T01:12:21+00:00
+**Last Updated:** 2026-08-14T01:33:18+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -230,6 +230,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [ ] **AC-33.3:** Validation runs on both client and server, and the server is authoritative: a submission crafted to bypass the browser (a direct POST with a missing required field, a malformed email, and an over-long field) is rejected with no record written. Evidence: the three rejected requests with their responses, run against the stack in Docker.
   - Dev: implemented
 - [ ] **AC-33.4:** Spam protection is in place and does not depend on a third-party client-side script or an external service: honeypot field, submission-timing check, and a server-side rate limit per source. Record the options rejected and why (DoD item 6). Evidence: a scripted rapid-fire submission proven to be rate-limited, a honeypot-filled submission proven to be silently rejected without creating an Inquiry, and a submission completed faster than the timing threshold proven to be rejected without creating an Inquiry.
+  - Dev: implemented
 - [ ] **AC-33.5:** The studio notification email is queued through the Backstage email queue - the single authoritative owner of all client and photographer email per CLAUDE.md's System Ownership table and `SYSTEM_OWNERSHIP.md`. It is not sent from Payload or Next directly, and Resend is retired and must not reappear. No SMTP secret is ever exposed to the browser (PRD 20.3). If a new email template row is required, add it via a NEW numbered migration or seed - never by editing an already-shipped upstream migration (Reminder 2) - and check first against finding F9 in `po-requests.md`, which records two email types whose templates do not exist. Record the boundary crossing in `PAYLOAD_PICPEAK_API_CONTRACT.md`, and in `FORK_CHANGELOG.md` plus `PICPEAK_PORT_LEDGER.md` if any file under `vendor/picpeak/` is touched. Evidence: the notification observed queued and then sent, confirmed independently in the mail catcher the way US-17 AC-17.6 did - not inferred from a return code - and the client-side bundle/network requests checked to confirm no SMTP secret is ever sent to or present in the browser.
 - [ ] **AC-33.6:** An optional branded acknowledgement to the person who submitted the form exists, is off by default, and is owned by the same single system as AC-33.5 - exactly one system sends any given email type, and duplicate sends are a defect (CLAUDE.md, email pragmatic-default note). Evidence: the acknowledgement enabled and observed sent exactly once; and with it disabled, observed not sent.
 - [ ] **AC-33.7:** The rendered form matches the PRD 20.1 visual direction - large readable labels, generous spacing, minimal fields, one clear submit action, responsive, no generic SaaS styling - built only from `src/styles/tokens.css` tokens with no hard-coded values. Labels are correctly associated with their inputs, errors are announced to assistive technology, and the form is fully operable by keyboard. Evidence: the rendered markup asserted plus the token-only check from AC-31.3 applied to this component.
@@ -263,6 +264,17 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   - **`src/app/(frontend)/api/inquiries/route.ts`** (modified) — looks up the referenced `Forms` document via `payload.findByID`, then runs `validateInquirySubmission()` *before* `submitInquiry()`/`createInquiry()` is called. Invalid submissions get a 400 with field errors (or 404 if the form doesn't exist) and never reach the create call — no Inquiry record is written.
   - **`src/__tests__/us33-ac33.3-validate-inquiry-submission.test.ts`** (new, UNIT, 9 tests) — pure-function coverage of all three named failure modes plus valid/optional-field/checkbox edge cases.
   - **`src/__tests__/us33-ac33.3-server-validation-live.test.ts`** (new, LIVE, 1 test) — boots the real Next/Payload server against Docker Postgres, creates a real Form, …
+  AC-33.4 implemented (local checks green): Committed to `feature/US-33` as `3109c91`.
+  
+  ## Summary
+  
+  **AC-33.4**: Spam protection on `/api/inquiries` — honeypot, submission-timing check, and a server-side per-source rate limit — with no third-party client-side script or external service.
+  
+  **Files changed:**
+  - `src/lib/spamProtection.ts` (new) — pure functions: `isHoneypotFilled`, `isSubmissionTooFast` (fails open when `renderedAt` is absent, keeping AC-33.3's existing direct-POST fixtures unaffected), and `createSourceRateLimiter` (in-memory per-source sliding window, 5 submissions/10 min).
+  - `src/app/(frontend)/api/inquiries/route.ts` — wires the three checks in before the AC-33.3 Forms lookup/validation: rate limit first (429 if exceeded), then honeypot/timing (both accepted with the same 201 shape a real success gets, but nothing is persisted).
+  - `SPAM_PROTECTION_ADR.md` (new) — DoD item 6 decision record: rejects third-party CAPTCHA and spam-scoring services (excluded by the AC's own wording), a JS-execution challenge, `sourcePage`/client-token as the rate-limit key, and a Redis/DB-backed limiter (V1 is one process on one VPS).
+  - `src/__tests__/us33-ac33.4-spam-protection.test.ts` (new, 15 tests) — unit coverage of the th …
 
 **Tester Status:** approved
 **Tester Notes:**
