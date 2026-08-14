@@ -142,6 +142,30 @@ describe('AC-33.5.2.1: verifyVendoredMigrations against the real vendored tree',
   it('the real migration 120 file exists on disk under the fork\'s migrations/core directory', () => {
     expect(fs.existsSync(path.join(vendorRoot, MIGRATION_PATH))).toBe(true)
   })
+
+  it('fails closed when FORK_CHANGELOG.md cannot be read: the fork entry becomes "undocumented", upstream entries stay unaffected', () => {
+    const realReadFileSync = fs.readFileSync
+    const spy = jest
+      .spyOn(fs, 'readFileSync')
+      .mockImplementation(((file: fs.PathOrFileDescriptor, options?: unknown) => {
+        if (typeof file === 'string' && file.endsWith('FORK_CHANGELOG.md')) {
+          throw new Error('ENOENT: FORK_CHANGELOG.md is unreadable')
+        }
+        return (realReadFileSync as (f: unknown, o?: unknown) => unknown)(file, options)
+      }) as unknown as typeof fs.readFileSync)
+
+    try {
+      const result = verifyVendoredMigrations(path.join('vendor', 'picpeak'))
+      // The lane refuses to vouch for a fork addition it cannot find a record
+      // for — it does not fall back to "assume documented".
+      expect(result.ok).toBe(false)
+      expect(result.violations).toEqual([
+        expect.objectContaining({ path: MIGRATION_PATH, reason: 'undocumented' }),
+      ])
+    } finally {
+      spy.mockRestore()
+    }
+  })
 })
 
 describe('AC-33.5.2.1: the artifact\'s documented meaning matches what it now does', () => {
