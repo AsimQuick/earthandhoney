@@ -30,8 +30,8 @@ The full per-suite mapping lives in [`TEST_LANE_INVENTORY.json`](TEST_LANE_INVEN
 | Lane | Count |
 |---|---|
 | LIVE | 16 |
-| UNIT | 188 |
-| **Total** | **204** |
+| UNIT | 190 |
+| **Total** | **206** |
 
 (UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, AC-30.2's
 `us30-ac30.2-unit-lane-parallelism.test.ts` guard, and AC-30.3's `us30-ac30.3-live-lane-serial.test.ts` guard, all of

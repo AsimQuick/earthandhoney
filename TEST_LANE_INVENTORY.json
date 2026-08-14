@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 204,
+  "totalSuites": 206,
   "counts": {
     "live": 16,
-    "unit": 188
+    "unit": 190
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1043,6 +1043,16 @@
       "path": "src/__tests__/us35-ac35.4-details-no-long-form-body-field-lock-in.test.ts",
       "lane": "UNIT",
       "reason": "walks the in-memory Pages.fields tree and reads DetailsPageTemplate.tsx/PRD.md from disk with fs, asserting on static field/prop shapes and file text, no network/db"
+    },
+    {
+      "path": "src/__tests__/us36-ac36.1-stories-field-set.test.ts",
+      "lane": "UNIT",
+      "reason": "walks the in-memory Stories.fields tree and reads Stories.ts/payload.config.ts from disk with fs, asserting on static field shapes and file text, no network/db"
+    },
+    {
+      "path": "src/__tests__/us36-ac36.1-story-page-template.test.tsx",
+      "lane": "UNIT",
+      "reason": "renders StoryPageTemplate/PublicShell with @testing-library/react (jsdom) and react-dom/server against in-memory fixtures and reads the template source from disk for the style-drift checks, no network/db"
     }
   ]
 }
