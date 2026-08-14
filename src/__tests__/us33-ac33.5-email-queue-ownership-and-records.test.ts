@@ -310,7 +310,6 @@ describe('AC-33.5: the live proof is recorded, reproducible, and Resend has not 
       'scripts/ac33.5-email-queue-live-proof.sh',
       'scripts/ac33.5-no-smtp-secret-in-browser-proof.sh',
     ]) {
-      // eslint-disable-next-line no-bitwise
       expect(fs.statSync(path.join(root, s)).mode & 0o111).toBeGreaterThan(0)
     }
   })
