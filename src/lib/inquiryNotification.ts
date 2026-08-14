@@ -25,8 +25,8 @@ export interface InquiryNotificationInput {
   sourcePage: string
 }
 
-export async function sendInquiryNotification(_inquiry: InquiryNotificationInput): Promise<void> {
+export async function sendInquiryNotification(inquiry: InquiryNotificationInput): Promise<void> {
   throw new InquiryNotificationError(
-    'Inquiry notification is not yet wired to the Backstage email queue — see AC-33.5.',
+    `Inquiry notification is not yet wired to the Backstage email queue — see AC-33.5. (inquiry ${inquiry.id})`,
   )
 }
