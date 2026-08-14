@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/8 stories | 12/46 ACs
-**Last Updated:** 2026-08-13T23:47:33+00:00
+**Last Updated:** 2026-08-14T00:14:04+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -180,6 +180,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [ ] **AC-32.4:** Social profile links in the site chrome come from `StudioProfile.socialProfiles` (US-24) instead of the hard-coded placeholder list at `src/components/layout/VerticalMenu.tsx:58-62`, where all five entries currently point at a '#' href. A studio with no social profiles configured renders no social block at all rather than dead links. Evidence: both states rendered.
   - Dev: implemented
 - [ ] **AC-32.5:** Navigation stays mobile-first and accessible: the US-8 mobile menu behaviour (`MobileMenuContext.tsx`, `MobileMenuTrigger.tsx`) and the primary-navigation landmark survive the change, the menu is operable by keyboard alone, and focus order is correct. Evidence: a structural snapshot taken before and after the change with the differences explained, plus a keyboard-navigation assertion.
+  - Dev: implemented
 
 **Dependencies:** US-31
 
@@ -205,6 +206,12 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   - `src/components/layout/VerticalMenu.tsx` — removed the hard-coded five-entry placeholder social list (Facebook, Twitter, Instagram, Pinterest, Google+, all `href="#"`). The component now takes a `socialProfiles?: StudioSocialProfile[]` prop and renders one link per configured profile with its real `url` and an accessible label. Added `SOCIAL_PLATFORM_META` mapping the `StudioProfile` platform values to photobuddy fontello glyphs; `tiktok` and any unrecognised value fall back to a generic globe glyph (the icon font ships no TikTok mark) while keeping a correct label. The entire `.photobuddy_fl_social_icons` block is gated on `socialProfiles.length > 0`, so an unconfigured studio renders no social block rather than dead links.
   - `src/components/layout/PublicShell.tsx` — accepts `socialProfiles` and forwards it to `VerticalMenu`.
   - `src/app/(frontend)/layout.tsx` — passes `studioProfile.socialProfiles` (already …
+  AC-32.5 implemented (local checks green): Committed to `feature/US-32`.
+  
+  **Summary of AC-32.5 implementation:**
+  
+  - **`src/__tests__/us32-ac32.5-mobile-menu-accessibility-survives.test.tsx`** (new, 8 tests): structural before/after snapshot proving `MobileMenuContext.tsx`/`MobileMenuTrigger.tsx` are byte-identical to the pre-US-32 branch point (via `git show` against `merge-base HEAD main`) and that `VerticalMenu.tsx`'s landmark attributes (drawer `id`, nav `aria-label="Primary"`, `data-testid="primary-nav"`) survived even though its content source changed (hard-coded array → `navItems` prop); a landmark-reachability test through the full `PublicShell`; two real-keyboard tests via `@testing-library/user-event` (Enter/Space toggle the trigger, Tab reaches every interactive element exactly once); a no-positive-`tabIndex` guard; and a compiled-CSS test that runs `globals.css` through the project's actual Tailwind/postcss pipeline to verify the focus-order fix below.
+  - **`src/app/(frontend)/globals.css`**: fixed a real accessibility defect surfaced while writing the keyboard-order test — below the `lg` breakpoint the closed drawer was only pushed off-canvas by `transform`, which does not remove its links from the tab order. Add …
 
 **Tester Status:** approved
 **Tester Notes:**
