@@ -38,6 +38,74 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-14 — `deviation`
 
+**Backstage gains an HTTP way for a service to queue an email:
+`POST /api/v1/notifications/inquiry`.** AC-33.5.2.1's go/no-go recorded
+that no existing route let Frontstage queue an email — `v1/events.js`'s
+own family creates/lists/reads gallery events, uploads photos, and mints
+share links, but calls no email path at all. This entry closes that gap
+with the minimum addition the go/no-go named: a second router mounted
+beside `v1/events.js` under `/api/v1`, behind the same `apiTokenAuth` +
+`requireApiScope('write')` pair row 3 of `PAYLOAD_PICPEAK_API_CONTRACT.md`'s
+call catalog already documents, delegating to the existing `queueEmail()`
+(`emailProcessor.js:959`) with a fixed `template_key: 'inquiry_received'`
+— the row `120_add_inquiry_notification_email_template.js` (AC-33.5.2.1)
+already inserts — and `event_id: null`, legal because `email_queue.event_id`
+is nullable (`db.js`) and the admin queue view `leftJoin`s `events`
+(`adminEmail.js`) so a null-`event_id` row still lists. The route accepts
+data fields only (`form_title`, `source_page`, `submitted_at`,
+`submission_summary` — the migration's own template variables) and renders
+no subject or body itself; queueing only inserts a `pending` row for the
+existing 60-second background processor to send. US-33 AC-33.5.2.2.2.
+
+- **Type:** permanent deviation — a genuine, intentional fork addition
+  (Fork Discipline: extend via new code, never by rewriting shipped
+  upstream logic), not an upstream-bug workaround, so `UPSTREAM_SYNC.md` §4
+  does not apply; it is carried forward on every future merge per §1. The
+  same kind of additive `server.js` change as the US-27 `publicSite`
+  deviation recorded above (2026-08-07) — precedented, not a new argument
+  to have.
+- **What changed:**
+  1. `vendor/picpeak/backend/src/routes/v1/notifications.js` — new file.
+     `POST /notifications/inquiry` behind `apiTokenAuth` +
+     `requireApiScope('write')`; validates `recipient_email`, `form_title`,
+     `source_page`, `submission_summary` server-side (`express-validator`,
+     the same library `events.js` uses); calls
+     `queueEmail(null, recipient_email, 'inquiry_received', emailData)`.
+     US-33 AC-33.5.2.2.2.
+  2. `vendor/picpeak/backend/server.js` — one new `app.use('/api/v1', ...)`
+     line, immediately beside the existing `v1/events` mount
+     (`server.js:531`); the existing mount is left byte-identical. US-33
+     AC-33.5.2.2.2.
+  3. `vendor/picpeak/backend/src/routes/v1/__tests__/notifications.inquiry.test.js`
+     — new fork-side Jest suite (9 tests), `queueEmail` and `db` mocked,
+     `requireApiScope` exercised for real. Run offline with the fork's own
+     local `node_modules` — no Docker, no live HTTP call. US-33
+     AC-33.5.2.2.2.
+  4. `PAYLOAD_PICPEAK_API_CONTRACT.md` — new call-catalog row `3a`,
+     immediately after row 3, recording this boundary crossing; existing
+     row numbers 4/5 are left unchanged since this document's own prose
+     cites them by number in several other sections. US-33 AC-33.5.2.2.2.
+- **Files touched:** see `PICPEAK_PORT_LEDGER.md` §7 for the flat list.
+- **Evidence:** `src/__tests__/us33-ac33.5.2.2.2-inquiry-notification-route.test.ts`
+  pins the route's auth pair, its `queueEmail` call shape, the fixed
+  `template_key`, the minimal additive `server.js` mount, and the
+  changelog/ledger/contract records against the pinned fork source
+  directly — never against this prose alone. The fork-side suite named
+  above proves the route's actual request/response behaviour: a valid
+  request queues exactly once with `event_id === null` and the fixed
+  `template_key`, an invalid body 400s before `queueEmail` is reached, and
+  a read-only-scoped token 403s via the real `requireApiScope`. Live
+  behaviour against a real minted `pp_live_` token, and the queued row read
+  back from Backstage's own Postgres, is deliberately out of scope here —
+  AC-33.5.2.2.3.
+
+- **Recorded:** 2026-08-14
+- **Recorded by:** dev-team (US-33, AC-33.5.2.2.2)
+
+---
+
+## 2026-08-14 — `deviation`
+
 **The fork's first extension migration lands: `120_add_inquiry_notification_email_template.js`
 inserts the `email_templates` row a Frontstage form submission's studio
 notification will render from, and the manifest that fingerprints every

@@ -156,3 +156,30 @@ row of this ledger's file list that sits inside that directory.
 
 - **Recorded:** 2026-08-14
 - **Recorded by:** dev-team (US-33, AC-33.5.2.1)
+
+## 7. US-33 AC-33.5.2.2.2 — the inquiry-notification route and its server.js mount, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-08-14` in `FORK_CHANGELOG.md` (US-33, AC-33.5.2.2.2: the fork gains
+`POST /api/v1/notifications/inquiry`, queuing a studio notification email
+through the existing `queueEmail()` with `event_id: null` and the fixed
+`template_key: 'inquiry_received'` migration `120` (§6) already inserts).
+See that changelog entry for the full description of what changed and why;
+this is the flat list of paths for cross-reference against
+`UPSTREAM_SYNC.md` §2 during a future sync.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/src/routes/v1/notifications.js` | new — `POST /notifications/inquiry` behind `apiTokenAuth` + `requireApiScope('write')`, delegates to `queueEmail(null, recipient_email, 'inquiry_received', emailData)` |
+| `vendor/picpeak/backend/server.js` | one new `app.use('/api/v1', require('./src/routes/v1/notifications'))` line beside the existing `v1/events` mount; the existing mount is unchanged |
+| `vendor/picpeak/backend/src/routes/v1/__tests__/notifications.inquiry.test.js` | new — fork-side Jest suite (9 tests) covering the route's request/response behaviour, run offline with no Docker |
+| `PAYLOAD_PICPEAK_API_CONTRACT.md` | new call-catalog row `3a`, immediately after row 3 |
+| `src/__tests__/us33-ac33.5.2.2.2-inquiry-notification-route.test.ts` | new — pins the route, the mount, and these records against the pinned fork source |
+
+None of the above is a file under `vendor/picpeak/backend/migrations/` —
+every change is additive (a new route file, a one-line mount, new tests, a
+new documentation row) — and `src/lib/picpeakMigrationManifest.ts`'s SHA-1
+integrity test stays green against this change.
+
+- **Recorded:** 2026-08-14
+- **Recorded by:** dev-team (US-33, AC-33.5.2.2.2)

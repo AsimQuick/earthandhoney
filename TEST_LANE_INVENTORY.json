@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 182,
+  "totalSuites": 183,
   "counts": {
     "live": 12,
-    "unit": 170
+    "unit": 171
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -838,6 +838,11 @@
       "path": "src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts",
       "lane": "UNIT",
       "reason": "fixture-level verifyMigrationsUnmodified checks with injected readFile/isForkAdditionDocumented, plus fs reads of the local vendor/picpeak tree and repo docs \u2014 no network or live service dependency"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.5.2.2.2-inquiry-notification-route.test.ts",
+      "lane": "UNIT",
+      "reason": "fs reads of the local vendor/picpeak route/server files, repo docs, and verifyVendoredMigrations against the local tree \u2014 no network or live service dependency"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",

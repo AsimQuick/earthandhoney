@@ -529,6 +529,10 @@ app.use('/api/admin/webhooks', require('./src/routes/adminWebhooks'));
 // Public v1 API for n8n / external integrations (#322). Mounted under
 // /api/v1; auth handled per-route via apiTokenAuth (Bearer tokens).
 app.use('/api/v1', require('./src/routes/v1/events'));
+// US-33 AC-33.5.2.2.2 — a second v1 router, same base path and auth
+// pattern, for Frontstage to queue a studio notification email through
+// the existing Backstage email queue. See notifications.js's own header.
+app.use('/api/v1', require('./src/routes/v1/notifications'));
 
 // Swagger UI for the v1 API. Admin-gated since it lists endpoint shapes
 // that should not be enumerable to anonymous users (a common reduce-info-leak hardening).
