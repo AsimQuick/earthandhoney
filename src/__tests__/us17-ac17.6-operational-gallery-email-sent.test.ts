@@ -227,7 +227,7 @@ describe('AC-17.6: an operational gallery email is sent through Backstage email 
 
     it('cites startEmailQueueProcessor, its 60-second period, and its server.js start site', () => {
       expect(section).toMatch(/`emailProcessor\.js:1029`/)
-      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:649/)
+      expect(section).toMatch(/vendor\/picpeak\/backend\/server\.js:653/)
       expect(section).toMatch(/every 60 seconds/)
     })
 
@@ -236,7 +236,7 @@ describe('AC-17.6: an operational gallery email is sent through Backstage email 
       expect(processor[1028]).toContain('function startEmailQueueProcessor()')
 
       const server = read('vendor/picpeak/backend/server.js').split('\n')
-      expect(server[648]).toContain('startEmailQueueProcessor()')
+      expect(server[652]).toContain('startEmailQueueProcessor()')
     })
 
     it('the processor really does run on a 60000ms interval', () => {
