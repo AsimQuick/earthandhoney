@@ -75,6 +75,7 @@ function studioProfile(overrides: Partial<ResolvedStudioProfile> = {}): Resolved
     serviceAreas: [],
     socialProfiles: [],
     defaultSocialImage: null,
+    homeHeroGallerySlug: null,
     ...overrides,
   }
 }
