@@ -29,9 +29,9 @@ The full per-suite mapping lives in [`TEST_LANE_INVENTORY.json`](TEST_LANE_INVEN
 
 | Lane | Count |
 |---|---|
-| LIVE | 12 |
-| UNIT | 178 |
-| **Total** | **190** |
+| LIVE | 13 |
+| UNIT | 179 |
+| **Total** | **192** |
 
 (UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, AC-30.2's
 `us30-ac30.2-unit-lane-parallelism.test.ts` guard, and AC-30.3's `us30-ac30.3-live-lane-serial.test.ts` guard, all of
@@ -67,6 +67,7 @@ each suite rather than trusting its name.
 | `src/__tests__/us33-ac33.2-inquiry-durable-persist-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a real `Forms` document, `POST`s a real submission to `http://localhost:4290/api/inquiries` (whose notification step fails on every call — `sendInquiryNotification` isn't wired to the Backstage email queue until AC-33.5), and reads the created `Inquiries` document back over `http://localhost:4290/api/inquiries/:id`, exercising Payload's live schema/connection against the real Postgres `db` container. |
 | `src/__tests__/us33-ac33.3-server-validation-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a real `Forms` document, then sends three direct `POST`s to `http://localhost:4291/api/inquiries` — missing required field, malformed email, over-long field — asserting each is rejected with 400 and reading `http://localhost:4291/api/inquiries?where[form][equals]=:id` back afterwards to prove zero Inquiry documents were written, exercising Payload's live schema/connection against the real Postgres `db` container. |
 | `src/__tests__/us33-ac33.4-spam-protection-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process` three times (one per port — 4292, 4293, 4294 — one per scenario, so each scenario's in-memory rate-limiter state starts fresh), creates a real `Forms` document per scenario, and `POST`s real submissions to `/api/inquiries`: a honeypot-filled one, a submission whose `renderedAt` is inside the timing threshold, and a rapid-fire run of `INQUIRY_RATE_LIMIT_MAX_SUBMISSIONS + 1` submissions from the same source — then reads `/api/inquiries/count?where[form][equals]=:id` back over the live Payload REST API to prove each blocked submission wrote no Inquiry, exercising Payload's live schema/connection against the real Postgres `db` container. |
+| `src/__tests__/us34-ac34.1-homepage-order-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process` and fetches `http://localhost:4295/`, asserting the PRD §13.2 structural markers (`primary-nav`, `home-hero-slideshow-placement`, `home-selected-galleries`, `home-inquiry-form-region`, `site-footer`) appear in the real response HTML in order, exercising the live Next.js route and, transitively, Payload's live schema/connection against the real Postgres `db` container. |
 
 All twelve gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
 depend on (`db` or `backstage-backend`) and return early — i.e. pass trivially — when that hostname
