@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 206,
+  "totalSuites": 207,
   "counts": {
     "live": 16,
-    "unit": 190
+    "unit": 191
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1053,6 +1053,11 @@
       "path": "src/__tests__/us36-ac36.1-story-page-template.test.tsx",
       "lane": "UNIT",
       "reason": "renders StoryPageTemplate/PublicShell with @testing-library/react (jsdom) and react-dom/server against in-memory fixtures and reads the template source from disk for the style-drift checks, no network/db"
+    },
+    {
+      "path": "src/__tests__/us36-ac36.2-story-gallery-placement-resolution.test.tsx",
+      "lane": "UNIT",
+      "reason": "walks the in-memory Stories.fields/GalleryPlacements.fields trees and renders StoryPageTemplate with @testing-library/react (jsdom) against resolveStoryGalleryPlacements output, with @/lib/backstageClient jest.mock()'d — no real network/db call"
     }
   ]
 }
