@@ -59,6 +59,7 @@ function page(overrides: Partial<ResolvedPage> = {}): ResolvedPage {
     indexing: 'index',
     galleryPlacements: [],
     socialImage: null,
+    template: 'standard',
     ...overrides,
   }
 }
