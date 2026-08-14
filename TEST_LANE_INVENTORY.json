@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 177,
+  "totalSuites": 179,
   "counts": {
-    "live": 10,
-    "unit": 167
+    "live": 11,
+    "unit": 168
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -753,6 +753,16 @@
       "path": "src/__tests__/us33-ac33.2-inquiry-durable-persist-live.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, creates a real Forms document and POSTs a real submission to /api/inquiries, exercising Payload's live schema/connection against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.3-server-validation-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, creates a real Forms document, sends three direct POSTs crafted to bypass browser validation (missing required field, malformed email, over-long field) to /api/inquiries and asserts each is rejected with 400, then queries /api/inquiries?where[form][equals] over the live Payload REST API to prove zero Inquiry documents were written"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.3-validate-inquiry-submission.test.ts",
+      "lane": "UNIT",
+      "reason": "calls validateInquirySubmission() with in-memory field definitions and submitted values, no payload import, no I/O"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",

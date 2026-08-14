@@ -16,11 +16,17 @@
  *          src/app/(frontend)/api/webhooks/picpeak/route.ts does: Next.js
  *          resolves a static segment (`/api/inquiries`) ahead of the
  *          sibling catch-all (`/api/[...slug]`) in a different route group.
- *          Server-side field validation (AC-33.3) and spam protection
- *          (AC-33.4) are deliberately out of scope here.
+ *          Server-side field validation now runs here (AC-33.3): the
+ *          referenced Forms document is looked up and every submitted value
+ *          is checked with src/lib/validateInquirySubmission.ts BEFORE
+ *          submitInquiry() — and therefore createInquiry() — is ever
+ *          called, so a submission that fails validation (a missing
+ *          required field, a malformed email, an over-long field) is
+ *          rejected with a 400 and no Inquiry record is written. Spam
+ *          protection (AC-33.4) is deliberately still out of scope here.
  * created-by: dev-team
  * related-story: US-33
- * related-ac: 33.2
+ * related-ac: 33.3
  * ---
  */
 import { NextRequest, NextResponse } from 'next/server'
@@ -28,6 +34,7 @@ import { getPayload } from 'payload'
 
 import { sendInquiryNotification } from '@/lib/inquiryNotification'
 import { submitInquiry, type SubmitInquiryInput } from '@/lib/submitInquiry'
+import { validateInquirySubmission, type InquiryFormFieldDef } from '@/lib/validateInquirySubmission'
 
 import config from '@payload-config'
 
@@ -74,6 +81,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const payload = await getPayload({ config })
+
+  let formFields: InquiryFormFieldDef[]
+  try {
+    const form = await payload.findByID({ collection: 'forms', id: input.formId })
+    formFields = (form.fields ?? []) as InquiryFormFieldDef[]
+  } catch {
+    return NextResponse.json({ error: 'form not found' }, { status: 404 })
+  }
+
+  const fieldErrors = validateInquirySubmission(formFields, input.values)
+  if (fieldErrors.length > 0) {
+    return NextResponse.json({ error: 'validation failed', fieldErrors }, { status: 400 })
+  }
 
   const result = await submitInquiry(
     {

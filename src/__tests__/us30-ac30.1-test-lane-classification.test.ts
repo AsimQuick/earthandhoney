@@ -90,6 +90,7 @@ describe('AC-30.1: test lane classification inventory', () => {
         'src/__tests__/us32-ac32.2-first-public-navigation.test.ts',
         'src/__tests__/us32-ac32.3-navigation-gate-live-toggle.test.ts',
         'src/__tests__/us33-ac33.2-inquiry-durable-persist-live.test.ts',
+        'src/__tests__/us33-ac33.3-server-validation-live.test.ts',
       ].sort(),
     )
   })
