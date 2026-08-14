@@ -200,7 +200,7 @@ related-story: US-14
          `checkExpirations()`/`handleExpiredEvent()`, registered by a
          `cron.schedule('0 * * * *', ...)` expression (hourly, via
          `node-cron`) at `expirationChecker.js:11`, started at
-         `server.js:631` in the process this deployment actually runs.
+         `server.js:635` in the process this deployment actually runs.
          Records `workerManager.js`'s duplicate call site as dead code,
          never invoked by any script, Dockerfile, PM2 config, or compose
          file in the pinned commit.
@@ -3350,10 +3350,10 @@ runs:**
 
 - `vendor/picpeak/backend/server.js:22` — `const { startExpirationChecker
   } = require('./src/services/expirationChecker');`
-- `vendor/picpeak/backend/server.js:631` — `startExpirationChecker();`,
+- `vendor/picpeak/backend/server.js:635` — `startExpirationChecker();`,
   inside `async function startServer()` (`:602-723`), a few lines ahead
   of `app.listen(PORT, ...)` (`:714`).
-- `vendor/picpeak/backend/server.js:725` — `startServer();`, called at
+- `vendor/picpeak/backend/server.js:729` — `startServer();`, called at
   module scope, so `startExpirationChecker()` — and with it the
   `cron.schedule('0 * * * *', ...)` registration — runs every time
   `server.js` is executed as the process entry point.
@@ -3398,8 +3398,8 @@ pinned commit:**
 
 The trigger this deployment actually starts, then, is registered at
 `expirationChecker.js:11` (the `cron.schedule` call itself) and started
-at `server.js:631` (the call site actually reached by the running
-container), reached via `server.js:725`'s module-scope `startServer()`
+at `server.js:635` (the call site actually reached by the running
+container), reached via `server.js:729`'s module-scope `startServer()`
 call — not `workerManager.js`, which is never executed.
 
 ### Verdict
@@ -3414,8 +3414,8 @@ once per hour on the hour, via `node-cron` — not a timer interval and
 not an on-request handler. A whole-backend search confirms it is the
 only scheduled process that references `expires_at`. The trigger is
 started, in the process this deployment actually runs, at
-`server.js:631` inside `startServer()`, itself invoked at module scope
-by `server.js:725`, with `server.js` confirmed as the real entry point
+`server.js:635` inside `startServer()`, itself invoked at module scope
+by `server.js:729`, with `server.js` confirmed as the real entry point
 by `package.json`'s `start` script, the vendored `Dockerfile`'s `CMD`,
 `ecosystem.config.js`'s PM2 definition, and the absence of any
 `command:` override in our own `docker-compose.yml`. A second call site,
@@ -3527,7 +3527,7 @@ column of its own (AC-17.4.1.1.1.3(b)).
 
 AC-17.4.1.1.2 located the scheduled process that acts on that column:
 `expirationChecker.js`'s hourly `cron.schedule('0 * * * *', ...)`
-(`expirationChecker.js:11`), started at `server.js:631` in the process
+(`expirationChecker.js:11`), started at `server.js:635` in the process
 this deployment actually runs. On each tick, `checkExpirations()` finds
 rows whose `expires_at` has passed and calls `handleExpiredEvent(event)`
 once per row, which — per AC-17.4.1.1.2's restatement of
@@ -5708,7 +5708,7 @@ With the corrected config in place, the four pending `gallery_created` rows
 were delivered by upstream's **ordinary background queue processor**, with no
 admin intervention at all — the plainest possible operational path.
 `startEmailQueueProcessor` (`emailProcessor.js:1029`, started at
-`vendor/picpeak/backend/server.js:649`) runs `processEmailQueue` immediately
+`vendor/picpeak/backend/server.js:653`) runs `processEmailQueue` immediately
 and then every 60 seconds; because `POST /config` refreshes the *cached*
 transporter in place (`adminEmail.js:104-105`), the very next tick picked the
 rows up without a container restart. Upstream's own activity log pins the
@@ -5905,7 +5905,7 @@ and enqueue logic in
 `vendor/picpeak/backend/src/services/webhookService.js`, the poll-based
 delivery worker in
 `vendor/picpeak/backend/src/services/webhookDeliveryWorker.js` (started at
-`vendor/picpeak/backend/server.js:652-653`), and the admin-facing routes in
+`vendor/picpeak/backend/server.js:656-657`), and the admin-facing routes in
 `vendor/picpeak/backend/src/routes/adminWebhooks.js` (mounted directly at
 `/api/admin/webhooks` by `server.js:528`) — works exactly as delivered.
 What was missing, exactly as with AC-17.6, was a listener this project's

@@ -132,3 +132,84 @@ against this change (verified in
 
 - **Recorded:** 2026-08-07
 - **Recorded by:** dev-team (US-27, AC-27.5)
+
+## 6. US-33 AC-33.5.2.1 — first fork migration and the manifest's fork-addition lane, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-08-14` in `FORK_CHANGELOG.md` (US-33, AC-33.5.2.1: the fork's first
+extension migration, and the `origin: 'fork'` lane `PICPEAK_MIGRATION_MANIFEST`
+gained to fingerprint it as a fork addition rather than pinned-upstream
+drift). See that changelog entry for the full description of what changed
+and why; this is the flat list of paths for cross-reference against
+`UPSTREAM_SYNC.md` §2 during a future sync — this is also, by virtue of
+being the first entry under `vendor/picpeak/backend/migrations/`, the first
+row of this ledger's file list that sits inside that directory.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/migrations/core/120_add_inquiry_notification_email_template.js` | new — inserts the `inquiry_received` `email_templates` row, guarded on `template_key` already existing |
+| `src/lib/picpeakMigrationManifest.ts` | `MigrationManifestEntry` gained the optional `origin?: 'fork'` field; migration `120` recorded as the manifest's first `origin: 'fork'` entry |
+| `src/lib/picpeakMigrationIntegrity.ts` | `verifyMigrationsUnmodified` gained the `isForkAdditionDocumented` check for `origin: 'fork'` entries; `verifyVendoredMigrations` wires it to a real `FORK_CHANGELOG.md` read |
+| `vendor/README.md` | new "The fork-addition lane" section |
+| `UPSTREAM_SYNC.md` | §3 updated — the "no fork migration exists yet" claim no longer holds |
+| `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts` | new — fixture-level proof of the lane in both directions, plus the negative case (a tampered upstream entry still fails as `'modified'`) |
+
+- **Recorded:** 2026-08-14
+- **Recorded by:** dev-team (US-33, AC-33.5.2.1)
+
+## 7. US-33 AC-33.5.2.2.2 — the inquiry-notification route and its server.js mount, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-08-14` in `FORK_CHANGELOG.md` (US-33, AC-33.5.2.2.2: the fork gains
+`POST /api/v1/notifications/inquiry`, queuing a studio notification email
+through the existing `queueEmail()` with `event_id: null` and the fixed
+`template_key: 'inquiry_received'` migration `120` (§6) already inserts).
+See that changelog entry for the full description of what changed and why;
+this is the flat list of paths for cross-reference against
+`UPSTREAM_SYNC.md` §2 during a future sync.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/src/routes/v1/notifications.js` | new — `POST /notifications/inquiry` behind `apiTokenAuth` + `requireApiScope('write')`, delegates to `queueEmail(null, recipient_email, 'inquiry_received', emailData)` |
+| `vendor/picpeak/backend/server.js` | one new `app.use('/api/v1', require('./src/routes/v1/notifications'))` line beside the existing `v1/events` mount; the existing mount is unchanged |
+| `vendor/picpeak/backend/src/routes/v1/__tests__/notifications.inquiry.test.js` | new — fork-side Jest suite (9 tests) covering the route's request/response behaviour, run offline with no Docker |
+| `PAYLOAD_PICPEAK_API_CONTRACT.md` | new call-catalog row `3a`, immediately after row 3 |
+| `src/__tests__/us33-ac33.5.2.2.2-inquiry-notification-route.test.ts` | new — pins the route, the mount, and these records against the pinned fork source |
+
+None of the above is a file under `vendor/picpeak/backend/migrations/` —
+every change is additive (a new route file, a one-line mount, new tests, a
+new documentation row) — and `src/lib/picpeakMigrationManifest.ts`'s SHA-1
+integrity test stays green against this change.
+
+- **Recorded:** 2026-08-14
+- **Recorded by:** dev-team (US-33, AC-33.5.2.2.2)
+
+## 8. US-33 AC-33.6 — the inquiry-acknowledgement template and route, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-08-14` in `FORK_CHANGELOG.md` (US-33, AC-33.6: the optional branded
+acknowledgement to a form submitter, off by default and sent through the
+same single Backstage email queue as the AC-33.5 studio notification —
+migration `121` and a sibling route on the existing
+`vendor/picpeak/backend/src/routes/v1/notifications.js` router). See that
+changelog entry for the full description of what changed and why; this is
+the flat list of paths for cross-reference against `UPSTREAM_SYNC.md` §2
+during a future sync.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/migrations/core/121_add_inquiry_acknowledgement_email_template.js` | new — inserts the `inquiry_acknowledgement` `email_templates` row, guarded on `template_key` already existing |
+| `src/lib/picpeakMigrationManifest.ts` | migration `121` recorded as a second `origin: 'fork'` entry |
+| `vendor/picpeak/backend/src/routes/v1/notifications.js` | new `POST /notifications/inquiry-acknowledgement` handler added beside the existing inquiry-notification handler; no new router, no new `server.js` mount |
+| `vendor/picpeak/backend/src/routes/v1/__tests__/notifications.inquiryAcknowledgement.test.js` | new — fork-side Jest suite (7 tests) covering the route's request/response behaviour, run offline with no Docker |
+| `PAYLOAD_PICPEAK_API_CONTRACT.md` | new call-catalog row `3b`, immediately after row `3a` |
+| `src/__tests__/us33-ac33.6-inquiry-acknowledgement-route.test.ts` | new — pins the route and these records against the pinned fork source |
+
+None of the above adds a new `server.js` mount or a new migrations
+directory entry point — the migration is additive-only (a single guarded
+`INSERT`) and the route reuses the router `server.js` already mounts for
+AC-33.5.2.2.2 — and `src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity
+test stays green against this change.
+
+- **Recorded:** 2026-08-14
+- **Recorded by:** dev-team (US-33, AC-33.6)

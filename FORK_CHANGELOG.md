@@ -36,6 +36,234 @@ sync time for a permanent, project-specific deviation.
 
 ---
 
+## 2026-08-14 — `deviation`
+
+**Backstage gains a second inquiry-triggered email: the optional branded
+acknowledgement to the person who submitted a Frontstage form
+(`POST /api/v1/notifications/inquiry-acknowledgement`), off by default and
+sent through the same single email queue as the AC-33.5 studio
+notification — never a second sending system.** CLAUDE.md's email
+pragmatic-default note is explicit that exactly one system sends any given
+email type; this entry keeps that true by extending the existing
+`vendor/picpeak/backend/src/routes/v1/notifications.js` router (added by
+AC-33.5.2.2.2) with a sibling route rather than introducing a new sender.
+The route follows AC-33.5.2.2.2's shape exactly: same `apiTokenAuth` +
+`requireApiScope('write')` pair, `event_id: null` (an inquiry is not a
+gallery event), and delegates to the existing `queueEmail()`
+(`emailProcessor.js:959`) with a fixed `template_key:
+'inquiry_acknowledgement'` — the row
+`121_add_inquiry_acknowledgement_email_template.js` inserts, following
+migration `120`'s exact idempotent shape and the same F9-avoidance reason
+(`scrum-master/po-requests.md`). Whether the route is ever called for a
+given submission is decided entirely by the caller (Frontstage) before the
+request is made — "off by default" is enforced by a Frontstage-side toggle
+that defaults to unset, not by anything in this route, which queues
+unconditionally whenever called. US-33 AC-33.6.
+
+- **Type:** permanent deviation — a genuine, intentional fork addition
+  (Fork Discipline: extend via new code, never by rewriting shipped
+  upstream logic; a new migration for any fork-side schema/data change,
+  never an edit to a shipped one), not an upstream-bug workaround, so
+  `UPSTREAM_SYNC.md` §4 does not apply; it is carried forward on every
+  future merge per §1. Same additive shape as the two 2026-08-14 entries
+  below (AC-33.5.2.2.2's route, AC-33.5.2.1's migration) — precedented,
+  not a new argument to have.
+- **What changed:**
+  1. `vendor/picpeak/backend/migrations/core/121_add_inquiry_acknowledgement_email_template.js`
+     — new migration, inserts the `inquiry_acknowledgement`
+     `email_templates` row (English and German subject/body, `form_title`/
+     `submitted_at` variables), guarded on `template_key` already
+     existing. US-33 AC-33.6.
+  2. `src/lib/picpeakMigrationManifest.ts` — migration `121` recorded as a
+     second `origin: 'fork'` entry, alongside its blob SHA. US-33 AC-33.6.
+  3. `vendor/picpeak/backend/src/routes/v1/notifications.js` — new
+     `POST /notifications/inquiry-acknowledgement` handler added beside
+     the existing `POST /notifications/inquiry` handler in the same file
+     (no new router, no new `server.js` mount — the existing
+     AC-33.5.2.2.2 mount already carries this route); validates
+     `recipient_email`, `form_title` server-side (`express-validator`,
+     the same library the sibling route uses); calls
+     `queueEmail(null, recipient_email, 'inquiry_acknowledgement',
+     emailData)`. US-33 AC-33.6.
+  4. `vendor/picpeak/backend/src/routes/v1/__tests__/notifications.inquiryAcknowledgement.test.js`
+     — new fork-side Jest suite (7 tests), sibling of
+     `notifications.inquiry.test.js`, `queueEmail` and `db` mocked,
+     `requireApiScope` exercised for real. Run offline — no Docker, no
+     live HTTP call. US-33 AC-33.6.
+  5. `PAYLOAD_PICPEAK_API_CONTRACT.md` — new call-catalog row `3b`,
+     immediately after row `3a`, recording this boundary crossing. US-33
+     AC-33.6.
+- **Files touched:** see `PICPEAK_PORT_LEDGER.md` §8 for the flat list.
+- **Evidence:** `src/__tests__/us33-ac33.6-inquiry-acknowledgement-route.test.ts`
+  pins the route's auth pair, its `queueEmail` call shape, the fixed
+  `template_key`, and the changelog/ledger/contract records against the
+  pinned fork source directly. The fork-side suite named above proves the
+  route's actual request/response behaviour: a valid request queues
+  exactly once with `event_id === null` and the fixed `template_key`, an
+  invalid body 400s before `queueEmail` is reached, and a read-only-scoped
+  token 403s via the real `requireApiScope`. `src/__tests__/us33-ac33.6-inquiry-acknowledgement-client.test.ts`
+  proves the Frontstage-side toggle: disabled (unset) never issues a
+  request to this route at all — zero `fetch` calls — and enabled issues
+  exactly one. `scripts/ac33.6-inquiry-acknowledgement-proof.sh` extends
+  the AC-33.5.2.3 live-proof pattern (MailHog emptied and asserted `0`
+  before each run) into two live runs against the stack in Docker: enabled
+  → the acknowledgement is captured in MailHog exactly once; disabled →
+  MailHog stays at `0` for that recipient after the same submission.
+
+- **Recorded:** 2026-08-14
+- **Recorded by:** dev-team (US-33, AC-33.6)
+
+---
+
+## 2026-08-14 — `deviation`
+
+**Backstage gains an HTTP way for a service to queue an email:
+`POST /api/v1/notifications/inquiry`.** AC-33.5.2.1's go/no-go recorded
+that no existing route let Frontstage queue an email — `v1/events.js`'s
+own family creates/lists/reads gallery events, uploads photos, and mints
+share links, but calls no email path at all. This entry closes that gap
+with the minimum addition the go/no-go named: a second router mounted
+beside `v1/events.js` under `/api/v1`, behind the same `apiTokenAuth` +
+`requireApiScope('write')` pair row 3 of `PAYLOAD_PICPEAK_API_CONTRACT.md`'s
+call catalog already documents, delegating to the existing `queueEmail()`
+(`emailProcessor.js:959`) with a fixed `template_key: 'inquiry_received'`
+— the row `120_add_inquiry_notification_email_template.js` (AC-33.5.2.1)
+already inserts — and `event_id: null`, legal because `email_queue.event_id`
+is nullable (`db.js`) and the admin queue view `leftJoin`s `events`
+(`adminEmail.js`) so a null-`event_id` row still lists. The route accepts
+data fields only (`form_title`, `source_page`, `submitted_at`,
+`submission_summary` — the migration's own template variables) and renders
+no subject or body itself; queueing only inserts a `pending` row for the
+existing 60-second background processor to send. US-33 AC-33.5.2.2.2.
+
+- **Type:** permanent deviation — a genuine, intentional fork addition
+  (Fork Discipline: extend via new code, never by rewriting shipped
+  upstream logic), not an upstream-bug workaround, so `UPSTREAM_SYNC.md` §4
+  does not apply; it is carried forward on every future merge per §1. The
+  same kind of additive `server.js` change as the US-27 `publicSite`
+  deviation recorded above (2026-08-07) — precedented, not a new argument
+  to have.
+- **What changed:**
+  1. `vendor/picpeak/backend/src/routes/v1/notifications.js` — new file.
+     `POST /notifications/inquiry` behind `apiTokenAuth` +
+     `requireApiScope('write')`; validates `recipient_email`, `form_title`,
+     `source_page`, `submission_summary` server-side (`express-validator`,
+     the same library `events.js` uses); calls
+     `queueEmail(null, recipient_email, 'inquiry_received', emailData)`.
+     US-33 AC-33.5.2.2.2.
+  2. `vendor/picpeak/backend/server.js` — one new `app.use('/api/v1', ...)`
+     line, immediately beside the existing `v1/events` mount
+     (`server.js:531`); the existing mount is left byte-identical. US-33
+     AC-33.5.2.2.2.
+  3. `vendor/picpeak/backend/src/routes/v1/__tests__/notifications.inquiry.test.js`
+     — new fork-side Jest suite (9 tests), `queueEmail` and `db` mocked,
+     `requireApiScope` exercised for real. Run offline with the fork's own
+     local `node_modules` — no Docker, no live HTTP call. US-33
+     AC-33.5.2.2.2.
+  4. `PAYLOAD_PICPEAK_API_CONTRACT.md` — new call-catalog row `3a`,
+     immediately after row 3, recording this boundary crossing; existing
+     row numbers 4/5 are left unchanged since this document's own prose
+     cites them by number in several other sections. US-33 AC-33.5.2.2.2.
+- **Files touched:** see `PICPEAK_PORT_LEDGER.md` §7 for the flat list.
+- **Evidence:** `src/__tests__/us33-ac33.5.2.2.2-inquiry-notification-route.test.ts`
+  pins the route's auth pair, its `queueEmail` call shape, the fixed
+  `template_key`, the minimal additive `server.js` mount, and the
+  changelog/ledger/contract records against the pinned fork source
+  directly — never against this prose alone. The fork-side suite named
+  above proves the route's actual request/response behaviour: a valid
+  request queues exactly once with `event_id === null` and the fixed
+  `template_key`, an invalid body 400s before `queueEmail` is reached, and
+  a read-only-scoped token 403s via the real `requireApiScope`. Live
+  behaviour against a real minted `pp_live_` token, and the queued row read
+  back from Backstage's own Postgres, is deliberately out of scope here —
+  AC-33.5.2.2.3.
+
+- **Recorded:** 2026-08-14
+- **Recorded by:** dev-team (US-33, AC-33.5.2.2.2)
+
+---
+
+## 2026-08-14 — `deviation`
+
+**The fork's first extension migration lands: `120_add_inquiry_notification_email_template.js`
+inserts the `email_templates` row a Frontstage form submission's studio
+notification will render from, and the manifest that fingerprints every
+vendored migration file gains an explicit lane for fork-added migrations
+like it, distinct from the pinned-upstream fingerprint it already kept.**
+Before this entry, `PICPEAK_MIGRATION_MANIFEST` fingerprinted only what
+GitHub actually shipped at the pin — appending a fork migration's hash to
+that same undifferentiated list would have kept
+`us15-ac15.6-picpeak-vendored-fork.test.ts` green while making it false: a
+later edit to *our own* migration would read as upstream tampering, and the
+drift detector would carry our own addition forward as an approved upstream
+baseline on the next sync. `MigrationManifestEntry` now carries an optional
+`origin: 'fork'` field (omitted = upstream, the default, so none of the
+~130 pre-existing entries needed to change); a fork-origin entry's blob SHA
+is still enforced exactly like an upstream entry's, and it carries one
+further requirement upstream entries do not: it must be named in this file,
+checked by `verifyVendoredMigrations` reading `FORK_CHANGELOG.md` directly.
+US-33 AC-33.5.2.1.
+
+The migration itself is additive only — a single `INSERT`, guarded on
+`template_key` already existing (the same idempotency convention
+`059_add_admin_email_templates.js` uses) — populating the legacy
+`subject_en`/`body_html_en`/`body_text_en`/`_de` columns `processTemplate`
+falls back to when no `email_template_translations` row exists
+(`emailProcessor.js:503, 541-548`). Without this row, every
+`inquiry_received` row a later sub-AC queues would sit `pending` and retry
+to exhaustion exactly like the two templates finding F9 already named
+(`gallery_expired`, `archive_complete`) — `scrum-master/po-requests.md`.
+
+- **Type:** permanent deviation — the migration is a genuine, intentional
+  fork addition (Fork Discipline requires a *new* migration for any
+  fork-side schema/data change, never an edit to a shipped one), not an
+  upstream-bug workaround, so `UPSTREAM_SYNC.md` §4 does not apply; it is
+  carried forward on every future merge per §1.
+- **What changed:**
+  1. `vendor/picpeak/backend/migrations/core/120_add_inquiry_notification_email_template.js`
+     — new migration, inserts the `inquiry_received` `email_templates` row
+     (English and German subject/body, `form_title`/`source_page`/
+     `submitted_at`/`submission_summary` variables). US-33 AC-33.5.2.1.
+  2. `src/lib/picpeakMigrationManifest.ts` — `MigrationManifestEntry` gained
+     the optional `origin?: 'fork'` field; migration `120` is recorded as
+     the manifest's first `origin: 'fork'` entry, alongside its blob SHA.
+     US-33 AC-33.5.2.1.
+  3. `src/lib/picpeakMigrationIntegrity.ts` — `verifyMigrationsUnmodified`
+     gained the `isForkAdditionDocumented` check, consulted only for
+     `origin: 'fork'` entries whose blob SHA already matched; a fork
+     addition absent from `FORK_CHANGELOG.md` now fails with reason
+     `'undocumented'`. `verifyVendoredMigrations` wires this to a real read
+     of this file. US-33 AC-33.5.2.1.
+  4. `vendor/README.md` — new "The fork-addition lane" section documents
+     the `origin` field and the `FORK_CHANGELOG.md` requirement it enforces.
+     US-33 AC-33.5.2.1.
+  5. `UPSTREAM_SYNC.md` §3 — the claim that "this fork has not added a
+     single schema migration of its own" is now out of date; updated with
+     a dated note pointing at migration `120` and scoping the still-owed
+     AC-16.6 upgrade proof to a future *schema-altering* fork migration
+     (this one only inserts a row). US-33 AC-33.5.2.1.
+  6. `PICPEAK_PORT_LEDGER.md` — new §6 recording the file paths this entry
+     touched, per the same cross-reference convention §5 established for
+     US-27 AC-27.5. US-33 AC-33.5.2.1.
+- **Files touched:** see `PICPEAK_PORT_LEDGER.md` §6 for the flat list.
+- **Evidence:** `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts`
+  proves the lane both directions through `verifyMigrationsUnmodified`'s
+  injected `readFile`/`isForkAdditionDocumented` — a fork addition that is
+  blob-identical and documented passes, one that is undocumented fails with
+  reason `'undocumented'`, and an *upstream* entry with a tampered blob SHA
+  still fails with reason `'modified'` exactly as it did before this lane
+  existed. `us15-ac15.6-picpeak-vendored-fork.test.ts` stays green against
+  the real vendored tree with migration `120` present. Applied live against
+  the `backstage-db` Postgres service in Docker
+  (`docker compose --profile backstage up -d`): `SELECT * FROM email_templates
+  WHERE template_key = 'inquiry_received'` returns exactly one row, and
+  re-running the migration is a no-op (the `template_key` guard).
+
+- **Recorded:** 2026-08-14
+- **Recorded by:** dev-team (US-33, AC-33.5.2.1)
+
+---
+
 ## 2026-08-07 — `deviation`
 
 **Every duplicate Backstage publishing surface AC-18.5 identified is now held

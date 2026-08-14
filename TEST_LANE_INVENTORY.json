@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 173,
+  "totalSuites": 190,
   "counts": {
-    "live": 9,
-    "unit": 164
+    "live": 12,
+    "unit": 178
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -710,6 +710,66 @@
       "reason": "a describe block gated on dns.lookup('backstage-backend') resolving performs real fetch calls against process.env.BACKSTAGE_BACKEND_URL (default http://backstage-backend:3000) to log in, create/publish galleries, and verify auth against the live Backstage/PicPeak API"
     },
     {
+      "path": "src/__tests__/us30-ac30.1-test-lane-classification.test.ts",
+      "lane": "UNIT",
+      "reason": "reads TEST_LANE_INVENTORY.json and TEST_LANE_CLASSIFICATION.md and walks src/__tests__ on disk to compare against the manifest, no network/db"
+    },
+    {
+      "path": "src/__tests__/us30-ac30.2-unit-lane-parallelism.test.ts",
+      "lane": "UNIT",
+      "reason": "reads jest.config.ts, TEST_LANE_INVENTORY.json and package.json as text/JSON and asserts on their contents, no network/db"
+    },
+    {
+      "path": "src/__tests__/us30-ac30.3-live-lane-serial.test.ts",
+      "lane": "UNIT",
+      "reason": "reads TEST_LANE_INVENTORY.json, package.json and src/test-support/liveApiAuth.ts as text/JSON and asserts on their contents, no network/db"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.1-pages-field-set.test.ts",
+      "lane": "UNIT",
+      "reason": "reads src/collections/Pages.ts and src/payload.config.ts as text and asserts on the in-memory collection definition, no network/db"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.2-pages-no-layout-builder-lock-in.test.ts",
+      "lane": "UNIT",
+      "reason": "reads src/collections/Pages.ts and CLAUDE.md as text and walks the in-memory Pages field tree, no network/db"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.3-standard-page-template.test.tsx",
+      "lane": "UNIT",
+      "reason": "renders StandardPageTemplate/PublicShell with react-testing-library/renderToStaticMarkup and compiles a local Tailwind/postcss CSS string in-process, no network/db"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.4-public-page-route.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process and fetches http://localhost:4282/api/pages and the rendered [slug] route, exercising Payload's live schema/connection against the real Postgres `db` container"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.5-gallery-placement-resolution.test.tsx",
+      "lane": "UNIT",
+      "reason": "jest.mock('@/lib/backstageClient') mocks the only network call resolvePageGalleryPlacements makes; jsdom rendering and Payload collection field-definition assertions on in-memory objects otherwise, no real I/O"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.5-public-page-gallery-placement.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') and dns.lookup('backstage-backend') resolving, then self-seeds a real published gallery via live Backstage admin API fetch() calls, spawns a real next dev child process, and fetches the rendered [slug] route against the real Postgres db container and the real Backstage stack"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.6-generate-metadata.test.ts",
+      "lane": "UNIT",
+      "reason": "jest.mock('@/lib/getPageBySlug')/jest.mock('@/lib/getStudioProfile') mock the only I/O generateMetadata performs; calls the route's generateMetadata function directly against in-memory fixtures, no network/db"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.6-live-seo-metadata.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, calls getLiveApiAuthToken to create two real Pages documents over http://localhost:4284/api/pages, and fetches each one's rendered [slug] route to assert on the real response HTML, exercising Payload's live schema/connection and the live Next.js route against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us31-ac31.7-page-structural-shell-snapshot.test.tsx",
+      "lane": "UNIT",
+      "reason": "renders PublicShell/StandardPageTemplate with @testing-library/react (jsdom) against two in-memory fixtures and compares normalized DOM structure, no network/db"
+    },
+    {
       "path": "src/__tests__/us32-ac32.1-data-driven-navigation.test.tsx",
       "lane": "UNIT",
       "reason": "jsdom component rendering of VerticalMenu via @testing-library/react plus source/schema assertions on Navigation global, getNavItems.ts, and NAVIGATION_ADR.md, no network/db"
@@ -733,6 +793,86 @@
       "path": "src/__tests__/us32-ac32.5-mobile-menu-accessibility-survives.test.tsx",
       "lane": "UNIT",
       "reason": "jsdom component rendering plus keyboard simulation via @testing-library/user-event, git show for structural diffs, and an in-process Tailwind/postcss compile of globals.css \u2014 no network/db"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.1-forms-field-set.test.ts",
+      "lane": "UNIT",
+      "reason": "reads src/collections/Forms.ts and src/payload.config.ts via fs and asserts on the imported CollectionConfig object shape and the source text, no network/db"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.2-inquiries-collection-fields.test.ts",
+      "lane": "UNIT",
+      "reason": "imports the Inquiries collection object and asserts on its field config in-memory, no I/O at all"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.2-inquiry-durable-persist-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, creates a real Forms document and POSTs a real submission to /api/inquiries, exercising Payload's live schema/connection against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.2-submit-inquiry-ordering.test.ts",
+      "lane": "UNIT",
+      "reason": "calls submitInquiry() with jest.fn() mocked createInquiry/notify dependencies, no payload import, no I/O"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.3-server-validation-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, creates a real Forms document, sends three direct POSTs crafted to bypass browser validation (missing required field, malformed email, over-long field) to /api/inquiries and asserts each is rejected with 400, then queries /api/inquiries?where[form][equals] over the live Payload REST API to prove zero Inquiry documents were written"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.3-validate-inquiry-submission.test.ts",
+      "lane": "UNIT",
+      "reason": "calls validateInquirySubmission() with in-memory field definitions and submitted values, no payload import, no I/O"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.4-spam-protection-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process (three times, one per port/scenario), creates a real Forms document, and POSTs real submissions to /api/inquiries \u2014 a honeypot-filled one, a too-fast one, and a rapid-fire run past the rate limit \u2014 then queries /api/inquiries/count over the live Payload REST API to prove the blocked ones wrote no Inquiry, exercising Payload's live schema/connection against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.4-spam-protection.test.ts",
+      "lane": "UNIT",
+      "reason": "calls isHoneypotFilled/isSubmissionTooFast/createSourceRateLimiter with in-memory values and injected timestamps, no payload import, no I/O"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts",
+      "lane": "UNIT",
+      "reason": "fixture-level verifyMigrationsUnmodified checks with injected readFile/isForkAdditionDocumented, plus fs reads of the local vendor/picpeak tree and repo docs \u2014 no network or live service dependency"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.5.2.2.2-inquiry-notification-route.test.ts",
+      "lane": "UNIT",
+      "reason": "fs reads of the local vendor/picpeak route/server files, repo docs, and verifyVendoredMigrations against the local tree \u2014 no network or live service dependency"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.5.2.3-build-inquiry-submission-summary.test.ts",
+      "lane": "UNIT",
+      "reason": "calls buildInquirySubmissionSummary() with in-memory field definitions and values, no payload import, no I/O"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.5.2.3-end-to-end-proof-script.test.ts",
+      "lane": "UNIT",
+      "reason": "fs read of the committed proof script in the local tree \u2014 asserts the script's contract, never runs Docker, psql, or the network"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.5.2.3-inquiry-notification-client.test.ts",
+      "lane": "UNIT",
+      "reason": "mocked-fetch unit tests (jest.spyOn(global, 'fetch')) pinning request shape and failure modes, no real network call, no I/O"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.5.3-no-secret-in-browser-static.test.ts",
+      "lane": "UNIT",
+      "reason": "pure fs reads of src/ source files and package.json/.env.example, no network or DB I/O"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.6-inquiry-acknowledgement-client.test.ts",
+      "lane": "UNIT",
+      "reason": "mocked-fetch unit tests (jest.spyOn(global, 'fetch')) pinning request shape, off-by-default gating, and failure modes, no real network call, no I/O"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.6-inquiry-acknowledgement-route.test.ts",
+      "lane": "UNIT",
+      "reason": "fs reads of the local vendor/picpeak route/server/migration files, repo docs, and verifyVendoredMigrations against the local tree — no network or live service dependency"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",
@@ -830,64 +970,9 @@
       "reason": "reads source files and does a byte-for-byte favicon file comparison on disk"
     },
     {
-      "path": "src/__tests__/us30-ac30.1-test-lane-classification.test.ts",
+      "path": "src/__tests__/us33-ac33.7-inquiry-form-rendered.test.tsx",
       "lane": "UNIT",
-      "reason": "reads TEST_LANE_INVENTORY.json and TEST_LANE_CLASSIFICATION.md and walks src/__tests__ on disk to compare against the manifest, no network/db"
-    },
-    {
-      "path": "src/__tests__/us30-ac30.2-unit-lane-parallelism.test.ts",
-      "lane": "UNIT",
-      "reason": "reads jest.config.ts, TEST_LANE_INVENTORY.json and package.json as text/JSON and asserts on their contents, no network/db"
-    },
-    {
-      "path": "src/__tests__/us30-ac30.3-live-lane-serial.test.ts",
-      "lane": "UNIT",
-      "reason": "reads TEST_LANE_INVENTORY.json, package.json and src/test-support/liveApiAuth.ts as text/JSON and asserts on their contents, no network/db"
-    },
-    {
-      "path": "src/__tests__/us31-ac31.1-pages-field-set.test.ts",
-      "lane": "UNIT",
-      "reason": "reads src/collections/Pages.ts and src/payload.config.ts as text and asserts on the in-memory collection definition, no network/db"
-    },
-    {
-      "path": "src/__tests__/us31-ac31.2-pages-no-layout-builder-lock-in.test.ts",
-      "lane": "UNIT",
-      "reason": "reads src/collections/Pages.ts and CLAUDE.md as text and walks the in-memory Pages field tree, no network/db"
-    },
-    {
-      "path": "src/__tests__/us31-ac31.3-standard-page-template.test.tsx",
-      "lane": "UNIT",
-      "reason": "renders StandardPageTemplate/PublicShell with react-testing-library/renderToStaticMarkup and compiles a local Tailwind/postcss CSS string in-process, no network/db"
-    },
-    {
-      "path": "src/__tests__/us31-ac31.4-public-page-route.test.ts",
-      "lane": "LIVE",
-      "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process and fetches http://localhost:4282/api/pages and the rendered [slug] route, exercising Payload's live schema/connection against the real Postgres `db` container"
-    },
-    {
-      "path": "src/__tests__/us31-ac31.5-gallery-placement-resolution.test.tsx",
-      "lane": "UNIT",
-      "reason": "jest.mock('@/lib/backstageClient') mocks the only network call resolvePageGalleryPlacements makes; jsdom rendering and Payload collection field-definition assertions on in-memory objects otherwise, no real I/O"
-    },
-    {
-      "path": "src/__tests__/us31-ac31.5-public-page-gallery-placement.test.ts",
-      "lane": "LIVE",
-      "reason": "gated on dns.lookup('db') and dns.lookup('backstage-backend') resolving, then self-seeds a real published gallery via live Backstage admin API fetch() calls, spawns a real next dev child process, and fetches the rendered [slug] route against the real Postgres db container and the real Backstage stack"
-    },
-    {
-      "path": "src/__tests__/us31-ac31.6-generate-metadata.test.ts",
-      "lane": "UNIT",
-      "reason": "jest.mock('@/lib/getPageBySlug')/jest.mock('@/lib/getStudioProfile') mock the only I/O generateMetadata performs; calls the route's generateMetadata function directly against in-memory fixtures, no network/db"
-    },
-    {
-      "path": "src/__tests__/us31-ac31.6-live-seo-metadata.test.ts",
-      "lane": "LIVE",
-      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, calls getLiveApiAuthToken to create two real Pages documents over http://localhost:4284/api/pages, and fetches each one's rendered [slug] route to assert on the real response HTML, exercising Payload's live schema/connection and the live Next.js route against the real Postgres db container"
-    },
-    {
-      "path": "src/__tests__/us31-ac31.7-page-structural-shell-snapshot.test.tsx",
-      "lane": "UNIT",
-      "reason": "renders PublicShell/StandardPageTemplate with @testing-library/react (jsdom) against two in-memory fixtures and compares normalized DOM structure, no network/db"
+      "reason": "renders InquiryForm with @testing-library/react and user-event, and compiles a local Tailwind/postcss CSS string in-process, no network/db"
     }
   ]
 }

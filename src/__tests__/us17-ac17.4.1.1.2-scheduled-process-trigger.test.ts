@@ -207,22 +207,22 @@ describe('AC-17.4.1.1.2: the scheduled process, and how it is triggered', () => 
   describe('the trigger registration/start site: server.js is the live path', () => {
     it('server.js requires and calls startExpirationChecker at the cited lines', () => {
       expect(section).toContain('`vendor/picpeak/backend/server.js:22`')
-      expect(section).toContain('`vendor/picpeak/backend/server.js:631`')
+      expect(section).toContain('`vendor/picpeak/backend/server.js:635`')
       expect(lineAt(SERVER, 22)).toMatch(
         /const \{ startExpirationChecker \} = require\('\.\/src\/services\/expirationChecker'\)/
       )
-      expect(lineAt(SERVER, 631)).toMatch(/startExpirationChecker\(\)/)
+      expect(lineAt(SERVER, 635)).toMatch(/startExpirationChecker\(\)/)
     })
 
-    it('the call at server.js:631 sits inside startServer(), ahead of app.listen', () => {
-      expect(lineAt(SERVER, 602)).toMatch(/async function startServer\(\)/)
+    it('the call at server.js:635 sits inside startServer(), ahead of app.listen', () => {
+      expect(lineAt(SERVER, 606)).toMatch(/async function startServer\(\)/)
       const listenLine = lines(SERVER).findIndex((l) => l.includes('app.listen(PORT'))
-      expect(listenLine).toBeGreaterThan(630) // 0-indexed > (631-1)
+      expect(listenLine).toBeGreaterThan(634) // 0-indexed > (635-1)
     })
 
     it('startServer() is invoked at module scope, at the cited line', () => {
-      expect(section).toContain('`server.js:725`')
-      expect(lineAt(SERVER, 725)).toMatch(/^startServer\(\);$/)
+      expect(section).toContain('`server.js:729`')
+      expect(lineAt(SERVER, 729)).toMatch(/^startServer\(\);$/)
     })
 
     it('package.json start script runs server.js', () => {
@@ -332,7 +332,7 @@ describe('AC-17.4.1.1.2: the scheduled process, and how it is triggered', () => 
       expect(verdict).toMatch(/AC-17\.4\.1\.1\.2 is satisfied/)
       expect(verdict).toMatch(/cron\.schedule\('0 \* \* \* \*', \.\.\.\)/)
       expect(verdict).toMatch(/once per hour/)
-      expect(verdict).toMatch(/server\.js:631/)
+      expect(verdict).toMatch(/server\.js:635/)
       expect(verdict).toMatch(/workerManager\.js:18/)
       expect(verdict).toMatch(/dead code/i)
     })

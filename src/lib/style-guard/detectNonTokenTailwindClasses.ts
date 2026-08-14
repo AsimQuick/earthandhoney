@@ -22,6 +22,17 @@
  * related-story: US-31
  * related-ac: 31.3
  * ---
+ * updated-by: dev-team (AC-33.7)
+ * update-note: added 'border' (bare, no suffix) to STRUCTURAL_CLASSNAMES.
+ *              tokens.css defines no border-width scale at all — only a
+ *              colour token for the divider/border colour itself
+ *              (--color-border, already reachable via `border-border` per
+ *              matchesColorScale) — so Tailwind's bare `border` utility
+ *              (1px width, no colour) carries no value any token category
+ *              in this project could ever constrain, exactly like `flex`/
+ *              `block` above. src/components/forms/InquiryForm.tsx is the
+ *              first component to combine `border` with `border-border`.
+ * ---
  */
 
 // Named scale steps read directly from src/styles/tokens.css.
@@ -64,6 +75,7 @@ const STRUCTURAL_CLASSNAMES = new Set([
   'text-left',
   'text-right',
   'sr-only',
+  'border',
 ])
 
 const SPACING_PREFIXES = [
