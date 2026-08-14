@@ -1,8 +1,8 @@
 # Sprint 5
 
 **Phase:** planning
-**Progress:** 6/8 stories | 40/52 ACs
-**Last Updated:** 2026-08-14T14:14:47+00:00
+**Progress:** 7/8 stories | 45/52 ACs
+**Last Updated:** 2026-08-14T14:30:08+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -457,19 +457,19 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 ---
 
 ### US-36: Story template: repeating section heading, short text and gallery placement - a visual editorial record, not a blog
-**Status:** in-progress | **Priority:** medium
+**Status:** done | **Priority:** medium
 
 #### Acceptance Criteria
-- [ ] **AC-36.1:** Stories are modelled per PRD 13.5: title, subtitle/introduction, then a repeating group of (section heading + short text + gallery placement), then the inquiry form. Decide whether this is a separate `Stories` collection or a `Pages` template variant, and record the option chosen, the option rejected and the reason (DoD item 6). Evidence: the field definitions and one real story rendered.
-  - Dev: implemented
-- [ ] **AC-36.2:** Repeating sections preserve the author's order, and each section's gallery placement resolves over the Flow A boundary by external identifier only - the same no-cross-database-relation rule as AC-31.5. Evidence: the gallery-placement field definition showing an external identifier only with no relation/join field into the Backstage database, a three-section story rendered in order, plus a reorder changing the output with no code change.
-  - Dev: implemented
-- [ ] **AC-36.3:** Heading hierarchy is generated correctly and automatically: exactly one H1 (the story title), section headings at H2, no skipped levels, regardless of how many sections exist. Evidence: asserted against the rendered HTML of a one-section and a five-section story.
-  - Dev: implemented
-- [ ] **AC-36.4:** A story index route lists published stories and excludes drafts. Evidence: both states verified live against a running stack.
-  - Dev: implemented
-- [ ] **AC-36.5:** No generic blog chrome is built - no categories, no archives, no comment system, no author bios, no tag clouds. The controlled vocabulary term is Story, and the retired blog requirements do not return: the blog sample-content requirement and the no-em-tag content rule are listed under CLAUDE.md's 'Retired From the Old Direction (do not build)'. Evidence: the rendered story page and index shown to contain none of the above, plus the story record naming the retired items it deliberately does not implement.
-  - Dev: implemented
+- [x] **AC-36.1:** Stories are modelled per PRD 13.5: title, subtitle/introduction, then a repeating group of (section heading + short text + gallery placement), then the inquiry form. Decide whether this is a separate `Stories` collection or a `Pages` template variant, and record the option chosen, the option rejected and the reason (DoD item 6). Evidence: the field definitions and one real story rendered.
+  - Dev: done
+- [x] **AC-36.2:** Repeating sections preserve the author's order, and each section's gallery placement resolves over the Flow A boundary by external identifier only - the same no-cross-database-relation rule as AC-31.5. Evidence: the gallery-placement field definition showing an external identifier only with no relation/join field into the Backstage database, a three-section story rendered in order, plus a reorder changing the output with no code change.
+  - Dev: done
+- [x] **AC-36.3:** Heading hierarchy is generated correctly and automatically: exactly one H1 (the story title), section headings at H2, no skipped levels, regardless of how many sections exist. Evidence: asserted against the rendered HTML of a one-section and a five-section story.
+  - Dev: done
+- [x] **AC-36.4:** A story index route lists published stories and excludes drafts. Evidence: both states verified live against a running stack.
+  - Dev: done
+- [x] **AC-36.5:** No generic blog chrome is built - no categories, no archives, no comment system, no author bios, no tag clouds. The controlled vocabulary term is Story, and the retired blog requirements do not return: the blog sample-content requirement and the no-em-tag content rule are listed under CLAUDE.md's 'Retired From the Old Direction (do not build)'. Evidence: the rendered story page and index shown to contain none of the above, plus the story record naming the retired items it deliberately does not implement.
+  - Dev: done
 
 **Dependencies:** US-31, US-33
 
