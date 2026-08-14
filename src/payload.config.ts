@@ -30,6 +30,9 @@
  * updated-by: dev-team
  * related-story: US-31
  * related-ac: 31.1
+ * updated-by: dev-team
+ * related-story: US-32
+ * related-ac: 32.1
  * ---
  */
 import { postgresAdapter } from '@payloadcms/db-postgres'
@@ -42,6 +45,7 @@ import { GalleryPlacements } from './collections/GalleryPlacements'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Users } from './collections/Users'
+import { Navigation } from './globals/Navigation'
 import { StudioProfile } from './globals/StudioProfile'
 
 const filename = fileURLToPath(import.meta.url)
@@ -55,7 +59,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, GalleryPlacements, Pages],
-  globals: [StudioProfile],
+  globals: [StudioProfile, Navigation],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

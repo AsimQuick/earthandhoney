@@ -153,7 +153,9 @@ describe('US-23 AC-23.4: rendered structure is unchanged (class-list token subst
     // composition this test cares about — PublicShell still wraps
     // {children} — is asserted from source instead.
     const src = read('src/app/(frontend)/layout.tsx')
-    expect(src).toMatch(/<PublicShell\s+businessName=\{studioProfile\.businessName\}>\{children\}<\/PublicShell>/)
+    expect(src).toMatch(
+      /<PublicShell\s+businessName=\{studioProfile\.businessName\}[^>]*>\s*\{children\}\s*<\/PublicShell>/,
+    )
   })
 
   it('VerticalMenu structure is identical whether the drawer is open or closed — only the class list differs', () => {

@@ -104,6 +104,6 @@ describe('US-24 AC-24.1: StudioProfile global carries exactly the central studio
   it('is registered as a global on the Payload config', () => {
     const configSource = fs.readFileSync(path.join(process.cwd(), 'src/payload.config.ts'), 'utf8')
     expect(configSource).toMatch(/import\s*\{\s*StudioProfile\s*\}\s*from\s*['"]\.\/globals\/StudioProfile['"]/)
-    expect(configSource).toMatch(/globals:\s*\[\s*StudioProfile\s*\]/)
+    expect(configSource).toMatch(/globals:\s*\[[^\]]*StudioProfile[^\]]*\]/)
   })
 })

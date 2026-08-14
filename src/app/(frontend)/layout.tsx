@@ -27,6 +27,12 @@
  * updated-by: dev-team
  * related-story: US-31
  * related-ac: 31.6
+ * updated-by: dev-team
+ * related-story: US-32
+ * related-ac: 32.1
+ * updated-by: dev-team
+ * related-story: US-32
+ * related-ac: 32.4
  * ---
  */
 import type { Metadata } from "next";
@@ -34,6 +40,7 @@ import { Rubik } from "next/font/google";
 import { preload } from "react-dom";
 import "./globals.css";
 import { PublicShell } from "@/components/layout/PublicShell";
+import { getNavItems } from "@/lib/getNavItems";
 import { getStudioProfile } from "@/lib/getStudioProfile";
 import { buildStudioStructuredData } from "@/lib/studioStructuredData";
 
@@ -99,6 +106,9 @@ export default async function RootLayout({
 }>) {
   preloadPrimaryFontWeights();
   const studioProfile = await getStudioProfile();
+  // The primary nav (Payload `Navigation` global, AC-32.1) — data-driven,
+  // never a hard-coded route list in the shell/menu components.
+  const navItems = await getNavItems();
   // The JSON-LD LocalBusiness/ProfessionalService block (AC-24.5) is built
   // from the same StudioProfile fields as the <head> above. It renders as a
   // plain <script> in the document body — structured data does not need to
@@ -114,7 +124,13 @@ export default async function RootLayout({
           data-testid="studio-structured-data"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
-        <PublicShell businessName={studioProfile.businessName}>{children}</PublicShell>
+        <PublicShell
+          businessName={studioProfile.businessName}
+          navItems={navItems}
+          socialProfiles={studioProfile.socialProfiles}
+        >
+          {children}
+        </PublicShell>
       </body>
     </html>
   );

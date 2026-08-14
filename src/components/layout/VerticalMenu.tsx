@@ -2,20 +2,22 @@
  * ---
  * file: src/components/layout/VerticalMenu.tsx
  * project: earthandhoney
- * purpose: The photobuddy left vertical menu chrome — logo, primary nav
- *          (Home/About/Galleries/Blog/Contact), social icons, and copyright
- *          — shared across every page in the (frontend) route group. Markup
- *          and class names mirror public/photobuddy/index.html's
- *          `.photobuddy_fl_vertical_menu` block (nav labels kept lowercase
- *          to match the template's own markup; its CSS applies the visible
- *          uppercase transform). Below the `lg` breakpoint it is an
- *          off-canvas drawer toggled by MobileMenuTrigger via
- *          MobileMenuContext; at `lg` and above it is always visible,
- *          matching the template's fixed left sidebar. The drawer's
- *          open/close transition timing (AC-23.4) is set by the
+ * purpose: The photobuddy left vertical menu chrome — logo, primary nav,
+ *          social icons, and copyright — shared across every page in the
+ *          (frontend) route group. Markup and class names mirror
+ *          public/photobuddy/index.html's `.photobuddy_fl_vertical_menu`
+ *          block (nav labels kept lowercase to match the template's own
+ *          markup; its CSS applies the visible uppercase transform). Below
+ *          the `lg` breakpoint it is an off-canvas drawer toggled by
+ *          MobileMenuTrigger via MobileMenuContext; at `lg` and above it is
+ *          always visible, matching the template's fixed left sidebar. The
+ *          drawer's open/close transition timing (AC-23.4) is set by the
  *          .photobuddy_fl_vertical_menu rule in globals.css, which reads
  *          the animation-timing tokens from src/styles/tokens.css, rather
- *          than Tailwind's built-in transition-duration/easing scale.
+ *          than Tailwind's built-in transition-duration/easing scale. The
+ *          primary nav carries no route list of its own (AC-32.1) — it
+ *          renders whichever `navItems` its caller passes down, sourced
+ *          from src/lib/getNavItems.ts.
  * created-by: dev-team
  * related-story: US-8
  * related-ac: 8.1
@@ -28,12 +30,20 @@
  * updated-by: dev-team
  * related-story: US-24
  * related-ac: 24.4
+ * updated-by: dev-team
+ * related-story: US-32
+ * related-ac: 32.1
+ * updated-by: dev-team
+ * related-story: US-32
+ * related-ac: 32.4
  * ---
  */
 'use client'
 
 import Image from 'next/image'
 import Link from 'next/link'
+
+import type { StudioSocialProfile } from '@/lib/getStudioProfile'
 
 import { useMobileMenu } from './MobileMenuContext'
 
@@ -42,27 +52,47 @@ import { useMobileMenu } from './MobileMenuContext'
 // name is a StudioProfile detail (AC-24.4), never hard-coded here.
 const FALLBACK_BUSINESS_NAME = 'the studio'
 
-interface VerticalMenuProps {
-  businessName?: string
+// The primary nav's content: no route list lives in this component (AC-32.1)
+// — it renders whatever src/lib/getNavItems.ts resolves from the Payload
+// `Navigation` global, threaded down via PublicShell.
+export interface NavItem {
+  href: string
+  label: string
 }
 
-const NAV_LINKS = [
-  { href: '/', label: 'home' },
-  { href: '/about', label: 'about' },
-  { href: '/galleries', label: 'galleries' },
-  { href: '/blog', label: 'blog' },
-  { href: '/contact', label: 'contact' },
-]
+interface VerticalMenuProps {
+  businessName?: string
+  navItems?: NavItem[]
+  socialProfiles?: StudioSocialProfile[]
+}
 
-const SOCIAL_LINKS = [
-  { href: '#', name: 'Facebook', icon: 'xcon-facebook' },
-  { href: '#', name: 'Twitter', icon: 'xcon-twitter' },
-  { href: '#', name: 'Instagram', icon: 'xcon-instagram' },
-  { href: '#', name: 'Pinterest', icon: 'xcon-pinterest' },
-  { href: '#', name: 'Google+', icon: 'xcon-gplus' },
-]
+// Icon font class + accessible label for each StudioProfile.socialProfiles
+// platform value (src/globals/StudioProfile.ts SOCIAL_PROFILE_PLATFORMS).
+// 'tiktok' and any unrecognised platform fall back to a generic glyph — the
+// photobuddy fontello icon font (public/photobuddy/css/fontello.css) ships
+// no dedicated TikTok mark.
+const SOCIAL_PLATFORM_META: Record<string, { icon: string; label: string }> = {
+  instagram: { icon: 'xcon-instagram', label: 'Instagram' },
+  facebook: { icon: 'xcon-facebook', label: 'Facebook' },
+  pinterest: { icon: 'xcon-pinterest', label: 'Pinterest' },
+  tiktok: { icon: 'xcon-globe', label: 'TikTok' },
+  youtube: { icon: 'xcon-youtube', label: 'YouTube' },
+}
 
-export function VerticalMenu({ businessName = FALLBACK_BUSINESS_NAME }: Readonly<VerticalMenuProps>) {
+function socialIconClass(platform: string): string {
+  return SOCIAL_PLATFORM_META[platform]?.icon ?? 'xcon-globe'
+}
+
+function socialLabel(platform: string): string {
+  if (SOCIAL_PLATFORM_META[platform]) return SOCIAL_PLATFORM_META[platform].label
+  return platform.charAt(0).toUpperCase() + platform.slice(1)
+}
+
+export function VerticalMenu({
+  businessName = FALLBACK_BUSINESS_NAME,
+  navItems = [],
+  socialProfiles = [],
+}: Readonly<VerticalMenuProps>) {
   const { isOpen } = useMobileMenu()
 
   return (
@@ -92,7 +122,7 @@ export function VerticalMenu({ businessName = FALLBACK_BUSINESS_NAME }: Readonly
           data-testid="primary-nav"
         >
           <ul>
-            {NAV_LINKS.map((link) => (
+            {navItems.map((link) => (
               <li key={link.href}>
                 <Link href={link.href}>
                   <span className="line">{link.label}</span>
@@ -108,17 +138,19 @@ export function VerticalMenu({ businessName = FALLBACK_BUSINESS_NAME }: Readonly
             Designed by <span className="autor">{businessName}</span>
           </span>
         </div>
-        <div className="photobuddy_fl_social_icons" data-testid="social-icons">
-          <ul>
-            {SOCIAL_LINKS.map((social) => (
-              <li key={social.icon}>
-                <a href={social.href} aria-label={social.name}>
-                  <i className={social.icon} aria-hidden="true" />
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {socialProfiles.length > 0 && (
+          <div className="photobuddy_fl_social_icons" data-testid="social-icons">
+            <ul>
+              {socialProfiles.map((social) => (
+                <li key={`${social.platform}-${social.url}`}>
+                  <a href={social.url} aria-label={socialLabel(social.platform)}>
+                    <i className={socialIconClass(social.platform)} aria-hidden="true" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   )

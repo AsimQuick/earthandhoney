@@ -108,7 +108,7 @@ describe('US-24 AC-24.4: no studio detail remains hard-coded in the repository',
     })
 
     it('passes the fetched business name down into the shell instead of leaving it hard-coded there', () => {
-      expect(src).toMatch(/<PublicShell\s+businessName=\{studioProfile\.businessName\}>/)
+      expect(src).toMatch(/<PublicShell\s+businessName=\{studioProfile\.businessName\}[^>]*>/)
     })
   })
 
@@ -132,7 +132,7 @@ describe('US-24 AC-24.4: no studio detail remains hard-coded in the repository',
     it('PublicShell forwards businessName through to VerticalMenu rather than hard-coding it', () => {
       const src = read(PUBLIC_SHELL_PATH)
       expect(src).toMatch(/businessName/)
-      expect(src).toMatch(/<VerticalMenu\s+businessName=\{businessName\}\s*\/>/)
+      expect(src).toMatch(/<VerticalMenu\s+businessName=\{businessName\}[^>]*\/>/)
     })
 
     it('SiteFooter carries no studio-detail literal of its own', () => {

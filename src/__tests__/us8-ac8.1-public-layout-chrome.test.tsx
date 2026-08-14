@@ -35,19 +35,20 @@ describe('AC-8.1: VerticalMenu renders the photobuddy left-menu chrome', () => {
     expect(logo.closest('a')).toHaveAttribute('href', '/')
   })
 
-  it('renders the primary nav with exactly the five template links, in order', () => {
-    render(<VerticalMenu />)
+  it('renders the primary nav from the navItems prop, in the order given (AC-32.1: no hard-coded route list)', () => {
+    render(
+      <VerticalMenu
+        navItems={[
+          { href: '/weddings', label: 'weddings' },
+          { href: '/engagements', label: 'engagements' },
+        ]}
+      />,
+    )
 
     const nav = screen.getByTestId('primary-nav')
     const links = within(nav).getAllByRole('link')
-    expect(links.map((l) => l.textContent)).toEqual(['home', 'about', 'galleries', 'blog', 'contact'])
-    expect(links.map((l) => l.getAttribute('href'))).toEqual([
-      '/',
-      '/about',
-      '/galleries',
-      '/blog',
-      '/contact',
-    ])
+    expect(links.map((l) => l.textContent)).toEqual(['weddings', 'engagements'])
+    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/weddings', '/engagements'])
   })
 
   it('exposes the nav under an accessible "Primary" name', () => {
@@ -56,11 +57,29 @@ describe('AC-8.1: VerticalMenu renders the photobuddy left-menu chrome', () => {
     expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
   })
 
-  it('renders 5 social icon links', () => {
-    render(<VerticalMenu />)
+  it('renders social icon links from the socialProfiles prop (AC-32.4: no hard-coded placeholder list)', () => {
+    render(
+      <VerticalMenu
+        socialProfiles={[
+          { platform: 'instagram', url: 'https://instagram.com/earthandhoney' },
+          { platform: 'facebook', url: 'https://facebook.com/earthandhoney' },
+        ]}
+      />,
+    )
 
     const social = within(screen.getByTestId('social-icons'))
-    expect(social.getAllByRole('link')).toHaveLength(5)
+    const links = social.getAllByRole('link')
+    expect(links).toHaveLength(2)
+    expect(links.map((l) => l.getAttribute('href'))).toEqual([
+      'https://instagram.com/earthandhoney',
+      'https://facebook.com/earthandhoney',
+    ])
+  })
+
+  it('renders no social block when no social profiles are configured', () => {
+    render(<VerticalMenu />)
+
+    expect(screen.queryByTestId('social-icons')).not.toBeInTheDocument()
   })
 
   it('renders a copyright notice with the current year', () => {
@@ -116,7 +135,9 @@ describe("AC-8.1: the (frontend) layout's shell composes the vertical menu, page
     const src = read(LAYOUT_PATH)
 
     expect(src).toMatch(/from ["']@\/components\/layout\/PublicShell["']/)
-    expect(src).toMatch(/<PublicShell\s+businessName=\{studioProfile\.businessName\}>\{children\}<\/PublicShell>/)
+    expect(src).toMatch(
+      /<PublicShell\s+businessName=\{studioProfile\.businessName\}[^>]*>\s*\{children\}\s*<\/PublicShell>/,
+    )
   })
 
   it('PublicShell composes the VerticalMenu and SiteFooter chrome components', () => {
@@ -124,7 +145,7 @@ describe("AC-8.1: the (frontend) layout's shell composes the vertical menu, page
 
     expect(src).toMatch(/from ['"]\.\/VerticalMenu['"]/)
     expect(src).toMatch(/from ['"]\.\/SiteFooter['"]/)
-    expect(src).toMatch(/<VerticalMenu\s+businessName=\{businessName\}\s*\/>/)
+    expect(src).toMatch(/<VerticalMenu\s+businessName=\{businessName\}[^>]*\/>/)
     expect(src).toMatch(/<SiteFooter\s*\/>/)
   })
 })
