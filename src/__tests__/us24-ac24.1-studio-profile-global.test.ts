@@ -38,7 +38,7 @@ describe('US-24 AC-24.1: StudioProfile global carries exactly the central studio
     expect('slug' in StudioProfile).toBe(true)
   })
 
-  it('exposes exactly the twelve PRD §21.1 studio fields, plus the AC-24.2 branding group and the AC-34.3 hero gallery slug', () => {
+  it('exposes exactly the twelve PRD §21.1 studio fields, plus the AC-24.2 branding group, the AC-34.3 hero gallery slug and the AC-34.4 selected-galleries-or-stories selection', () => {
     const expectedFieldNames = [
       'businessName',
       'ownerName',
@@ -54,15 +54,17 @@ describe('US-24 AC-24.1: StudioProfile global carries exactly the central studio
       'defaultMetaDescription',
     ]
     const actualFieldNames = topLevelFieldNames(StudioProfile.fields)
-    // The twelve PRD §21.1 fields are exactly present, plus exactly two
-    // additional top-level fields: `homeHeroGallerySlug` (AC-34.3) and
-    // `branding` (PRD §12.3, added by AC-24.2).
+    // The twelve PRD §21.1 fields are exactly present, plus exactly three
+    // additional top-level fields: `homeHeroGallerySlug` (AC-34.3),
+    // `homeSelectedGalleriesOrStories` (AC-34.4) and `branding` (PRD §12.3,
+    // added by AC-24.2).
     expect(actualFieldNames).toEqual(expect.arrayContaining(expectedFieldNames))
     expect(actualFieldNames.filter((name) => !expectedFieldNames.includes(name))).toEqual([
       'homeHeroGallerySlug',
+      'homeSelectedGalleriesOrStories',
       'branding',
     ])
-    expect(actualFieldNames).toHaveLength(14)
+    expect(actualFieldNames).toHaveLength(15)
   })
 
   it('names the business "Earth & Honey Studios" established in 2006 by default', () => {

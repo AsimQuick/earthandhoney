@@ -76,6 +76,7 @@ function studioProfile(overrides: Partial<ResolvedStudioProfile> = {}): Resolved
     socialProfiles: [],
     defaultSocialImage: null,
     homeHeroGallerySlug: null,
+    homeSelectedGalleriesOrStories: [],
     ...overrides,
   }
 }

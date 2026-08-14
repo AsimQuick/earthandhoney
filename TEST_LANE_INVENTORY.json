@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 195,
+  "totalSuites": 197,
   "counts": {
-    "live": 14,
-    "unit": 181
+    "live": 15,
+    "unit": 182
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -998,6 +998,16 @@
       "path": "src/__tests__/us34-ac34.3-hero-gallery-live.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('db') and dns.lookup('backstage-backend') resolving, then self-seeds a real published gallery via live Backstage admin API fetch() calls, spawns a real next dev child process, PATCHes the live StudioProfile global, and fetches the rendered homepage route against the real Postgres db container and the real Backstage stack"
+    },
+    {
+      "path": "src/__tests__/us34-ac34.4-home-selected-galleries-resolution.test.tsx",
+      "lane": "UNIT",
+      "reason": "jest.mock('@/lib/backstageClient') mocks the only network call resolveHomeSelectedGalleriesOrStories makes for a gallery-placements selection; jsdom rendering and a StudioProfile field-definition assertion on an in-memory object otherwise, no real I/O"
+    },
+    {
+      "path": "src/__tests__/us34-ac34.4-home-selected-galleries-reorder-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, creates two real Pages documents and PATCHes the live StudioProfile global's homeSelectedGalleriesOrStories array via fetch(), and fetches the rendered homepage route against the real Postgres db container"
     }
   ]
 }

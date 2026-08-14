@@ -14,6 +14,13 @@
  *          exercised only via the routes that import it, never imported directly by
  *          a Jest test — the same convention every other Local API caller in this
  *          repo follows (see us6-ac6.2-isr-static-generation.test.ts).
+ *          `homeSelectedGalleriesOrStories` (AC-34.4) reads the polymorphic
+ *          `gallery-placements`/`pages` relationship back as a plain ordered
+ *          array — array order preserved exactly as Payload returns it,
+ *          since that order IS the curated selection AC-34.4 requires. An
+ *          unpopulated entry (deleted target, or depth too shallow) is
+ *          skipped rather than failing the homepage, mirroring every other
+ *          resolver in this file.
  * created-by: dev-team
  * related-story: US-24
  * related-ac: 24.4
@@ -23,6 +30,9 @@
  * updated-by: dev-team
  * related-story: US-34
  * related-ac: 34.3
+ * updated-by: dev-team
+ * related-story: US-34
+ * related-ac: 34.4
  * ---
  */
 import { getPayload } from 'payload'
@@ -44,6 +54,24 @@ export interface StudioSocialProfile {
   url: string
 }
 
+/** AC-34.4: a homepage selection resolving to a Payload `gallery-placements` doc. */
+export interface HomeSelectedGalleryEntry {
+  relationTo: 'gallery-placements'
+  gallerySlug: string
+  layout: 'masonry' | 'slideshow'
+  heading?: string
+}
+
+/** AC-34.4: a homepage selection resolving to a Payload `pages` doc ("story"). */
+export interface HomeSelectedPageEntry {
+  relationTo: 'pages'
+  slug: string
+  heading: string
+  shortIntroduction?: string
+}
+
+export type HomeSelectedGalleryOrStory = HomeSelectedGalleryEntry | HomeSelectedPageEntry
+
 export interface ResolvedStudioProfile {
   businessName: string
   description: string
@@ -57,6 +85,63 @@ export interface ResolvedStudioProfile {
   defaultSocialImage: { url: string } | null
   /** AC-34.3: the Backstage gallery slug for the homepage hero, or null when unset. */
   homeHeroGallerySlug: string | null
+  /** AC-34.4: the curated, ordered "selected galleries or stories" homepage list. */
+  homeSelectedGalleriesOrStories: HomeSelectedGalleryOrStory[]
+}
+
+type RawHomeSelectedEntry = {
+  relationTo?: 'gallery-placements' | 'pages'
+  value?:
+    | number
+    | string
+    | { gallerySlug?: string; layout?: string; heading?: string }
+    | { slug?: string; heading?: string; shortIntroduction?: string }
+    | null
+}
+
+/**
+ * Maps the raw, `depth: 1`-populated polymorphic relationship value back
+ * into `HomeSelectedGalleryOrStory[]`, preserving array order exactly —
+ * that order is the curated selection itself (AC-34.4). An entry whose
+ * target wasn't populated (unresolved id, or a deleted document) or is
+ * missing a field this reader needs is skipped rather than thrown on, the
+ * same fail-open convention every other field in this reader follows.
+ */
+function mapHomeSelectedGalleriesOrStories(
+  entries: RawHomeSelectedEntry[] | undefined,
+): HomeSelectedGalleryOrStory[] {
+  const result: HomeSelectedGalleryOrStory[] = []
+
+  for (const entry of entries ?? []) {
+    if (!entry.value || typeof entry.value !== 'object') {
+      continue
+    }
+
+    if (entry.relationTo === 'gallery-placements') {
+      const value = entry.value as { gallerySlug?: string; layout?: string; heading?: string }
+      if (!value.gallerySlug) continue
+      result.push({
+        relationTo: 'gallery-placements',
+        gallerySlug: value.gallerySlug,
+        layout: value.layout === 'slideshow' ? 'slideshow' : 'masonry',
+        heading: value.heading,
+      })
+      continue
+    }
+
+    if (entry.relationTo === 'pages') {
+      const value = entry.value as { slug?: string; heading?: string; shortIntroduction?: string }
+      if (!value.slug || !value.heading) continue
+      result.push({
+        relationTo: 'pages',
+        slug: value.slug,
+        heading: value.heading,
+        shortIntroduction: value.shortIntroduction,
+      })
+    }
+  }
+
+  return result
 }
 
 function fieldDefaultValue(name: string): string {
@@ -84,6 +169,7 @@ export async function getStudioProfile(): Promise<ResolvedStudioProfile> {
     socialProfiles?: Array<{ platform?: string; url?: string }>
     defaultSocialImage?: { url?: string } | number | null
     homeHeroGallerySlug?: string | null
+    homeSelectedGalleriesOrStories?: RawHomeSelectedEntry[]
   }
 
   const defaultSocialImage =
@@ -111,5 +197,6 @@ export async function getStudioProfile(): Promise<ResolvedStudioProfile> {
     ),
     defaultSocialImage,
     homeHeroGallerySlug: doc.homeHeroGallerySlug || null,
+    homeSelectedGalleriesOrStories: mapHomeSelectedGalleriesOrStories(doc.homeSelectedGalleriesOrStories),
   }
 }

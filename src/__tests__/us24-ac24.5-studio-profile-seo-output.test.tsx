@@ -72,6 +72,7 @@ function profile(overrides: Partial<ResolvedStudioProfile> = {}): ResolvedStudio
     socialProfiles: [{ platform: 'instagram', url: 'https://instagram.com/studioa' }],
     defaultSocialImage: { url: '/media/studio-a-og.jpg' },
     homeHeroGallerySlug: null,
+    homeSelectedGalleriesOrStories: [],
     ...overrides,
   }
 }

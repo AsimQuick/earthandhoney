@@ -14,14 +14,22 @@
  *          reasoning src/components/page-template/StandardPageTemplate.tsx
  *          already documents for the PRD §13.3 standard page template. Every
  *          slot here is a structural region only: resolving a real hero
- *          gallery over the Flow A boundary is AC-34.3's concern, the
- *          curated/ordered selection model is AC-34.4's, and wiring real
- *          content into the inquiry-form-region slot is left to whatever
- *          route places this template, exactly as StandardPageTemplate's own
- *          inquiryFormRegion slot was left empty until US-33.
+ *          gallery over the Flow A boundary is AC-34.3's concern,
+ *          `selectedGalleriesOrStories` renders whatever nodes the caller
+ *          already resolved from StudioProfile.homeSelectedGalleriesOrStories
+ *          in order (AC-34.4, via
+ *          src/lib/resolveHomeSelectedGalleriesOrStories.tsx — this
+ *          component itself owns no selection/ordering logic), and wiring
+ *          real content into the inquiry-form-region slot is left to
+ *          whatever route places this template, exactly as
+ *          StandardPageTemplate's own inquiryFormRegion slot was left empty
+ *          until US-33.
  * created-by: dev-team
  * related-story: US-34
  * related-ac: 34.1
+ * updated-by: dev-team
+ * related-story: US-34
+ * related-ac: 34.4
  * ---
  */
 import type { ReactNode } from 'react'

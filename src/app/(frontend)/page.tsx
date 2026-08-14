@@ -13,9 +13,11 @@
  *          resolveHomeHeroGalleryPlacement), rendering HeroSlideshow
  *          (AC-34.2) on success or GalleryUnavailablePlaceholder — never a
  *          blank hero or a thrown error — when that gallery is unset,
- *          unreachable, or missing. The selected-galleries slot is still a
- *          placeholder stand-in: the curated/ordered selection model is
- *          AC-34.4's.
+ *          unreachable, or missing. The selected-galleries slot resolves
+ *          StudioProfile.homeSelectedGalleriesOrStories (AC-34.4, via
+ *          resolveHomeSelectedGalleriesOrStories) — the photographer's
+ *          curated, ordered selection of galleries/stories, rendered in
+ *          that exact order.
  * created-by: dev-team
  * related-story: US-1
  * related-ac: 1.1
@@ -34,11 +36,15 @@
  * updated-by: dev-team
  * related-story: US-34
  * related-ac: 34.3
+ * updated-by: dev-team
+ * related-story: US-34
+ * related-ac: 34.4
  * ---
  */
 import { HomePageTemplate } from "@/components/page-template/HomePageTemplate";
 import { getStudioProfile } from "@/lib/getStudioProfile";
 import { resolveHomeHeroGalleryPlacement } from "@/lib/resolveHomeHeroGalleryPlacement";
+import { resolveHomeSelectedGalleriesOrStories } from "@/lib/resolveHomeSelectedGalleriesOrStories";
 
 // A generic, studio-name-free placeholder: this route renders no studio
 // detail of its own (AC-24.4) — the shell chrome and route <head> around it
@@ -48,6 +54,14 @@ export default async function Home() {
   const heroSlideshowPlacement = await resolveHomeHeroGalleryPlacement(
     studioProfile.homeHeroGallerySlug,
   );
+  const selectedGalleriesOrStories = await resolveHomeSelectedGalleriesOrStories(
+    studioProfile.homeSelectedGalleriesOrStories,
+  );
 
-  return <HomePageTemplate heroSlideshowPlacement={heroSlideshowPlacement} />;
+  return (
+    <HomePageTemplate
+      heroSlideshowPlacement={heroSlideshowPlacement}
+      selectedGalleriesOrStories={selectedGalleriesOrStories}
+    />
+  );
 }
