@@ -71,6 +71,8 @@ function profile(overrides: Partial<ResolvedStudioProfile> = {}): ResolvedStudio
     serviceAreas: ['Alphaville', 'Betatown'],
     socialProfiles: [{ platform: 'instagram', url: 'https://instagram.com/studioa' }],
     defaultSocialImage: { url: '/media/studio-a-og.jpg' },
+    homeHeroGallerySlug: null,
+    homeSelectedGalleriesOrStories: [],
     ...overrides,
   }
 }

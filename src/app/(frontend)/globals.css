@@ -21,6 +21,9 @@
  * updated-by: dev-team
  * related-story: US-32
  * related-ac: 32.5
+ * updated-by: dev-team
+ * related-story: US-34
+ * related-ac: 34.2
  * ---
  */
 @import "tailwindcss";
@@ -94,5 +97,27 @@ body {
   .photobuddy_fl_vertical_menu[data-state='closed'],
   .photobuddy_fl_vertical_menu[data-state='open'] {
     visibility: visible;
+  }
+}
+
+/*
+ * AC-34.2: reserves the homepage hero's box before its slide image loads —
+ * `aspect-ratio` is resolved at layout time from this static rule, not from
+ * the image's own intrinsic size, which is what keeps the hero's arrival
+ * from shifting anything below it (zero CLS). A taller ratio on narrow
+ * viewports (close to the source photography's own portrait crop) widening
+ * to a cinematic ratio at `sm` and above, mirroring
+ * src/components/gallery/GallerySlideshowLayout.tsx's own
+ * aspect-[3/2]/sm:aspect-[16/9] split — expressed here as a named class
+ * rather than Tailwind's arbitrary-bracket syntax so this new rule adds no
+ * style-drift debt (src/lib/style-guard/detectStyleDrift.ts).
+ */
+.hero-slideshow-frame {
+  aspect-ratio: 3 / 4;
+}
+
+@variant sm {
+  .hero-slideshow-frame {
+    aspect-ratio: 16 / 9;
   }
 }

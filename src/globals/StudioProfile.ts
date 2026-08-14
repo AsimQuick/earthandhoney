@@ -20,12 +20,33 @@
  *          single source the (frontend) route metadata and shell chrome read
  *          their studio strings from (AC-24.4) — no other file under src/
  *          hard-codes a copy of the business name or description.
+ *          `homeHeroGallerySlug` (AC-34.3) is the one site-wide setting
+ *          naming which Backstage gallery is the homepage hero slideshow —
+ *          a plain external-identifier text field, exactly like
+ *          GalleryPlacements.gallerySlug (src/collections/GalleryPlacements.ts),
+ *          never a `relationship`/`join` into the separate Backstage database
+ *          (PAYLOAD_PICPEAK_API_CONTRACT.md's "No cross-database access";
+ *          Reminder 4). It lives on this studio-wide singleton rather than a
+ *          `Pages` document because the homepage's own storage mechanism
+ *          (Pages record vs. documented singleton) is still AC-34.5's open
+ *          decision; a plain text field here migrates trivially once that
+ *          decision lands. `homeSelectedGalleriesOrStories` (AC-34.4) is the
+ *          curated, ordered "selected galleries or stories" homepage region
+ *          (PRD §13.2) — a polymorphic hasMany relationship into this
+ *          database's own `gallery-placements`/`pages` collections, never an
+ *          automatically-derived query and never a Backstage relation/join.
  * created-by: dev-team
  * related-story: US-24
  * related-ac: 24.1, 24.2, 24.3
  * updated-by: dev-team
  * related-story: US-24
  * related-ac: 24.4
+ * updated-by: dev-team
+ * related-story: US-34
+ * related-ac: 34.3
+ * updated-by: dev-team
+ * related-story: US-34
+ * related-ac: 34.4
  * ---
  */
 import type { GlobalConfig } from 'payload'
@@ -193,6 +214,39 @@ export const StudioProfile: GlobalConfig = {
       admin: {
         description:
           'The fallback meta description used when a page defines none. Also the source the (frontend) route metadata reads its <meta name="description"> from (AC-24.4) — no page hard-codes its own copy.',
+      },
+    },
+    {
+      // The Backstage gallery identifier for the homepage hero (AC-34.3). A
+      // plain external-identifier field (type: text), never a
+      // `relationship`/`join` field — mirrors GalleryPlacements.gallerySlug
+      // for the same reason (see file header).
+      name: 'homeHeroGallerySlug',
+      type: 'text',
+      admin: {
+        description:
+          'The Backstage gallery slug shown as the homepage hero slideshow, set from the Backstage admin UI. Left empty, the hero renders the unavailable-gallery placeholder.',
+      },
+    },
+    {
+      // PRD §13.2's "Selected galleries or stories" (AC-34.4) — a curated,
+      // ordered, structured selection the photographer builds by hand, never
+      // an automatically-derived "latest N" query. A polymorphic hasMany
+      // `relationship` into either this database's own `gallery-placements`
+      // or `pages` collections — never a Backstage relation/join (Reminder
+      // 4). Payload stores a hasMany relationship value as an explicitly
+      // ordered array, and array position is display order, the same
+      // convention Pages.galleryPlacements (src/collections/Pages.ts) and
+      // Navigation.items (src/globals/Navigation.ts) already use: dragging
+      // to reorder in the admin UI changes the homepage's rendered order
+      // with no code change (AC-34.4's live-reorder evidence).
+      name: 'homeSelectedGalleriesOrStories',
+      type: 'relationship',
+      relationTo: ['gallery-placements', 'pages'],
+      hasMany: true,
+      admin: {
+        description:
+          'The curated, ordered selection of galleries or stories shown on the homepage, set by the photographer — never automatically derived. Drag to reorder; the rendered order follows this list exactly.',
       },
     },
     {
