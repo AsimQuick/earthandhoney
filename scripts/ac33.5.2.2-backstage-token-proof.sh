@@ -24,12 +24,32 @@
 #          Re-running must not accumulate state: any tokens this script
 #          previously created (matched by name prefix) are revoked before
 #          new ones are minted.
+#
+#          AC-33.5.2.2.3 — added section (this is the same file the AC text
+#          requires: "the same file, one added section, not a second
+#          script", so the artifact AC-33.5.2.3 later extends end to end
+#          stays single). Reuses the write/read tokens minted above and
+#          proves the AC-33.5.2.2.2 route POST /api/v1/notifications/inquiry
+#          (vendor/picpeak/backend/src/routes/v1/notifications.js) is alive:
+#          the write token queues a real row (read straight out of
+#          Backstage's Postgres via `docker compose --profile backstage exec
+#          backstage-db psql`, the same access BACKSTAGE_STARTUP.md:81
+#          uses), a request with no Authorization header 401s
+#          (apiTokenAuth.js:45-49), and the read-only token 403s with code
+#          INSUFFICIENT_SCOPE (apiTokenAuth.js:102-108) — the case
+#          AC-33.5.2.2.1 could not prove against an existing route. The
+#          queued row is matched on a unique per-run marker
+#          (`ac33.5.2.2.3-proof-<epoch>-<pid>`) carried in the request's
+#          submission_summary, so a leftover row from an earlier run can
+#          never be mistaken for this run's. Nothing is flushed and nothing
+#          is sent: the row is left `pending` — its pending->sent transition
+#          belongs to AC-33.5.2.3.
 # usage:   scripts/ac33.5.2.2-backstage-token-proof.sh
 # env:     BACKSTAGE_URL, BACKSTAGE_ADMIN_USERNAME, BACKSTAGE_ADMIN_PASSWORD
 #          (same defaults as scripts/ac26.4-live-proof.sh:47)
 # created-by: dev-team
 # related-story: US-33
-# related-ac: 33.5.2.2.1
+# related-ac: 33.5.2.2.1, 33.5.2.2.3
 # ---
 set -euo pipefail
 
@@ -172,3 +192,69 @@ fi
 say "PASSED"
 echo "Two Backstage API tokens minted and proven: '${WRITE_TOKEN_NAME}' (write) and '${READ_TOKEN_NAME}' (read)."
 echo "Both remain active (not revoked) for later AC-33.5.2.2 sub-ACs to reuse by name; re-running this script revokes and re-mints them."
+
+# ===========================================================================
+# AC-33.5.2.2.3 — the route is proven alive: the queued row, and the two
+# rejections. Reuses WRITE_TOKEN/READ_TOKEN minted above; mints nothing new.
+# ===========================================================================
+
+say "AC-33.5.2.2.3: proving POST /api/v1/notifications/inquiry"
+
+# Unique per-run marker carried in the request's submission_summary, so a
+# leftover row from an earlier run of this script can never be mistaken
+# for this run's queued row.
+MARKER="ac33.5.2.2.3-proof-$(date +%s)-$$"
+RECIPIENT_EMAIL="ac33.5.2.2.3-proof@example.test"
+INQUIRY_BODY="{\"recipient_email\":\"${RECIPIENT_EMAIL}\",\"form_title\":\"AC-33.5.2.2.3 proof\",\"source_page\":\"/contact\",\"submission_summary\":\"${MARKER}\"}"
+
+say "(a) write token -> POST /api/v1/notifications/inquiry (expect 201)"
+resp_notif_write="$(curl -s -w '\n%{http_code}' -X POST "${BACKSTAGE}/api/v1/notifications/inquiry" \
+  -H "Authorization: Bearer ${WRITE_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -d "$INQUIRY_BODY")"
+status_notif_write="$(echo "$resp_notif_write" | tail -1)"
+body_notif_write="$(echo "$resp_notif_write" | sed '$d')"
+echo "write-scoped token -> POST /api/v1/notifications/inquiry -> HTTP ${status_notif_write} (expect 201)"
+echo "response body: ${body_notif_write}"
+
+say "(b) no Authorization header -> POST /api/v1/notifications/inquiry (expect 401, apiTokenAuth.js:45-49)"
+status_notif_missing="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${BACKSTAGE}/api/v1/notifications/inquiry" \
+  -H 'Content-Type: application/json' \
+  -d "$INQUIRY_BODY")"
+echo "no Authorization header -> POST /api/v1/notifications/inquiry -> HTTP ${status_notif_missing} (expect 401)"
+
+say "(c) read-only token -> POST /api/v1/notifications/inquiry (expect 403 INSUFFICIENT_SCOPE, apiTokenAuth.js:102-108)"
+resp_notif_read="$(curl -s -w '\n%{http_code}' -X POST "${BACKSTAGE}/api/v1/notifications/inquiry" \
+  -H "Authorization: Bearer ${READ_TOKEN}" \
+  -H 'Content-Type: application/json' \
+  -d "$INQUIRY_BODY")"
+status_notif_read="$(echo "$resp_notif_read" | tail -1)"
+body_notif_read="$(echo "$resp_notif_read" | sed '$d')"
+echo "read-scoped token -> POST /api/v1/notifications/inquiry -> HTTP ${status_notif_read} (expect 403)"
+echo "response body: ${body_notif_read}"
+
+say "Reading the queued row straight out of Backstage's Postgres (BACKSTAGE_STARTUP.md:81's access)"
+ROW="$(docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage -t -A -F'|' -c \
+  "select status, event_id, email_type from email_queue where email_data->>'submission_summary' = '${MARKER}';")"
+echo "psql row (status|event_id|email_type): ${ROW}"
+ROW_STATUS="$(echo "$ROW" | cut -d'|' -f1)"
+ROW_EVENT_ID="$(echo "$ROW" | cut -d'|' -f2)"
+ROW_EMAIL_TYPE="$(echo "$ROW" | cut -d'|' -f3)"
+
+FAILED_NOTIF=0
+[ "$status_notif_write" = "201" ] || { echo "FAIL: write-scoped token did not get 201 from POST /notifications/inquiry" >&2; FAILED_NOTIF=1; }
+[ "$status_notif_missing" = "401" ] || { echo "FAIL: missing-header request did not get 401 from POST /notifications/inquiry" >&2; FAILED_NOTIF=1; }
+[ "$status_notif_read" = "403" ] || { echo "FAIL: read-scoped token did not get 403 from POST /notifications/inquiry" >&2; FAILED_NOTIF=1; }
+echo "$body_notif_read" | grep -q "INSUFFICIENT_SCOPE" || { echo "FAIL: 403 body did not carry code INSUFFICIENT_SCOPE" >&2; FAILED_NOTIF=1; }
+[ "$ROW_STATUS" = "pending" ] || { echo "FAIL: queued row status was '${ROW_STATUS}', expected 'pending'" >&2; FAILED_NOTIF=1; }
+[ -z "$ROW_EVENT_ID" ] || { echo "FAIL: queued row event_id was '${ROW_EVENT_ID}', expected NULL" >&2; FAILED_NOTIF=1; }
+[ "$ROW_EMAIL_TYPE" = "inquiry_received" ] || { echo "FAIL: queued row email_type was '${ROW_EMAIL_TYPE}', expected 'inquiry_received'" >&2; FAILED_NOTIF=1; }
+
+if [ "$FAILED_NOTIF" != "0" ]; then
+  echo "FAIL: AC-33.5.2.2.3 proof did not pass." >&2
+  exit 1
+fi
+
+say "AC-33.5.2.2.3 PASSED"
+echo "Queued row confirmed status=pending, event_id=NULL, email_type=inquiry_received for marker ${MARKER}."
+echo "Row left pending — its pending->sent transition belongs to AC-33.5.2.3."
