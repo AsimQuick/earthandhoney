@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 200,
+  "totalSuites": 201,
   "counts": {
     "live": 15,
-    "unit": 185
+    "unit": 186
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1023,6 +1023,11 @@
       "path": "src/__tests__/us35-ac35.1-details-page-template.test.tsx",
       "lane": "UNIT",
       "reason": "renders DetailsPageTemplate/PublicShell with @testing-library/react (jsdom) and react-dom/server against in-memory fixtures and reads the template source from disk for the style-drift checks, no network/db"
+    },
+    {
+      "path": "src/__tests__/us35-ac35.2-masonry-placement-behaviours.test.tsx",
+      "lane": "UNIT",
+      "reason": "renders GalleryMasonryLayout with @testing-library/react (jsdom) against in-memory fixtures and compiles the component's own Tailwind classes through @tailwindcss/postcss + tokens.css in-process, no network/db"
     }
   ]
 }
