@@ -119,13 +119,17 @@ describe('AC-33.5.2.1: migration 120 is the manifest\'s first fork-origin entry'
     expect(entry?.origin).toBe('fork')
   })
 
-  it('is the ONLY fork-origin entry in the manifest (nothing else has landed under this lane yet)', () => {
+  it('is the FIRST fork-origin entry in the manifest (AC-33.6 later adds a second, migration 121)', () => {
     const forkEntries = PICPEAK_MIGRATION_MANIFEST.filter((e) => e.origin === 'fork')
-    expect(forkEntries.map((e) => e.path)).toEqual([MIGRATION_PATH])
+    expect(forkEntries[0]?.path).toBe(MIGRATION_PATH)
   })
 
-  it('every other manifest entry is still the pinned-upstream default (no origin field)', () => {
-    const nonFork = PICPEAK_MIGRATION_MANIFEST.filter((e) => e.path !== MIGRATION_PATH)
+  it('every other manifest entry is still the pinned-upstream default (no origin field), except AC-33.6\'s migration 121', () => {
+    const ACKNOWLEDGEMENT_MIGRATION_PATH =
+      'backend/migrations/core/121_add_inquiry_acknowledgement_email_template.js'
+    const nonFork = PICPEAK_MIGRATION_MANIFEST.filter(
+      (e) => e.path !== MIGRATION_PATH && e.path !== ACKNOWLEDGEMENT_MIGRATION_PATH,
+    )
     expect(nonFork.every((e) => e.origin === undefined)).toBe(true)
     expect(nonFork.length).toBeGreaterThan(100)
   })
@@ -143,7 +147,9 @@ describe('AC-33.5.2.1: verifyVendoredMigrations against the real vendored tree',
     expect(fs.existsSync(path.join(vendorRoot, MIGRATION_PATH))).toBe(true)
   })
 
-  it('fails closed when FORK_CHANGELOG.md cannot be read: the fork entry becomes "undocumented", upstream entries stay unaffected', () => {
+  it('fails closed when FORK_CHANGELOG.md cannot be read: every fork entry becomes "undocumented", upstream entries stay unaffected', () => {
+    const ACKNOWLEDGEMENT_MIGRATION_PATH =
+      'backend/migrations/core/121_add_inquiry_acknowledgement_email_template.js'
     const realReadFileSync = fs.readFileSync
     const spy = jest
       .spyOn(fs, 'readFileSync')
@@ -161,6 +167,7 @@ describe('AC-33.5.2.1: verifyVendoredMigrations against the real vendored tree',
       expect(result.ok).toBe(false)
       expect(result.violations).toEqual([
         expect.objectContaining({ path: MIGRATION_PATH, reason: 'undocumented' }),
+        expect.objectContaining({ path: ACKNOWLEDGEMENT_MIGRATION_PATH, reason: 'undocumented' }),
       ])
     } finally {
       spy.mockRestore()

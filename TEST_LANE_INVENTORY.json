@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 187,
+  "totalSuites": 189,
   "counts": {
     "live": 12,
-    "unit": 175
+    "unit": 177
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -863,6 +863,16 @@
       "path": "src/__tests__/us33-ac33.5.3-no-secret-in-browser-static.test.ts",
       "lane": "UNIT",
       "reason": "pure fs reads of src/ source files and package.json/.env.example, no network or DB I/O"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.6-inquiry-acknowledgement-client.test.ts",
+      "lane": "UNIT",
+      "reason": "mocked-fetch unit tests (jest.spyOn(global, 'fetch')) pinning request shape, off-by-default gating, and failure modes, no real network call, no I/O"
+    },
+    {
+      "path": "src/__tests__/us33-ac33.6-inquiry-acknowledgement-route.test.ts",
+      "lane": "UNIT",
+      "reason": "fs reads of the local vendor/picpeak route/server/migration files, repo docs, and verifyVendoredMigrations against the local tree — no network or live service dependency"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",
