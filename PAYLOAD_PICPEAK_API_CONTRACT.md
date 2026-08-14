@@ -525,3 +525,196 @@ that writes "Event" in Frontstage-facing copy without stating which row
 it means, or that surfaces PicPeak's `events`/`Events` wording verbatim
 in a Frontstage page instead of "Gallery", is a defect against this
 table.
+
+## Backstage email queue, mapped before use (AC-33.5.1)
+
+The original single AC-33.5 exhausted two sessions because it demanded a
+live send *through* PicPeak's email queue from a caller nobody had ever
+mapped: the queue appears nowhere above and has no row in the call
+catalog. `AC-33.5.1` is pure discovery — it changes no behaviour, adds no
+route, sends no email — and answers a closed list of four questions
+against the pinned fork's actual source (`PICPEAK_UPSTREAM.md`'s pinned
+commit), each claim carrying a `file:line` citation.
+
+### 1. The enqueue entry point, and why Frontstage has no HTTP path to it today
+
+The only function that inserts an `email_queue` row is
+`queueEmail(eventId, recipientEmail, emailType, emailData, options)`
+(`vendor/picpeak/backend/src/services/emailProcessor.js:959`). It builds a
+row with `status: 'pending'`, `retry_count: 0`, and — unless
+`options.scheduledAt` or `options.respectBusinessHours` is set —
+`scheduled_at` defaulting to "now", then inserts it
+(`emailProcessor.js:975-993`). There is no separate "create" vs. "send"
+call; queueing *is* the write.
+
+`email_queue.event_id` is nullable: its column definition is
+`table.integer('event_id').references('id').inTable('events')` with no
+`.notNullable()` (`vendor/picpeak/backend/src/database/db.js:330`). This
+matters because a Frontstage inquiry is not a Backstage gallery event —
+the row this AC's sibling will queue has no `events` row to reference,
+so it must carry `event_id: null`. That is a legal, already-supported
+value, not a schema gap: the admin "Sent emails" feed reads the queue
+with a `leftJoin('events', ...)`
+(`vendor/picpeak/backend/src/routes/adminEmail.js:321-334`), so a
+null-`event_id` row still lists — `event_name`/`event_slug` just render
+null.
+
+`queueEmail` is a plain JS function, not a route handler — it has no HTTP
+surface of its own. The only routes that call it live inside the fork's
+own admin/gallery flows (invoices, gallery lifecycle, etc.); none of them
+is reachable by Frontstage. The fork's own service-to-service surface is
+narrower still: `vendor/picpeak/backend/server.js:531` mounts exactly one
+v1 router — `app.use('/api/v1', require('./src/routes/v1/events'))` —
+and that router only creates/lists/fetches events, uploads photos, and
+mints share links (`vendor/picpeak/backend/src/routes/v1/events.js:1-11`,
+already row 3 of the call catalog above). No `/api/v1/*` route calls
+`queueEmail`. **Frontstage has no HTTP way to queue an email today; the
+fork must gain one before AC-33.5.2 can send anything.**
+
+### 2. The authentication a service-to-service caller presents
+
+Row 3 above already documents the mechanism the *existing* v1 surface
+uses, and it is the pair a new route would reuse: `apiTokenAuth` followed
+by `requireApiScope(scope)`
+(`vendor/picpeak/backend/src/middleware/apiTokenAuth.js:43-89,96-113`).
+`apiTokenAuth` reads a `Bearer pp_live_...` header, hashes it (SHA-256),
+looks the hash up in `api_tokens`, rejects a missing/malformed/unknown/
+revoked/expired token (`401` with a `code`), and otherwise attaches
+`req.admin` (the token's owning admin user) and `req.apiToken.scopes`.
+`requireApiScope('write')` then checks the token's scope set, with
+`admin` implying `write`/`read` and `write` implying `read`
+(`apiTokenAuth.js:96-113`) — the same expansion rule row 3 documents for
+`/api/v1/events`.
+
+A scoped token is minted the same way row 3's already does: an
+interactive admin, authenticated by admin session cookie
+(`adminAuth`), calls `POST /api/admin/api-tokens` with a `name` and a
+`scopes` array subset of `['read','write','admin']`
+(`vendor/picpeak/backend/src/routes/adminApiTokens.js:44-56`); the
+plaintext (`pp_live_...`) is returned exactly once and must be stored by
+whatever holds it going forward (a Frontstage server-side env var, not
+anything reaching the browser). There is no self-service or unattended
+token-minting path — a human with an admin session always mints the
+token that a service subsequently presents.
+
+### 3. Template lookup, and why F9's failure mode must be designed out, not rediscovered
+
+`sendTemplateEmail(to, templateKey, variables)`
+(`vendor/picpeak/backend/src/services/emailProcessor.js:706`) looks up
+`email_templates` by `template_key` (`:715-717`) and throws
+`Email template '<key>' not found` if no row exists (`:719-721`) — the
+exact failure `processEmailQueue` catches per-row, incrementing
+`retry_count` and setting `error_message` without ever flipping
+`status` off `'pending'` (`emailProcessor.js:858-878`), so a row with no
+matching template sits `pending` and retries until `retry_count` reaches
+the automatic run's cap of `3` (`emailProcessor.js:811`) — after which
+`processEmailQueue`'s own automatic-run query excludes it
+(`retry_count < 3`, `:811`) and it is stuck `pending` forever short of an
+admin's manual `ignoreSchedule` flush. This is precisely finding **F9**
+in `scrum-master/po-requests.md:131`: `gallery_expired` and
+`archive_complete` already have no template row and already exhibit this
+exact failure mode. **No `email_templates` row exists yet for a studio
+inquiry-notification type** (confirmed by reading the pinned fork's seed
+migrations — the only email-template-inserting migrations up to
+`119_add_rendered_html_to_email_queue.js`, the last one present before
+this AC's investigation, are `059_add_admin_email_templates.js` and the
+scheduled-email/CRM ones; none inserts an inquiry-facing `template_key`).
+Whatever `template_key` AC-33.5.2 picks, its row must exist *before* the
+first row is queued against it, or F9's failure mode reproduces exactly.
+
+Once a template row exists, `processTemplate(template, variables,
+language)` (`emailProcessor.js:503`) resolves subject/body through a
+fallback chain: it first tries an `email_template_translations` row
+keyed by `template_id` + `language` (`:515-529`), and only if none exists
+at all falls back to legacy locale-suffixed columns directly on
+`email_templates` — `subject_en`/`subject_de`,
+`body_html_en`/`body_html_de`, `body_text_en`/`body_text_de`
+(`:541-548`). A new template row that populates only the legacy
+`_en`/`_de` columns (no `email_template_translations` rows) is fully
+supported by this fallback — that is the same shape
+`059_add_admin_email_templates.js` used for its own two new templates
+(`vendor/picpeak/backend/migrations/core/059_add_admin_email_templates.js:29-40,90-185`)
+and the shape the table itself has carried since that migration renamed
+`subject`/`body_html`/`body_text` to their `_en` counterparts
+(`059_add_admin_email_templates.js:60-70`) — a fresh `email_templates`
+row with only `subject`/`body_html`/`body_text` (the pre-migration
+column names still used by `db.js:466-474`'s bootstrap `createTable`) is
+not a shape any current write path produces past that migration.
+
+### 4. How a queued row reaches SMTP, and how `pending` → `sent` is observable
+
+`server.js:649` calls `startEmailQueueProcessor()`
+(`emailProcessor.js:1029-1050`) once, at boot: it runs
+`processEmailQueue()` immediately, then again every `60000`ms
+(`emailProcessor.js:1039,1043`) — a fixed 60-second loop, not
+configurable per-install. Each pass selects up to `limit` (default `10`)
+`pending` rows whose `retry_count < 3` and whose `scheduled_at` is null
+or already past (`emailProcessor.js:806-822`), calls
+`sendTemplateEmail` for each, and on success updates that row to
+`status: 'sent', sent_at: new Date()` (`:848-854`) — the exact
+transition AC-33.5.2's evidence needs to observe.
+
+Two ways to observe it without waiting up to 60 seconds or reading the
+database directly: an admin session can force an immediate drain via
+`POST /api/admin/email/flush-queue`
+(`vendor/picpeak/backend/src/routes/adminEmail.js:264-277`, which calls
+`processEmailQueue({ ignoreSchedule: true, limit: 1000 })` and bypasses
+both the schedule and the retry cap), and the same session can read
+current queue state — `status`, `sent_at`, `error_message`,
+`retry_count`, filterable by `status`/`emailType`/date range — via
+`GET /api/admin/email/queue`
+(`adminEmail.js:286-334`, `leftJoin`ed to `events` so a null-`event_id`
+inquiry row still lists). Both routes are `adminAuth`-gated
+(`email.send` / `email.view` permissions respectively), not
+`apiTokenAuth` — they are for a human or test harness watching the
+transition, not for the service that queued the row.
+
+### The uncommitted leftovers, verified rather than trusted
+
+Two earlier, timed-out sessions left untracked files in this working
+tree: a new router
+(`vendor/picpeak/backend/src/routes/v1/notifications.js`), a new
+migration
+(`vendor/picpeak/backend/migrations/core/120_add_inquiry_notification_email_template.js`),
+proof scripts, three test files, and
+`AC-33.5_EMAIL_QUEUE_LIVE_PROOF.md` claiming a live send was observed.
+This AC's discovery treated all of them as **inputs to verify, not
+results to trust**, per §1 above:
+
+- The migration is numbered correctly (`120`, immediately after the
+  pinned commit's own last core migration,
+  `119_add_rendered_html_to_email_queue.js`) and inserts a
+  `template_key: 'inquiry_received'` row using the legacy `_en`/`_de`
+  columns §3 above shows `processTemplate` actually falls back to — its
+  approach is sound and does not need to be redesigned.
+- The `notifications.js` router is **not mounted anywhere in
+  `server.js`** — §1 above confirms `server.js:531` mounts only the
+  existing `events` v1 router, and no line anywhere in `server.js`
+  references `notifications`. A request to whatever route that file
+  defines would `404` in the running fork exactly as it stands. **The
+  live transcript recorded in `AC-33.5_EMAIL_QUEUE_LIVE_PROOF.md` cannot
+  be reproduced from this tree** — either it was captured against a
+  since-reverted local mount that was never committed, or it does not
+  describe this codebase's actual behaviour. Either way, that file's
+  claims are not evidence of anything AC-33.5.2 can rely on, and this
+  discrepancy is itself recorded here as a finding, not silently
+  resolved by deleting or re-trusting the file.
+- None of these files were verified against actual SMTP delivery as part
+  of *this* AC — AC-33.5.1 changes no behaviour and sends no email by
+  its own definition; that verification is AC-33.5.2's evidence
+  requirement, not this one's.
+
+### Go/no-go for AC-33.5.2
+
+**New fork code is required.** Per §1, no existing route lets Frontstage
+queue an email — a new `/api/v1/*` route (mounted, unlike the leftover
+`notifications.js`) that calls `queueEmail(null, recipientEmail,
+'inquiry_received', emailData)` behind `apiTokenAuth` +
+`requireApiScope('write')` is the minimum needed, following row 3's
+existing pattern exactly. **A new numbered migration is required.** Per
+§3, no `email_templates` row exists for any inquiry-notification
+`template_key` yet, and F9 already shows what happens if one is skipped:
+the leftover `120_add_inquiry_notification_email_template.js` is
+correctly numbered and shaped for this, and is safe to build on. Both
+changes belong in `FORK_CHANGELOG.md` and `PICPEAK_PORT_LEDGER.md` per
+`CLAUDE.md`'s Fork Discipline once AC-33.5.2 lands them.
