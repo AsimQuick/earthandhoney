@@ -34,12 +34,20 @@
  *          same way it already filters pages. There is still no
  *          meta-keywords/`keywords` field — PRD §21.2 forbids one — guarded by
  *          src/__tests__/us37-ac37.6.1-no-meta-keywords-guard.test.ts.
+ *          AC-37.6.2.3 adds the read-only `seoAssistant` `ui` field, which
+ *          mounts SeoAssistantField
+ *          (src/components/admin/SeoAssistant/SeoAssistantField.tsx) to
+ *          preview the six DERIVED PRD §21.2 SEO controls computed from this
+ *          record's own AUTHORED fields above. It writes none of them.
  * created-by: dev-team
  * related-story: US-36
  * related-ac: 36.1
  * updated-by: dev-team
  * related-story: US-37
  * related-ac: 37.6.1
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.6.2.3
  * ---
  */
 import type { CollectionConfig } from 'payload'
@@ -190,6 +198,18 @@ export const Stories: CollectionConfig = {
       ],
       admin: {
         description: 'Publication state.',
+      },
+    },
+    {
+      // AC-37.6.2.3: read-only preview of the six DERIVED PRD §21.2 SEO
+      // controls, computed from this record's own fields above. Writes
+      // nothing back — see src/components/admin/SeoAssistant/SeoAssistantField.tsx.
+      name: 'seoAssistant',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/components/admin/SeoAssistant/SeoAssistantField#SeoAssistantField',
+        },
       },
     },
   ],

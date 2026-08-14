@@ -21,6 +21,9 @@
  * updated-by: dev-team
  * related-story: US-37
  * related-ac: 37.6.1
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.6.2.3
  * ---
  */
 import fs from 'fs'
@@ -45,6 +48,7 @@ const FIELDS_BEYOND_PRD_13_5: Array<{ collectionField: string; sanctionedBy: str
   { collectionField: 'venue', sanctionedBy: 'AC-37.6.1' },
   { collectionField: 'socialImage', sanctionedBy: 'AC-37.6.1' },
   { collectionField: 'indexing', sanctionedBy: 'AC-37.6.1' },
+  { collectionField: 'seoAssistant', sanctionedBy: 'AC-37.6.2.3' },
 ]
 
 const FILE_PATH = path.join(process.cwd(), 'src/collections/Stories.ts')

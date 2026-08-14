@@ -15,6 +15,9 @@
  * updated-by: dev-team
  * related-story: US-35
  * related-ac: 35.3
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.6.2.3
  * ---
  */
 import fs from 'fs'
@@ -73,6 +76,7 @@ const PRD_13_1_FIELD_MAP: Array<{ prdField: string; collectionField: string }> =
 // *undocumented* field exists beyond the PRD §13.1 set.
 const FIELDS_BEYOND_PRD_13_1: Array<{ collectionField: string; sanctionedBy: string }> = [
   { collectionField: 'template', sanctionedBy: 'AC-35.3' },
+  { collectionField: 'seoAssistant', sanctionedBy: 'AC-37.6.2.3' },
 ]
 
 describe('US-31 AC-31.1: Pages carries the CLAUDE.md structured metadata header', () => {
@@ -118,10 +122,10 @@ describe('US-31 AC-31.1: the field list maps one-to-one onto PRD §13.1', () => 
     expect(actualFieldNames.sort()).toEqual([...mappedFieldNames, ...sanctionedFieldNames].sort())
   })
 
-  it('carries exactly 17 fields — the 16 PRD §13.1 rows plus AC-35.3\'s sanctioned template selection', () => {
+  it('carries exactly 18 fields — the 16 PRD §13.1 rows plus AC-35.3\'s sanctioned template selection and AC-37.6.2.3\'s read-only seoAssistant preview', () => {
     expect(PRD_13_1_FIELD_MAP.length).toBe(16)
-    expect(FIELDS_BEYOND_PRD_13_1.length).toBe(1)
-    expect(actualFieldNames.length).toBe(17)
+    expect(FIELDS_BEYOND_PRD_13_1.length).toBe(2)
+    expect(actualFieldNames.length).toBe(18)
   })
 })
 

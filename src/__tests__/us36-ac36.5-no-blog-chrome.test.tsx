@@ -24,6 +24,9 @@
  * updated-by: dev-team
  * related-story: US-37
  * related-ac: 37.6.1
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.6.2.3
  * ---
  */
 import { render } from '@testing-library/react'
@@ -75,8 +78,10 @@ describe('US-36 AC-36.5: no category/archive/comment/author/tag field on Stories
   it('the Stories field list is exactly the documented fields — no field silently added beyond them', () => {
     const topLevelNames = Stories.fields.map((f) => ('name' in f ? f.name : undefined)).filter(Boolean)
     // AC-37.6.1 (sprint5.json) added the seven PRD §21.2 AUTHORED SEO fields
-    // Pages already carried — none of which is blog chrome, and the assertion
-    // above already proves none of them matches BLOG_CHROME_NAME_PATTERN.
+    // Pages already carried, and AC-37.6.2.3 added the read-only
+    // `seoAssistant` ui field previewing the six DERIVED PRD §21.2 controls —
+    // none of which is blog chrome, and the assertion above already proves
+    // none of them matches BLOG_CHROME_NAME_PATTERN.
     expect(topLevelNames).toEqual([
       'title',
       'subtitleIntroduction',
@@ -90,6 +95,7 @@ describe('US-36 AC-36.5: no category/archive/comment/author/tag field on Stories
       'socialImage',
       'indexing',
       'status',
+      'seoAssistant',
     ])
   })
 
