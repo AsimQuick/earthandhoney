@@ -1,0 +1,168 @@
+{
+  "generatedAt": "2026-08-14T08:34:36.446Z",
+  "baseUrl": "http://web:3000",
+  "url": "http://web:3000/",
+  "harness": {
+    "runsPerPage": 3,
+    "rawRuns": [
+      {
+        "mobilePerformanceScore": 0.71,
+        "cls": {
+          "total": 0,
+          "imageAttributable": 0,
+          "imageAttributableShare": 0
+        },
+        "lcpMs": 7412.768749999999,
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "requestLatencyMs": 562.5,
+          "downloadThroughputKbps": 1474.5600000000002,
+          "uploadThroughputKbps": 675,
+          "cpuSlowdownMultiplier": 4
+        },
+        "formFactor": "mobile",
+        "throttlingMethod": "simulate",
+        "networkPayload": {
+          "images": [
+            {
+              "url": "http://web:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+              "transferBytes": 1238,
+              "requestedPixels": null,
+              "expectedPixels": null,
+              "oversized": false
+            },
+            {
+              "url": "http://web:3000/photobuddy/img/slide/1.jpg",
+              "transferBytes": 64881,
+              "requestedPixels": null,
+              "expectedPixels": null,
+              "oversized": false
+            },
+            {
+              "url": "http://web:3000/photobuddy/img/slide/2.jpg",
+              "transferBytes": 64881,
+              "requestedPixels": null,
+              "expectedPixels": null,
+              "oversized": false
+            }
+          ],
+          "oversizedCount": 0
+        }
+      },
+      {
+        "mobilePerformanceScore": 0.9,
+        "cls": {
+          "total": 0,
+          "imageAttributable": 0,
+          "imageAttributableShare": 0
+        },
+        "lcpMs": 2678.754,
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "requestLatencyMs": 562.5,
+          "downloadThroughputKbps": 1474.5600000000002,
+          "uploadThroughputKbps": 675,
+          "cpuSlowdownMultiplier": 4
+        },
+        "formFactor": "mobile",
+        "throttlingMethod": "simulate",
+        "networkPayload": {
+          "images": [
+            {
+              "url": "http://web:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+              "transferBytes": 1238,
+              "requestedPixels": null,
+              "expectedPixels": null,
+              "oversized": false
+            },
+            {
+              "url": "http://web:3000/photobuddy/img/slide/1.jpg",
+              "transferBytes": 64881,
+              "requestedPixels": null,
+              "expectedPixels": null,
+              "oversized": false
+            },
+            {
+              "url": "http://web:3000/photobuddy/img/slide/2.jpg",
+              "transferBytes": 64881,
+              "requestedPixels": null,
+              "expectedPixels": null,
+              "oversized": false
+            }
+          ],
+          "oversizedCount": 0
+        }
+      },
+      {
+        "mobilePerformanceScore": 0.72,
+        "cls": {
+          "total": 0,
+          "imageAttributable": 0,
+          "imageAttributableShare": 0
+        },
+        "lcpMs": 7546.9375,
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638.4,
+          "requestLatencyMs": 562.5,
+          "downloadThroughputKbps": 1474.5600000000002,
+          "uploadThroughputKbps": 675,
+          "cpuSlowdownMultiplier": 4
+        },
+        "formFactor": "mobile",
+        "throttlingMethod": "simulate",
+        "networkPayload": {
+          "images": [
+            {
+              "url": "http://web:3000/_next/image?url=%2Fphotobuddy%2Fimg%2Flogo.png&w=384&q=75",
+              "transferBytes": 1238,
+              "requestedPixels": null,
+              "expectedPixels": null,
+              "oversized": false
+            },
+            {
+              "url": "http://web:3000/photobuddy/img/slide/1.jpg",
+              "transferBytes": 64881,
+              "requestedPixels": null,
+              "expectedPixels": null,
+              "oversized": false
+            },
+            {
+              "url": "http://web:3000/photobuddy/img/slide/2.jpg",
+              "transferBytes": 64881,
+              "requestedPixels": null,
+              "expectedPixels": null,
+              "oversized": false
+            }
+          ],
+          "oversizedCount": 0
+        }
+      }
+    ],
+    "aggregate": {
+      "runCount": 3,
+      "mobilePerformanceScore": {
+        "median": 0.72,
+        "min": 0.71,
+        "max": 0.9
+      },
+      "clsTotal": {
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "clsImageAttributable": {
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "lcpMs": {
+        "median": 7412.768749999999,
+        "min": 2678.754,
+        "max": 7546.9375
+      }
+    }
+  }
+}
