@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 228,
+  "totalSuites": 229,
   "counts": {
     "live": 24,
-    "unit": 204
+    "unit": 205
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1163,6 +1163,11 @@
       "path": "src/__tests__/us37-ac37.6.2.1-seo-assistant-snapshot.test.ts",
       "lane": "UNIT",
       "reason": "unit-level assertions against buildSeoAssistantSnapshot (src/lib/seoAssistant.ts), a pure function over an in-memory input object; no payload import, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.2-seo-assistant-panel.test.tsx",
+      "lane": "UNIT",
+      "reason": "RTL render of SeoAssistantPanel (src/components/admin/SeoAssistant/SeoAssistantPanel.tsx) against in-memory SeoAssistantSnapshot fixtures; component takes the snapshot as its only prop, no payload import, no network/db"
     }
   ]
 }
