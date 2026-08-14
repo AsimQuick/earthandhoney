@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 3/8 stories | 17/46 ACs
-**Last Updated:** 2026-08-14T00:26:11+00:00
+**Last Updated:** 2026-08-14T00:36:39+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -220,10 +220,11 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 ---
 
 ### US-33: Forms and durable Inquiries: the form builder, spam protection, and studio notification through the Backstage email queue
-**Status:** draft | **Priority:** critical
+**Status:** in-progress | **Priority:** critical
 
 #### Acceptance Criteria
 - [ ] **AC-33.1:** A Payload `Forms` collection implements the PRD 20.2 configurable set - internal name, public title, description, recipient(s), success message, field order, labels and helper text, required/optional status, and the Early Booking Benefits footer/link - and offers exactly the seven V1 field types: short text, email, phone, date, dropdown, checkbox/consent, long text. No conditional-logic engine is built (PRD 20.2: 'No complex conditional form engine is required in V1'). Evidence: the PRD 20.2 configurable-set list mapped one-to-one against the collection definition (as AC-31.1 did for `Pages`), the field-type list read back from the collection, and a test that fails if an eighth type or a conditional-visibility rule is added.
+  - Dev: implemented
 - [ ] **AC-33.2:** An `Inquiries` collection stores a durable record, written server-side and committed BEFORE any email is attempted, so a failed or slow notification can never lose a lead. Each record captures the submitted values, the source page, and campaign parameters (utm_*). Evidence: a submission proven to persist with the notification path forced to fail - the inquiry still exists and is readable in the admin, with the submitted field values, source page and utm_* parameters all present on the stored record.
 - [ ] **AC-33.3:** Validation runs on both client and server, and the server is authoritative: a submission crafted to bypass the browser (a direct POST with a missing required field, a malformed email, and an over-long field) is rejected with no record written. Evidence: the three rejected requests with their responses, run against the stack in Docker.
 - [ ] **AC-33.4:** Spam protection is in place and does not depend on a third-party client-side script or an external service: honeypot field, submission-timing check, and a server-side rate limit per source. Record the options rejected and why (DoD item 6). Evidence: a scripted rapid-fire submission proven to be rate-limited, a honeypot-filled submission proven to be silently rejected without creating an Inquiry, and a submission completed faster than the timing threshold proven to be rejected without creating an Inquiry.
@@ -234,6 +235,15 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 **Dependencies:** US-31
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-33.1 implemented (local checks green): Committed on `feature/US-33`.
+  
+  ## Summary — AC-33.1
+  
+  **Files changed:**
+  - `src/collections/Forms.ts` (new) — Payload `Forms` collection implementing PRD §20.2's configurable set one-to-one: `internalName`, `publicTitle`, `description`, `recipients` (array, ≥1 email), `successMessage`, `fields` (ordered array carrying per-item `fieldType`, `name`, `label`, `helpText`, `required`, and dropdown `options`), and `earlyBookingBenefits` (group: `enabled`/`footerText`/`linkUrl`). Exports `FORM_FIELD_TYPE_OPTIONS`, exactly the seven PRD V1 types (`shortText`, `email`, `phone`, `date`, `dropdown`, `checkbox`, `longText`). No conditional-visibility field/mechanism anywhere.
+  - `src/payload.config.ts` — registered `Forms` in the collections list.
+  - `src/__tests__/us33-ac33.1-forms-field-set.test.ts` (new, 23 tests) — PRD §20.2 configurable-set mapped one-to-one against the collection (both directions), individual field shapes, the `fields`-array sub-schema, exact 7-type field-type list read back from the collection (fails on an 8th type via both the exported constant and a source-text object-literal count), and guards against any conditional-logic naming/mechanism (`condition`, `dependsOn`, `sh …
 
 **Tester Status:** approved
 **Tester Notes:**
