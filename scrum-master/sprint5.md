@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 5/8 stories | 36/52 ACs
-**Last Updated:** 2026-08-14T11:52:52+00:00
+**Last Updated:** 2026-08-14T12:21:45+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -437,6 +437,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [ ] **AC-35.2:** The masonry placement preserves every image's received aspect ratio and the photographer's selected order, never crops or stretches, uses the full available width with system-defined gaps from `tokens.css`, reserves aspect-ratio space before load, and uses approximately one column on mobile, two on tablet and three or four on larger screens. Build on the existing `src/components/gallery/GalleryMasonryLayout.tsx` rather than writing a second masonry implementation. Evidence: a gallery of mixed portrait/landscape/panoramic images rendered at three viewport widths (mobile, tablet, larger) with, at each width: the rendered aspect ratios compared against the source values, the rendered column count recorded, the photographer's selected order asserted unchanged, the rendered gap measured against the token value, and the reserved layout space at each image slot asserted present before the image loads. IN SCOPE: the PRD 15.1 behaviours listed above. OUT OF SCOPE and left to backlog item 15 (PRD Phase 5): the full masonry refinement pass and the shared fullscreen-viewer specification (backlog item 17) - state the boundary in the story record rather than drifting into Phase 5.
   - Dev: implemented
 - [ ] **AC-35.3:** A Details page is created through the same New Page form as any other page - the template is a selection on a `Pages` record, not a bespoke hard-coded route. Evidence: a second Details page created through the admin form alone, with no code change, rendering correctly.
+  - Dev: implemented
 - [ ] **AC-35.4:** Copy restraint is structural, not advisory: the Details template offers no long-form body field, so the PRD 13.4 instruction 'Do not over-explain in copy' cannot be violated by content entry. Evidence: the template's field list, plus a test that fails if a rich-text or long-form body field is added to it.
 
 **Dependencies:** US-31, US-33
@@ -445,6 +446,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 **Dev Team Notes:**
   AC-35.1 implemented (local checks green): Waiting for the background test run to complete.
   AC-35.2 implemented (local checks green): I'll wait for that background task to signal the test run has finished.
+  AC-35.3 implemented (local checks green): I'll pause here until the background live-lane run finishes or the scheduled check-in fires.
 
 **Tester Status:** approved
 **Tester Notes:**
