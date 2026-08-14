@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 226,
+  "totalSuites": 228,
   "counts": {
     "live": 24,
-    "unit": 202
+    "unit": 204
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1153,6 +1153,16 @@
       "path": "src/__tests__/us37-ac37.6.1-story-indexing-sitemap-live.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, calls getLiveApiAuthToken to create a published+indexing:'index' control Stories/gallery-placements pair and a published+indexing:'noindex' Stories/gallery-placements pair over http://localhost:4307/api/stories and /api/gallery-placements, fetches the real /sitemap.xml, and asserts the noindex story's slug is absent while the control story's slug is present, against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.2.1-no-meta-keywords-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local source files via fs and calls buildSeoAssistantSnapshot with an in-memory fixture; no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.2.1-seo-assistant-snapshot.test.ts",
+      "lane": "UNIT",
+      "reason": "unit-level assertions against buildSeoAssistantSnapshot (src/lib/seoAssistant.ts), a pure function over an in-memory input object; no payload import, no network/db"
     }
   ]
 }
