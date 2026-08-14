@@ -1,8 +1,8 @@
 # Sprint 5
 
 **Phase:** planning
-**Progress:** 4/8 stories | 30/52 ACs
-**Last Updated:** 2026-08-14T10:47:46+00:00
+**Progress:** 5/8 stories | 36/52 ACs
+**Last Updated:** 2026-08-14T11:03:01+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -363,21 +363,21 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 ---
 
 ### US-34: Homepage template: full-width hero slideshow, curated selections, and the primary inquiry form
-**Status:** in-progress | **Priority:** high
+**Status:** done | **Priority:** high
 
 #### Acceptance Criteria
-- [ ] **AC-34.1:** The homepage renders the PRD 13.2 order exactly: navigation, full-width hero slideshow placement, optional short introduction, selected galleries or stories, primary inquiry form, footer. Evidence: the rendered structure asserted in order against a running stack.
-  - Dev: implemented
-- [ ] **AC-34.2:** The hero is slideshow-first and full-width, uses the controlled overlay and vignette presets from `src/styles/tokens.css` (US-23) rather than ad hoc gradients, and produces no layout shift: aspect-ratio space is reserved before load. Evidence: a measured CLS figure on a mobile viewport plus the token names actually used, shown from the source.
-  - Dev: implemented
-- [ ] **AC-34.3:** The hero slideshow placement resolves a real Backstage gallery over the Flow A boundary, and when that gallery is unavailable the homepage still renders - reusing `src/components/gallery/GalleryUnavailablePlaceholder.tsx` rather than showing a blank hero or throwing. Evidence: both states rendered live in Docker.
-  - Dev: implemented
-- [ ] **AC-34.4:** 'Selected galleries or stories' is a curated, ordered, structured selection made by the photographer - not an automatic 'latest N'. Evidence: the field definition and a live reorder changing the rendered order with no code change.
-  - Dev: implemented
-- [ ] **AC-34.5:** The homepage is produced by the template system, not hand-coded as a one-off route that will drift. It is either a `Pages` record using a homepage template variant or a documented singleton that reuses the same shell and tokens - state which, and why the other was rejected. Evidence: a style-drift check showing the homepage shell is structurally the same shell as a standard page, in the spirit of AC-31.7.
-  - Dev: implemented
-- [ ] **AC-34.6:** The homepage is measured against the PRD 19.4 performance targets on a mobile profile, and the numbers are reported as measured. A miss is an acceptable outcome and must be recorded, not hidden or tuned away - US-29 set this precedent when both R2 delivery candidates missed the ADR's own targets, and the R2 delivery path is still an open decision (`po-requests.md` item 15), so image-delivery latency is a known, named, unresolved variable. Evidence: the measured LCP and mobile performance figures, the target each is compared against, the gap where one exists, and an explicit statement of whether the open delivery decision is a contributing factor. Do not choose an R2 delivery path here - that decision is not this story's to make (Reminder 1).
-  - Dev: implemented
+- [x] **AC-34.1:** The homepage renders the PRD 13.2 order exactly: navigation, full-width hero slideshow placement, optional short introduction, selected galleries or stories, primary inquiry form, footer. Evidence: the rendered structure asserted in order against a running stack.
+  - Dev: done
+- [x] **AC-34.2:** The hero is slideshow-first and full-width, uses the controlled overlay and vignette presets from `src/styles/tokens.css` (US-23) rather than ad hoc gradients, and produces no layout shift: aspect-ratio space is reserved before load. Evidence: a measured CLS figure on a mobile viewport plus the token names actually used, shown from the source.
+  - Dev: done
+- [x] **AC-34.3:** The hero slideshow placement resolves a real Backstage gallery over the Flow A boundary, and when that gallery is unavailable the homepage still renders - reusing `src/components/gallery/GalleryUnavailablePlaceholder.tsx` rather than showing a blank hero or throwing. Evidence: both states rendered live in Docker.
+  - Dev: done
+- [x] **AC-34.4:** 'Selected galleries or stories' is a curated, ordered, structured selection made by the photographer - not an automatic 'latest N'. Evidence: the field definition and a live reorder changing the rendered order with no code change.
+  - Dev: done
+- [x] **AC-34.5:** The homepage is produced by the template system, not hand-coded as a one-off route that will drift. It is either a `Pages` record using a homepage template variant or a documented singleton that reuses the same shell and tokens - state which, and why the other was rejected. Evidence: a style-drift check showing the homepage shell is structurally the same shell as a standard page, in the spirit of AC-31.7.
+  - Dev: done
+- [x] **AC-34.6:** The homepage is measured against the PRD 19.4 performance targets on a mobile profile, and the numbers are reported as measured. A miss is an acceptable outcome and must be recorded, not hidden or tuned away - US-29 set this precedent when both R2 delivery candidates missed the ADR's own targets, and the R2 delivery path is still an open decision (`po-requests.md` item 15), so image-delivery latency is a known, named, unresolved variable. Evidence: the measured LCP and mobile performance figures, the target each is compared against, the gap where one exists, and an explicit statement of whether the open delivery decision is a contributing factor. Do not choose an R2 delivery path here - that decision is not this story's to make (Reminder 1).
+  - Dev: done
 
 **Dependencies:** US-31, US-32, US-33
 
