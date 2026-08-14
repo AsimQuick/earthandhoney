@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 198,
+  "totalSuites": 199,
   "counts": {
     "live": 15,
-    "unit": 183
+    "unit": 184
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1013,6 +1013,11 @@
       "path": "src/__tests__/us34-ac34.5-homepage-shell-structural-drift.test.tsx",
       "lane": "UNIT",
       "reason": "renders PublicShell/HomePageTemplate and PublicShell/StandardPageTemplate with @testing-library/react (jsdom) against in-memory fixtures and compares testid/tag/class occurrences and serialized DOM structure, no network/db"
+    },
+    {
+      "path": "src/__tests__/us34-ac34.6-homepage-performance-measured.test.ts",
+      "lane": "UNIT",
+      "reason": "reads the committed AC-34.6 report and its retained raw Lighthouse JSON from disk and re-derives the medians through the pure aggregateRuns helper; the Lighthouse pass itself was run out-of-band by the benchmark profile, so this suite makes no network/db call"
     }
   ]
 }
