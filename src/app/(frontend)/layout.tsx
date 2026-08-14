@@ -33,6 +33,9 @@
  * updated-by: dev-team
  * related-story: US-32
  * related-ac: 32.4
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.2
  * ---
  */
 import type { Metadata } from "next";
@@ -91,6 +94,18 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: studioProfile.defaultSocialImage
       ? {
           images: [{ url: studioProfile.defaultSocialImage.url }],
+        }
+      : undefined,
+    // AC-37.2: the site-wide Twitter card default — every public route that
+    // does not return its own `twitter` object (e.g. the homepage, the story
+    // index) still emits one, mirroring the same defaultSocialImage fallback
+    // as `openGraph` above. Routes with their own SEO fields
+    // (`[slug]`, `stories/[slug]`) return their own `twitter` object, which
+    // replaces this default rather than merging with it.
+    twitter: studioProfile.defaultSocialImage
+      ? {
+          card: "summary_large_image",
+          images: [studioProfile.defaultSocialImage.url],
         }
       : undefined,
     icons: {

@@ -48,6 +48,15 @@
  *          new Details page needs no code change, only a `Pages` record with
  *          `template: 'details'` created through the same New Page form as
  *          any other page.
+ *          AC-37.2 — `description` (both the plain field and `openGraph`/
+ *          `twitter`) now falls back explicitly to
+ *          `StudioProfile.defaultMetaDescription` when the page defines none,
+ *          and a Twitter card (`summary_large_image`, mirroring the Open
+ *          Graph title/description/image) is emitted alongside the existing
+ *          canonical URL and Open Graph tags — closing the two gaps AC-31.6
+ *          left for "every public page ... emits a real title element, meta
+ *          description, canonical URL, Open Graph tags and Twitter card ...
+ *          with StudioProfile defaults ... as fallback".
  * created-by: dev-team
  * related-story: US-31
  * related-ac: 31.4
@@ -60,6 +69,9 @@
  * updated-by: dev-team
  * related-story: US-35
  * related-ac: 35.3
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.2
  * ---
  */
 import type { Metadata } from 'next'
@@ -92,9 +104,15 @@ export async function generateMetadata({ params }: PageRouteProps): Promise<Meta
   // derived from the page's own slug and resolved to an absolute URL against
   // the root layout's `metadataBase`.
   const canonicalPath = `/${slug}`
-  const title = page.seoTitle || page.heading
-  const description = page.metaDescription || undefined
   const studioProfile = await getStudioProfile()
+  const title = page.seoTitle || page.heading
+  // AC-37.2: the page's own field first, `StudioProfile.defaultMetaDescription`
+  // as fallback — computed explicitly here (not left to the Metadata API's
+  // between-segment inheritance) because this route always returns its own
+  // `openGraph`/`twitter` objects, which replace the root layout's wholesale
+  // rather than merging field-by-field, so an unset page description would
+  // otherwise render no og:description/twitter:description tag at all.
+  const description = page.metaDescription || studioProfile.defaultMetaDescription
   const ogImage = page.socialImage || studioProfile.defaultSocialImage?.url || undefined
 
   return {
@@ -106,6 +124,14 @@ export async function generateMetadata({ params }: PageRouteProps): Promise<Meta
       description,
       url: canonicalPath,
       images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+    // AC-37.2: the Twitter card every public page emits, mirroring the same
+    // fields/fallback chain as the Open Graph tags above.
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ogImage ? [ogImage] : undefined,
     },
     robots: page.indexing === 'noindex' ? { index: false, follow: false } : undefined,
   }

@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 211,
+  "totalSuites": 213,
   "counts": {
-    "live": 17,
-    "unit": 194
+    "live": 18,
+    "unit": 195
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -878,6 +878,16 @@
       "path": "src/__tests__/us37-ac37.1-studio-profile-account-seo-field-mapping.test.ts",
       "lane": "UNIT",
       "reason": "imports the StudioProfile and Navigation global config objects directly and asserts on their field definitions in-memory, plus fs reads of src/payload.config.ts and its own source file for static text checks, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.2-generate-metadata-fallback-and-twitter.test.ts",
+      "lane": "UNIT",
+      "reason": "mocks @/lib/getPageBySlug, @/lib/getStoryBySlug, @/lib/getStudioProfile and @/lib/resolveStoryGalleryPlacements, then calls the [slug]/stories[slug] routes' generateMetadata directly against in-memory fixtures, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.2-live-seo-metadata.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process, calls getLiveApiAuthToken to create real Pages/Stories/gallery-placements documents, and fetches the rendered [slug] and stories/[slug] routes to assert title/description/canonical/og/twitter tags in real response HTML against the real Postgres db container"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",
