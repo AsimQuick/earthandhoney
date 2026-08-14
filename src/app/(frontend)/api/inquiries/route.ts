@@ -2,7 +2,7 @@
  * ---
  * file: src/app/(frontend)/api/inquiries/route.ts
  * project: earthandhoney
- * purpose: AC-33.2 — the Frontstage form-submission receiver. Parses the
+ * purpose: The Frontstage form-submission receiver (AC-33.2). Parses the
  *          submitted body and hands it to src/lib/submitInquiry.ts, whose
  *          `createInquiry` is wired here to Payload's local API
  *          (`payload.create`, awaited to completion) and whose `notify` is
@@ -16,23 +16,35 @@
  *          src/app/(frontend)/api/webhooks/picpeak/route.ts does: Next.js
  *          resolves a static segment (`/api/inquiries`) ahead of the
  *          sibling catch-all (`/api/[...slug]`) in a different route group.
- *          Server-side field validation now runs here (AC-33.3): the
+ *          Server-side field validation runs here (AC-33.3): the
  *          referenced Forms document is looked up and every submitted value
  *          is checked with src/lib/validateInquirySubmission.ts BEFORE
  *          submitInquiry() — and therefore createInquiry() — is ever
  *          called, so a submission that fails validation (a missing
  *          required field, a malformed email, an over-long field) is
  *          rejected with a 400 and no Inquiry record is written. Spam
- *          protection (AC-33.4) is deliberately still out of scope here.
+ *          protection (AC-33.4, src/lib/spamProtection.ts) runs earlier
+ *          still, ahead of the Forms lookup: a per-source rate limit is
+ *          checked first (429, no record written, no third-party service —
+ *          SPAM_PROTECTION_ADR.md) and, if that passes, a filled honeypot or
+ *          a too-fast submission is each accepted with the same 201 shape a
+ *          real success gets but with no Inquiry ever created — a bot
+ *          scripted against this endpoint's responses cannot distinguish a
+ *          silently-dropped submission from a real one.
  * created-by: dev-team
  * related-story: US-33
- * related-ac: 33.3
+ * related-ac: 33.4
  * ---
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 
 import { sendInquiryNotification } from '@/lib/inquiryNotification'
+import {
+  createSourceRateLimiter,
+  isHoneypotFilled,
+  isSubmissionTooFast,
+} from '@/lib/spamProtection'
 import { submitInquiry, type SubmitInquiryInput } from '@/lib/submitInquiry'
 import { validateInquirySubmission, type InquiryFormFieldDef } from '@/lib/validateInquirySubmission'
 
@@ -42,6 +54,8 @@ interface InquiryRequestBody {
   formId?: unknown
   values?: unknown
   sourcePage?: unknown
+  honeypot?: unknown
+  renderedAt?: unknown
   utm?: {
     source?: unknown
     medium?: unknown
@@ -49,6 +63,19 @@ interface InquiryRequestBody {
     term?: unknown
     content?: unknown
   }
+}
+
+// One limiter per process, shared across every request this Next.js server
+// handles — deliberate (see src/lib/spamProtection.ts's header). A rate
+// limiter that resets per-request would never limit anything.
+const inquiryRateLimiter = createSourceRateLimiter()
+
+function getRequestSource(request: NextRequest): string {
+  const forwardedFor = request.headers.get('x-forwarded-for')
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0]?.trim() || 'unknown'
+  }
+  return request.headers.get('x-real-ip') ?? 'unknown'
 }
 
 function toOptionalString(value: unknown): string | undefined {
@@ -65,6 +92,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (typeof body.formId !== 'string' && typeof body.formId !== 'number') {
     return NextResponse.json({ error: 'formId is required' }, { status: 400 })
+  }
+
+  if (!inquiryRateLimiter.consume(getRequestSource(request), Date.now())) {
+    return NextResponse.json({ error: 'too many submissions' }, { status: 429 })
+  }
+
+  // A filled honeypot or a too-fast submission is spam, but the response
+  // deliberately mirrors a real 201 success — no distinguishing status code
+  // or body a scripted bot could use to learn it was caught silently.
+  if (isHoneypotFilled(body.honeypot) || isSubmissionTooFast(body.renderedAt, Date.now())) {
+    return NextResponse.json({ id: null }, { status: 201 })
   }
 
   const input: SubmitInquiryInput = {

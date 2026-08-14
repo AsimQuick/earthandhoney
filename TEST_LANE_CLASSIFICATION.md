@@ -29,9 +29,9 @@ The full per-suite mapping lives in [`TEST_LANE_INVENTORY.json`](TEST_LANE_INVEN
 
 | Lane | Count |
 |---|---|
-| LIVE | 11 |
-| UNIT | 168 |
-| **Total** | **179** |
+| LIVE | 12 |
+| UNIT | 169 |
+| **Total** | **181** |
 
 (UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, AC-30.2's
 `us30-ac30.2-unit-lane-parallelism.test.ts` guard, and AC-30.3's `us30-ac30.3-live-lane-serial.test.ts` guard, all of
@@ -66,8 +66,9 @@ each suite rather than trusting its name.
 | `src/__tests__/us32-ac32.3-navigation-gate-live-toggle.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a draft (`includeInMenu` true) and a published-but-excluded (`includeInMenu` false) `Pages` document over `http://localhost:4288/api/pages`, wires both into the `Navigation` global over `http://localhost:4288/api/globals/navigation`, fetches the rendered `[slug]` route to assert both labels are absent from the nav markup (before), then `PATCH`es each page's single gating field over `http://localhost:4288/api/pages/:id` and re-fetches the same route to assert both labels now appear (after) — with no code change between the two fetches — exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
 | `src/__tests__/us33-ac33.2-inquiry-durable-persist-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a real `Forms` document, `POST`s a real submission to `http://localhost:4290/api/inquiries` (whose notification step fails on every call — `sendInquiryNotification` isn't wired to the Backstage email queue until AC-33.5), and reads the created `Inquiries` document back over `http://localhost:4290/api/inquiries/:id`, exercising Payload's live schema/connection against the real Postgres `db` container. |
 | `src/__tests__/us33-ac33.3-server-validation-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a real `Forms` document, then sends three direct `POST`s to `http://localhost:4291/api/inquiries` — missing required field, malformed email, over-long field — asserting each is rejected with 400 and reading `http://localhost:4291/api/inquiries?where[form][equals]=:id` back afterwards to prove zero Inquiry documents were written, exercising Payload's live schema/connection against the real Postgres `db` container. |
+| `src/__tests__/us33-ac33.4-spam-protection-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process` three times (one per port — 4292, 4293, 4294 — one per scenario, so each scenario's in-memory rate-limiter state starts fresh), creates a real `Forms` document per scenario, and `POST`s real submissions to `/api/inquiries`: a honeypot-filled one, a submission whose `renderedAt` is inside the timing threshold, and a rapid-fire run of `INQUIRY_RATE_LIMIT_MAX_SUBMISSIONS + 1` submissions from the same source — then reads `/api/inquiries/count?where[form][equals]=:id` back over the live Payload REST API to prove each blocked submission wrote no Inquiry, exercising Payload's live schema/connection against the real Postgres `db` container. |
 
-All eleven gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
+All twelve gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
 depend on (`db` or `backstage-backend`) and return early — i.e. pass trivially — when that hostname
 doesn't resolve, so they are also safe to run on a bare host `npm test` outside Docker; they only
 become truly LIVE when the Docker network is up.
