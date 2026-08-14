@@ -35,15 +35,23 @@
  *          `sendInquiryNotification` hands to Backstage: `recipients[].email`,
  *          `publicTitle`, and the submitted values formatted by
  *          src/lib/buildInquirySubmissionSummary.ts — no second lookup.
+ *          After `submitInquiry()` returns, AC-33.6's optional branded
+ *          acknowledgement to the submitter is attempted via
+ *          src/lib/inquiryAcknowledgement.ts, using the same already-fetched
+ *          `formFields`/`formTitle` to find a submitter email
+ *          (`findSubmitterEmail`) — independent of the studio notification's
+ *          own outcome, wrapped in its own try/catch here so a failure can
+ *          never affect the durable record or the 201 response.
  * created-by: dev-team
  * related-story: US-33
- * related-ac: 33.5.2.3
+ * related-ac: 33.6
  * ---
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 
 import { buildInquirySubmissionSummary } from '@/lib/buildInquirySubmissionSummary'
+import { findSubmitterEmail, sendInquiryAcknowledgement } from '@/lib/inquiryAcknowledgement'
 import { sendInquiryNotification } from '@/lib/inquiryNotification'
 import {
   createSourceRateLimiter,
@@ -171,6 +179,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     },
     input,
   )
+
+  // AC-33.6: the optional branded acknowledgement to the submitter — off by
+  // default, attempted independently of the studio notification's outcome,
+  // and never allowed to affect the already-committed Inquiry record or the
+  // 201 response below.
+  try {
+    await sendInquiryAcknowledgement({
+      id: result.id,
+      formTitle,
+      submitterEmail: findSubmitterEmail(formFields, input.values),
+    })
+  } catch (error) {
+    console.error('route: acknowledgement failed, inquiry record and studio notification are unaffected', error)
+  }
 
   return NextResponse.json({ id: result.id }, { status: 201 })
 }

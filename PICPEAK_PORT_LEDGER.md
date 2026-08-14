@@ -183,3 +183,33 @@ integrity test stays green against this change.
 
 - **Recorded:** 2026-08-14
 - **Recorded by:** dev-team (US-33, AC-33.5.2.2.2)
+
+## 8. US-33 AC-33.6 — the inquiry-acknowledgement template and route, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-08-14` in `FORK_CHANGELOG.md` (US-33, AC-33.6: the optional branded
+acknowledgement to a form submitter, off by default and sent through the
+same single Backstage email queue as the AC-33.5 studio notification —
+migration `121` and a sibling route on the existing
+`vendor/picpeak/backend/src/routes/v1/notifications.js` router). See that
+changelog entry for the full description of what changed and why; this is
+the flat list of paths for cross-reference against `UPSTREAM_SYNC.md` §2
+during a future sync.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/migrations/core/121_add_inquiry_acknowledgement_email_template.js` | new — inserts the `inquiry_acknowledgement` `email_templates` row, guarded on `template_key` already existing |
+| `src/lib/picpeakMigrationManifest.ts` | migration `121` recorded as a second `origin: 'fork'` entry |
+| `vendor/picpeak/backend/src/routes/v1/notifications.js` | new `POST /notifications/inquiry-acknowledgement` handler added beside the existing inquiry-notification handler; no new router, no new `server.js` mount |
+| `vendor/picpeak/backend/src/routes/v1/__tests__/notifications.inquiryAcknowledgement.test.js` | new — fork-side Jest suite (7 tests) covering the route's request/response behaviour, run offline with no Docker |
+| `PAYLOAD_PICPEAK_API_CONTRACT.md` | new call-catalog row `3b`, immediately after row `3a` |
+| `src/__tests__/us33-ac33.6-inquiry-acknowledgement-route.test.ts` | new — pins the route and these records against the pinned fork source |
+
+None of the above adds a new `server.js` mount or a new migrations
+directory entry point — the migration is additive-only (a single guarded
+`INSERT`) and the route reuses the router `server.js` already mounts for
+AC-33.5.2.2.2 — and `src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity
+test stays green against this change.
+
+- **Recorded:** 2026-08-14
+- **Recorded by:** dev-team (US-33, AC-33.6)

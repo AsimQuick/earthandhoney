@@ -38,6 +38,85 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-14 — `deviation`
 
+**Backstage gains a second inquiry-triggered email: the optional branded
+acknowledgement to the person who submitted a Frontstage form
+(`POST /api/v1/notifications/inquiry-acknowledgement`), off by default and
+sent through the same single email queue as the AC-33.5 studio
+notification — never a second sending system.** CLAUDE.md's email
+pragmatic-default note is explicit that exactly one system sends any given
+email type; this entry keeps that true by extending the existing
+`vendor/picpeak/backend/src/routes/v1/notifications.js` router (added by
+AC-33.5.2.2.2) with a sibling route rather than introducing a new sender.
+The route follows AC-33.5.2.2.2's shape exactly: same `apiTokenAuth` +
+`requireApiScope('write')` pair, `event_id: null` (an inquiry is not a
+gallery event), and delegates to the existing `queueEmail()`
+(`emailProcessor.js:959`) with a fixed `template_key:
+'inquiry_acknowledgement'` — the row
+`121_add_inquiry_acknowledgement_email_template.js` inserts, following
+migration `120`'s exact idempotent shape and the same F9-avoidance reason
+(`scrum-master/po-requests.md`). Whether the route is ever called for a
+given submission is decided entirely by the caller (Frontstage) before the
+request is made — "off by default" is enforced by a Frontstage-side toggle
+that defaults to unset, not by anything in this route, which queues
+unconditionally whenever called. US-33 AC-33.6.
+
+- **Type:** permanent deviation — a genuine, intentional fork addition
+  (Fork Discipline: extend via new code, never by rewriting shipped
+  upstream logic; a new migration for any fork-side schema/data change,
+  never an edit to a shipped one), not an upstream-bug workaround, so
+  `UPSTREAM_SYNC.md` §4 does not apply; it is carried forward on every
+  future merge per §1. Same additive shape as the two 2026-08-14 entries
+  below (AC-33.5.2.2.2's route, AC-33.5.2.1's migration) — precedented,
+  not a new argument to have.
+- **What changed:**
+  1. `vendor/picpeak/backend/migrations/core/121_add_inquiry_acknowledgement_email_template.js`
+     — new migration, inserts the `inquiry_acknowledgement`
+     `email_templates` row (English and German subject/body, `form_title`/
+     `submitted_at` variables), guarded on `template_key` already
+     existing. US-33 AC-33.6.
+  2. `src/lib/picpeakMigrationManifest.ts` — migration `121` recorded as a
+     second `origin: 'fork'` entry, alongside its blob SHA. US-33 AC-33.6.
+  3. `vendor/picpeak/backend/src/routes/v1/notifications.js` — new
+     `POST /notifications/inquiry-acknowledgement` handler added beside
+     the existing `POST /notifications/inquiry` handler in the same file
+     (no new router, no new `server.js` mount — the existing
+     AC-33.5.2.2.2 mount already carries this route); validates
+     `recipient_email`, `form_title` server-side (`express-validator`,
+     the same library the sibling route uses); calls
+     `queueEmail(null, recipient_email, 'inquiry_acknowledgement',
+     emailData)`. US-33 AC-33.6.
+  4. `vendor/picpeak/backend/src/routes/v1/__tests__/notifications.inquiryAcknowledgement.test.js`
+     — new fork-side Jest suite (7 tests), sibling of
+     `notifications.inquiry.test.js`, `queueEmail` and `db` mocked,
+     `requireApiScope` exercised for real. Run offline — no Docker, no
+     live HTTP call. US-33 AC-33.6.
+  5. `PAYLOAD_PICPEAK_API_CONTRACT.md` — new call-catalog row `3b`,
+     immediately after row `3a`, recording this boundary crossing. US-33
+     AC-33.6.
+- **Files touched:** see `PICPEAK_PORT_LEDGER.md` §8 for the flat list.
+- **Evidence:** `src/__tests__/us33-ac33.6-inquiry-acknowledgement-route.test.ts`
+  pins the route's auth pair, its `queueEmail` call shape, the fixed
+  `template_key`, and the changelog/ledger/contract records against the
+  pinned fork source directly. The fork-side suite named above proves the
+  route's actual request/response behaviour: a valid request queues
+  exactly once with `event_id === null` and the fixed `template_key`, an
+  invalid body 400s before `queueEmail` is reached, and a read-only-scoped
+  token 403s via the real `requireApiScope`. `src/__tests__/us33-ac33.6-inquiry-acknowledgement-client.test.ts`
+  proves the Frontstage-side toggle: disabled (unset) never issues a
+  request to this route at all — zero `fetch` calls — and enabled issues
+  exactly one. `scripts/ac33.6-inquiry-acknowledgement-proof.sh` extends
+  the AC-33.5.2.3 live-proof pattern (MailHog emptied and asserted `0`
+  before each run) into two live runs against the stack in Docker: enabled
+  → the acknowledgement is captured in MailHog exactly once; disabled →
+  MailHog stays at `0` for that recipient after the same submission.
+
+- **Recorded:** 2026-08-14
+- **Recorded by:** dev-team (US-33, AC-33.6)
+
+---
+
+## 2026-08-14 — `deviation`
+
 **Backstage gains an HTTP way for a service to queue an email:
 `POST /api/v1/notifications/inquiry`.** AC-33.5.2.1's go/no-go recorded
 that no existing route let Frontstage queue an email — `v1/events.js`'s
