@@ -13,13 +13,16 @@
  * created-by: dev-team
  * related-story: US-8
  * related-ac: 8.2
+ * updated-by: dev-team
+ * related-story: US-34
+ * related-ac: 34.3
  * ---
  */
 import { render, screen } from '@testing-library/react'
 import fs from 'fs'
 import path from 'path'
 
-import Home from '@/app/(frontend)/page'
+import { HomePageTemplate } from '@/components/page-template/HomePageTemplate'
 
 const root = process.cwd()
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8')
@@ -119,8 +122,16 @@ describe('AC-8.2: the create-next-app placeholder homepage markup is fully remov
     expect(src).not.toMatch(/To get started, edit the page\.tsx file\./)
   })
 
-  it('rendering the homepage no longer shows the starter copy or starter links', () => {
-    render(<Home />)
+  it('rendering the homepage template no longer shows the starter copy or starter links', () => {
+    // Renders HomePageTemplate directly, not the `page.tsx` route itself —
+    // that route is now an async server component that resolves
+    // StudioProfile/the hero gallery via `payload` (AC-34.3), and `payload`
+    // is an ESM-only package that breaks Jest's interop boundary when
+    // imported directly (see src/lib/getStudioProfile.ts's own docblock).
+    // HomePageTemplate is exactly what the route delegates its rendering
+    // to, so this still proves the rendered homepage carries no starter
+    // markup.
+    render(<HomePageTemplate heroSlideshowPlacement={<div />} />)
 
     expect(screen.queryByText(/To get started, edit the page\.tsx file\./)).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /Deploy Now/i })).not.toBeInTheDocument()

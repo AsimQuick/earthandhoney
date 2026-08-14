@@ -7,15 +7,15 @@
  *          navigation, full-width hero slideshow placement, optional short
  *          introduction, selected galleries or stories, primary inquiry
  *          form, footer — is structurally fixed (nav/footer via
- *          PublicShell, per that component's own header). The hero slot now
- *          renders a real HeroSlideshow (AC-34.2) against the same three
- *          public/photobuddy/img/slide/*.jpg placeholder images the
- *          project's internal Gallery Engine hero-mode QA harness already
- *          uses — resolving a real Backstage hero gallery over the Flow A
- *          boundary is still AC-34.3's concern, so these three stay
- *          hard-coded here until that AC replaces them. The
- *          selected-galleries slot is still a placeholder stand-in: the
- *          curated/ordered selection model is AC-34.4's.
+ *          PublicShell, per that component's own header). The hero slot
+ *          resolves StudioProfile.homeHeroGallerySlug into a real Backstage
+ *          gallery over the Flow A boundary (AC-34.3, via
+ *          resolveHomeHeroGalleryPlacement), rendering HeroSlideshow
+ *          (AC-34.2) on success or GalleryUnavailablePlaceholder — never a
+ *          blank hero or a thrown error — when that gallery is unset,
+ *          unreachable, or missing. The selected-galleries slot is still a
+ *          placeholder stand-in: the curated/ordered selection model is
+ *          AC-34.4's.
  * created-by: dev-team
  * related-story: US-1
  * related-ac: 1.1
@@ -31,28 +31,23 @@
  * updated-by: dev-team
  * related-story: US-34
  * related-ac: 34.2
+ * updated-by: dev-team
+ * related-story: US-34
+ * related-ac: 34.3
  * ---
  */
 import { HomePageTemplate } from "@/components/page-template/HomePageTemplate";
-import { HeroSlideshow } from "@/components/hero/HeroSlideshow";
-import type { GalleryImage } from "@/components/gallery/types";
-
-// The same three public/photobuddy/img/slide/*.jpg files the internal
-// Gallery Engine hero-mode QA harness already uses as placeholder content —
-// swapped for a real, Flow-A-resolved gallery by AC-34.3.
-const HERO_PLACEHOLDER_IMAGES: GalleryImage[] = [
-  { id: "home-hero-1", url: "/photobuddy/img/slide/1.jpg", alt: "Photography Emotion" },
-  { id: "home-hero-2", url: "/photobuddy/img/slide/2.jpg", alt: "Big City Night" },
-  { id: "home-hero-3", url: "/photobuddy/img/slide/3.jpg", alt: "Beautiful Lakes" },
-];
+import { getStudioProfile } from "@/lib/getStudioProfile";
+import { resolveHomeHeroGalleryPlacement } from "@/lib/resolveHomeHeroGalleryPlacement";
 
 // A generic, studio-name-free placeholder: this route renders no studio
 // detail of its own (AC-24.4) — the shell chrome and route <head> around it
 // already read the business name from StudioProfile.
-export default function Home() {
-  return (
-    <HomePageTemplate
-      heroSlideshowPlacement={<HeroSlideshow images={HERO_PLACEHOLDER_IMAGES} />}
-    />
+export default async function Home() {
+  const studioProfile = await getStudioProfile();
+  const heroSlideshowPlacement = await resolveHomeHeroGalleryPlacement(
+    studioProfile.homeHeroGallerySlug,
   );
+
+  return <HomePageTemplate heroSlideshowPlacement={heroSlideshowPlacement} />;
 }

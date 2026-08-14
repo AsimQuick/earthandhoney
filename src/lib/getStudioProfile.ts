@@ -20,6 +20,9 @@
  * updated-by: dev-team
  * related-story: US-24
  * related-ac: 24.5
+ * updated-by: dev-team
+ * related-story: US-34
+ * related-ac: 34.3
  * ---
  */
 import { getPayload } from 'payload'
@@ -52,6 +55,8 @@ export interface ResolvedStudioProfile {
   serviceAreas: string[]
   socialProfiles: StudioSocialProfile[]
   defaultSocialImage: { url: string } | null
+  /** AC-34.3: the Backstage gallery slug for the homepage hero, or null when unset. */
+  homeHeroGallerySlug: string | null
 }
 
 function fieldDefaultValue(name: string): string {
@@ -78,6 +83,7 @@ export async function getStudioProfile(): Promise<ResolvedStudioProfile> {
     serviceAreas?: Array<{ area?: string }>
     socialProfiles?: Array<{ platform?: string; url?: string }>
     defaultSocialImage?: { url?: string } | number | null
+    homeHeroGallerySlug?: string | null
   }
 
   const defaultSocialImage =
@@ -104,5 +110,6 @@ export async function getStudioProfile(): Promise<ResolvedStudioProfile> {
       (row): row is StudioSocialProfile => Boolean(row.platform && row.url),
     ),
     defaultSocialImage,
+    homeHeroGallerySlug: doc.homeHeroGallerySlug || null,
   }
 }
