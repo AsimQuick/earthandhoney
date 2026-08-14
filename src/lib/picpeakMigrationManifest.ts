@@ -9,9 +9,21 @@
  *          against the pinned commit's GitHub tree API response so this
  *          manifest is a faithful fingerprint of what upstream actually
  *          shipped, not just of whatever happens to be on disk.
+ *
+ *          AC-33.5.2.1 adds a second, explicitly distinct lane to this same
+ *          list: entries with `origin: 'fork'` fingerprint a migration this
+ *          project added on top of the pin, never one upstream shipped.
+ *          Upstream's own migrations (no `origin` field — the default and
+ *          by far the common case, so the ~130 pre-existing entries below
+ *          are untouched) are still fingerprinted exactly as before, and
+ *          `verifyMigrationsUnmodified` (picpeakMigrationIntegrity.ts) still
+ *          fails an edit to any of them the same way it always has. A
+ *          `fork`-origin entry additionally requires a `FORK_CHANGELOG.md`
+ *          record naming it — see picpeakMigrationIntegrity.ts and
+ *          vendor/README.md for what enforces that.
  * created-by: dev-team
- * related-story: US-15
- * related-ac: 15.6
+ * related-story: US-15, US-33
+ * related-ac: 15.6, 33.5.2.1
  * ---
  */
 
@@ -19,10 +31,20 @@
  * Path is relative to vendor/picpeak/. Hash is the git blob SHA-1
  * (`git hash-object <file>`), which is identical to the blob `sha` GitHub's
  * Trees API reports for the same file at the same commit.
+ *
+ * `origin` distinguishes the two lanes this manifest fingerprints:
+ * - omitted (the default): a pinned-upstream migration, fingerprinted
+ *   against the commit GitHub actually shipped at `PICPEAK_PINNED_COMMIT`.
+ * - `'fork'`: a migration this project added on top of that pin. Its blob
+ *   SHA is still enforced (a fork migration that has already shipped must
+ *   not be edited either — Fork Discipline's no-edit rule is not only an
+ *   upstream rule), but it is additionally required to be named in
+ *   `FORK_CHANGELOG.md`, which upstream entries are not.
  */
 export interface MigrationManifestEntry {
   path: string
   blobSha: string
+  origin?: 'fork'
 }
 
 export const PICPEAK_PINNED_COMMIT = 'eb263137b98935754155824de2a03848121304b6'
@@ -126,6 +148,14 @@ export const PICPEAK_MIGRATION_MANIFEST: MigrationManifestEntry[] = [
   { path: 'backend/migrations/core/117_add_projects.js', blobSha: '98417e27d83a4714a05bb447b146aca8e8e0d5b7' },
   { path: 'backend/migrations/core/118_add_project_id_to_hour_entries.js', blobSha: '457faea8ce8c58f0331ef17176fa430a4c34a167' },
   { path: 'backend/migrations/core/119_add_rendered_html_to_email_queue.js', blobSha: '73309d16d0c61c193e1e6d7a7d1151f6275eaee4' },
+  // --- fork-added migrations (origin: 'fork') — never upstream's, each one
+  // named in FORK_CHANGELOG.md; see picpeakMigrationIntegrity.ts for the
+  // lane's enforcement. ---
+  {
+    path: 'backend/migrations/core/120_add_inquiry_notification_email_template.js',
+    blobSha: '0009cdf5f3d958ab6c20f8134ef030bdd7859de3',
+    origin: 'fork',
+  },
   { path: 'backend/migrations/helpers.js', blobSha: 'a2227cd7d89075e89d1067d98af376681b19a673' },
   { path: 'backend/migrations/legacy/004_add_categories_and_cms.js', blobSha: 'a67f9526099c1f99b957c3563193edee3458b842' },
   { path: 'backend/migrations/legacy/006_add_photo_counter_to_categories.js', blobSha: '4f4a46a6671ac1cac2b4977d2602a907a958ffa0' },

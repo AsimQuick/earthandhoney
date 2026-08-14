@@ -132,3 +132,27 @@ against this change (verified in
 
 - **Recorded:** 2026-08-07
 - **Recorded by:** dev-team (US-27, AC-27.5)
+
+## 6. US-33 AC-33.5.2.1 — first fork migration and the manifest's fork-addition lane, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-08-14` in `FORK_CHANGELOG.md` (US-33, AC-33.5.2.1: the fork's first
+extension migration, and the `origin: 'fork'` lane `PICPEAK_MIGRATION_MANIFEST`
+gained to fingerprint it as a fork addition rather than pinned-upstream
+drift). See that changelog entry for the full description of what changed
+and why; this is the flat list of paths for cross-reference against
+`UPSTREAM_SYNC.md` §2 during a future sync — this is also, by virtue of
+being the first entry under `vendor/picpeak/backend/migrations/`, the first
+row of this ledger's file list that sits inside that directory.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/migrations/core/120_add_inquiry_notification_email_template.js` | new — inserts the `inquiry_received` `email_templates` row, guarded on `template_key` already existing |
+| `src/lib/picpeakMigrationManifest.ts` | `MigrationManifestEntry` gained the optional `origin?: 'fork'` field; migration `120` recorded as the manifest's first `origin: 'fork'` entry |
+| `src/lib/picpeakMigrationIntegrity.ts` | `verifyMigrationsUnmodified` gained the `isForkAdditionDocumented` check for `origin: 'fork'` entries; `verifyVendoredMigrations` wires it to a real `FORK_CHANGELOG.md` read |
+| `vendor/README.md` | new "The fork-addition lane" section |
+| `UPSTREAM_SYNC.md` | §3 updated — the "no fork migration exists yet" claim no longer holds |
+| `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts` | new — fixture-level proof of the lane in both directions, plus the negative case (a tampered upstream entry still fails as `'modified'`) |
+
+- **Recorded:** 2026-08-14
+- **Recorded by:** dev-team (US-33, AC-33.5.2.1)

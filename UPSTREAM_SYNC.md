@@ -82,17 +82,30 @@ command re-run against that now-migrated database as a no-op.
 
 It explicitly does **not** prove a third scenario: an upgrade that applies
 *our own* extension migration(s) on top of an already-migrated upstream
-database. Under Fork Discipline, no such migration exists yet — this fork
-has not added a single schema migration of its own — so there is nothing
-real to run that proof against. Inventing a throwaway migration purely to
-exercise the path would prove nothing about how our actual future
-migrations behave.
+database. Under Fork Discipline, no such migration existed at the time this
+section was written — this fork had not added a single schema migration of
+its own — so there was nothing real to run that proof against. Inventing a
+throwaway migration purely to exercise the path would have proven nothing
+about how our actual future migrations behave.
 
 **This proof is deferred to the sprint that introduces this fork's first
 extension migration.** When that migration lands, its story must repeat the
 AC-16.6 proof shape (before/after migration-state table, re-run as a no-op)
 using that real migration, before the deviation is also logged in
 `FORK_CHANGELOG.md`.
+
+**Update (2026-08-14, US-33 AC-33.5.2.1):** that first extension migration
+has now landed —
+`vendor/picpeak/backend/migrations/core/120_add_inquiry_notification_email_template.js`,
+an `INSERT` of one `email_templates` row, guarded on `template_key` already
+existing (`FORK_CHANGELOG.md`'s `2026-08-14` entry). It is fingerprinted in
+`PICPEAK_MIGRATION_MANIFEST` under the fork-addition lane (`origin: 'fork'`,
+see `vendor/README.md`), not the upstream one. The deferral above still
+stands for a *schema-altering* fork migration (one that adds or changes a
+table or column): migration `120` alters no schema, so it does not carry
+the same upgrade-ordering risk an `ALTER TABLE` would, and the full
+before/after AC-16.6 proof shape remains owed to whichever future migration
+is the first to change schema rather than only insert a row.
 
 - **Recorded:** 2026-07-31
 - **Recorded by:** dev-team (US-16, AC-16.6)
