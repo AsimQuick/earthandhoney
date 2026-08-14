@@ -29,9 +29,9 @@ The full per-suite mapping lives in [`TEST_LANE_INVENTORY.json`](TEST_LANE_INVEN
 
 | Lane | Count |
 |---|---|
-| LIVE | 21 |
-| UNIT | 197 |
-| **Total** | **218** |
+| LIVE | 22 |
+| UNIT | 199 |
+| **Total** | **221** |
 
 (UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, AC-30.2's
 `us30-ac30.2-unit-lane-parallelism.test.ts` guard, and AC-30.3's `us30-ac30.3-live-lane-serial.test.ts` guard, all of
@@ -76,8 +76,9 @@ each suite rather than trusting its name.
 | `src/__tests__/us37-ac37.3-live-structured-data.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a `Pages` document carrying `photographyType`/`cityRegion`/`venue` plus a `Stories` document and its `gallery-placements` section target over `http://localhost:4301/api/pages` and `/api/stories`, and fetches each one's rendered `[slug]`/`stories/[slug]` route to extract the `<script type="application/ld+json">` blocks from the real response HTML and validate their shape — the page's LocalBusiness/ProfessionalService block with its `makesOffer`/`location`/`areaServed` extensions, and the story's `CreativeWork` whose `publisher` equals the root layout's studio block byte for byte — exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
 | `src/__tests__/us37-ac37.4.1-sitemap-closed-set-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create two real published `Pages` documents and one published `Stories`/`gallery-placements` pair over `http://localhost:4302/api/pages`, `/api/stories` and `/api/gallery-placements`, fetches the real `/sitemap.xml` and parses its `<loc>` values, and separately reads the closed set back from the live Payload REST API with the same `status`/`indexing` filters the reader uses, asserting set equality in both directions — exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
 | `src/__tests__/us37-ac37.4.2-sitemap-excludes-draft-and-noindex-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process`, calls `getLiveApiAuthToken` to create a draft `Pages` document, a published+`noindex` `Pages` document, a draft `Stories`/`gallery-placements` pair, and a published+`index` control `Pages` document over `http://localhost:4303/api/pages`, `/api/stories` and `/api/gallery-placements`, fetches the real `/sitemap.xml`, and asserts the three excluded slugs are absent from it while the control page's slug is present — exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container. |
+| `src/__tests__/us37-ac37.4.3-sitemap-image-references-live.test.ts` | Gated on `dns.lookup('db')` **and** `dns.lookup('backstage-backend')` resolving, then self-seeds a real published Backstage gallery and find-or-uploads a real photo into it via live admin API `fetch()` calls (polling `resolveGalleryPlacementImages` until the async upload pipeline has processed it), spawns a real `next dev` child process with its own `NEXT_PUBLIC_SITE_URL`, calls `getLiveApiAuthToken` to create a real `gallery-placements`/published `Pages` pair over `http://localhost:4304/api/gallery-placements` and `/api/pages`, fetches the real `/sitemap.xml` and asserts that page's `<url>` block's `<image:loc>` set equals the Flow A photo URLs made absolute, then fetches one of those absolute URLs for real and asserts HTTP 200 with an `image/*` content type — exercising Payload's live schema/connection, the live Next.js route and the `next.config.ts` image rewrite against the real Postgres `db` container and the real Backstage stack. |
 
-All twenty-one gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
+All twenty-two gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
 depend on (`db` or `backstage-backend`) and return early — i.e. pass trivially — when that hostname
 doesn't resolve, so they are also safe to run on a bare host `npm test` outside Docker; they only
 become truly LIVE when the Docker network is up.

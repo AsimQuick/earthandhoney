@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 218,
+  "totalSuites": 221,
   "counts": {
-    "live": 21,
-    "unit": 197
+    "live": 22,
+    "unit": 199
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1113,6 +1113,21 @@
       "path": "src/__tests__/us36-ac36.5-no-blog-chrome.test.tsx",
       "lane": "UNIT",
       "reason": "walks the in-memory Stories.fields tree, reads source files and STORY_NO_BLOG_CHROME.md/CLAUDE.md from disk with fs, and renders StoryPageTemplate with @testing-library/react (jsdom) against in-memory fixtures, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.4.3-sitemap-image-path.test.ts",
+      "lane": "UNIT",
+      "reason": "calls the import-free sitemapImagePath helper directly against in-memory GalleryImage fixtures and reads next.config.ts from disk with fs to cross-check the proxied tier list, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.4.3-sitemap-image-source-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "fs reads of src/app/(frontend)/sitemap.ts and src/lib/getSitemapEntries.ts and regex assertions on their static source text (Flow A import, no second Backstage client, no second Payload query, depth:1 on both collections, absoluteSiteUrl mapping for images), no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.4.3-sitemap-image-references-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') and dns.lookup('backstage-backend') resolving, then self-seeds a real published Backstage gallery and find-or-uploads a real photo into it via live admin API fetch() calls (polling resolveGalleryPlacementImages until the async upload pipeline processes it), spawns a real next dev child process with its own NEXT_PUBLIC_SITE_URL, creates a real Pages/gallery-placements pair via the live Payload REST API, fetches the real /sitemap.xml over HTTP and asserts the page's <url> block's <image:loc> set matches the Flow A photo URLs, then fetches one of those absolute URLs for real and asserts HTTP 200 with an image content type, against the real Postgres db container and the real Backstage stack"
     }
   ]
 }

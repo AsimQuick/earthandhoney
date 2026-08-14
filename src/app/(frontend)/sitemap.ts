@@ -12,9 +12,20 @@
  *          forbids. Every `<loc>` is made absolute through
  *          src/lib/absoluteSiteUrl.ts (AC-37.3) rather than a re-copied
  *          site-url-env-with-local-dev-fallback literal.
+ *          AC-37.4.3 — each entry's `images` (site-relative Backstage photo
+ *          paths, already resolved through Flow A by getSitemapEntries.ts)
+ *          are made absolute the same way `url` is, through the same
+ *          `absoluteSiteUrl` call — never a second origin resolution. Next's
+ *          `MetadataRoute.Sitemap` renders a per-entry `images: string[]`
+ *          field as one `<image:image><image:loc>` per URL automatically
+ *          (node_modules/next's `resolve-route-data.js`), so no XML is
+ *          hand-built here.
  * created-by: dev-team
  * related-story: US-37
  * related-ac: 37.4.1
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.4.3
  * ---
  */
 import type { MetadataRoute } from 'next'
@@ -32,5 +43,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return entries.map((entry) => ({
     url: absoluteSiteUrl(entry.path),
     ...(entry.lastModified ? { lastModified: entry.lastModified } : {}),
+    ...(entry.images && entry.images.length > 0
+      ? { images: entry.images.map((image) => absoluteSiteUrl(image)) }
+      : {}),
   }))
 }
