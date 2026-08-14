@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 223,
+  "totalSuites": 226,
   "counts": {
-    "live": 23,
-    "unit": 200
+    "live": 24,
+    "unit": 202
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1138,6 +1138,21 @@
       "path": "src/__tests__/us37-ac37.4.3-sitemap-image-references-live.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('db') and dns.lookup('backstage-backend') resolving, then self-seeds a real published Backstage gallery and find-or-uploads a real photo into it via live admin API fetch() calls (polling resolveGalleryPlacementImages until the async upload pipeline processes it), spawns a real next dev child process with its own NEXT_PUBLIC_SITE_URL, creates a real Pages/gallery-placements pair via the live Payload REST API, fetches the real /sitemap.xml over HTTP and asserts the page's <url> block's <image:loc> set matches the Flow A photo URLs, then fetches one of those absolute URLs for real and asserts HTTP 200 with an image content type, against the real Postgres db container and the real Backstage stack"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.1-authored-seo-fields-parity.test.ts",
+      "lane": "UNIT",
+      "reason": "reads Pages.fields/Stories.fields in memory and the two collection files' source text with fs, regex-matching field names and line numbers, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.1-no-meta-keywords-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "walks the in-memory Pages.fields/Stories.fields trees recursively and asserts on field names, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.1-story-indexing-sitemap-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, calls getLiveApiAuthToken to create a published+indexing:'index' control Stories/gallery-placements pair and a published+indexing:'noindex' Stories/gallery-placements pair over http://localhost:4307/api/stories and /api/gallery-placements, fetches the real /sitemap.xml, and asserts the noindex story's slug is absent while the control story's slug is present, against the real Postgres db container"
     }
   ]
 }

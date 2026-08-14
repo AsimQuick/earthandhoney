@@ -16,8 +16,9 @@
  *          itself lists the two fixed routes explicitly rather than
  *          inferring them, and its two Payload queries carry the closed
  *          set's filters — `pages` on `status: 'published'` AND
- *          `indexing: 'index'`, `stories` on `status: 'published'` only
- *          (Stories has no `indexing` field, src/collections/Stories.ts).
+ *          `indexing: 'index'`, and (AC-37.6.1, once `Stories` gained an
+ *          `indexing` field of its own) `stories` on the identical pair of
+ *          conditions.
  *          `payload` is an ESM-only package that breaks Jest's interop
  *          boundary when imported directly (see
  *          us3-ac3.5-galleries-api-read.test.ts), so this suite reads
@@ -28,6 +29,9 @@
  * created-by: dev-team
  * related-story: US-37
  * related-ac: 37.4.1
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.6.1
  * ---
  */
 import fs from 'fs'
@@ -77,17 +81,17 @@ describe('AC-37.4.1: /sitemap.xml is served through one route file consuming one
     expect(src).not.toMatch(/http:\/\/localhost:3000/)
   })
 
-  it('the reader queries `pages` filtered on published+index and `stories` filtered on published only', () => {
+  it('the reader queries `pages` and `stories` both filtered on published+index — AC-37.6.1 made the two conditions identical', () => {
     const src = read(READER_PATH)
     const pagesQueryMatch = src.match(/collection:\s*['"]pages['"][\s\S]{0,200}/)
     expect(pagesQueryMatch).not.toBeNull()
     expect(pagesQueryMatch![0]).toMatch(/status:\s*\{\s*equals:\s*['"]published['"]\s*\}/)
     expect(pagesQueryMatch![0]).toMatch(/indexing:\s*\{\s*equals:\s*['"]index['"]\s*\}/)
 
-    const storiesQueryMatch = src.match(/collection:\s*['"]stories['"][\s\S]{0,200}/)
+    const storiesQueryMatch = src.match(/collection:\s*['"]stories['"][\s\S]{0,300}/)
     expect(storiesQueryMatch).not.toBeNull()
     expect(storiesQueryMatch![0]).toMatch(/status:\s*\{\s*equals:\s*['"]published['"]\s*\}/)
-    expect(storiesQueryMatch![0]).not.toMatch(/indexing/)
+    expect(storiesQueryMatch![0]).toMatch(/indexing:\s*\{\s*equals:\s*['"]index['"]\s*\}/)
   })
 
   it('the reader lists the two fixed public routes explicitly rather than inferring them', () => {

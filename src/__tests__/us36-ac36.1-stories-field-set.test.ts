@@ -9,10 +9,18 @@
  *          STORY_TEMPLATE_ADR.md commits this collection to), is registered
  *          on the Payload config, and never relates directly into the
  *          separate Backstage database. Mirrors
- *          us31-ac31.1-pages-field-set.test.ts's structure.
+ *          us31-ac31.1-pages-field-set.test.ts's structure — including its
+ *          "sanctioned fields beyond the PRD row set" tracking pattern,
+ *          reused here for AC-37.6.1's seven added fields
+ *          (`seoTitle`/`metaDescription`/`photographyType`/`cityRegion`/
+ *          `venue`/`socialImage`/`indexing`), which PRD §13.5's table
+ *          predates.
  * created-by: dev-team
  * related-story: US-36
  * related-ac: 36.1
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.6.1
  * ---
  */
 import fs from 'fs'
@@ -20,7 +28,24 @@ import path from 'path'
 
 import type { Field } from 'payload'
 
+import { PHOTOGRAPHY_TYPE_OPTIONS } from '@/collections/Pages'
 import { Stories } from '@/collections/Stories'
+
+// AC-37.6.1 (sprint5.json) requires `Stories` to gain the same seven PRD
+// §21.2 AUTHORED SEO fields `Pages` already carries — fields PRD §13.5's
+// table predates and doesn't itself enumerate as a row. Tracked explicitly
+// here, the same way us31-ac31.1-pages-field-set.test.ts tracks AC-35.3's
+// `template` field, so this guard keeps meaning exactly what its own name
+// says: no *undocumented* field exists beyond the PRD §13.5 set.
+const FIELDS_BEYOND_PRD_13_5: Array<{ collectionField: string; sanctionedBy: string }> = [
+  { collectionField: 'seoTitle', sanctionedBy: 'AC-37.6.1' },
+  { collectionField: 'metaDescription', sanctionedBy: 'AC-37.6.1' },
+  { collectionField: 'photographyType', sanctionedBy: 'AC-37.6.1' },
+  { collectionField: 'cityRegion', sanctionedBy: 'AC-37.6.1' },
+  { collectionField: 'venue', sanctionedBy: 'AC-37.6.1' },
+  { collectionField: 'socialImage', sanctionedBy: 'AC-37.6.1' },
+  { collectionField: 'indexing', sanctionedBy: 'AC-37.6.1' },
+]
 
 const FILE_PATH = path.join(process.cwd(), 'src/collections/Stories.ts')
 const fileSource = fs.readFileSync(FILE_PATH, 'utf8')
@@ -70,7 +95,16 @@ describe('US-36 AC-36.1: the top-level field list maps one-to-one onto PRD §13.
     .filter(Boolean)
 
   it('carries exactly the expected field set', () => {
-    expect(actualFieldNames.sort()).toEqual(['sections', 'slug', 'status', 'subtitleIntroduction', 'title'].sort())
+    expect(actualFieldNames.sort()).toEqual(
+      [
+        'sections',
+        'slug',
+        'status',
+        'subtitleIntroduction',
+        'title',
+        ...FIELDS_BEYOND_PRD_13_5.map((f) => f.collectionField),
+      ].sort(),
+    )
   })
 
   it('title is required — PRD §13.5\'s "Title"', () => {
@@ -142,14 +176,65 @@ describe('US-36 AC-36.1: sections is the PRD §13.5 repeating (section heading +
   })
 })
 
+describe('US-37 AC-37.6.1: the seven added AUTHORED SEO fields match Pages\' shapes exactly', () => {
+  it('seoTitle is an optional text field, same as Pages', () => {
+    const field = fieldByName(Stories.fields, 'seoTitle')
+    expect(field?.type).toBe('text')
+    expect(field && 'required' in field ? field.required : undefined).not.toBe(true)
+  })
+
+  it('metaDescription is an optional textarea, same as Pages', () => {
+    const field = fieldByName(Stories.fields, 'metaDescription')
+    expect(field?.type).toBe('textarea')
+    expect(field && 'required' in field ? field.required : undefined).not.toBe(true)
+  })
+
+  it('photographyType is an optional select sharing Pages\' PHOTOGRAPHY_TYPE_OPTIONS', () => {
+    const field = fieldByName(Stories.fields, 'photographyType')
+    expect(field?.type).toBe('select')
+    expect(field && 'required' in field ? field.required : undefined).not.toBe(true)
+    expect(field && 'options' in field ? field.options : undefined).toEqual(PHOTOGRAPHY_TYPE_OPTIONS)
+  })
+
+  it('cityRegion is an optional text field, same as Pages', () => {
+    const field = fieldByName(Stories.fields, 'cityRegion')
+    expect(field?.type).toBe('text')
+    expect(field && 'required' in field ? field.required : undefined).not.toBe(true)
+  })
+
+  it('venue is an optional text field, same as Pages', () => {
+    const field = fieldByName(Stories.fields, 'venue')
+    expect(field?.type).toBe('text')
+    expect(field && 'required' in field ? field.required : undefined).not.toBe(true)
+  })
+
+  it('socialImage is an optional upload relating to media, same as Pages', () => {
+    const field = fieldByName(Stories.fields, 'socialImage')
+    expect(field?.type).toBe('upload')
+    expect(field && 'relationTo' in field ? field.relationTo : undefined).toBe('media')
+    expect(field && 'required' in field ? field.required : undefined).not.toBe(true)
+  })
+
+  it('indexing is a required select defaulting to index, same as Pages', () => {
+    const field = fieldByName(Stories.fields, 'indexing')
+    expect(field?.type).toBe('select')
+    expect(field && 'required' in field ? field.required : undefined).toBe(true)
+    expect(field && 'defaultValue' in field ? field.defaultValue : undefined).toBe('index')
+    expect(field && 'options' in field ? field.options : undefined).toEqual([
+      { label: 'Index', value: 'index' },
+      { label: 'Noindex', value: 'noindex' },
+    ])
+  })
+})
+
 describe('US-36 AC-36.1: the gallery placement reference never crosses into the Backstage database', () => {
   it('the collection source never references backstage-db', () => {
     expect(fileSource).not.toMatch(/backstage-db/)
   })
 
-  it('the only relationTo value is the Payload-owned gallery-placements collection', () => {
+  it('the only relationTo values are the Payload-owned gallery-placements and media collections', () => {
     const relationToMatches = [...fileSource.matchAll(/relationTo:\s*'([^']+)'/g)].map((match) => match[1])
-    expect(relationToMatches).toEqual(['gallery-placements'])
+    expect(relationToMatches).toEqual(['gallery-placements', 'media'])
   })
 
   it('no field on the collection is a `join` type into another database', () => {

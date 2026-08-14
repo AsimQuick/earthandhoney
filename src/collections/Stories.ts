@@ -22,12 +22,29 @@
  *          a separate collection rather than a `Pages` template variant —
  *          see STORY_TEMPLATE_ADR.md (AC-36.1) for the option chosen, the
  *          option rejected, and the reason.
+ *          AC-37.6.1 — the seven remaining PRD §21.2 AUTHORED controls (`Pages`
+ *          already carried all eight per US-31): `seoTitle`, `metaDescription`,
+ *          `photographyType`, `cityRegion`, `venue`, `socialImage`, `indexing`.
+ *          Same field names, types and admin descriptions as
+ *          src/collections/Pages.ts — one vocabulary across both collections,
+ *          not a second one invented for stories — including reusing
+ *          `PHOTOGRAPHY_TYPE_OPTIONS` from that file rather than a duplicate
+ *          option list. Adding `indexing` here is what lets
+ *          src/lib/getSitemapEntries.ts filter stories by index/noindex the
+ *          same way it already filters pages. There is still no
+ *          meta-keywords/`keywords` field — PRD §21.2 forbids one — guarded by
+ *          src/__tests__/us37-ac37.6.1-no-meta-keywords-guard.test.ts.
  * created-by: dev-team
  * related-story: US-36
  * related-ac: 36.1
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.6.1
  * ---
  */
 import type { CollectionConfig } from 'payload'
+
+import { PHOTOGRAPHY_TYPE_OPTIONS } from './Pages'
 
 export const Stories: CollectionConfig = {
   slug: 'stories',
@@ -96,6 +113,70 @@ export const Stories: CollectionConfig = {
       unique: true,
       admin: {
         description: 'URL slug — the public path this story renders at.',
+      },
+    },
+    {
+      // AC-37.6.1: same field, type and description as src/collections/Pages.ts.
+      name: 'seoTitle',
+      type: 'text',
+      admin: {
+        description: 'The rendered <title>.',
+      },
+    },
+    {
+      // AC-37.6.1: same field, type and description as src/collections/Pages.ts.
+      name: 'metaDescription',
+      type: 'textarea',
+      admin: {
+        description: 'The search-result snippet.',
+      },
+    },
+    {
+      // AC-37.6.1: same field, type, options and description as src/collections/Pages.ts.
+      name: 'photographyType',
+      type: 'select',
+      options: PHOTOGRAPHY_TYPE_OPTIONS,
+      admin: {
+        description: 'Service context, used for schema/structured context.',
+      },
+    },
+    {
+      // AC-37.6.1: same field, type and description as src/collections/Pages.ts.
+      name: 'cityRegion',
+      type: 'text',
+      admin: {
+        description: 'City/region for local relevance.',
+      },
+    },
+    {
+      // AC-37.6.1: same field, type and description as src/collections/Pages.ts — optional, as Pages' is.
+      name: 'venue',
+      type: 'text',
+      admin: {
+        description: 'Venue name, optional — venue relevance and image context.',
+      },
+    },
+    {
+      // AC-37.6.1: same field, type and description as src/collections/Pages.ts.
+      name: 'socialImage',
+      type: 'upload',
+      relationTo: 'media',
+      admin: {
+        description: 'The Open Graph image used when this page is shared.',
+      },
+    },
+    {
+      // AC-37.6.1: same field, type, options and description as src/collections/Pages.ts.
+      name: 'indexing',
+      type: 'select',
+      required: true,
+      defaultValue: 'index',
+      options: [
+        { label: 'Index', value: 'index' },
+        { label: 'Noindex', value: 'noindex' },
+      ],
+      admin: {
+        description: 'Search-engine visibility.',
       },
     },
     {

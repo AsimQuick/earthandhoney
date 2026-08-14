@@ -27,6 +27,9 @@
  * created-by: dev-team
  * related-story: US-37
  * related-ac: 37.4.3
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.6.1
  * ---
  */
 import fs from 'fs'
@@ -65,7 +68,10 @@ describe('AC-37.4.3: image-sitemap references resolve through the same Flow A bo
     expect(pagesQueryMatch).not.toBeNull()
     expect(pagesQueryMatch![0]).toMatch(/depth:\s*1/)
 
-    const storiesQueryMatch = src.match(/collection:\s*['"]stories['"][\s\S]{0,300}/)
+    // AC-37.6.1 added an `indexing` where-condition (plus its explanatory
+    // comment) ahead of `depth: 1` in the stories query, so this window is
+    // wider than the pages query's above.
+    const storiesQueryMatch = src.match(/collection:\s*['"]stories['"][\s\S]{0,450}/)
     expect(storiesQueryMatch).not.toBeNull()
     expect(storiesQueryMatch![0]).toMatch(/depth:\s*1/)
   })

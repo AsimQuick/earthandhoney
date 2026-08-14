@@ -6,8 +6,11 @@
  *          consumes to build `/sitemap.xml`. The set this function returns is
  *          closed and enumerable: every `pages` row with `status: 'published'`
  *          AND `indexing: 'index'`, every `stories` row with
- *          `status: 'published'` (Stories has no `indexing` field —
- *          src/collections/Stories.ts), plus the two fixed public routes that
+ *          `status: 'published'` AND `indexing: 'index'` (AC-37.6.1 added the
+ *          `indexing` field to `src/collections/Stories.ts`, the same select
+ *          field `pages` already carried — the story query now applies the
+ *          identical condition inside the `where` clause, not as a
+ *          post-filter), plus the two fixed public routes that
  *          are not database rows at all — `/` (the StudioProfile-driven
  *          homepage) and `/stories` (the US-36 AC-36.4 index) — listed
  *          explicitly below rather than inferred from any collection. No
@@ -56,6 +59,9 @@
  * updated-by: dev-team
  * related-story: US-37
  * related-ac: 37.4.3
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.6.1
  * ---
  */
 import { getPayload } from 'payload'
@@ -135,7 +141,9 @@ export async function getSitemapEntries(): Promise<SitemapEntry[]> {
     }),
     payload.find({
       collection: 'stories',
-      where: { status: { equals: 'published' } },
+      // AC-37.6.1: same closed-set condition as the `pages` query above, now
+      // that `indexing` exists on `stories` too.
+      where: { status: { equals: 'published' }, indexing: { equals: 'index' } },
       limit: 1000,
       // AC-37.4.3: depth 1 resolves each section's `galleryPlacement` relation.
       depth: 1,
