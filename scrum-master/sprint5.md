@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/8 stories | 40/52 ACs
-**Last Updated:** 2026-08-14T13:25:30+00:00
+**Last Updated:** 2026-08-14T13:38:25+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -465,6 +465,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [ ] **AC-36.2:** Repeating sections preserve the author's order, and each section's gallery placement resolves over the Flow A boundary by external identifier only - the same no-cross-database-relation rule as AC-31.5. Evidence: the gallery-placement field definition showing an external identifier only with no relation/join field into the Backstage database, a three-section story rendered in order, plus a reorder changing the output with no code change.
   - Dev: implemented
 - [ ] **AC-36.3:** Heading hierarchy is generated correctly and automatically: exactly one H1 (the story title), section headings at H2, no skipped levels, regardless of how many sections exist. Evidence: asserted against the rendered HTML of a one-section and a five-section story.
+  - Dev: implemented
 - [ ] **AC-36.4:** A story index route lists published stories and excludes drafts. Evidence: both states verified live against a running stack.
 - [ ] **AC-36.5:** No generic blog chrome is built - no categories, no archives, no comment system, no author bios, no tag clouds. The controlled vocabulary term is Story, and the retired blog requirements do not return: the blog sample-content requirement and the no-em-tag content rule are listed under CLAUDE.md's 'Retired From the Old Direction (do not build)'. Evidence: the rendered story page and index shown to contain none of the above, plus the story record naming the retired items it deliberately does not implement.
 
@@ -488,6 +489,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   **Summary:**
   - `src/lib/resolveStoryGalleryPlacements.tsx` (new) — resolves each `Stories` section's `galleryPlacement` through the existing Flow A boundary (`backstageGalleryPlacement` → `backstageClient`/`backstageGalleryMapper`), mirroring `resolvePageGalleryPlacements.tsx` (AC-31.5). Each section is resolved by external `gallerySlug` only (never a relation/join into the Backstage database). `Promise.all` over the input array means order is fixed by array position, so a reorder of the input `sections` array changes the rendered output with zero code change.
   - `src/__tests__/us36-ac36.2-story-gallery-placement-resolution.test.tsx` (new, 6 tests, 100% coverage on the new module) — covers: (1) field-definition evidence (`Stories.sections.galleryPlacement` is a `relationship` into `gallery-placements` only; `GalleryPlacements.gallerySlug` is plain `text`, no relation), (2) a three-section story resolved and rendered in author order via `resolveStoryGalleryPlacements` + `StoryPageTemplate`, (3) an explicit reorder test — same three sections, same functions/components, reversed array order — proving output order changes accordingl …
+  AC-36.3 implemented (local checks green): I've set up monitoring for the background test run and will report back once it completes.
 
 **Tester Status:** approved
 **Tester Notes:**
