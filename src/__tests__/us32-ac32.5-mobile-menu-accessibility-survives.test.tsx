@@ -49,27 +49,40 @@ const TRIGGER_PATH = 'src/components/layout/MobileMenuTrigger.tsx'
 const VERTICAL_MENU_PATH = 'src/components/layout/VerticalMenu.tsx'
 const GLOBALS_CSS_PATH = 'src/app/(frontend)/globals.css'
 
+// The `git` binary is not present in the `web` Docker container (see
+// us20-ac20.5-stripe-port-report-secret-handling.test.ts and
+// us29-ac29.3-measured-results-in-adr.test.ts, which gate the same way), so
+// the structural-snapshot tests below — the only ones that shell out to git
+// — can only run where `git` is actually reachable.
+let gitAvailable = true
+try {
+  execFileSync('git', ['--version'])
+} catch {
+  gitAvailable = false
+}
+const itIfGitAvailable = gitAvailable ? it : it.skip
+
 // The commit US-32 branched from — the "before" side of the structural
 // snapshot. Computed rather than hard-coded so it keeps pointing at the
 // right commit even if this suite runs again after main advances further.
-const BASE_COMMIT = execFileSync('git', ['merge-base', 'HEAD', 'main'], { cwd: root })
-  .toString()
-  .trim()
+const BASE_COMMIT = gitAvailable
+  ? execFileSync('git', ['merge-base', 'HEAD', 'main'], { cwd: root }).toString().trim()
+  : ''
 
 function readAtBase(rel: string): string {
   return execFileSync('git', ['show', `${BASE_COMMIT}:${rel}`], { cwd: root }).toString()
 }
 
 describe('AC-32.5: structural snapshot — before (US-32 branch point) vs after (this change)', () => {
-  it('MobileMenuContext.tsx is byte-for-byte unchanged: the US-8 open/close state survives untouched', () => {
+  itIfGitAvailable('MobileMenuContext.tsx is byte-for-byte unchanged: the US-8 open/close state survives untouched', () => {
     expect(read(CONTEXT_PATH)).toBe(readAtBase(CONTEXT_PATH))
   })
 
-  it('MobileMenuTrigger.tsx is byte-for-byte unchanged: the US-8 hamburger trigger survives untouched', () => {
+  itIfGitAvailable('MobileMenuTrigger.tsx is byte-for-byte unchanged: the US-8 hamburger trigger survives untouched', () => {
     expect(read(TRIGGER_PATH)).toBe(readAtBase(TRIGGER_PATH))
   })
 
-  it('VerticalMenu.tsx did change (AC-32.1/32.4), but its landmark structure — the part AC-32.5 cares about — did not', () => {
+  itIfGitAvailable('VerticalMenu.tsx did change (AC-32.1/32.4), but its landmark structure — the part AC-32.5 cares about — did not', () => {
     const before = readAtBase(VERTICAL_MENU_PATH)
     const after = read(VERTICAL_MENU_PATH)
 
