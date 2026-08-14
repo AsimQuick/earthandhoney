@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 6/8 stories | 40/52 ACs
-**Last Updated:** 2026-08-14T13:50:57+00:00
+**Last Updated:** 2026-08-14T14:14:47+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -469,6 +469,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [ ] **AC-36.4:** A story index route lists published stories and excludes drafts. Evidence: both states verified live against a running stack.
   - Dev: implemented
 - [ ] **AC-36.5:** No generic blog chrome is built - no categories, no archives, no comment system, no author bios, no tag clouds. The controlled vocabulary term is Story, and the retired blog requirements do not return: the blog sample-content requirement and the no-em-tag content rule are listed under CLAUDE.md's 'Retired From the Old Direction (do not build)'. Evidence: the rendered story page and index shown to contain none of the above, plus the story record naming the retired items it deliberately does not implement.
+  - Dev: implemented
 
 **Dependencies:** US-31, US-33
 
@@ -492,6 +493,15 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   - `src/__tests__/us36-ac36.2-story-gallery-placement-resolution.test.tsx` (new, 6 tests, 100% coverage on the new module) — covers: (1) field-definition evidence (`Stories.sections.galleryPlacement` is a `relationship` into `gallery-placements` only; `GalleryPlacements.gallerySlug` is plain `text`, no relation), (2) a three-section story resolved and rendered in author order via `resolveStoryGalleryPlacements` + `StoryPageTemplate`, (3) an explicit reorder test — same three sections, same functions/components, reversed array order — proving output order changes accordingl …
   AC-36.3 implemented (local checks green): I've set up monitoring for the background test run and will report back once it completes.
   AC-36.4 implemented (local checks green): I'll just wait for the background test run to finish — no further action needed until then.
+  AC-36.5 implemented (local checks green): AC-36.5 is implemented and committed to `feature/US-36` as `fbcad2e`.
+  
+  ## Summary
+  
+  **AC-36.5**: No generic blog chrome is built — no categories, archives, comment system, author bios, or tag clouds — and the two retired blog requirements from CLAUDE.md's "Retired From the Old Direction" do not return.
+  
+  **Files changed:**
+  - `STORY_NO_BLOG_CHROME.md` (new) — the story record naming, item by item with file evidence, why each of the five blog-chrome items is absent from `Stories.ts`, `StoryPageTemplate.tsx`, and the `/stories` index route, and explicitly naming the two retired CLAUDE.md items (blog sample-content requirement, no-`<em>` content rule) that don't return.
+  - `src/__tests__/us36-ac36.5-no-blog-chrome.test.tsx` (new, 11 tests) — standing lock-in guard: walks the `Stories` field tree for category/archive/comment/author/tag fields (with a self-test proving the walker actually catches a planted `categories` field), source-scans `Stories.ts`, `StoryPageTemplate.tsx`, the index route, and `getPublishedStories.ts` for blog-chrome vocabulary, renders `StoryPageTemplate` and asserts no matching markup, and asserts `STORY_NO_BLOG_CHROME.md` still quotes the CLAUDE.md retired line verb …
 
 **Tester Status:** approved
 **Tester Notes:**
