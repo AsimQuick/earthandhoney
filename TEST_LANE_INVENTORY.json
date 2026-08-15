@@ -1,9 +1,9 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 234,
+  "totalSuites": 235,
   "counts": {
-    "live": 28,
+    "live": 29,
     "unit": 206
   },
   "mechanism": {
@@ -1193,6 +1193,11 @@
       "path": "src/__tests__/us37-ac37.6.3.3.2-seo-assistant-admin-internal-link-suggestions-live.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process on http://localhost:4312, queries the live published pages/stories candidate set via /api/pages and /api/stories to decide a deterministic photographyType before creating a real published `pages` document and a real published `stories`/`gallery-placements` pair via the live Payload REST API, fetches each document's real admin edit view over HTTP with a real Payload session cookie, and asserts SEO_ASSISTANT_ADMIN_OBSERVABILITY.md's internal-link-suggestions recipe (row 14) against each document's own value against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.3.3.3-seo-assistant-admin-missing-alt-audit-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') AND dns.lookup('backstage-backend') resolving, then self-seeds a real published Backstage gallery and find-or-uploads a real photo into it via live admin API fetch() calls (the same seedLiveBackstageGalleryWithPhoto technique lifted from us37-ac37.4.3-sitemap-image-references-live.test.ts, sharing its GALLERY_NAME fixture), spawns a real `next dev` child process on http://localhost:4313, creates one real `gallery-placements` row over the live Payload REST API pointing at that gallery and attaches it to both a real `pages` document (galleryPlacements) and a real `stories` document (sections[].galleryPlacement), fetches each document's real admin edit view over HTTP with a real Payload session cookie, and asserts SEO_ASSISTANT_ADMIN_OBSERVABILITY.md's missing-alt-text-audit recipe (row 13) is shown in its NON-EMPTY state with the empty-state markup proven absent, against the real Postgres db container and the real Backstage stack"
     }
   ]
 }
