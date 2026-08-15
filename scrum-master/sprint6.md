@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 0/8 stories | 0/49 ACs
-**Last Updated:** 2026-08-15
+**Last Updated:** 2026-08-15T21:38:01+00:00
 
 ## Sprint Goal
 Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finished Phase 4: the Frontstage is now a real website that publishes pages, stories and a sitemap and captures durable Inquiries. What it cannot do is run a booking. The Project is the PRD's operational backbone and it exists before the images, but at the pinned fork commit a Project is six columns - id, name, customer_account_id, status and two timestamps - with no phase, no milestone, no venue, no next action, no document area and no client-visible surface at all; migration 117's own header states 'Customers never see projects'. Sprint 6 turns that grouping row into the operational backbone: the extended data model through new migrations, the seven phases and eighteen milestones with a configurable booking rule and one server-side computed next action, a status vocabulary where colour is always paired with text and icon, automatic Project setup, both entry paths including converting a Frontstage Inquiry across the system boundary, the photographer's cockpit, and the client-safe Project Room. It opens with the one piece of debt sprint 5 measured and did not pay: the CI suite that grew 48% in eight days, and the two process failures now on their third and fourth consecutive recurrence. PRD Phase 3's exit criterion is the sprint's bar and is proven in one run rather than asserted: photographer and client can see the same authoritative workflow state.
@@ -46,10 +46,11 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
 ## User Stories
 
 ### US-38: Extend the Backstage Project through new migrations: events, venues, phases, milestones, documents, and integration status
-**Status:** draft | **Priority:** critical
+**Status:** in-progress | **Priority:** critical
 
 #### Acceptance Criteria
 - [ ] **AC-38.1:** New numbered migrations starting at 122 extend the fork's `projects` table with every PRD 22.2 New Project field it does not already carry. Verified at the pinned commit, migration 117_add_projects.js creates `projects` with exactly six columns - id, name, customer_account_id, status, created_at, updated_at - so photography type, first event date (or an explicit TBD state), venue/city (or TBD), lead source, internal note, secondary contact and the current phase are all missing and must be added. Evidence: `\d projects` output from the running `backstage-db` container before and after the migration, plus a passing test that names each added column individually and fails if any one is absent.
+  - Dev: implemented
 - [ ] **AC-38.2:** Event detail per PRD 22.4 exists on the `events` row or a new child table, covering all ten named items: name/type, date/time or TBD, full-day state, venue name, full address, map link, coordinator/contact, coverage notes, client-visible notes, internal notes. Verified at the pinned commit, `events` carries only event_name, event_date, event_time_start, event_time_end, event_type, host_name and host_email - none of the venue, address, map, coordinator, coverage or note fields exist. Evidence: each of the ten named against the column that carries it, and a test that fails if any single one is missing. A client-visible note and an internal note must be distinct columns, because US-44 AC-44.2 asserts the internal one never reaches the client.
 - [ ] **AC-38.3:** PRD 23.2's eighteen milestones are stored as data rows, not as a hardcoded list inside a UI component, each carrying a completion state, a completion timestamp and the actor that completed it. Evidence: the seeded set queried from the database and asserted by name against the PRD's list, count asserted as eighteen, and a test proving the UI reads the rows rather than a literal.
 - [ ] **AC-38.4:** A per-Project document area and an integration-status record exist. The integration-status record must be able to represent a failure with a message and a timestamp, because PRD 23.4 requires the cockpit to show integration failures and US-43 AC-43.3 asserts an induced failure appears there. Evidence: a row written and read back for each of success, pending and failure states.
@@ -58,6 +59,16 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
 - [ ] **AC-38.7:** PROJECT_DATA_MODEL_ADR.md records the option chosen, the options rejected and the reason, for two decisions specifically: (a) extending the fork's own `projects`/`events` tables versus creating a parallel Earth & Honey project table, and (b) where the Project-to-Inquiry and Project-to-ledger cross-system identifiers live. Reminder 4 requires stored external identifiers resolved over an API with no cross-database join, so (b) must state which side stores which identifier. The financial identifier is a placeholder in this sprint - PRD Phase 6 owns the ledger - and the ADR must say so rather than imply an integration exists. Evidence: the ADR document showing, for both (a) and (b), the option chosen, the options rejected, and the reason, plus the placeholder statement quoted verbatim.
 
 **Dev Team Status:** not-started
+**Dev Team Notes:**
+  AC-38.1 implemented (local checks green): Committed on `feature/US-38`. Summary for the orchestrator:
+  
+  **AC-38.1 implemented.**
+  
+  **Files changed:**
+  - `vendor/picpeak/backend/migrations/core/122_add_project_new_project_fields.js` (new) — idempotent migration (each column guarded by `hasColumn`) adding 11 columns to `projects`: `photography_type`, `first_event_date` + `first_event_date_tbd`, `venue_city` + `venue_city_tbd`, `lead_source`, `internal_note`, `secondary_contact_name`/`_email`/`_phone`, `current_phase` (default `'lead'`).
+  - `src/lib/picpeakMigrationManifest.ts` — migration 122 registered as a third `origin: 'fork'` manifest entry with its git blob SHA.
+  - `FORK_CHANGELOG.md` — dated deviation entry naming the migration (required by the existing `verifyVendoredMigrations` integrity test for any fork-origin manifest entry).
+  - `src/__tests__/us38-ac38.1-project-new-fields-migration.test.ts` (new, 24 tests) — drives the real vendored migration's `up()`/`down()` against a fake knex schema builder; names each of the 11 added columns individually (fails if any is absent), proves idempotency (no-op when already applied, partial-apply only adds what's missing), proves `down()` removes exactly those 11 and leaves the 6 base …
 
 **Tester Status:** approved
 **Tester Notes:**
