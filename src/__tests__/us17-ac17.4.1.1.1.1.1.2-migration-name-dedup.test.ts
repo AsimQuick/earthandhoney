@@ -24,11 +24,26 @@
 
 import fs from 'fs'
 import path from 'path'
+import { PICPEAK_MIGRATION_MANIFEST } from '@/lib/picpeakMigrationManifest'
 
 const root = process.cwd()
 const read = (rel: string) => fs.readFileSync(path.join(root, rel), 'utf8')
 
 const doc = read('PIVOT_AUDIT.md')
+
+// This AC re-runs AC-17.4.1.1.1.1.1.1's search, which is explicitly scoped
+// to the pinned commit's own content ("confirmed clean ... no local
+// modification to the searched directories that would make the results
+// diverge from the pin"). Migrations this project added afterwards —
+// PICPEAK_MIGRATION_MANIFEST's `origin: 'fork'` lane (AC-33.5.2.1) — are
+// local modifications by that definition, so the live re-scan excludes
+// them to keep reproducing the pin, not whatever this project has since
+// added on top of it.
+const FORK_MIGRATION_PATHS = new Set(
+  PICPEAK_MIGRATION_MANIFEST
+    .filter((entry) => entry.origin === 'fork')
+    .map((entry) => path.join('vendor/picpeak', entry.path))
+)
 
 // The AC-17.4.1.1.1.1.1.2 section only, bounded at the next top-level
 // heading so a match cannot be satisfied by unrelated text elsewhere in
@@ -65,7 +80,7 @@ function grepDir(dir: string, term: string): Hit[] {
       const relChild = path.join(d, entry.name)
       if (entry.isDirectory()) {
         walk(relChild)
-      } else if (entry.isFile() && entry.name.endsWith('.js')) {
+      } else if (entry.isFile() && entry.name.endsWith('.js') && !FORK_MIGRATION_PATHS.has(relChild)) {
         const lines = fs.readFileSync(path.join(root, relChild), 'utf8').split('\n')
         lines.forEach((content, idx) => {
           if (content.toLowerCase().includes(needle)) {
