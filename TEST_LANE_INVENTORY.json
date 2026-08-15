@@ -1,9 +1,9 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 230,
+  "totalSuites": 231,
   "counts": {
-    "live": 24,
+    "live": 25,
     "unit": 206
   },
   "mechanism": {
@@ -1173,6 +1173,11 @@
       "path": "src/__tests__/us37-ac37.6.2.3-seo-assistant-field-source-guard.test.ts",
       "lane": "UNIT",
       "reason": "fs reads of SeoAssistantField.tsx, SeoAssistantPanel.tsx, seoAssistant.ts, Pages.ts, Stories.ts and the generated admin importMap.js, and regex assertions on their static source text (Flow A import, no second Backstage client, no gallery-placements collection query, no create/update/delete, sole payload importer, ui field registration and import-map resolution), no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.3.1-seo-assistant-admin-observability-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process and creates a real `pages` document via `/api/pages`, fetches its real admin edit view over HTTP at `/admin/collections/pages/:id` with a real Payload session cookie, and asserts the fourteen SEO-assistant control recipes against that live HTML"
     }
   ]
 }
