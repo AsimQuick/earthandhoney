@@ -129,7 +129,7 @@ describe('AC-38.5 Evidence: the live Docker double-run is recorded in MIGRATION_
   })
 
   it('states the schema-altering extension-migration deferral is now closed', () => {
-    expect(doc).toMatch(/deferral.*closed by the proof below \(US-38, AC-38\.5\)/s)
+    expect(doc).toMatch(/deferral[\s\S]*closed by the proof below \(US-38, AC-38\.5\)/)
   })
 })
 
