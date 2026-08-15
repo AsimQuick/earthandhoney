@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 0/8 stories | 0/49 ACs
-**Last Updated:** 2026-08-15T22:54:09+00:00
+**Last Updated:** 2026-08-15T23:16:31+00:00
 
 ## Sprint Goal
 Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finished Phase 4: the Frontstage is now a real website that publishes pages, stories and a sitemap and captures durable Inquiries. What it cannot do is run a booking. The Project is the PRD's operational backbone and it exists before the images, but at the pinned fork commit a Project is six columns - id, name, customer_account_id, status and two timestamps - with no phase, no milestone, no venue, no next action, no document area and no client-visible surface at all; migration 117's own header states 'Customers never see projects'. Sprint 6 turns that grouping row into the operational backbone: the extended data model through new migrations, the seven phases and eighteen milestones with a configurable booking rule and one server-side computed next action, a status vocabulary where colour is always paired with text and icon, automatic Project setup, both entry paths including converting a Frontstage Inquiry across the system boundary, the photographer's cockpit, and the client-safe Project Room. It opens with the one piece of debt sprint 5 measured and did not pay: the CI suite that grew 48% in eight days, and the two process failures now on their third and fourth consecutive recurrence. PRD Phase 3's exit criterion is the sprint's bar and is proven in one run rather than asserted: photographer and client can see the same authoritative workflow state.
@@ -56,6 +56,7 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
 - [ ] **AC-38.3:** PRD 23.2's eighteen milestones are stored as data rows, not as a hardcoded list inside a UI component, each carrying a completion state, a completion timestamp and the actor that completed it. Evidence: the seeded set queried from the database and asserted by name against the PRD's list, count asserted as eighteen, and a test proving the UI reads the rows rather than a literal.
   - Dev: implemented
 - [ ] **AC-38.4:** A per-Project document area and an integration-status record exist. The integration-status record must be able to represent a failure with a message and a timestamp, because PRD 23.4 requires the cockpit to show integration failures and US-43 AC-43.3 asserts an induced failure appears there. Evidence: a row written and read back for each of success, pending and failure states.
+  - Dev: implemented
 - [ ] **AC-38.5:** Every new migration runs clean on an empty database and is idempotent on re-run, following the MIGRATION_IDEMPOTENCY.md convention already established for this fork. Evidence: the migration command run twice in Docker against a freshly created database, with both exit codes and the second run's no-op output recorded.
 - [ ] **AC-38.6:** Fork discipline is provably intact: no migration 001-121 is modified, every new migration is registered in the `origin: 'fork'` lane of `src/lib/picpeakMigrationManifest.ts` that US-33 AC-33.5.2.1 built, and each is recorded in FORK_CHANGELOG.md, PICPEAK_PORT_LEDGER.md and UPSTREAM_SYNC.md. Evidence: `git log --name-only` across the story's commits showing only new files under `vendor/picpeak/backend/migrations/core/`, the migration-manifest integrity test green, and the negative case still failing - an edited upstream migration must still be caught.
 - [ ] **AC-38.7:** PROJECT_DATA_MODEL_ADR.md records the option chosen, the options rejected and the reason, for two decisions specifically: (a) extending the fork's own `projects`/`events` tables versus creating a parallel Earth & Honey project table, and (b) where the Project-to-Inquiry and Project-to-ledger cross-system identifiers live. Reminder 4 requires stored external identifiers resolved over an API with no cross-database join, so (b) must state which side stores which identifier. The financial identifier is a placeholder in this sprint - PRD Phase 6 owns the ledger - and the ADR must say so rather than imply an integration exists. Evidence: the ADR document showing, for both (a) and (b), the option chosen, the options rejected, and the reason, plus the placeholder statement quoted verbatim.
@@ -78,6 +79,20 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
   - `vendor/picpeak/backend/migrations/core/123_add_event_detail_fields.js` (new) — extends `events` with the PRD 22.4 fields it was missing. Verified against the real pinned code (not the sprint doc's baseline, which missed one column already present): `events` already carried 4 of the 10 named items — name/type (`event_name`, `event_type`), date/time (`event_date`, `event_time_start`, `event_time_end`), and full-day state (`is_full_day`, added by the *already-shipped* upstream migration `107_crm_consolidated.js`, not migration 122). Migration 123 adds the remaining 10 columns for the 6 still-missing items: `event_date_tbd` (TBD flag, since `event_date` is `NOT NULL`), `venue_name`, `venue_address`, `venue_map_link`, `coordinator_name`/`_email`/`_phone`, `coverage_notes`, `client_visible_notes`, `internal_notes` (the last two are distinct columns per the AC's requirement for US-44 AC-44.2). Every column guarded by `hasColumn`, idempotent, `down()` drops exactly what `up()` added.
   - `src/lib/picpeakMigrationManifest.ts` — migration 123 registered as a fourth `origin:'fork'` entry with its …
   AC-38.3 implemented (local checks green): I'll stop polling now — the Monitor is armed and will notify me automatically the moment the full UNIT-lane coverage run finishes (either the `Test Suites:` summary line appears or the job fails). No action needed from me until then.
+  AC-38.4 implemented (local checks green): Committed clean, working tree is clear.
+  
+  **Summary — AC-38.4 implemented**
+  
+  New migration `125_add_project_documents_and_integration_status.js` (`vendor/picpeak/backend/migrations/core/`) adds two tables:
+  - `project_documents` — the per-Project document area (`project_id`, `document_type`, `title`, `storage_key`, `external_reference`, timestamps).
+  - `project_integration_status` — the integration-status record (`project_id`, `integration_key`, `status`, `message`, `occurred_at`, timestamps), able to represent `success`/`pending`/`failure`, with a `failure` row carrying a non-null message and timestamp (PRD 23.4 / US-43 AC-43.3's requirement).
+  
+  Other files changed:
+  - `src/lib/picpeakMigrationManifest.ts` — migration 125 registered as a sixth `origin: 'fork'` entry with its blob SHA.
+  - `FORK_CHANGELOG.md` — new dated deviation entry documenting the migration.
+  - `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts` — hardcoded later-fork-migration list updated to include 125.
+  - `TEST_LANE_INVENTORY.json` / `TEST_LANE_CLASSIFICATION.md` — new suite registered in the UNIT lane (total suites 239→240).
+  - New test: `src/__tests__/us38-ac38.4-project-documents-integration-status-migrat …
 
 **Tester Status:** approved
 **Tester Notes:**
