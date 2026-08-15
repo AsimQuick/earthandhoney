@@ -38,6 +38,51 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-16 — `deviation`
 
+**PRD 23.2's eighteen Project milestones exist as data rows, in a new
+`project_milestones` table.** Nothing in the fork tracked Project milestones
+before this migration — PRD 23.2's eighteen-item list (inquiry reviewed
+... project closed) existed only as PRD prose, which would otherwise force
+whichever UI shows it (US-43's cockpit, US-44's Project Room) to hardcode
+its own copy. Migration `124_add_project_milestones.js` creates
+`project_milestones` (`milestone_key`, `name`, `sequence_order`,
+`completion_state`, `completed_at`, `completed_by`, timestamps) and seeds
+PRD 23.2's eighteen milestones into it as canonical template rows
+(`project_id IS NULL`), in PRD order, each starting `completion_state:
+'pending'` with `completed_at`/`completed_by` unset. A real Project's own
+milestone rows (`project_id` set) are cloned from these templates later, by
+US-41's atomic Project-setup path — this migration only establishes the
+eighteen as queryable data. US-38 AC-38.3.
+
+- **Type:** permanent deviation — a genuine, intentional fork addition
+  (Fork Discipline: extend via new code, never by rewriting shipped
+  upstream logic; a new migration for any fork-side schema change, never
+  an edit to a shipped one), not an upstream-bug workaround, so
+  `UPSTREAM_SYNC.md` §4 does not apply; it is carried forward on every
+  future merge per §1.
+- **What changed:**
+  1. `vendor/picpeak/backend/migrations/core/124_add_project_milestones.js`
+     — new migration, creates `project_milestones` and seeds the eighteen
+     PRD 23.2 template rows, guarded so a partial or repeated prior run is
+     a safe no-op on re-apply. US-38 AC-38.3.
+  2. `src/lib/picpeakMigrationManifest.ts` — migration `124` recorded as a
+     fifth `origin: 'fork'` entry, alongside its blob SHA. US-38 AC-38.3.
+- **Files touched:** the two files above.
+- **Evidence:** `src/__tests__/us38-ac38.3-project-milestones-migration.test.ts`
+  drives the migration module's `up()`/`down()` against a fake knex,
+  queries the seeded template rows back, asserts their names against an
+  independently-typed copy of PRD 23.2's list and asserts the count is
+  eighteen, and proves `src/lib/projectMilestones.ts`'s
+  `getMilestoneDefinitions` reader returns whatever the underlying query
+  yields — including a deliberately mutated row set that does not match
+  PRD 23.2 at all — rather than a literal list baked into the reader.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-38, AC-38.3)
+
+---
+
+## 2026-08-16 — `deviation`
+
 **`events` gains the PRD 22.4 event-detail fields it did not yet carry.**
 At the pinned commit plus migration 122, `events` already carried four of
 PRD 22.4's ten named event-detail items — name/type (`event_name`,

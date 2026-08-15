@@ -124,11 +124,12 @@ describe('AC-33.5.2.1: migration 120 is the manifest\'s first fork-origin entry'
     expect(forkEntries[0]?.path).toBe(MIGRATION_PATH)
   })
 
-  it('every other manifest entry is still the pinned-upstream default (no origin field), except later fork additions (AC-33.6\'s migration 121, AC-38.1\'s migration 122, AC-38.2\'s migration 123)', () => {
+  it('every other manifest entry is still the pinned-upstream default (no origin field), except later fork additions (AC-33.6\'s migration 121, AC-38.1\'s migration 122, AC-38.2\'s migration 123, AC-38.3\'s migration 124)', () => {
     const LATER_FORK_MIGRATION_PATHS = [
       'backend/migrations/core/121_add_inquiry_acknowledgement_email_template.js',
       'backend/migrations/core/122_add_project_new_project_fields.js',
       'backend/migrations/core/123_add_event_detail_fields.js',
+      'backend/migrations/core/124_add_project_milestones.js',
     ]
     const nonFork = PICPEAK_MIGRATION_MANIFEST.filter(
       (e) => e.path !== MIGRATION_PATH && !LATER_FORK_MIGRATION_PATHS.includes(e.path),
