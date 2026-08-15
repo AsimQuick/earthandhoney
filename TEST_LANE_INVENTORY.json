@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 239,
+  "totalSuites": 240,
   "counts": {
     "live": 29,
-    "unit": 210
+    "unit": 211
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1218,6 +1218,11 @@
       "path": "src/__tests__/us38-ac38.3-project-milestones-migration.test.ts",
       "lane": "UNIT",
       "reason": "requires the vendored migration module directly and drives up()/down() against an in-memory fake knex query/schema builder, and exercises src/lib/projectMilestones.ts's getMilestoneDefinitions against an injected fake query client; no network/db"
+    },
+    {
+      "path": "src/__tests__/us38-ac38.4-project-documents-integration-status-migration.test.ts",
+      "lane": "UNIT",
+      "reason": "requires the vendored migration module directly and drives up()/down() against an in-memory fake knex query/schema builder, writing and reading back rows; no network/db"
     }
   ]
 }

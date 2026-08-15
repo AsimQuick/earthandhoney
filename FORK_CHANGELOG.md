@@ -38,6 +38,53 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-16 — `deviation`
 
+**A per-Project document area and an integration-status record now exist,
+in two new tables.** Neither existed in the fork before this migration.
+PRD 22.3 lists a "document area" among the ten things automatic Project
+setup prepares, and PRD 23.4 requires the photographer's cockpit to show
+both "quote, contract, invoice, payment, and receipt references" and
+"integration failures" — neither had anywhere to live. Migration
+`125_add_project_documents_and_integration_status.js` creates
+`project_documents` (`project_id`, `document_type`, `title`,
+`storage_key`, `external_reference`, timestamps) as the per-Project
+document area, and `project_integration_status` (`project_id`,
+`integration_key`, `status`, `message`, `occurred_at`, timestamps) as the
+integration-status record. A status row can represent 'success',
+'pending', or 'failure', and a 'failure' row carries a `message` and an
+`occurred_at` timestamp — what PRD 23.4 requires the cockpit to show and
+what US-43 AC-43.3 asserts an induced failure produces there. Both tables
+are additive and carry no data of their own yet; rows are written by
+later stories (US-41's atomic Project setup, US-43's cockpit, integration
+call sites). US-38 AC-38.4.
+
+- **Type:** permanent deviation — a genuine, intentional fork addition
+  (Fork Discipline: extend via new code, never by rewriting shipped
+  upstream logic; a new migration for any fork-side schema change, never
+  an edit to a shipped one), not an upstream-bug workaround, so
+  `UPSTREAM_SYNC.md` §4 does not apply; it is carried forward on every
+  future merge per §1.
+- **What changed:**
+  1. `vendor/picpeak/backend/migrations/core/125_add_project_documents_and_integration_status.js`
+     — new migration, creates `project_documents` and
+     `project_integration_status`, each guarded so a partial or repeated
+     prior run is a safe no-op on re-apply. US-38 AC-38.4.
+  2. `src/lib/picpeakMigrationManifest.ts` — migration `125` recorded as a
+     sixth `origin: 'fork'` entry, alongside its blob SHA. US-38 AC-38.4.
+- **Files touched:** the two files above.
+- **Evidence:** `src/__tests__/us38-ac38.4-project-documents-integration-status-migration.test.ts`
+  drives the migration module's `up()`/`down()` against a fake knex,
+  writes and reads back a `project_documents` row, and writes and reads
+  back a `project_integration_status` row for each of the 'success',
+  'pending', and 'failure' states — the 'failure' row's `message` and
+  `occurred_at` asserted non-null and read back unchanged.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-38, AC-38.4)
+
+---
+
+## 2026-08-16 — `deviation`
+
 **PRD 23.2's eighteen Project milestones exist as data rows, in a new
 `project_milestones` table.** Nothing in the fork tracked Project milestones
 before this migration — PRD 23.2's eighteen-item list (inquiry reviewed
