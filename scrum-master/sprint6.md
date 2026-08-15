@@ -1,0 +1,237 @@
+# Sprint 6
+
+**Phase:** planning
+**Progress:** 0/8 stories | 0/49 ACs
+**Last Updated:** 2026-08-15
+
+## Sprint Goal
+Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finished Phase 4: the Frontstage is now a real website that publishes pages, stories and a sitemap and captures durable Inquiries. What it cannot do is run a booking. The Project is the PRD's operational backbone and it exists before the images, but at the pinned fork commit a Project is six columns - id, name, customer_account_id, status and two timestamps - with no phase, no milestone, no venue, no next action, no document area and no client-visible surface at all; migration 117's own header states 'Customers never see projects'. Sprint 6 turns that grouping row into the operational backbone: the extended data model through new migrations, the seven phases and eighteen milestones with a configurable booking rule and one server-side computed next action, a status vocabulary where colour is always paired with text and icon, automatic Project setup, both entry paths including converting a Frontstage Inquiry across the system boundary, the photographer's cockpit, and the client-safe Project Room. It opens with the one piece of debt sprint 5 measured and did not pay: the CI suite that grew 48% in eight days, and the two process failures now on their third and fourth consecutive recurrence. PRD Phase 3's exit criterion is the sprint's bar and is proven in one run rather than asserted: photographer and client can see the same authoritative workflow state.
+
+## Reference Documents
+- `scrum-master/PRD.md - section 22 Project: Operational Backbone (22.1 two entry paths, 22.2 the New Project form's eight fields, 22.3 the ten things setup prepares, 22.4 multiple events), section 23 Project Cockpit and Project Room (23.1 seven phases, 23.2 eighteen milestones and the booking rule, 23.3 status presentation, 23.4 the photographer view's nine items, 23.5 the client Project Room's eight items), section 28.1 email ownership, section 34 Phase 3, section 35.4 V1 Projects acceptance criteria`
+- `CLAUDE.md - The Three Surfaces (there is no fourth surface), Pillar 1 fork don't rebuild, Pillar 4 project first, Pillar 5 one owner per business function, The Ledger Rule, and the System Ownership table row 'Client-facing portal | Project Room only - never Invoice Ninja's portal'`
+- `scrum-master/scrum-master.md - post-pivot Product Backlog items 22-26 (this sprint) and the sixteen Reminders; Reminder 2 (never edit a shipped migration), Reminder 4 (separate logical databases, stored external identifiers, no cross-database joins) and Reminder 14 (standard-case gating only) all bind stories here`
+- `scrum-master/retrospective.md - sprint-5 action items 1-10. Items 1 and 2 (the routing hole) and item 3 (the retrospective) are addressed by US-45 AC-45.5 and AC-45.6 rather than by another definition-of-done sentence, because four consecutive escalations of DoD wording have now failed. Items 4 and 5 are US-45 AC-45.1 and AC-45.2. Items 6, 7 and 8 are Project Lead actions and are named in the definition of done`
+- `scrum-master/po-requests.md - item 7/13 (contract signing) is RESOLVED as option (a), the sibling-PDF audit trail accepted for V1, which is what unblocks this sprint; item 14 (design tokens) is signed off as-is and locked, which is what makes US-40 AC-40.3 a routing question rather than an edit; item 15 (the R2 delivery path) is STILL OPEN and does not block this sprint; item 18 is NEW at this planning and raises the status-colour conflict in advance; the F1-F9 upstream findings register binds US-41 AC-41.2 (F1, F2) and AC-41.3 (F6, F7)`
+- `scrum-master/sprint5.json - sprint-5 outcome, the Tester's close-out notes, the one open defect on US-33, and the pending_po_routing mechanism this sprint must finally exercise`
+- `PAYLOAD_PICPEAK_API_CONTRACT.md - Flow A, and the terminology mapping that records PicPeak's customer-facing UI under frontend/src/pages/customer/ mounted at /customer/* as being the Project Room under its user-facing name, not a second system to be built separately. US-42 AC-42.6 extends this document with the Inquiry conversion flow`
+- `SYSTEM_OWNERSHIP.md - the authority for who owns email, contracts presentation, and payments; corrected in sprint 4`
+- `FORK_CHANGELOG.md, PICPEAK_PORT_LEDGER.md, UPSTREAM_SYNC.md, PICPEAK_UPSTREAM_DEFECTS.md - every fork deviation this sprint creates is recorded in the first two, and the migration lane in src/lib/picpeakMigrationManifest.ts is the mechanism US-33 AC-33.5.2.1 built for registering our own migrations honestly`
+- `MIGRATION_IDEMPOTENCY.md - the established convention US-38 AC-38.5 must satisfy`
+- `SEO_ASSISTANT_ADMIN_OBSERVABILITY.md and WEBHOOK_LIVE_PROOF.md - the harness-first live-proof pattern US-43 AC-43.5 and US-44 AC-44.7 follow, including the required NOT COVERED section`
+- `src/styles/tokens.css and exports/design-tokens/tokens.css - locked as-is by human sign-off on 2026-08-13. Verified at this planning: the file declares no semantic status colour of any kind. A story that finds the token set inadequate raises it through pending_po_routing rather than editing it`
+- `vendor/picpeak/backend/migrations/core/117_add_projects.js - the six-column starting point every US-38 criterion is measured against, and the source of the 'Customers never see projects' statement US-44 deliberately changes`
+- `scrum-master/PRD-archive.md - historical only, do not build from it`
+
+## Definition of Done
+- [ ] Every acceptance criterion is closed with recorded evidence, not assertion - a command output, a screenshot, a measured number, or a named file and line
+- [ ] Every claim about the forked upstream is verified against the actual pinned code, never against documentation alone
+- [ ] No already-shipped upstream migration has been modified. This sprint adds more migrations than any sprint so far, so the check is explicit: migrations 001-121 are untouched, every new migration is registered in the origin:'fork' lane of src/lib/picpeakMigrationManifest.ts, and the manifest integrity test stays green in both directions including the negative case
+- [ ] All services run in Docker; nothing installed on the host
+- [ ] No secret value is committed anywhere; .env.example stays authoritative for every required variable
+- [ ] Every decision record names the option chosen, the options rejected, and the reason
+- [ ] Anything needing human input reaches po-requests.md. The pending_po_routing array in this file is the write-scope mechanism; US-45 AC-45.5 adds the guard that makes it self-enforcing, because the array alone failed in sprint 5 exactly as the definition-of-done sentence failed in sprint 4. An acceptance criterion that owes a routing entry is not closed until that entry's drained field is true AND po-requests.md carries it
+- [ ] Existing CI stays green (lint, types, tests, coverage threshold) - AND no pull request is merged without a green CI run recorded against its exact head SHA, matched by comparing the run's headSha to the PR's headRefOid. An infra flake is re-run until green; it is never merged through. This is the one sprint-4 action item that demonstrably changed behaviour - it held for 8 of 8 PRs in sprint 5
+- [ ] retrospective.md is updated incrementally during the sprint, not at close. Unmet for four consecutive sprints across four escalations of wording; US-45 AC-45.6 makes it a failing test instead, which is the only mechanism that has actually worked on this project. If the guard fires, the fix is to write the retrospective, not to weaken the guard
+- [ ] No critical or major defect remains open against any story in this sprint
+- [ ] Coverage threshold met - the existing 80% CI coverage gate on branches, functions and lines is not lowered to pass, and src/__tests__/us28-ac28.5-coverage-gate-guard.test.ts stays green
+- [ ] Every code file created or changed carries its structured metadata header comment (CLAUDE.md convention)
+- [ ] Any direction change or finding is applied to this sprint JSON and to every artifact an agent may be handed, not to markdown alone (Reminder 15), and is committed (Reminder 16)
+- [ ] Before any acceptance criterion is rewritten after a failure, the session exit reason in logs/ is read first. Sprint 5 did this correctly on both splits it made and the diagnoses were specific rather than reflexive - carry that
+- [ ] Story-level dev_status and the sprint phase field are written as work completes, so this file is true at a glance. Reconciled at review in sprints 3, 4 and 5. If it recurs a fourth time, the honest response at sprint-6 review is to stop asserting it in the definition of done and record it as a known limitation of the pipeline rather than restate it a fifth time
+- [ ] The three Tier-3 regression anchors and the four standing decision guards sprint 5 created must not regress and may not be modified as part of a refactor: us21-ac21.6-pivot-direction-guard, us26-ac26.1 webhook signature with the AC-26.5 idempotency suite, us28-ac28.5-coverage-gate-guard, US-31 AC-31.2's no-page-builder guard, US-36 AC-36.5's no-blog-chrome guard, US-37's no-meta-keywords guard, and US-30 AC-30.1's lane-classification manifest guard. US-45 AC-45.4 proves it at close
+- [ ] No retired artifact is reintroduced: Better Auth, Resend, Adobe Sign as a locked provider, Sessions as the central object, Testimonials/Packages/FAQ collections, WhatsApp lead capture, a Payload Galleries collection or Payload-owned upload pipeline, any drag-and-drop page builder, any tax or bookkeeping surface, and any client-facing ledger surface. This sprint builds the client-facing Project Room, so the last item is the one most at risk and US-44 AC-44.3 tests it directly
+- [ ] A sprint deploy is run and its verification tiers recorded in deploy_summary, as sprints 3 and 4 did. Sprint 5 produced the first real public routes and closed without one (retrospective action item 8); sprint 6 adds a client-facing portal on top of them
+
+## User Stories
+
+### US-38: Extend the Backstage Project through new migrations: events, venues, phases, milestones, documents, and integration status
+**Status:** draft | **Priority:** critical
+
+#### Acceptance Criteria
+- [ ] **AC-38.1:** New numbered migrations starting at 122 extend the fork's `projects` table with every PRD 22.2 New Project field it does not already carry. Verified at the pinned commit, migration 117_add_projects.js creates `projects` with exactly six columns - id, name, customer_account_id, status, created_at, updated_at - so photography type, first event date (or an explicit TBD state), venue/city (or TBD), lead source, internal note, secondary contact and the current phase are all missing and must be added. Evidence: `\d projects` output from the running `backstage-db` container before and after the migration, plus a passing test that names each added column individually and fails if any one is absent.
+- [ ] **AC-38.2:** Event detail per PRD 22.4 exists on the `events` row or a new child table, covering all ten named items: name/type, date/time or TBD, full-day state, venue name, full address, map link, coordinator/contact, coverage notes, client-visible notes, internal notes. Verified at the pinned commit, `events` carries only event_name, event_date, event_time_start, event_time_end, event_type, host_name and host_email - none of the venue, address, map, coordinator, coverage or note fields exist. Evidence: each of the ten named against the column that carries it, and a test that fails if any single one is missing. A client-visible note and an internal note must be distinct columns, because US-44 AC-44.2 asserts the internal one never reaches the client.
+- [ ] **AC-38.3:** PRD 23.2's eighteen milestones are stored as data rows, not as a hardcoded list inside a UI component, each carrying a completion state, a completion timestamp and the actor that completed it. Evidence: the seeded set queried from the database and asserted by name against the PRD's list, count asserted as eighteen, and a test proving the UI reads the rows rather than a literal.
+- [ ] **AC-38.4:** A per-Project document area and an integration-status record exist. The integration-status record must be able to represent a failure with a message and a timestamp, because PRD 23.4 requires the cockpit to show integration failures and US-43 AC-43.3 asserts an induced failure appears there. Evidence: a row written and read back for each of success, pending and failure states.
+- [ ] **AC-38.5:** Every new migration runs clean on an empty database and is idempotent on re-run, following the MIGRATION_IDEMPOTENCY.md convention already established for this fork. Evidence: the migration command run twice in Docker against a freshly created database, with both exit codes and the second run's no-op output recorded.
+- [ ] **AC-38.6:** Fork discipline is provably intact: no migration 001-121 is modified, every new migration is registered in the `origin: 'fork'` lane of `src/lib/picpeakMigrationManifest.ts` that US-33 AC-33.5.2.1 built, and each is recorded in FORK_CHANGELOG.md, PICPEAK_PORT_LEDGER.md and UPSTREAM_SYNC.md. Evidence: `git log --name-only` across the story's commits showing only new files under `vendor/picpeak/backend/migrations/core/`, the migration-manifest integrity test green, and the negative case still failing - an edited upstream migration must still be caught.
+- [ ] **AC-38.7:** PROJECT_DATA_MODEL_ADR.md records the option chosen, the options rejected and the reason, for two decisions specifically: (a) extending the fork's own `projects`/`events` tables versus creating a parallel Earth & Honey project table, and (b) where the Project-to-Inquiry and Project-to-ledger cross-system identifiers live. Reminder 4 requires stored external identifiers resolved over an API with no cross-database join, so (b) must state which side stores which identifier. The financial identifier is a placeholder in this sprint - PRD Phase 6 owns the ledger - and the ADR must say so rather than imply an integration exists. Evidence: the ADR document showing, for both (a) and (b), the option chosen, the options rejected, and the reason, plus the placeholder statement quoted verbatim.
+
+**Dev Team Status:** not-started
+
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: 7 ACs, all testable with concrete Evidence clauses - `\d projects` introspection before/after, a named-column test, seeded-row queries against the eighteen milestones, read-back rows for each integration-status state, migration idempotency proven by two runs, and `git log --name-only` plus the manifest test for fork discipline. AC-38.7 was the one gap: it specified two ADR decisions but carried no Evidence clause, unlike every other AC in this file - fixed directly by adding one (verify the ADR records option/rejected/reason for both (a) and (b), plus the financial-placeholder statement quoted verbatim). No scope issues found. Approved.
+
+---
+
+### US-39: Phases, milestones, the booking rule and the computed next action, as one server-side authority both surfaces read
+**Status:** draft | **Priority:** critical
+
+#### Acceptance Criteria
+- [ ] **AC-39.1:** Exactly PRD 23.1's seven phases exist and no eighth: Lead, Booking, Preparation, Shoot, Post-production, Delivery, Closed. Evidence: the set asserted by name, and a lock-in test that fails if a phase is added or renamed - the same pattern as US-31 AC-31.2's no-page-builder guard, because the phase list is a product decision rather than an implementation detail.
+- [ ] **AC-39.2:** The booking rule is evaluated from milestone completion, not hardcoded: PRD 23.2's normal case is quote approved + contract signed + deposit paid = Booked, and the PRD's wording is 'its configured booking requirements', so which milestones are required must be configuration. Evidence: a test that completes each of the three milestones independently and asserts the Project becomes Booked only when every configured requirement is complete, plus one case with a non-default requirement set. Note explicitly in the implementation and the story record that in sprint 6 those three milestones are set by a human or by an admin action - the ledger and Stripe are PRD Phase 6 - so no AC in this sprint may claim a verified payment drove the transition.
+- [ ] **AC-39.3:** The next action is computed once, server-side, from the Project's phase and milestone state, and both surfaces read that single value. Evidence: a live test that fetches the cockpit's next action and the Project Room's next action for the same Project in one run and asserts they are identical strings. This is PRD Phase 3's exit criterion - photographer and client seeing the same authoritative workflow state - and it is proven here rather than asserted.
+- [ ] **AC-39.4:** No phase yields an empty, null or placeholder next action. Evidence: a table-driven test covering all seven phases against representative milestone states, asserting a non-empty next action for every row, with the row count and the phases named in the test output.
+- [ ] **AC-39.5:** A photographer can override the computed next action (PRD 23.4, 'manual overrides'). The override records the actor and timestamp, and is presented as an override rather than silently replacing the computation - the underlying computed value stays retrievable. Evidence: the override written and read back, and both values visible in the same response.
+- [ ] **AC-39.6:** Every phase change, milestone completion and manual override appends an entry to the Project's activity timeline (PRD 22.3, 23.4), each carrying actor, timestamp and what changed. Evidence: a sequence of three changes producing three ordered entries, asserted live.
+
+**Dependencies:** US-38
+
+**Dev Team Status:** not-started
+
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: 6 ACs, all testable - the seven-phase lock-in test, a booking-rule matrix that varies which milestones are configured as required, a live cross-surface equality check for the computed next action (the same assertion PRD Phase 3's exit criterion rests on), table-driven non-empty-next-action coverage across all seven phases, an override read-back that keeps the computed value retrievable, and ordered timeline-entry assertions. AC-39.2 correctly and explicitly disclaims that the three booking milestones are set by human/admin action this sprint, not a verified payment - no premature finance claim. No wording or scope defects found. Approved.
+
+---
+
+### US-40: One status vocabulary: colour always paired with text and icon, shared by both surfaces
+**Status:** draft | **Priority:** high
+
+#### Acceptance Criteria
+- [ ] **AC-40.1:** Exactly PRD 23.3's five states exist, named individually: green complete, amber waiting/pending, blue in progress, red blocked/overdue/action required, grey upcoming. Evidence: the set asserted by name, and a test that fails if a sixth state is added.
+- [ ] **AC-40.2:** Every state renders text and an icon in addition to colour, and a test fails if any state can render colour alone. PRD 23.3 says 'Color must always be paired with text and icons' and PRD 35.4 requires complete/pending/blocked states to be clear 'without relying only on color', so this is made structural rather than advisory - the US-31/US-35/US-36 precedent where a non-goal became a passing test. Evidence: each of the five rendered and asserted to carry all three channels, plus the negative case.
+- [ ] **AC-40.3:** The status colours come from the locked token set, not ad hoc hex values. Verified at planning: `src/styles/tokens.css` currently declares no semantic status colour of any kind - no success, warning, danger or error token exists - and the human signed the token set off as-is on 2026-08-13 (po-requests item 14) on a brief of near-black ink and a neutral grey scale with no accent colour. Five semantic hues therefore cannot be added by an implementing session on its own authority. Evidence: this AC is closed by EITHER using tokens the Product Owner has confirmed, OR by writing an entry into this file's `pending_po_routing` array stating the conflict and the options, and the AC is not closed until that entry's `drained` field is true and po-requests.md carries it. Do not edit tokens.css to resolve this. See po-requests.md item 18, which raises it in advance.
+- [ ] **AC-40.4:** Each status pairing meets WCAG AA contrast, computed from the token values themselves rather than asserted, following US-23 AC-23.3's precedent, and verified on both the cockpit and the Project Room backgrounds. Evidence: the computed ratio per pairing printed by the test, with the minimum for its usage class.
+- [ ] **AC-40.5:** The status vocabulary is available to both surfaces from one definition - it is not implemented twice. Where the Frontstage and the fork's templates need it, it is exposed through the framework-free export path US-23 AC-23.6 established (`exports/design-tokens/`). Evidence: the single definition named, both consumers shown importing it from that one place, and a test that fails if a second parallel definition of the five states appears in the repository.
+
+**Dependencies:** US-39
+
+**Dev Team Status:** not-started
+
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: 5 ACs, all testable. AC-40.3 correctly identifies the signed-off token set (no semantic status colour) versus PRD 23.3's five required status colours as a conflict only the Product Owner can resolve, and routes it through the pending_po_routing mechanism instead of resolving it unilaterally - that is the right shape, not a defect, and po-requests.md item 18 already tracks it, so no further escalation is needed from this review. Relabelled its closure condition under an explicit 'Evidence:' clause for consistency - it was the only AC in the file stating a closure condition without that label. Approved.
+
+---
+
+### US-41: Automatic Project setup: creating a Project prepares everything PRD 22.3 lists, atomically
+**Status:** draft | **Priority:** high
+
+#### Acceptance Criteria
+- [ ] **AC-41.1:** One Project-create call against a running stack produces or prepares all ten items PRD 22.3 names, asserted individually: the Project record; the operational client relationship; an empty project media area/folder; a Project Room access record; the default phase and milestones; the next-action calculation; the document area; the email merge context; the financial integration placeholder; the activity timeline. Evidence: ten named assertions against the live system after a single create - not a summary count, because an AC that closes on a partial implementation is the exact gap the sprint-5 Tester's plan review caught eight times.
+- [ ] **AC-41.2:** The operational client relationship is assigned explicitly, because upstream finding F1 records that a Gallery created inside a Project does NOT inherit the Project's Client at the pinned commit - the link must be assigned through the admin edit route. F2 additionally records that `PUT /api/admin/events/:id` returns 500 when `customer_account_ids` is the only field sent. Evidence: the assignment asserted live after setup, and the request shape used shown from the source, citing F1 and F2 as already recorded in po-requests.md.
+- [ ] **AC-41.3:** The project media area is created successfully under this deployment's S3/R2 storage backend. Upstream finding F6 records a local-filesystem-only assumption that breaks Gallery-create's folder creation with EACCES on `/storage`, and F7 records that the container-level permission fix is operational rather than source-level. If Project setup hits either, the honest outcome is a recorded fork patch of the same shape as the F8/UD-1 one, or a `pending_po_routing` entry - never a silent workaround and never a manual step a human must repeat. Evidence: setup run against the real R2-backed stack after a `docker compose down -v` and rebuild, with the storage path used shown from the response.
+- [ ] **AC-41.4:** Setup is atomic: an induced failure part-way through does not leave a half-built Project. Evidence: a test that forces one of the ten steps to fail and asserts the Project is either fully set up or not created, with the database state shown after the failure.
+- [ ] **AC-41.5:** The email merge context is built on the Backstage email queue's own merge mechanism. SYSTEM_OWNERSHIP.md and CLAUDE.md both make that queue the single owner of client and photographer email, so no second templating or merge system may be introduced. Evidence: the mechanism named from the fork source, and a test that fails if a parallel merge implementation is added.
+- [ ] **AC-41.6:** The financial integration placeholder is a placeholder and provably nothing more: no Invoice Ninja API call, no Stripe call, no tax field, no client-facing ledger link, no computed authoritative balance. PRD Phase 6 owns all of that. Evidence: a guard test asserting no such call or field exists on the setup path, plus a byte scan of the created records for any ledger URL.
+
+**Dependencies:** US-38, US-39
+
+**Dev Team Status:** not-started
+
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: 6 ACs, all testable - ten individually named assertions for setup, an atomicity test with an induced mid-setup failure, a guard test for the email-merge mechanism, and a guard test plus byte scan for the financial placeholder. AC-41.2's evidence clause read 'citing F1 and F2 in po-requests.md', which is ambiguous about write scope: an implementing session could misread it as requiring a write into po-requests.md, exactly the routing-hole failure mode that has recurred three times (AC-17.9, AC-22.2, AC-33.5.2.1). F1 and F2 are already recorded in po-requests.md's F1-F9 register (transcribed 2026-08-09), so fixed the wording to 'citing F1 and F2 as already recorded in po-requests.md' - it now references existing content and implies no new write scope. AC-41.3 already uses the correct pending_po_routing mechanism for any new finding on the storage path and needed no change. Approved.
+
+---
+
+### US-42: Two entry paths: convert a Frontstage Inquiry into a Backstage Project, or create one manually
+**Status:** draft | **Priority:** critical
+
+#### Acceptance Criteria
+- [ ] **AC-42.1:** The manual path presents exactly PRD 22.2's eight fields and keeps the first screen short: project/couple names, primary contact, optional secondary contact, photography type, first event date or TBD, venue/city or TBD, lead source, internal note. Evidence: the eight named individually against the rendered form, and a test that fails if a ninth field is added to that first screen.
+- [ ] **AC-42.2:** A durable `Inquiry` record created by US-33's Frontstage form converts into a Backstage Project. The two systems hold separate logical databases, so the link is a stored external identifier resolved over the API boundary, never a cross-database join (Reminder 4). Evidence: a live conversion end to end, the identifier shown stored on both sides, and the absence of any cross-database join shown from the query the code actually issues.
+- [ ] **AC-42.3:** A raw Inquiry does not automatically become a ledger client record (PRD 22.1). Evidence: a guard test asserting no ledger call is made either when an Inquiry is created or when it is converted, and that no ledger identifier is written by this path.
+- [ ] **AC-42.4:** Conversion is idempotent: converting the same Inquiry twice does not create a second Project, following the US-26 AC-26.5 idempotency precedent. Evidence: the same conversion executed twice with the Project count asserted before and after, and the second call's response shown.
+- [ ] **AC-42.5:** Conversion is not destructive: the Inquiry remains readable after conversion and records that it was converted, when, and to which Project. Evidence: the Inquiry fetched after conversion with those fields asserted.
+- [ ] **AC-42.6:** PAYLOAD_PICPEAK_API_CONTRACT.md is extended with the conversion flow, documented in the same shape as the existing Flow A entry - request, response, identifiers, failure modes and who owns what. PRD Phase 2's plan names 'convert Payload Inquiry into PicPeak Client/Project' as a boundary concern, so the contract document is where it belongs. Evidence: the new section, and a test asserting the documented request/response shape matches the implemented one.
+
+**Dependencies:** US-41
+
+**Dev Team Status:** not-started
+
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: 6 ACs, all testable - the eight-field first-screen lock-in, a live end-to-end conversion with the stored external identifier shown on both sides (Reminder 4 compliant, no cross-database join), an idempotency test on repeated conversion, a non-destructive read-back, a guard test for no ledger call on either creation or conversion, and a test asserting the API contract doc matches the implementation. No wording or scope defects found. Approved.
+
+---
+
+### US-43: Photographer Project cockpit with the computed next action
+**Status:** draft | **Priority:** critical
+
+#### Acceptance Criteria
+- [ ] **AC-43.1:** The cockpit shows all nine things PRD 23.4 lists, asserted individually: contacts; venues and maps; internal notes; phases, milestones and next action; the email/activity timeline; quote, contract, invoice, payment and receipt references; galleries and access rules; manual overrides; integration failures. The ledger is PRD Phase 6, so the financial reference area must render an explicit not-yet-connected state - never a fabricated value, and never a blank that reads as zero. Evidence: nine named assertions against the real running admin, and the not-yet-connected state shown for the financial references.
+- [ ] **AC-43.2:** The next action shown in the cockpit is the US-39 computed value, identical to the string the Project Room shows for the same Project. Evidence: both fetched in one run and asserted equal - the same assertion as AC-39.3, made from the finished surfaces rather than from the service.
+- [ ] **AC-43.3:** Integration failures are surfaced rather than swallowed. Evidence: a failure induced on the integration-status record from US-38 AC-38.4, then shown appearing in the cockpit, with the failure message and timestamp visible.
+- [ ] **AC-43.4:** The cockpit is built inside the fork's own admin surface rather than as a second admin application (Pillar 1, fork don't rebuild), every change is additive, and the deviation is recorded in FORK_CHANGELOG.md and PICPEAK_PORT_LEDGER.md with file-level entries. Evidence: `git log --name-only` for the story, and the two document entries.
+- [ ] **AC-43.5:** PROJECT_COCKPIT_LIVE_PROOF.md records the cockpit proven against a real running stack, in the harness-first pattern SEO_ASSISTANT_ADMIN_OBSERVABILITY.md and WEBHOOK_LIVE_PROOF.md established. Evidence: the document itself, showing how the authenticated admin fetch is performed, an observation recipe per assertion, and a required NOT COVERED section. 'Not observable in the initial HTML, read from form-state key X' counts as a passing row; an unexplained gap does not.
+- [ ] **AC-43.6:** The cockpit introduces no retired or forbidden surface: no tax field or tax breakdown, no link to Invoice Ninja, no drag-and-drop or page-level CSS control, no second client portal. Evidence: a guard test naming each, in the shape of the existing pivot-direction guard.
+
+**Dependencies:** US-40, US-41
+
+**Dev Team Status:** not-started
+
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: 6 ACs, all testable - nine individually named cockpit assertions with an explicit not-yet-connected financial state (never fabricated, never a blank that reads as zero), a live cross-surface next-action equality check matching AC-39.3, an induced-failure surfacing test, git-log/changelog evidence for fork-discipline, and a guard test naming every retired/forbidden surface. AC-43.5 (PROJECT_COCKPIT_LIVE_PROOF.md) described its verification recipe in full but never carried the file's standard 'Evidence:' label, unlike the other 48 ACs - added the label; no substantive change. Approved.
+
+---
+
+### US-44: Client-safe Project Room: the only portal the client ever sees
+**Status:** draft | **Priority:** critical
+
+#### Acceptance Criteria
+- [ ] **AC-44.1:** The client sees all eight things PRD 23.5 lists, asserted individually: project/couple name; confirmed dates and venue addresses; quote status; contract status and the signed document; invoices, payments, receipts and balance; image-production status; galleries and access state; one clear next action. The ledger is PRD Phase 6 and the contract workflow is Phase 7, so any of those that has no owning system yet must render an explicit not-yet-available state. Evidence: eight named assertions against the running Project Room, with the not-yet-available states shown for the deferred ones.
+- [ ] **AC-44.2:** Nothing internal reaches the client. Internal notes, coverage notes, admin email addresses, integration failure detail, lead source and the photographer's manual-override reasoning must be absent from both the client API payload and the rendered HTML. Evidence: a byte-level scan of the client response and of the production-build HTML for each named internal field, following US-33's no-SMTP-secret-in-the-browser precedent. US-38 AC-38.2 made the client-visible note and the internal note distinct columns precisely so this can be asserted.
+- [ ] **AC-44.3:** It is the only portal the client ever sees. No Invoice Ninja URL, no second financial portal and no link to the ledger appears anywhere in the client surface, and Invoice Ninja's own portal stays disabled. PRD 23.5 states 'This is the only portal the client ever sees. There is no second financial portal.' Evidence: a guard test plus a byte scan of the rendered client surface for any ledger host or path.
+- [ ] **AC-44.4:** Every state in the Project Room uses the US-40 vocabulary - colour paired with text and icon - so PRD 35.4's 'clear without relying only on color' holds on the surface the client actually uses. Evidence: each state rendered in the Project Room asserted to carry all three channels.
+- [ ] **AC-44.5:** Access uses the fork's own customer authentication and the Project Room access record created by US-41 AC-41.1. Access is revocable and access events are logged. Better Auth is retired and must not reappear. Evidence: access granted, exercised, revoked and shown denied, with the log rows for each step.
+- [ ] **AC-44.6:** The Project Room extends the fork's existing customer surface rather than adding a fourth surface. PAYLOAD_PICPEAK_API_CONTRACT.md already records this mapping explicitly - PicPeak's customer-facing UI under `frontend/src/pages/customer/`, mounted at `/customer/*`, IS the Project Room under its user-facing name. Note that migration 117's own header states 'Customers never see projects', so this story deliberately changes that in a client-safe way and must say so in FORK_CHANGELOG.md. Evidence: the files changed shown to be within that surface, plus the changelog and port-ledger entries.
+- [ ] **AC-44.7:** PROJECT_ROOM_LIVE_PROOF.md demonstrates PRD Phase 3's exit criterion in one run: for the same Project, the photographer's cockpit and the client's Project Room are captured together and shown to present the same authoritative workflow state - same phase, same milestone completion, same next action - with the client-safe subset being a strict subset rather than a different answer. Evidence: the document itself, with a required NOT COVERED section naming anything deferred to Phase 6 or 7.
+
+**Dependencies:** US-40, US-41
+
+**Dev Team Status:** not-started
+
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: 7 ACs, all testable - eight individually named Project Room assertions with explicit not-yet-available states for the deferred Phase 6/7 items, a byte-level scan proving internal fields never reach the client payload or built HTML (backed by AC-38.2's distinct client-visible/internal note columns), a guard test plus byte scan for any ledger surface, a three-channel (colour/text/icon) assertion reusing the US-40 vocabulary, and a full access grant/exercise/revoke/deny cycle with logged rows. AC-44.7 (PROJECT_ROOM_LIVE_PROOF.md) had the same missing-label issue as AC-43.5 - added the 'Evidence:' label; no substantive change. Approved.
+
+---
+
+### US-45: Pay down the measured test-lane debt and make the two longest-running process failures self-enforcing
+**Status:** draft | **Priority:** high
+
+#### Acceptance Criteria
+- [ ] **AC-45.1:** US-30 AC-30.2's missing measurement is recorded as real numbers: the wall-clock time of the UNIT lane and of the full serial suite, each measured once in Docker and written onto this story. AC-30.2 forbade a rounded or estimated figure and received no figure at all - the mechanism was verified, the measurement that justified building it was not. Evidence: both commands' output with their elapsed times, and the suite count each covered.
+- [ ] **AC-45.2:** The CI cost is decided rather than carried: CI's gated command is `npm test`, which is `jest --runInBand` across both lanes, so the parallel lane never helps CI. Measured on the same runner and command, PR #82's `test` job took 10m30s at 159 suites and PR #89's took 21m18s at 236 suites eight days later - a 48% growth inside one sprint, with PRD Phases 3 and 5-8 still to come. Choose one: run the two lanes as separate CI jobs, or accept the serial cost explicitly. Evidence: the decision recorded with the option chosen, the option rejected and the reason, plus the measured before/after job time if the workflow changes.
+- [ ] **AC-45.3:** If AC-45.2 changes the CI workflow, the 80% coverage gate still applies to the union of both lanes, is not lowered to pass, and `src/__tests__/us28-ac28.5-coverage-gate-guard.test.ts` stays green and unmodified. Evidence: the gate's configuration shown from `.github/workflows/ci.yml` after the change, and the guard test passing.
+- [ ] **AC-45.4:** The three Tier-3 regression anchors and the four standing decision guards sprint 5 created are all green and unmodified at sprint close: `us21-ac21.6-pivot-direction-guard`, `us26-ac26.1` webhook signature with the AC-26.5 idempotency suite, `us28-ac28.5-coverage-gate-guard`, US-31 AC-31.2's no-page-builder guard, US-36 AC-36.5's no-blog-chrome guard, US-37's no-meta-keywords guard, and US-30 AC-30.1's lane-classification manifest guard. Evidence: `git log --since` over all seven paths showing no modifying commit, and each suite's passing output.
+- [ ] **AC-45.5:** A guard test makes the PO-routing obligation self-enforcing: it reads this sprint file and fails when an acceptance criterion that is `checked: true` carries a routing obligation in its own text and `pending_po_routing` holds no entry for it with `drained: true`. The routing hole has now failed three consecutive sprints - AC-17.9, AC-22.2, and AC-33.5.2.1, the last of which was the very criterion built to prove it could not happen - and the diagnosis each time was that nothing verifies the write. Retrospective action item 2 asks for exactly this. Evidence: the guard proven in both directions, including a planted un-drained obligation being caught. Select by content, never by position or a pinned sprint literal (retrospective action item 9).
+- [ ] **AC-45.6:** A guard test makes the retrospective self-enforcing: it fails when `scrum-master/sprint6.json` has any story with `dev_status: done` and `scrum-master/retrospective.md` contains no sprint-6 section. DoD item 9 has been unmet for four consecutive sprints (1, 3, 4, 5) across four escalations - intent, then a named owner, then owner plus checkpoint, then a described pipeline step that was never added to any pipeline. Retrospective action item 3 states the honest options are to build the step or to stop asserting it; a failing test is the mechanism that has actually worked on this project. Evidence: the guard proven in both directions. It must assert on content, not on a heading position.
+
+**Dev Team Status:** not-started
+
+**Tester Status:** approved
+**Tester Notes:**
+  PLAN REVIEW: 6 ACs, all testable, including the two self-enforcing guard tests (AC-45.5, AC-45.6), each of which is explicitly required to be proven in both directions - a real negative-case test (a planted un-drained routing obligation; a story marked done with no sprint-6 retrospective section), not just a positive one, which is the right response after three and four consecutive recurrences of the same failure respectively. AC-45.3 is a conditional AC ('if AC-45.2 changes the CI workflow') that is vacuously satisfied if the decision is to accept the serial cost instead - correctly scoped, not a defect. No wording or scope issues found. Approved.
+
+---
+
+---
+
+## Sprint Review
+
+### Dev Team Sprint Notes
+_Pending_
+
+### Tester Sprint Notes
+_Pending_
+
+### PO Sprint Review Notes
+WHY THIS SCOPE. PRD Phase 3 is the designated next block and is now unblocked: po-requests items 7 and 13 were resolved by the human on 2026-08-13 as option (a), the sibling-PDF audit trail accepted for V1. The old 'blocked by contract signing' rationale that excluded Phase 3 from sprints 4 and 5 no longer applies and must not be restated. Backlog items 22-26 are exactly this sprint's five feature stories, and PRD 35.4's six V1 Projects criteria map onto them one for one.
+
+WHAT WAS VERIFIED AT PLANNING RATHER THAN ASSUMED. (1) No *_SPEC.md feature-specification document exists anywhere in this repository - re-confirmed by two repo-wide searches excluding node_modules/ and vendor/, one for the exact pattern and one case-insensitive for any spec markdown file, which returns only retrospective.md. Remaining scope therefore still comes from the PRD phase plan and the post-pivot backlog, as it has since sprint 1. (2) The fork's Project really is only six columns: migration 117_add_projects.js creates projects with id, name, customer_account_id, status, created_at, updated_at, plus events.project_id. (3) The events table carries event_name, event_date, event_time_start, event_time_end, event_type, host_name and host_email, and none of PRD 22.4's venue, address, map, coordinator, coverage or note fields. (4) src/styles/tokens.css declares no semantic status colour - no success, warning, danger or error token exists. (5) PAYLOAD_PICPEAK_API_CONTRACT.md already records that PicPeak's customer UI under frontend/src/pages/customer/ IS the Project Room under its user-facing name, so US-44 extends it rather than building a fourth surface.
+
+THE ONE CONFLICT FOUND AT PLANNING, RAISED IN ADVANCE. PRD 23.3 requires five status colours - green, amber, blue, red, grey. The token set the human signed off as-is on 2026-08-13 was briefed as near-black ink and a neutral grey scale with no accent colour, and it carries no semantic colour at all. These cannot both hold. It is raised now as po-requests item 18 rather than discovered mid-sprint, and US-40 AC-40.3 is written so the implementing session routes it instead of editing a signed-off specification on its own authority. This is also the first genuine user of the pending_po_routing array, which sprint 5 built and never exercised once.
+
+WHY US-45 IS IN A FEATURE SPRINT. It earns its place on measurement, the same way US-30 did. CI's gated command is jest --runInBand across both lanes, so the lane split never reached CI: 10m30s at 159 suites on PR #82, 21m18s at 236 suites on PR #89, eight days apart. Phase 3 adds a data model, two surfaces and live proof documents, and Phases 5-8 follow. Its other two criteria convert the project's two longest-running process failures from definition-of-done sentences into failing tests: the routing hole has now failed three consecutive sprints and the retrospective four, and in both cases every previous fix was a stronger sentence. US-45 has no dependants, so if it stalls nothing is blocked.
+
+WHAT THIS SPRINT DELIBERATELY DOES NOT DO. It does not build finance. Quote status, contract status, invoices, payments, receipts and balance all appear in PRD 23.4's and 23.5's lists, and every one of them is owned by PRD Phase 6 or Phase 7. Both surface stories therefore require an explicit not-yet-connected or not-yet-available state rather than a fabricated value or a blank that reads as zero, and US-39 AC-39.2 states plainly that in this sprint the three booking milestones are set by a human action, not by a verified payment. An honest empty state now is what lets Phase 6 fill it without a rewrite; a fake one would have to be found and removed first.
+
+CARRIED FROM SPRINT 5, FOR THE ORCHESTRATOR. Sprint 5's one open defect - AC-33.5.2.1's migration-lane decision never reaching po-requests.md - was routed by the Product Owner at this planning, so sprint 5 closes clean and US-33 can be re-closed. The disposition recorded is accept as-is: the lane is additive, narrowly scoped, and already documented in FORK_CHANGELOG.md and PICPEAK_PORT_LEDGER.md. That entry is now in po-requests.md; what remains unproven is the mechanism itself, which US-45 AC-45.5 closes.
+
+---
+_Auto-generated from `sprint6.json` — do not edit directly._

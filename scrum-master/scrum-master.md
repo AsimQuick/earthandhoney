@@ -4,8 +4,8 @@ type: master
 created: 2026-07-18
 last-updated: 2026-08-15
 last-updated-by: product-owner
-current-sprint: sprint-5
-sprint-phase: review
+current-sprint: sprint-6
+sprint-phase: planning
 pivot-date: 2026-07-30
 tech-stack:
   backstage: PicPeak fork (pinned commit)
@@ -21,17 +21,109 @@ tech-stack:
 
 # Scrum Master — earthandhoney
 
-## Current Sprint: sprint-5 (Review, 2026-08-15)
+## Current Sprint: sprint-6 (Planning, 2026-08-15)
 
 > **The product is NOT feature-complete.** No `*_SPEC.md` feature-specification document exists
-> anywhere in this repository — re-verified at sprint-5 planning by repo-wide search excluding
-> `node_modules/` and `vendor/`, which returns no `*_SPEC.md` file at all and no case-insensitive
-> `spec` markdown file other than `retrospective.md`. Remaining scope therefore comes from the
-> post-pivot PRD's phase plan (§34) and the post-pivot product backlog, exactly as it did for
-> sprints 1–4. Sprint 4 took backlog items 1–7 plus the sprint-3 carry-overs; **sprint 5 takes items
-> 8–14** (Frontstage publishing, PRD Phase 4). **Backlog items 15–42 remain**, covering the gallery
-> experience and darkroom, the Project cockpit and Project Room, the headless ledger and Stripe,
-> email/contracts/delivery, and hardening/launch. PRD Phases 3 and 5–8 are all still open.
+> anywhere in this repository — re-verified at sprint-6 planning by two repo-wide searches excluding
+> `node_modules/` and `vendor/`: one for the exact `*_SPEC.md` pattern, which returns nothing at all,
+> and one case-insensitive for any `*spec*.md`, which returns only `retrospective.md`. Remaining
+> scope therefore comes from the post-pivot PRD's phase plan (§34) and the post-pivot product
+> backlog, exactly as it has since sprint 1. Sprint 4 took backlog items 1–7 plus the sprint-3
+> carry-overs; sprint 5 took items 8–14 (Frontstage publishing, PRD Phase 4); **sprint 6 takes items
+> 22–26** (the Project cockpit and Project Room, PRD Phase 3). **Backlog items 15–21 and 27–42
+> remain**, covering the gallery experience and darkroom, the headless ledger and Stripe,
+> email/contracts/delivery, and hardening/launch. PRD Phases 5–8 are all still open.
+
+---
+
+## Sprint-6 (Planning, 2026-08-15)
+
+**Sprint Goal:** Complete **PRD Phase 3 — the Project cockpit and the Project Room.** Sprint 5
+finished Phase 4, so the Frontstage is now a real website that publishes pages and stories and
+captures durable Inquiries. What it cannot do is run a booking. Sprint 6 turns the fork's six-column
+`projects` row into the operational backbone the PRD describes, and puts the same authoritative
+workflow state in front of both the photographer and the client.
+
+Full plan: `scrum-master/sprint6.json` (machine-readable, authoritative) · human-readable mirror:
+`scrum-master/sprint6.md` (generated from the JSON — do not edit directly, per Reminder 15).
+
+### Why this scope, and why it is unblocked now
+
+PRD Phase 3 was deliberately excluded from sprints 4 and 5 because backlog items 22–26 rested on
+PicPeak's native contract-signing capability, whose verification failed on one of seven elements
+(AC-17.10 — the audit trail ships as a **separate sibling PDF**, never merged into the signed
+contract). **That decision was resolved by the human on 2026-08-13 as option (a)** — the sibling-PDF
+audit trail is accepted for V1, no fork patch, no external provider (`po-requests.md` items 7 and
+13). The old "blocked by contract signing" rationale no longer applies and must not be restated.
+
+The gap is measurable rather than asserted. At the pinned fork commit, `117_add_projects.js` creates
+`projects` with **exactly six columns** — `id`, `name`, `customer_account_id`, `status`,
+`created_at`, `updated_at` — plus `events.project_id`. There is no phase, no milestone, no venue, no
+next action, no document area, and no client-visible surface; the migration's own header states
+*"Customers never see projects."* The `events` table carries `event_name`, `event_date`,
+`event_time_start`, `event_time_end`, `event_type`, `host_name` and `host_email`, and **none** of PRD
+§22.4's venue, address, map-link, coordinator, coverage or note fields. PRD §35.4's six V1 Projects
+criteria map one-for-one onto this sprint's five feature stories.
+
+### Stories
+
+| ID | Title | Priority | Depends on | Backlog | ACs |
+|----|-------|----------|------------|---------|-----|
+| US-38 | Extend the Backstage Project through new migrations: events, venues, phases, milestones, documents, integration status | critical | — | #22 | 7 |
+| US-39 | Phases, milestones, the booking rule and the computed next action, as one server-side authority | critical | US-38 | #22 | 6 |
+| US-40 | One status vocabulary: colour always paired with text and icon, shared by both surfaces | high | US-39 | #26 | 5 |
+| US-41 | Automatic Project setup: creating a Project prepares everything PRD §22.3 lists, atomically | high | US-38, US-39 | #24 | 6 |
+| US-42 | Two entry paths: convert a Frontstage Inquiry into a Backstage Project, or create one manually | critical | US-41 | #23 | 6 |
+| US-43 | Photographer Project cockpit with the computed next action | critical | US-40, US-41 | #25 | 6 |
+| US-44 | Client-safe Project Room: the only portal the client ever sees | critical | US-40, US-41 | #26 | 7 |
+| US-45 | Pay down the measured test-lane debt and make the two longest-running process failures self-enforcing | high | — | retro 2–5 | 6 |
+
+8 stories / 49 acceptance criteria, all `draft` and unstarted. Two roots: **US-38** (which every
+feature story hangs off) and **US-45** (which has no dependants, so if it stalls nothing is blocked).
+The graph is acyclic.
+
+### The one conflict found at planning, raised in advance
+
+PRD §23.3 requires five status colours — green, amber, blue, red, grey. The token set the human
+signed off **as-is on 2026-08-13** was briefed as near-black ink and a neutral grey scale with **no
+accent colour**, and `src/styles/tokens.css` was verified at this planning to declare **no semantic
+status colour of any kind**. These cannot both hold. It is raised now as **`po-requests.md` item 18**
+with three options and a recommendation, rather than discovered mid-sprint, and US-40 AC-40.3 is
+written so the implementing session *routes* it instead of repainting a signed-off specification on
+its own authority. It is also the first genuine user of `pending_po_routing`.
+
+### Why a debt story sits in a feature sprint again
+
+US-45 earns its place on measurement, as US-30 did. CI's gated command is `npm test` =
+`jest --runInBand` across **both** lanes, so the sprint-5 lane split never reached CI: **10m30s at
+159 suites** on PR #82, **21m18s at 236 suites** on PR #89, eight days apart. Its other criteria
+convert the project's two longest-running process failures — the routing hole (failed in sprints 3,
+4 and 5) and the retrospective (failed in sprints 1, 3, 4 and 5) — from definition-of-done sentences
+into **failing tests**, because in both cases every previous fix was a stronger sentence.
+
+### What sprint 6 deliberately does not do
+
+It does not build finance. Quote status, contract status, invoices, payments, receipts and balance
+all appear in PRD §23.4's and §23.5's lists and every one of them is owned by **PRD Phase 6 or Phase
+7**. Both surface stories therefore require an explicit *not-yet-connected* state rather than a
+fabricated value or a blank that reads as zero, and US-39 AC-39.2 states plainly that this sprint's
+three booking milestones are set by a human action, not by a verified payment. An honest empty state
+now is what lets Phase 6 fill it without a rewrite.
+
+Also out of scope: the gallery experience and darkroom (Phase 5 — backlog 15–21) · the headless
+ledger and Stripe (Phase 6 — backlog 27–33) · the email matrix, contracts and delivery lifecycle
+(Phase 7 — backlog 34–38) · deployment and hardening (Phase 8 — backlog 39–42) · and every standing
+non-goal, in particular any tax surface, any client-facing ledger surface, automatic recurring card
+charges, bespoke revocation or relocking of a released gallery, and any drag-and-drop page builder.
+
+### Sprint-5 close-out completed at this planning
+
+Sprint 5's one open defect is resolved. AC-33.5.2.1's migration-manifest fork-lane decision — the
+`origin: 'fork'` discriminator, with the two rejected options and the *accept as-is* disposition —
+**is now recorded in `po-requests.md`** under *"Routed from sprint 5 — the migration-manifest fork
+lane"*, closing retrospective action item 1. US-33 can be re-closed on that basis. What remains
+unproven is the *mechanism*, which US-45 AC-45.5 addresses with a guard test rather than a fourth
+restatement.
 
 ---
 
@@ -623,14 +715,28 @@ closed it. PRD Phase 4 is complete._
     and licence; combined with trusted Project metadata; human approval required; never invents
     identity, culture, relationships, or locations.
 
-### Project cockpit and Project Room (PRD Phase 3)
+### Project cockpit and Project Room (PRD Phase 3) — _all five IN PROGRESS in sprint 6 (planned 2026-08-15)_
+
+_Unblocked on 2026-08-13 when `po-requests.md` items 7 and 13 were resolved as option (a). Each
+carries the sprint-6 story that owns it._
+
 22. Extend the Backstage Project via new migrations: events, venues, milestones, next action,
-    documents, integration status.
-23. Two entry paths: convert an Inquiry, or create a Project manually.
+    documents, integration status. *(**US-38** — the sprint's root story; the fork's `projects` table
+    is six columns at the pinned commit. The phase/milestone/next-action authority is **US-39**.)*
+23. Two entry paths: convert an Inquiry, or create a Project manually. *(**US-42** — the conversion
+    crosses the Payload↔PicPeak boundary, so it is a stored external identifier with no
+    cross-database join, per Reminder 4, and extends `PAYLOAD_PICPEAK_API_CONTRACT.md`.)*
 24. Automatic Project setup: media area, Project Room access, default phase and milestones,
-    next-action calculation, document area, email merge context, activity timeline.
-25. Photographer Project cockpit with computed next action.
-26. Client-safe Project Room, with state conveyed by text and icon as well as colour.
+    next-action calculation, document area, email merge context, activity timeline. *(**US-41** — all
+    ten PRD §22.3 items asserted individually; carries upstream findings **F1**/**F2** (the client
+    link must be assigned explicitly) and **F6**/**F7** (the `/storage` local-filesystem assumption).)*
+25. Photographer Project cockpit with computed next action. *(**US-43** — built inside the fork's own
+    admin surface; the financial reference area renders an explicit not-yet-connected state, because
+    the ledger is Phase 6.)*
+26. Client-safe Project Room, with state conveyed by text and icon as well as colour. *(**US-44**,
+    on the shared status vocabulary from **US-40**. Per `PAYLOAD_PICPEAK_API_CONTRACT.md`, PicPeak's
+    customer UI under `frontend/src/pages/customer/` **is** the Project Room under its user-facing
+    name — this extends it rather than adding a fourth surface.)*
 
 ### Finance and payment (PRD Phase 6)
 27. Narrowed ledger spike: confirm the Invoice Ninja API covers invoice, credit-note, receipt, and

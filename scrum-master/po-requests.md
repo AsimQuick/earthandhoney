@@ -51,6 +51,48 @@ Details) stays informational and non-blocking. Sprint 4 builds on placeholder im
 
 ---
 
+## Sprint-6 planning — one new decision, raised in advance (2026-08-15)
+
+**Nothing here blocks the start of sprint 6.** US-38, US-39, US-41, US-42 and US-45 can begin
+immediately. One conflict was found while planning and is listed now rather than surfaced mid-sprint.
+
+| # | What I need | Why | Blocks | When it bites |
+|---|---|---|---|---|
+| 18 | **Five status colours, against a token set you locked with no accent colour.** PRD §23.3 requires the shared Project state to render as green (complete), amber (waiting/pending), blue (in progress), red (blocked/overdue/action required) and grey (upcoming). Verified at sprint-6 planning: `src/styles/tokens.css` declares **no semantic status colour of any kind** — no success, warning, danger or error token exists — and item 14 above signed the token set off as-is on 2026-08-13, on your own brief of near-black ink and a neutral grey scale with **no accent colour beyond that range**. These two cannot both hold. **Options:** (a) add five semantic status hues to the locked token set as a deliberate, named extension — the palette stays disciplined, but it is no longer accent-free; (b) express the five states in the existing near-black/grey range using icon, text and weight to carry the distinction, with colour doing little or no work — visually purer, and arguably stronger for accessibility, but "green means done" is a convention clients read instantly and this discards it; (c) allow status colour on the photographer's cockpit only, and keep the client-facing Project Room monochrome. **My recommendation: (a)**, scoped tightly — five status hues, used only for state indication, never as decoration or brand colour. PRD §35.4 requires these states to be clear "without relying only on color" regardless of which option you pick, so US-40 AC-40.2 pairs colour with text and an icon in every case; the question is only whether colour is one of the three channels. | The token set is a signed-off specification, and CLAUDE.md Pillar 3 plus the sprint-5 reference notes both say a story that finds the tokens inadequate raises it rather than editing them. An implementing session must not quietly repaint a locked palette. | US-40 (the shared status vocabulary), and through it US-43's cockpit and US-44's Project Room — three of the sprint's five feature stories | **Mid-sprint, at US-40.** US-38, US-39, US-41, US-42 and US-45 are all unaffected, so this can be answered any time before US-40 is dispatched. If it is not answered by then, US-40 AC-40.3 routes it through `pending_po_routing` and the story waits — it does not guess. |
+
+---
+
+## Routed from sprint 5 — the migration-manifest fork lane (AC-33.5.2.1, recorded 2026-08-15)
+
+_This closes sprint-5's one open defect and sprint-5 retrospective action item 1. **No decision is
+being asked of you** — this is a record you were owed and did not get. It is the third consecutive
+sprint in which a finding was correctly produced and never routed (AC-17.9 in sprint 3, AC-22.2 in
+sprint 4, this one in sprint 5), and this time it happened on the very criterion built to prove it
+could not. Sprint 6 US-45 AC-45.5 adds a guard test that fails when a closed criterion owes a routing
+entry and none exists, because a stronger sentence has now been tried three times._
+
+**What changed and why.** `src/lib/picpeakMigrationManifest.ts` is documented in three places as a
+SHA-1 fingerprint of *upstream at the pinned commit* — that is the whole basis of the integrity test
+that proves no shipped migration was edited (Reminder 2). US-33 needed to add two of our own
+migrations (`120_add_inquiry_notification_email_template.js`,
+`121_add_inquiry_acknowledgement_email_template.js`). AC-33.5.2's original wording told the
+implementer to register `120` in the manifest "so the integrity test stays green" — which would have
+kept the test **green while making it false**, because the entry type has no field that can say a
+file is ours rather than upstream's.
+
+| | |
+|---|---|
+| **Option chosen** | An `origin: 'fork'` discriminator on the manifest entry, permitted only when the migration is also recorded in `FORK_CHANGELOG.md`. Proven in both directions, including the negative case that an edited *upstream* migration still fails the test. |
+| **Options rejected** | (a) Appending our migration as though it were upstream — keeps the test green by making the artifact lie about what it fingerprints. (b) A separate parallel list of fork migrations — two lists that must be kept in step, and nothing forces them to be. |
+| **Collateral** | `vendor/README.md` and `UPSTREAM_SYNC.md` were updated so the artifact's documented meaning matches what it now does. |
+| **Verified independently** | The Tester confirmed via `git log --name-only` that only two NEW files appeared under `vendor/picpeak/backend/migrations/core/` and that **no migration 001–119 was touched**. |
+| **Disposition** | **Accept as-is.** The lane is additive, narrowly scoped, already recorded in `FORK_CHANGELOG.md` and `PICPEAK_PORT_LEDGER.md`, and the underlying engineering was judged "real, verified and sound — only the PO-routing step was skipped." US-33 can be re-closed on this basis. |
+
+Sprint 6 depends on this lane directly: US-38 adds migrations from `122` upward and AC-38.6 requires
+every one of them to be registered through it.
+
+---
+
 ## ACTION REQUIRED — pipeline recovery (2026-07-30)
 
 The pipeline stalled today and I have cleaned up the backlog, but **one item still needs action outside my
