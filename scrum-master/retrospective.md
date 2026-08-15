@@ -1,5 +1,220 @@
 # Sprint Retrospective — earthandhoney
 
+## Sprint-5 — Frontstage publishing (PRD Phase 4)
+
+- **Sprint goal:** Turn the proven Frontstage↔Backstage seam and the locked design tokens into a
+  real, deterministic, lead-generating public site — a structured `Pages` model with a standard
+  template every page inherits, navigation driven by fields, a form builder writing durable
+  Inquiries, the homepage / Details / Story templates, and real SEO output in actual HTML — opening
+  with one piece of engineering debt: splitting the twenty-minute serial test suite.
+- **Outcome:** All 8 stories (US-30…US-37) and all **62 acceptance criteria** delivered and merged
+  across 8 PRs (#82–#89), every one with a green CI run recorded against its exact head SHA. Tester
+  gates: 7 DONE, 1 DEFECT-FOUND (US-33 — a routing defect, not a code defect). The AC count grew
+  46 → 62 in flight, entirely inside US-33 and US-37. No deploy was run.
+- **Retrospective completed:** 2026-08-15 (at close — see Missed checks item 1, now the fourth
+  consecutive sprint)
+
+---
+
+### What went well
+
+- **A criterion refused to falsify a fork-integrity artifact, and rebuilt it instead.** AC-33.5.2's
+  original wording told the implementer to register our new migration `120` in
+  `picpeakMigrationManifest.ts` "so the migration-manifest integrity test stays green". Following
+  that instruction would have kept the test green **while making it false** — the manifest is
+  documented in three separate places as a fingerprint of *upstream at the pinned commit*, and its
+  entry type has no field that can say a file is ours. Rather than comply, AC-33.5.2.1 built a
+  fork-added-migration lane (`origin: 'fork'`, permitted only when recorded in `FORK_CHANGELOG.md`),
+  proved it in both directions including the negative case, and updated `vendor/README.md` and
+  `UPSTREAM_SYNC.md` so the artifact's documented meaning matches what it now does. Commit `3dcddb3`
+  is the counterfactual: an earlier session hit the same wall and **deleted its own working code**
+  rather than resolve it.
+- **Pillar 3 stopped being a sentence and became a test.** US-31 AC-31.2 walks the real `Pages`
+  field tree — including nested groups, arrays and block definitions — and fails if a `blocks`
+  field, a free-text CSS field or a margin/padding/position control is ever added, with a self-test
+  proving the walker actually catches each planted violation. US-35 went further and made copy
+  restraint *structural*: the Details template simply has no long-form body field, so PRD §13.4's
+  "do not over-explain in copy" cannot be violated by content entry. US-36 did the same for blog
+  chrome. A non-goal that is only written down is a non-goal that comes back.
+- **Phase 4's exit criterion was demonstrated, not asserted.** AC-31.7 renders two `Pages` records
+  with deliberately different content — short vs. long heading, 1 vs. 4 placements, 0 vs. 3 text
+  sections — reduces each to a structural shell, and commits the snapshot pair, then proves the
+  shared shell is byte-identical with a per-testid style-drift walk. Sanity checks guard against a
+  vacuous pass. "New content inherits design quality without manual layout work" is now falsifiable.
+- **A performance miss was published at full size.** AC-34.6 reports mobile Lighthouse **0.91
+  (PASS)**, image-attributable **CLS 0**, and **LCP 3410ms against a ~2500ms target — FAIL on all
+  three passes, a ≈910ms / 36% gap** — then attributes the gap to the still-open R2 delivery
+  decision and explicitly declines to close that decision. A later session re-derived every median
+  from the retained raw JSON and confirmed the runs had loaded a real photograph rather than the
+  placeholder before accepting the numbers. This is US-29's precedent used exactly as intended.
+- **Two real defects were found by writing the tests, not by users.** US-32's keyboard-order test
+  surfaced a genuine accessibility bug — below `lg` the closed drawer was pushed off-canvas by
+  `transform` alone, leaving its links in the tab order. US-37's AC-37.4.3 found that
+  `GalleryImage.url` is only a public `/api/gallery/…` path at `basic`/`standard` protection; at
+  `enhanced`/`maximum` the fork emits an **unexpanded `{{token}}` template** on a route the Next
+  rewrite does not proxy, and the prior code was piping that straight into `<image:loc>`.
+- **Harness-first paid off a second time.** No committed suite in this repository had ever fetched a
+  Payload *admin* page over HTTP, and that unmapped cost is what ended two capped sessions on the
+  un-split AC-37.6.3. AC-37.6.3.1 stood the harness up once and recorded it in
+  `SEO_ASSISTANT_ADMIN_OBSERVABILITY.md` — the authenticated fetch, a fourteen-row observation
+  recipe table, and a required NOT COVERED section — with "not observable in the initial HTML, read
+  from form-state key X" defined in advance as a *passing* row. The three sub-ACs that followed
+  reused it instead of rediscovering it. This is the `WEBHOOK_LIVE_PROOF.md` pattern from US-26.
+- **A determinism problem against a shared database was solved properly.** AC-37.6.3.3.2's
+  internal-link assertion could have been made to pass by hardcoding a position. Instead the suite
+  queries the live published candidate set the way the production code does, picks a
+  `photographyType` no published document currently uses so both fixtures are each other's sole
+  rank-0 match, and codes a documented fallback that computes the expectation from the same live set
+  when no unused option exists. The suite states which branch it took and why.
+- **The sprint-4 merge rule held on all 8 PRs.** DoD item 8 was written after PR #73 was merged with
+  both CI jobs red. This sprint the Tester confirmed a green run against the **exact head SHA** for
+  every PR by matching `gh run view --json headSha` against `gh pr view --json headRefOid`. One
+  process failure, one rule, zero recurrences — the only one of sprint-4's action items that
+  demonstrably worked.
+- **`logs/` was read before criteria were rewritten.** Sprint-3 action item 3 finally shows up in
+  practice: both the AC-33.5.2 split and the AC-37.4 split cite the specific session logs and their
+  `max_turns` terminal reason, and the AC-33.5.2 split explicitly re-checked whether the *previous*
+  diagnosis still applied before splitting again — concluding it did not, and finding a different
+  cause. AC-37.4's split also records the check against both known non-convergent shapes, and names
+  `AC-17.4.1.1.1.2.2.2` as the precedent for what recursive splitting costs.
+
+---
+
+### Missed checks / what didn't go well
+
+- **DoD item 9 (`retrospective.md` updated incrementally) was UNMET for the FOURTH consecutive
+  sprint** (1, 3, 4, 5). Sprint 3 diagnosed the missing owner; sprint 4 added an owner *and* a
+  checkpoint to the DoD; **sprint 5 escalated it to an orchestrator pipeline step** — "the
+  orchestrator appends to `retrospective.md` after every second story close-out", written explicitly
+  because "nothing short of a self-executing step counts". Eight stories closed and it never fired.
+  _Root cause: the DoD described a pipeline step that does not exist in the pipeline. Writing the
+  instruction in the sprint file cannot create the step — only changing the orchestrator can._
+- **The routing hole recurred a third time — on the very AC built to prove it could not.** Sprint 5
+  added `pending_po_routing` to `sprint5.json` precisely because a DoD cannot grant write scope
+  (AC-17.9 in sprint 3, AC-22.2 in sprint 4). AC-33.5.2.1 was written to use it, and its own text
+  says the sub-AC "is not closed until that entry is drained". The array is `[]`, `po-requests.md`
+  has no entry, and the AC is recorded `checked: true` / `dev_status: done`. **The mechanism was
+  never exercised once.** _Root cause: the array grants write scope, but nothing verifies the write
+  happened. The AC's closing condition is enforced by reading the AC text — which is exactly the
+  kind of enforcement that failed the previous two times._
+- **US-30's headline measurement was never recorded.** AC-30.2 required "the measured wall-clock
+  time of the UNIT lane and of the full suite before the change… reported as real numbers", and
+  warned that "a rounded or estimated one is not" acceptable. The guard test's header says the
+  figure is "recorded on the story"; the story's AC-30.2 note is one sentence about waiting for a
+  background run. Re-checked for this retrospective: no wall-clock figure exists in `sprint5.json`,
+  `TEST_LANE_CLASSIFICATION.md`, PR #82's diff, or that session's log. The mechanism was verified;
+  the number that justified building it was not.
+- **The lane split's headroom was consumed inside the same sprint — and CI never got any of it.**
+  CI's gated command is `npm test` = `jest --runInBand` across **both** lanes, so only dev sessions
+  benefit from `test:unit`. Same runner, same command: PR #82's `test` job **10m30s** at 159 suites;
+  PR #89's **21m18s** at 236 suites, eight days later. The suite grew **48%** in one sprint. US-30
+  bought time and Phase 4 spent it immediately.
+- **The 80-turn cap, not requirements quality, shaped two stories.** AC-33.5 timed out twice,
+  AC-33.5.2 twice more (`logs/20260814_064803`, `logs/20260814_070541`, both `max_turns`), AC-37.4
+  twice, plus the AC-37.6.3 sessions — pushing the sprint from 46 to 62 ACs. The splits themselves
+  were well reasoned, and both PO split notes correctly identified a *specific* blocker rather than
+  reflexively cutting by size. But each retry burned a session, and each left uncommitted work that
+  the next session had to verify line by line rather than trust.
+- **"Prior partial work to review rather than trust" became a standing tax.** Roughly a third of
+  US-33's and US-37's criteria carry a paragraph telling the next session which uncommitted
+  leftovers exist, which branch they are on, and which of them are wrong — including one AC that had
+  to correct a previous AC's note that named two helper files which **do not exist in any commit on
+  any branch**. The notes were accurate and valuable; needing them at all is the cost of capped
+  sessions discarding context.
+- **Mid-sentence `dev_notes` recurred at scale.** Sprint 4 recorded six; sprint 5 has roughly a
+  third of all AC notes ending "I'll wait for the background run" / "I'll pause here". Sprint-4
+  action item 7 — have the harness auto-commit annotate the notes it rescues — was never actioned,
+  so the Tester again had to reconstruct from `git log` which apparently-abandoned work was actually
+  committed. PR #82's own commit log shows the pattern plainly: two commits titled "AC-30.x:
+  follow-up (auto-committed, dev agent did not commit)".
+- **Tracker staleness recurred for the third consecutive sprint.** All 8 stories read
+  `dev_status: not-started` and `phase` read `planning` while every AC read `done` and all 8 PRs
+  were merged. Sprint-4 action item 5 adopted this as DoD item 15 ("written as work completes"); it
+  was reconciled at review again, exactly as in sprints 3 and 4.
+- **Two tests coupled to sprint-file *content* broke on legitimate growth.** `us21-ac21.3` pinned
+  `current-sprint: sprint-4` and regresses every time planning advances; `us22-ac22.4`'s regex
+  grabbed the first `| 9 |` row once a second action-items table existed above it. Both were
+  repaired in PR #82 to select by content rather than position — a good fix, but the class of test
+  (assert against a document that is *supposed* to change) will keep producing these.
+- **No deploy was run.** `deploy_summary` is empty and `tester_sprint_status` is `not-started`.
+  Sprints 3 and 4 both closed with a deploy passing all verification tiers; sprint 5, which is the
+  first sprint to produce actual public routes, closed without one.
+
+---
+
+### Tester (Quality Gate) feedback
+
+Recorded from the Tester's per-story close-out notes in `sprint5.json` (2026-08-15):
+
+- **7 stories DONE, 1 DEFECT-FOUND.** Every story's PR was verified independently rather than on
+  `dev_notes` assertion: for all 8, the CI run's `headSha` was matched against the PR's
+  `headRefOid` — #82/`c73c6ea`, #83/`5108c25`, #84/`2ee377b`, #85/`1caa461`, #86/`96354d3`,
+  #87/`6f7ed9e`, #88/`fbcad2e`, #89/`728e449` — all `smoke` + `test` green.
+- **DEFECT, US-33 only:** "AC-33.5.2.1's own evidence clause is explicit… this sub-AC is not closed
+  until that entry is drained", yet `pending_po_routing` is `[]` and `po-requests.md` contains no
+  matching entry under any of `33.5.2.1`, `migration lane`, `origin.*fork` or `F10`. Called out as
+  "the exact routing-hole failure (AC-17.9 in sprint 3, AC-22.2 in sprint 4) recurring a third
+  time — this time on the very AC that exercises the new `pending_po_routing` mechanism the sprint
+  built specifically to prevent it, so the mechanism has never actually been proven end to end." The
+  underlying work is judged "real, verified and sound — only the PO-routing step was skipped."
+  Recommendation: the PO adds the entry now (proposed disposition **accept as-is**) and the
+  orchestrator exercises the drain at least once before US-33 is treated as fully closed.
+- **Fork discipline verified independently on US-33:** `git log --name-only` across the merge commit
+  shows only two NEW files under `vendor/picpeak/backend/migrations/core/` (`120`, `121`) and **no
+  migration 001–119 touched**; `FORK_CHANGELOG.md` and `PICPEAK_PORT_LEDGER.md` both carry dated,
+  file-level entries; `.env.example` carries `BACKSTAGE_API_TOKEN=change-me-in-production` — a
+  placeholder, no secret committed.
+- **No retired artifact reintroduced:** repo-wide grep under `src/` (excluding `__tests__`) for the
+  retired auth, mail and lead-capture systems returns nothing after US-32's navigation rewrite;
+  `src/collections/` contains exactly `Forms`, `GalleryPlacements`, `Inquiries`, `Media`, `Pages`,
+  `Stories`, `Users` — no retired Testimonials/Packages/FAQ collection.
+- **Coverage gate spot-checked at source:** `.github/workflows/ci.yml:69` still reads
+  `{"branches":80,"functions":80,"lines":80}` with no `continue-on-error` and no `passWithNoTests`,
+  and it is the exact command CI runs. The `us28-ac28.5` coverage-gate anchor is untouched since its
+  sprint-4 creation commit.
+- **Cross-cutting finding raised on US-37:** "`retrospective.md` has no Sprint-5 section at all —
+  confirmed via a header-only grep… this is the fourth consecutive sprint (1, 3, 4, 5) this item
+  has gone unmet."
+- **Sprint-wide finding raised on every story:** story-level `dev_status: not-started` and
+  `phase: planning` against fully-done ACs — "not rewritten here per instruction; reported to the
+  orchestrator/PO rather than silently fixed."
+- **Plan-review value, recorded at sprint start:** the Tester's plan review caught and corrected
+  **eight missing-test-criteria gaps** before any code was written — four in US-33 (the PRD §20.2
+  set was claimed but only field types were tested; captured values/source/utm claimed but only
+  persistence proved; three spam defences named but two tested; no evidence at all for the
+  no-SMTP-secret-in-the-browser claim), one in US-35 (five masonry behaviours claimed, one tested),
+  one in US-36 (external-identifier-only claimed, only order tested) and two in US-37 (image-sitemap
+  entries, and the fourteen SEO controls named individually so the AC could not close on a partial
+  implementation). Each was an evidence clause narrower than its own claim.
+
+---
+
+### Process improvements / action items
+
+| # | Action | Rationale | Owner |
+|---|--------|-----------|-------|
+| 1 | **Write AC-33.5.2.1's migration-lane decision into `po-requests.md`** (option chosen: an `origin: 'fork'` discriminator on the manifest entry; rejected: appending our migration as if it were upstream, and a separate parallel fork list; disposition: accept as-is) **and re-close US-33.** Do it before sprint-6 planning closes. | The sprint's one open defect, and a copy-one-entry task — the same shape as sprint-4 action item 1. It is also the third repeat of the same class of failure. | Product Owner |
+| 2 | **Make the routing drain a step that runs, and prove it once.** The `pending_po_routing` array grants the write scope the DoD could not — but nothing checks that the write happened, so it inherited the old failure mode intact. Either the story-close step drains the array unconditionally, or a test fails when a closed AC's text says it owes a routing entry and none exists. | Adding the array was the right diagnosis and it still did not fire. An unexercised mechanism is indistinguishable from an intention — this is now three sprints of evidence for that specific claim. | Project Lead |
+| 3 | **Make the retrospective append an actual orchestrator step, or stop putting it in the DoD.** Four sprints, four escalations (intent → owner → owner + checkpoint → "pipeline step"), four misses. The fourth escalation failed because the DoD *described* a pipeline step that was never added to the pipeline. | This is now the longest-running unmet item in the project, and each restatement costs a sprint. If the step will not be built, the honest move is to schedule the retrospective as a closing story with an AC, not a DoD line. | Project Lead |
+| 4 | **Record AC-30.2's missing measurement, or accept the story's evidence as incomplete.** Run `test:unit` and the full serial suite once in Docker and write both wall-clock figures onto US-30, or note explicitly that the story shipped without its stated evidence. | The AC forbade an estimate and got no number at all. The split may well be worth it — nobody can currently say by how much. | Dev Team |
+| 5 | **Decide what to do about CI's serial run before Phase 5.** CI gates on `npm test` (`--runInBand`, both lanes), so the parallel lane never helps it: 10m30s → 21m18s inside one sprint as the suite grew 159 → 236 suites. Options: run the two lanes as separate CI jobs, or accept the cost explicitly. | The problem US-30 was created to fix is back at its original size, and PRD Phases 5–8 will grow the suite further. | Dev Team / Project Lead |
+| 6 | **Action sprint-4 item 7 — have the harness auto-commit annotate the `dev_notes` it rescues.** Carried unchanged; the rate went up, not down. | Roughly a third of this sprint's AC notes end mid-task. PR #82's log literally contains "auto-committed, dev agent did not commit". Every one costs the Tester a `git log` reconstruction. | Project Lead |
+| 7 | **Have the story-close step write `dev_status` and `phase`** — carried from sprint-4 action item 5, unmet a third time and reconciled at review a third time. | DoD item 15 said "written as work completes". Nothing writes them, so nothing changed. | Project Lead |
+| 8 | **Run and record a sprint deploy for sprint 5's output** before sprint-6 work lands on top of it. | Sprints 3 and 4 both closed on a passed deploy. Sprint 5 produced the first real public routes and closed without one. | Project Lead |
+| 9 | **Treat tests that assert against intentionally-changing documents as a known class** — select by content, never by position or by a pinned sprint literal, and prefer asserting the invariant over the instance. | Two such tests broke on legitimate growth this sprint and were fixed in PR #82; the class will keep producing them as `scrum-master/` grows. | Dev Team |
+| 10 | **Carry the three Tier-3 anchors and add the four new decision-encoding guards** (no page builder, no blog chrome, no meta keywords, the lane-classification manifest). Treat a change to any of them as a decision, not a refactor. | Each new guard exists because a retired non-goal or a scoping decision would otherwise be reversible by a routine cleanup — the same reasoning that created the original three. | Tester / Dev Team |
+
+**Still open from earlier sprints:** sprint-3 items 9 (the UD-1 upstream report still needs a human
+GitHub identity — `po-requests.md` item 16) and 10 (SPF/DKIM/DMARC before production email — item
+17). Sprint-4 item 8 (design-token sign-off) is **closed** — signed off as-is on 2026-08-13, so
+every Phase 4 template built this sprint sits on a confirmed specification. Sprint-4 item 9 is
+**half closed**: contract signing is resolved as option (a), the **R2 delivery path (item 15) is
+still open** and now carries a second measurement against it — AC-34.6's ≈910ms homepage LCP gap
+tracks the miss US-29 already recorded. Sprint-4 items 1–5 and 10 were adopted into sprint 5's DoD;
+of those, only item 4 (the green-CI-at-exact-head-SHA merge rule) actually changed behaviour.
+
+---
+
 ## Sprint-4 — Making the pivot real on `main` + the Frontstage foundation
 
 - **Sprint goal:** Make the post-pivot direction real on `main` (restore the stranded pivot

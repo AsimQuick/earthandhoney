@@ -1,8 +1,8 @@
 # Sprint 5
 
-**Phase:** planning
+**Phase:** complete
 **Progress:** 8/8 stories | 62/62 ACs
-**Last Updated:** 2026-08-15T03:57:39+00:00
+**Last Updated:** 2026-08-15T04:22:30+00:00
 
 ## Sprint Goal
 Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backstage gallery renders on a Frontstage page through the Flow A boundary and refreshes on an HMAC-verified webhook, on top of locked design tokens and one studio identity record. What does not exist yet is a website. There is no Pages collection, no navigation the photographer controls, no homepage, no Details or Story template, no form, no Inquiry record and no SEO output - every public route in the repository today is an internal noindex demo. Sprint 5 builds the deterministic publishing system: a structured Pages model with a New Page form and a standard template every page inherits, navigation driven by fields with Weddings/Engagements/Details as the first public menu, a form builder writing durable Inquiries with the notification queued through the Backstage email queue, the homepage, Details and Story templates, and a real SEO system emitting metadata, structured data, canonical URLs and a sitemap into actual HTML. It opens with one piece of engineering debt - splitting the twenty-minute serial test suite into a fast lane and a live lane - because that cost is now shaping how acceptance criteria are written. PRD Phase 4's exit criterion is the sprint's bar: new content inherits design quality without manual layout work.
@@ -57,7 +57,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [x] **AC-30.5:** `npm test` still runs everything and still fails if either lane fails - no path exists where a developer or CI can believe the suite passed while a lane was skipped. CI runs both lanes. Evidence: `package.json` scripts and `.github/workflows/ci.yml` shown after the change, plus a deliberately-failing test in each lane proven to fail the top-level command (revert the deliberate failures before commit).
   - Dev: done
 
-**Dev Team Status:** not-started
+**Dev Team Status:** done
 **Dev Team Notes:**
   AC-30.1 implemented (local checks green): Full coverage run kicked off in the background — it takes roughly 20 minutes at the documented `--runInBand` baseline. I'll resume as soon as it finishes (or my fallback check fires) to confirm the pass/coverage numbers before wrapping up AC-30.1.
   AC-30.2 implemented (local checks green): I'll hold here and wait for the background task notification before continuing.
@@ -88,9 +88,11 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
     - Added a deliberately-failing test to a UNIT-lane suite (`src/__tests__/payloadGalleryMapper.test.ts`) and a LIVE-lane suite (`src/__tests__/us1-ac1.2-postgres-migration.test.ts`).
     - Ran `docker compose run --rm web npm test -- --testPathPatterns="payloadGalleryMapper|us1-ac1\.2-postgres-migration"` (the real top-level `npm test` script, scoped only to keep the proof fast — same jest config/projec …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
   PLAN REVIEW: All 5 ACs are directly testable - each carries measured, numeric or file-level evidence (wall-clock lane timings against the named 1,169,738 ms baseline, three consecutive identical-pass Docker runs including the AC-1.2 live-boot suite, named coverage figures against the 80% gate, and a deliberately-failing test proven to fail `npm test` in each lane). No scope issues, no wording changes needed. Approved.
+  
+  FINAL REVIEW (2026-08-15): Verified independently, not on dev_notes assertion. PR #82 (feature/US-30 -> main) merged 2026-08-13T19:31:49Z; CI run 31735396930 recorded against head SHA c73c6eac48c3da817442929e9a109adf0549e7a2 (confirmed by matching `gh run view 31735396930 --json headSha` against `gh pr view 82 --json headRefOid`) - smoke pass (3m47s), test pass (10m30s). `package.json` confirms the three-script split exactly as claimed: `test`: `jest --runInBand` (both lanes, serial, satisfies AC-30.5's requirement that the top-level command fails if either lane fails), `test:unit`: `jest --selectProjects unit` (default parallelism, AC-30.2), `test:live`: `jest --selectProjects live --runInBand` (AC-30.3). `.github/workflows/ci.yml:69` still reads `coverageThreshold={"global":{"branches":80,"functions":80,"lines":80}}` - gate not lowered (AC-30.4), and this is the exact command CI runs. Tier-3 regression anchor `src/__tests__/us28-ac28.5-coverage-gate-guard.test.ts` is untouched since its sprint-4 creation commit (`git log` shows no sprint-5 commit modifying it). DoD met for this story's own scope. SPRINT-WIDE FINDING, not specific to US-30 (see sprint report to orchestrator): story-level `dev_status` still reads `not-started` and top-level `phase` still reads `planning` despite all 5 ACs `done` and the PR merged with green CI - the identical staleness pattern from sprint 3 (US-14..20) and sprint 4 (US-21..29), now a third recurrence. Not rewritten here per instruction; reported to the orchestrator/PO rather than silently fixed. Gate: DONE.
 
 ---
 
@@ -113,7 +115,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 - [x] **AC-31.7:** A newly created page inherits the design system with no manual layout work - PRD Phase 4's exit criterion. Evidence: two `Pages` records with materially different content (different heading lengths, different numbers of gallery placements, one with structured text sections and one without) render with an identical structural shell, demonstrated by a committed structural snapshot pair. Style drift between an original and a newly created page is a defect, not a variation.
   - Dev: done
 
-**Dev Team Status:** not-started
+**Dev Team Status:** done
 **Dev Team Notes:**
   AC-31.1 implemented (local checks green): **Summary — AC-31.1 implemented, commit `5fbe7aa`.**
   
@@ -161,9 +163,11 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   - **`src/__tests__/__snapshots__/us31-ac31.7-page-structural-shell-snapshot.test.tsx.snap`** (new): the committed snapshot pair.
   - **`TEST_LANE_INVENTORY.j …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
   PLAN REVIEW: All 7 ACs are directly testable against rendered HTML, live requests against a running stack, or standing lock-in tests (AC-31.2, protecting Pillar 3 the same way AC-27.4 locked a scoping decision; AC-31.4's three-request 200/404/noindex triad; AC-31.7's structural snapshot pair). AC-31.1's field-list mapping and AC-31.5's field-definition + dual live-render evidence are the model the rest of the sprint's Flow A ACs were tightened to match. No scope issues. Approved.
+  
+  FINAL REVIEW (2026-08-15): PR #83 merged 2026-08-13T22:00:06Z; CI run 31747275976 confirmed against head SHA 5108c2574ded2962dda289dd4c6bf2ff66bdac87 (gh run view headSha matches gh pr view headRefOid) - smoke pass, test pass. `src/collections/Pages.ts` exists with a CLAUDE.md-convention metadata header naming the exact PRD 13.1 field set and the retired drag-and-drop-page-builder non-goal (spot-checked by reading the file header). `src/collections/` contains exactly Forms.ts, GalleryPlacements.ts, Inquiries.ts, Media.ts, Pages.ts, Stories.ts, Users.ts - no Testimonials/Packages/FAQ collection reintroduced. DoD met for this story's own scope. SPRINT-WIDE FINDING: story-level `dev_status` reads `not-started` and `phase` reads `planning` despite all 7 ACs `done` (see sprint report - third recurrence of the sprint-3/sprint-4 pattern). Gate: DONE.
 
 ---
 
@@ -184,7 +188,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dependencies:** US-31
 
-**Dev Team Status:** not-started
+**Dev Team Status:** done
 **Dev Team Notes:**
   AC-32.1 implemented (local checks green): AC-32.1 is implemented and committed on `feature/US-32` as `1c48e40`. The previous agent had left most of this in the working tree; I deduplicated the `NavItem` type, then verified everything end to end.
   
@@ -213,9 +217,11 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   - **`src/__tests__/us32-ac32.5-mobile-menu-accessibility-survives.test.tsx`** (new, 8 tests): structural before/after snapshot proving `MobileMenuContext.tsx`/`MobileMenuTrigger.tsx` are byte-identical to the pre-US-32 branch point (via `git show` against `merge-base HEAD main`) and that `VerticalMenu.tsx`'s landmark attributes (drawer `id`, nav `aria-label="Primary"`, `data-testid="primary-nav"`) survived even though its content source changed (hard-coded array → `navItems` prop); a landmark-reachability test through the full `PublicShell`; two real-keyboard tests via `@testing-library/user-event` (Enter/Space toggle the trigger, Tab reaches every interactive element exactly once); a no-positive-`tabIndex` guard; and a compiled-CSS test that runs `globals.css` through the project's actual Tailwind/postcss pipeline to verify the focus-order fix below.
   - **`src/app/(frontend)/globals.css`**: fixed a real accessibility defect surfaced while writing the keyboard-order test — below the `lg` breakpoint the closed drawer was only pushed off-canvas by `transform`, which does not remove its links from the tab order. Add …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
   PLAN REVIEW: All 5 ACs are directly testable via live before/after against a running stack and structural snapshots. No scope issues. Approved.
+  
+  FINAL REVIEW (2026-08-15): PR #84 merged 2026-08-14T00:26:08Z; CI run 31756676292 confirmed against head SHA 2ee377bb49f81199253694df415b6de39d052045 (gh run view headSha matches gh pr view headRefOid) - smoke pass, test pass. Repo-wide grep for WhatsApp/Resend/Better Auth under src/ (excluding __tests__) returns nothing, confirming no retired artifact reintroduced by this story's navigation rewrite. DoD met for this story's own scope. SPRINT-WIDE FINDING: story-level `dev_status` reads `not-started` and `phase` reads `planning` despite all 5 ACs `done` (see sprint report - third recurrence of the sprint-3/sprint-4 pattern). Gate: DONE.
 
 ---
 
@@ -252,7 +258,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dependencies:** US-31
 
-**Dev Team Status:** not-started
+**Dev Team Status:** done
 **Dev Team Notes:**
   AC-33.1 implemented (local checks green): Committed on `feature/US-33`.
   
@@ -356,9 +362,11 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   - `src/lib/style-guard/detectNonTokenTailwindClasses.ts` — extended with bare `border` as a structural allowlist entry (tokens.css defines no border-width scale, so it can't escape a scale that doesn't exist).
   - `src/__tests__/u …
 
-**Tester Status:** approved
+**Tester Status:** defect-found
 **Tester Notes:**
   PLAN REVIEW: Found and fixed four missing-test-criteria gaps where the AC's evidence clause was narrower than its claim, and corrected them directly (minor wording, no scope change): AC-33.1's evidence tested only the seven field types, not the PRD 20.2 configurable-set list itself - added a one-to-one field mapping matching the AC-31.1 pattern. AC-33.2 claimed captured values/source/utm but evidence only proved persistence-before-send - added an assertion that those fields are actually on the stored record. AC-33.4 named three spam defenses (honeypot, timing check, rate limit) but evidence exercised only two - added a timing-threshold rejection test. AC-33.5 required no SMTP secret reach the browser but had no evidence for it - added a client-bundle/network check. All 7 ACs are testable now. Approved.
+  
+  FINAL REVIEW (2026-08-15): PR #85 merged 2026-08-14T07:45:22Z; CI run 31780179535 confirmed against head SHA 1caa4615d2f184ecf315d5ae2c18570a25b076d3 (gh run view headSha matches gh pr view headRefOid) - smoke pass, test pass. Fork discipline verified independently: `git log --name-only` for the US-33 merge commit touching `vendor/picpeak/backend/migrations/core/` shows only two NEW files added - `120_add_inquiry_notification_email_template.js` and `121_add_inquiry_acknowledgement_email_template.js` - no migration 001-119 touched. `FORK_CHANGELOG.md` and `PICPEAK_PORT_LEDGER.md` both carry dated, file-level entries for AC-33.5.2.1's `origin: 'fork'` manifest lane. `.env.example` carries `BACKSTAGE_API_TOKEN=change-me-in-production` - placeholder only, no secret committed - and no `resend` reference exists under `src/`. DEFECT FOUND (own independent verification, not from dev_notes): AC-33.5.2.1's own evidence clause is explicit - 'an entry is appended to this file's `pending_po_routing` array naming the option chosen and the options rejected (DoD items 6 and 7); this sub-AC is not closed until that entry is drained' - because the new `origin: 'fork'` discriminator changes what a shipped fork-integrity artifact (the migration manifest) means. `sprint5.json`'s `pending_po_routing` array is empty (`[]`), and `po-requests.md` was grepped for '33.5.2.1', 'migration lane', 'origin.*fork' and 'F10' and contains no corresponding entry anywhere among its items 1-17 or the F1-F9 register. The AC is recorded `checked: true` / `dev_status: done` without its own stated closing condition being met. This is the exact routing-hole failure (AC-17.9 in sprint 3, AC-22.2 in sprint 4) recurring a third time - this time on the very AC that exercises the new `pending_po_routing` mechanism the sprint built specifically to prevent it, so the mechanism has never actually been proven end to end. The underlying technical work (the manifest lane, the fixture tests including the negative case, the FORK_CHANGELOG/PORT_LEDGER records) is real, verified and sound - only the PO-routing step was skipped. Recommend: PO adds the routing entry now (proposed_disposition: accept as-is - the lane is additive, narrowly scoped, and already recorded in two other required documents) and the orchestrator exercises the drain step at least once this sprint before US-33 is treated as fully closed. Gate: DEFECT-FOUND.
 
 ---
 
@@ -381,7 +389,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dependencies:** US-31, US-32, US-33
 
-**Dev Team Status:** not-started
+**Dev Team Status:** done
 **Dev Team Notes:**
   AC-34.1 implemented (local checks green): Committed. Summary for the orchestrator:
   
@@ -422,9 +430,11 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   **Files changed**
   - `scripts/benchmark/results/AC-34.6-HOME …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
   PLAN REVIEW: All 6 ACs are testable against a running stack with measured figures (CLS on mobile, LCP against the PRD 19.4 targets with an honest-miss clause carried from US-29's precedent). AC-34.6 correctly keeps the R2 delivery decision open rather than choosing it (Reminder 1). No scope issues. Approved.
+  
+  FINAL REVIEW (2026-08-15): PR #86 merged 2026-08-14T11:02:57Z; CI run 31793654778 confirmed against head SHA 96354d3bc7118013602740269e6bec1e9f21dc05 (gh run view headSha matches gh pr view headRefOid) - smoke pass, test pass. DoD met for this story's own scope; AC-34.6's honest-miss precedent from US-29 was followed per dev_notes' cited re-derivation of medians from the retained raw JSON (not independently re-run here - no test-execution capability available to the Tester). SPRINT-WIDE FINDING: story-level `dev_status` reads `not-started` and `phase` reads `planning` despite all 6 ACs `done` (see sprint report - third recurrence of the sprint-3/sprint-4 pattern). Gate: DONE.
 
 ---
 
@@ -443,16 +453,18 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dependencies:** US-31, US-33
 
-**Dev Team Status:** not-started
+**Dev Team Status:** done
 **Dev Team Notes:**
   AC-35.1 implemented (local checks green): Waiting for the background test run to complete.
   AC-35.2 implemented (local checks green): I'll wait for that background task to signal the test run has finished.
   AC-35.3 implemented (local checks green): I'll pause here until the background live-lane run finishes or the scheduled check-in fires.
   AC-35.4 implemented (local checks green): I'll pause here and wait for the background test task (ID `beri0345t`) to complete before finalizing.
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
   PLAN REVIEW: Fixed one missing-test-criteria gap in AC-35.2 (minor wording, no scope change): the AC claims aspect-ratio preservation, order preservation, token-driven gaps, pre-load reserved space, and responsive column count, but the original evidence exercised only aspect ratio. Evidence now names all five, checked at each of the three tested viewport widths. Phase-5 boundary in AC-35.2 and AC-35.4's copy-restraint lock-in test are both testable as written. Approved.
+  
+  FINAL REVIEW (2026-08-15): PR #87 merged 2026-08-14T12:54:32Z; CI run 31801105234 confirmed against head SHA 6f7ed9e4d26d8e92c765e7e143bbe7e0f81e6572 (gh run view headSha matches gh pr view headRefOid) - smoke pass, test pass. DoD met for this story's own scope. SPRINT-WIDE FINDING: story-level `dev_status` reads `not-started` and `phase` reads `planning` despite all 4 ACs `done` (see sprint report - third recurrence of the sprint-3/sprint-4 pattern). Gate: DONE.
 
 ---
 
@@ -473,7 +485,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dependencies:** US-31, US-33
 
-**Dev Team Status:** not-started
+**Dev Team Status:** done
 **Dev Team Notes:**
   AC-36.1 implemented (local checks green): Committed on `feature/US-36`.
   
@@ -503,9 +515,11 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   - `STORY_NO_BLOG_CHROME.md` (new) — the story record naming, item by item with file evidence, why each of the five blog-chrome items is absent from `Stories.ts`, `StoryPageTemplate.tsx`, and the `/stories` index route, and explicitly naming the two retired CLAUDE.md items (blog sample-content requirement, no-`<em>` content rule) that don't return.
   - `src/__tests__/us36-ac36.5-no-blog-chrome.test.tsx` (new, 11 tests) — standing lock-in guard: walks the `Stories` field tree for category/archive/comment/author/tag fields (with a self-test proving the walker actually catches a planted `categories` field), source-scans `Stories.ts`, `StoryPageTemplate.tsx`, the index route, and `getPublishedStories.ts` for blog-chrome vocabulary, renders `StoryPageTemplate` and asserts no matching markup, and asserts `STORY_NO_BLOG_CHROME.md` still quotes the CLAUDE.md retired line verb …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
   PLAN REVIEW: Fixed one missing-test-criteria gap in AC-36.2 (minor wording, no scope change): the AC asserts gallery placements resolve by external identifier only (the same no-cross-database-relation rule as AC-31.5), but the evidence only checked rendered order, not the field definition itself. Added the field-definition check, matching AC-31.5's pattern. AC-36.3's heading-hierarchy and AC-36.5's no-blog-chrome ACs are both cleanly falsifiable as written. Approved.
+  
+  FINAL REVIEW (2026-08-15): PR #88 merged 2026-08-14T14:30:04Z; CI run 31808582589 confirmed against head SHA fbcad2e53b0bb9f905475956d2e072bd210f2e79 (gh run view headSha matches gh pr view headRefOid) - smoke pass, test pass. DoD met for this story's own scope. SPRINT-WIDE FINDING: story-level `dev_status` reads `not-started` and `phase` reads `planning` despite all 5 ACs `done` (see sprint report - third recurrence of the sprint-3/sprint-4 pattern). Gate: DONE.
 
 ---
 
@@ -550,7 +564,7 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
 
 **Dependencies:** US-31, US-34, US-36
 
-**Dev Team Status:** not-started
+**Dev Team Status:** done
 **Dev Team Notes:**
   AC-37.1 implemented (local checks green): I'll pause here and resume once the background test run notifies me it's complete.
   AC-37.2 implemented (local checks green): Waiting for the background test run to complete.
@@ -647,9 +661,11 @@ Complete PRD Phase 4 - Frontstage publishing. Sprint 4 proved the seam: a Backst
   
   **New in th …
 
-**Tester Status:** approved
+**Tester Status:** done
 **Tester Notes:**
   PLAN REVIEW: Fixed two missing-test-criteria gaps (minor wording, no scope change): AC-37.4 claimed image-sitemap references for placed gallery imagery but the evidence only checked page/story presence in the sitemap - added an explicit image-sitemap-entry check. AC-37.6 lists fourteen SEO-assistant controls but the evidence was a generic 'shown against a real page' - it now names each of the fourteen so the AC can't be closed on a partial implementation. AC-37.1's StudioProfile-only mapping and AC-37.5's robots/dev-route exclusion checks were already complete as written. Approved.
+  
+  FINAL REVIEW (2026-08-15): PR #89 merged 2026-08-15T03:57:35Z; CI run 31862246477 confirmed against head SHA 728e449b6ac080a249e7ee322ee20e2da0bd2f6e (gh run view headSha matches gh pr view headRefOid) - smoke pass, test pass. Spot-checked `src/lib/seoAssistant.ts`'s metadata header, which explicitly states it never generates captions, matching AC-37.7's own claim. DoD met for this story's own scope. CROSS-CUTTING FINDING (sprint-wide, not specific to this story): `retrospective.md` has no Sprint-5 section at all - confirmed via a header-only grep showing sections stop at Sprint-4/Sprint-3/Sprint-1 - despite all 8 sprint-5 stories closing. DoD item 9 requires incremental updates after every second story close-out; this is the fourth consecutive sprint (1, 3, 4, 5) this item has gone unmet. Reported to the orchestrator/PO. SPRINT-WIDE FINDING: story-level `dev_status` reads `not-started` and `phase` reads `planning` despite all 17 ACs `done` (third recurrence of the sprint-3/sprint-4 pattern). Gate: DONE.
 
 ---
 

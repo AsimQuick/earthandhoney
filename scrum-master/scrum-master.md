@@ -2,10 +2,10 @@
 project: earthandhoney
 type: master
 created: 2026-07-18
-last-updated: 2026-08-09
+last-updated: 2026-08-15
 last-updated-by: product-owner
 current-sprint: sprint-5
-sprint-phase: planning
+sprint-phase: review
 pivot-date: 2026-07-30
 tech-stack:
   backstage: PicPeak fork (pinned commit)
@@ -21,7 +21,7 @@ tech-stack:
 
 # Scrum Master — earthandhoney
 
-## Current Sprint: sprint-5 (Planning, 2026-08-09)
+## Current Sprint: sprint-5 (Review, 2026-08-15)
 
 > **The product is NOT feature-complete.** No `*_SPEC.md` feature-specification document exists
 > anywhere in this repository — re-verified at sprint-5 planning by repo-wide search excluding
@@ -115,6 +115,175 @@ Project Room (Phase 3) · anything financial (Phase 6) · contracts and the wide
 the single inquiry-notification type US-33 needs (Phase 7) · deployment and hardening (Phase 8) · and
 every standing non-goal, in particular any tax surface, any client-facing ledger surface, automatic
 recurring card charges, WhatsApp lead capture, and any drag-and-drop page builder.
+
+---
+
+## Sprint-5 Review Summary (2026-08-15)
+
+**Result: Delivered, with one open process defect.** All 8 stories (US-30…US-37) and all **62
+acceptance criteria** are `checked` with `dev_status: done`, merged to `main` across 8 PRs
+(#82–#89). Tester gates: **7 DONE, 1 DEFECT-FOUND** (US-33, a routing defect — the technical work is
+verified sound). **Every one of the 8 PRs carries a green CI run recorded against its exact head
+SHA**, independently confirmed by the Tester matching `gh run view --json headSha` against
+`gh pr view --json headRefOid` — sprint-4's PR #73 process failure did not repeat. Deploy: **not
+run** (`deploy_summary` is empty).
+
+| Story | Title | ACs | PR | Merged | Story status | Tester |
+|-------|-------|-----|----|--------|--------------|--------|
+| US-30 | Split the verification suite into a fast parallel lane and a serial live lane | 5/5 | [#82](https://github.com/AsimQuick/earthandhoney/pull/82) | 2026-08-13 | done | done |
+| US-31 | Deterministic page model: `Pages`, the New Page form, the standard page template | 7/7 | [#83](https://github.com/AsimQuick/earthandhoney/pull/83) | 2026-08-13 | done | done |
+| US-32 | Navigation driven by structured fields — Weddings, Engagements, Details | 5/5 | [#84](https://github.com/AsimQuick/earthandhoney/pull/84) | 2026-08-14 | done | done |
+| US-33 | Forms and durable Inquiries, notified through the Backstage email queue | 13/13 | [#85](https://github.com/AsimQuick/earthandhoney/pull/85) | 2026-08-14 | done | **defect-found** |
+| US-34 | Homepage template: hero slideshow, curated selections, primary inquiry form | 6/6 | [#86](https://github.com/AsimQuick/earthandhoney/pull/86) | 2026-08-14 | done | done |
+| US-35 | Details template: minimal copy, full-width masonry placement, inquiry form | 4/4 | [#87](https://github.com/AsimQuick/earthandhoney/pull/87) | 2026-08-14 | done | done |
+| US-36 | Story template: repeating heading + text + gallery placement — not a blog | 5/5 | [#88](https://github.com/AsimQuick/earthandhoney/pull/88) | 2026-08-14 | done | done |
+| US-37 | SEO system: metadata, structured data, canonical URLs, sitemap, SEO assistant | 17/17 | [#89](https://github.com/AsimQuick/earthandhoney/pull/89) | 2026-08-15 | done | done |
+
+**AC count grew 46 → 62 in flight**, entirely inside two stories: US-33 (7 → 13) and US-37 (7 → 17).
+Every split was a documented response to a dev session hitting the 80-turn cap, with the session
+exit reason read from `logs/` first (DoD item 14) — see the retrospective.
+
+**Sprint goal met — PRD Phase 4 is complete, and the Frontstage is a website rather than a seam.**
+At sprint-5 planning `src/collections/` held only `GalleryPlacements`, `Media` and `Users`, every
+public route was a `noindex` dev page, and the chrome still rendered the pre-pivot photobuddy link
+array with five `#` social links. It now publishes:
+
+- **A twenty-minute serial suite became two lanes (US-30).** Every suite was classified by *reading*
+  it, into a single committed manifest (`TEST_LANE_INVENTORY.json` + `TEST_LANE_CLASSIFICATION.md`),
+  with the mechanism decision recorded and two alternatives rejected on stated grounds — a naming
+  convention was rejected precisely because several LIVE-*sounding* filenames are UNIT once read.
+  `npm test` still runs both lanes and still fails if either fails; `test:unit` runs parallel,
+  `test:live` runs `--runInBand`, and the sprint-1 AC-1.2 live-boot flake stayed fixed across four
+  consecutive runs. Coverage moved 95.85→95.37 branches, 96.52→94.66 functions, 99.38→98.2 lines —
+  all far above the 80% gate, which was not lowered.
+- **Deterministic publishing exists (US-31).** A `Pages` collection implements *exactly* PRD §13.1's
+  16 fields, proven by a bidirectional mapping test (no unmapped PRD row, no extra field), and a
+  standing lock-in test fails if a `blocks` field, a CSS/style field or a margin/padding/position
+  control is ever added — Pillar 3 is now enforced rather than stated. The standard template renders
+  the §13.3 order from tokens only, a public dynamic route was proven live on the 200 / 404 /
+  noindex-in-markup triad, and **two materially different pages render an identical structural
+  shell**, committed as a snapshot pair — PRD Phase 4's exit criterion, demonstrated rather than
+  asserted.
+- **Navigation is data, and the pre-pivot chrome is gone (US-32).** `NAVIGATION_ADR.md` chooses a
+  Payload `Navigation` global and rejects per-page derivation with a real reason: it would need an
+  order field that `Pages` cannot gain, because AC-31.1 closed that collection to PRD §13.1's 16
+  fields with a passing test. Social links now come from `StudioProfile.socialProfiles`, and an
+  unconfigured studio renders no social block rather than five dead links. Writing the
+  keyboard-order test **surfaced and fixed a real accessibility defect**: below `lg` the closed
+  drawer was pushed off-canvas by `transform` alone, leaving its links in the tab order.
+- **The Frontstage can generate a lead, and email kept exactly one owner (US-33).** `Forms` offers
+  exactly the seven PRD §20.2 V1 field types with no conditional engine; an `Inquiry` is committed
+  **before** any notification is attempted; validation is server-authoritative; and spam protection
+  is honeypot + timing + per-source rate limit with no third-party script, recorded in
+  `SPAM_PROTECTION_ADR.md`. The notification goes out through the Backstage email queue and was
+  confirmed **in MailHog**, not inferred from a return code — the retired second-sender shortcut was
+  not taken, and a production-build byte scan proves no SMTP or Backstage credential reaches the
+  browser.
+- **A fork-integrity artifact was corrected instead of quietly falsified (US-33, AC-33.5.2.1).** The
+  instruction to register our new migration `120` in `picpeakMigrationManifest.ts` would have kept
+  the integrity test green **while making it false** — that manifest is documented in three places
+  as a fingerprint of *upstream at the pinned commit*, and it has no field that can say a file is
+  ours. The session built a fork-added-migration lane (`origin: 'fork'`) instead, permitted only
+  when recorded in `FORK_CHANGELOG.md`, proven in both directions including the negative case that
+  an edited upstream migration still fails. Two new migrations (`120`, `121`) were added and the
+  Tester confirmed via `git log --name-only` that **no migration 001–119 was touched**.
+- **Homepage, Details and Story templates all inherit the system (US-34, US-35, US-36).** The
+  homepage renders the §13.2 order with its hero resolved over Flow A and a placeholder fallback
+  when the gallery is unreachable; Details builds on the existing `GalleryMasonryLayout` rather than
+  a second masonry implementation and offers **no long-form body field**, so PRD §13.4's "do not
+  over-explain" is structural rather than advisory; `STORY_TEMPLATE_ADR.md` chooses a separate
+  `Stories` collection over a `Pages` variant, and `STORY_NO_BLOG_CHROME.md` plus a lock-in test
+  keep categories, archives, comments, author bios and tag clouds out.
+- **An honest performance miss was reported, not tuned away (US-34, AC-34.6).** Mobile Lighthouse
+  performance **0.91 — PASS**; image-attributable CLS **0**; **LCP 3410ms median against a ~2500ms
+  target — FAIL on all three passes, a ≈910ms (36%) gap**. The report attributes the gap to the
+  still-open R2 delivery decision (`po-requests.md` item 15) and explicitly **does not close that
+  decision** (Reminder 1). A later session re-derived every median from the retained raw JSON and
+  confirmed the runs measured a real photograph rather than a placeholder before accepting them.
+- **SEO output is in real HTML, and the assistant was proven in the real admin (US-37).**
+  Account-level SEO stays on `StudioProfile` with no second settings record; metadata, JSON-LD,
+  canonical URLs and the sitemap are asserted against **fetched HTML**, with sitemap membership
+  checked as set equality in both directions against the database's own rows. Draft and noindex
+  records are excluded **inside the query**, not post-filtered. `SEO_ASSISTANT_ADMIN_OBSERVABILITY.md`
+  applies US-26's harness-first pattern to a surface no committed suite had ever fetched — a Payload
+  admin edit view — and all fourteen PRD §21.2 controls (eight authored, six derived) are proven
+  live against a real page and a real story. The alt-text audit **reports and never generates**; no
+  caption model and no external LLM was adopted (AC-37.7).
+
+**Definition of Done: 14 of 17 items met with direct evidence.** Three unmet:
+
+- **Item 7 (routing to `po-requests.md` is part of closing an AC that requires it) — UNMET.** See
+  the defect below. `pending_po_routing` is `[]`.
+- **Item 9 (`retrospective.md` updated incrementally during the sprint) — UNMET for the FOURTH
+  consecutive sprint** (1, 3, 4, 5). The file held no sprint-5 content until this review.
+- **Item 15 (story-level `dev_status` and `phase` written as work completes) — UNMET, third
+  recurrence.** All 8 stories read `dev_status: not-started` and `phase` read `planning` while every
+  AC read `done` and all 8 PRs were merged. **Reconciled at this review** (stories → `done`,
+  `phase` → `review`); the Tester deliberately reported rather than silently fixed it.
+
+Independently re-verified for this review: the three Tier-3 regression anchors have **no commit
+touching them since 2026-08-13** (`git log --since` on all three paths returns nothing), so DoD item
+16 is met; and DoD item 8 held for 8/8 PRs.
+
+**Defects and findings (all disclosed):**
+
+- **OPEN — US-33, the routing hole recurred a third time, on the very AC built to prove it could
+  not.** AC-33.5.2.1's own evidence clause states it "is not closed until that entry is drained",
+  because changing the migration manifest's meaning is a decision the PO must see. `sprint5.json`'s
+  `pending_po_routing` array is empty and `po-requests.md` carries no corresponding entry —
+  independently re-confirmed by grep for this review. The mechanism sprint 5 built specifically to
+  close AC-17.9's and AC-22.2's failure **was never exercised end to end, not even once**. The
+  underlying engineering is verified and sound; only the routing step was skipped. Proposed
+  disposition: *accept as-is* — the lane is additive, narrowly scoped, and already recorded in
+  `FORK_CHANGELOG.md` and `PICPEAK_PORT_LEDGER.md`.
+- **US-30 AC-30.2's headline evidence is missing from the record.** The AC required "the measured
+  wall-clock time of the UNIT lane and of the full suite before the change… reported as real
+  numbers", and the guard test's own header says the figure is "recorded on the story". It is not:
+  the story's AC-30.2 `dev_note` is one sentence about waiting for a background run, and no
+  wall-clock figure appears in the sprint file, in `TEST_LANE_CLASSIFICATION.md`, in PR #82's diff or
+  in that session's log. The *mechanism* was independently verified by the Tester; the *measurement*
+  that justified the story was not written down.
+- **The lane split's headroom was consumed inside the same sprint.** CI's gated command is
+  `npm test` = `jest --runInBand` over **both** lanes, so CI never benefits from the parallel lane —
+  only dev sessions do. Measured on the same runner and command: PR #82's `test` job **10m30s** at
+  159 suites; PR #89's **21m18s** at 236 suites. The suite grew 48% in eight days.
+- **Six-plus dev sessions ended at the turn cap before their criteria were split.** AC-33.5 (×2),
+  AC-33.5.2 (×2, `logs/20260814_064803`, `logs/20260814_070541`, both `max_turns`), AC-37.4 (×2) and
+  AC-37.6.3's sessions. In one case (`3dcddb3`) a session **deleted working code** rather than
+  resolve the manifest conflict it had hit.
+- **Mid-sentence `dev_notes` recurred at scale** — roughly a third of this sprint's AC notes end
+  "I'll wait for the background run". Sprint-4 action item 7 (have the auto-commit annotate the
+  notes it rescues) was never actioned.
+- **Two tests coupled to sprint-file *content* broke on legitimate content growth** (`us21-ac21.3`
+  pinned `current-sprint: sprint-4`; `us22-ac22.4`'s regex grabbed the first `| 9 |` row once a
+  second action table existed). Both were repaired inside PR #82 to select by content rather than
+  position.
+- **No deploy was run for sprint 5.** `deploy_summary` is empty and `tester_sprint_status` is
+  `not-started`. Sprints 3 and 4 both closed with a passed deploy.
+
+**Tier-3 regression anchors carried into sprint 6 (must not regress):** the three existing anchors
+(`us21-ac21.6-pivot-direction-guard`, `us26-ac26.1` webhook signature + AC-26.5 idempotency,
+`us28-ac28.5-coverage-gate-guard`), plus four new standing guards this sprint created and which
+encode decisions rather than behaviour: `us31-ac31.2` (no page builder), `us36-ac36.5` (no blog
+chrome), the US-37 no-meta-keywords guard, and `us30-ac30.1`'s lane-classification manifest guard.
+Final confirmation of that list is the Tester's call at sprint-6 planning.
+
+**Open follow-ups carried to sprint-6:**
+
+1. **Route AC-33.5.2.1's migration-lane decision into `po-requests.md` and re-close US-33** — the
+   sprint's one open defect, and a copy-one-entry task, not a rework.
+2. **Exercise the `pending_po_routing` drain at least once**, so the mechanism is proven rather than
+   merely present. Three sprints of evidence say an unexercised mechanism is indistinguishable from
+   an intention.
+3. **PRD Phase 3 (backlog 22–26) is the designated sprint-6 candidate block** and is **unblocked** —
+   `po-requests.md` items 7 and 13 were resolved by the human on 2026-08-13 as option (a). The old
+   "blocked by contract signing" rationale must not be restated.
+4. **The R2 delivery path (item 15) is still open** and now has a second measurement pointing at it:
+   AC-34.6's 910ms homepage LCP gap tracks the miss US-29 already recorded. Candidates 3–4 still
+   need a Cloudflare custom domain and/or Worker.
+5. **Still standing from sprint 3:** the UD-1 upstream defect report needs a human GitHub identity
+   (item 16), and SPF/DKIM/DMARC are required before any production email (item 17).
+6. **Run a sprint deploy** and record its verification tiers, as sprints 3 and 4 did.
 
 ---
 
@@ -410,23 +579,33 @@ numbering stays stable; each carries the story that closed it._
    deliberately still open.** Both measured candidates missed the ADR's targets; candidates 3–5 need
    infrastructure that does not exist yet — `po-requests.md` item 15.)*
 
-### Frontstage publishing (PRD Phase 4) — _all seven taken by sprint 5_
-8. Navigation: Weddings, Engagements, Details — configurable through structured fields. *(**Sprint 5
-   — US-32.**)*
+### Frontstage publishing (PRD Phase 4) — _all seven DELIVERED in sprint 5 (2026-08-15)_
+
+_Kept numbered in place so the backlog's 1–42 numbering stays stable; each carries the story that
+closed it. PRD Phase 4 is complete._
+
+8. Navigation: Weddings, Engagements, Details — configurable through structured fields.
+   *(**Delivered — US-32**, via a Payload `Navigation` global; `NAVIGATION_ADR.md` records the
+   rejected per-page-derivation option.)*
 9. Homepage template: full-width slideshow hero placement, short introduction, selected galleries
-   or stories, primary inquiry form, footer. *(**Sprint 5 — US-34.**)*
-10. Deterministic **New Page** form and standard page template. *(**Sprint 5 — US-31**, the root
-    story every other Phase 4 story depends on.)*
-11. **Details** template: minimal heading, full-width masonry placement, inquiry form. *(**Sprint 5
-    — US-35.**)*
-12. **Story** template: repeating section heading + text + gallery placement. *(**Sprint 5 —
-    US-36.**)*
+   or stories, primary inquiry form, footer. *(**Delivered — US-34.** Measured against PRD §19.4:
+   performance 0.91 PASS, LCP 3410ms vs ~2500ms FAIL — the miss is recorded, not tuned away.)*
+10. Deterministic **New Page** form and standard page template. *(**Delivered — US-31**, the root
+    story every other Phase 4 story depended on; the identical-shell snapshot pair is Phase 4's
+    exit criterion.)*
+11. **Details** template: minimal heading, full-width masonry placement, inquiry form.
+    *(**Delivered — US-35**, on the existing `GalleryMasonryLayout`, with copy restraint made
+    structural — no long-form body field exists.)*
+12. **Story** template: repeating section heading + text + gallery placement. *(**Delivered —
+    US-36**, as a separate `Stories` collection per `STORY_TEMPLATE_ADR.md`; no blog chrome.)*
 13. Form builder + durable Inquiry records, notification, spam protection, source/campaign capture.
-    *(**Sprint 5 — US-33**; the notification is queued through the Backstage email queue, the single
-    authoritative owner of client and photographer email.)*
+    *(**Delivered — US-33**; the notification is queued through the Backstage email queue, the
+    single authoritative owner of client and photographer email, and confirmed in MailHog. One open
+    routing defect — see the sprint-5 review.)*
 14. SEO system: account-level fields, per-page/story SEO assistant, real metadata, structured data,
-    canonical URLs, sitemap and image-sitemap entries. *(**Sprint 5 — US-37**; account-level fields
-    come from the existing `StudioProfile`, not a second settings record.)*
+    canonical URLs, sitemap and image-sitemap entries. *(**Delivered — US-37**; account-level fields
+    come from the existing `StudioProfile`, not a second settings record. All fourteen PRD §21.2
+    controls proven in the real admin.)*
 
 ### Gallery experience and darkroom (PRD Phase 5)
 15. Masonry specification: preserve every aspect ratio and the chosen order, never crop or stretch,
