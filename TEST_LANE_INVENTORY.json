@@ -1,9 +1,9 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 233,
+  "totalSuites": 234,
   "counts": {
-    "live": 27,
+    "live": 28,
     "unit": 206
   },
   "mechanism": {
@@ -1188,6 +1188,11 @@
       "path": "src/__tests__/us37-ac37.6.3.3.1-seo-assistant-admin-derived-controls-live.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process on http://localhost:4311, creates a real `pages` document and a real `stories`/`gallery-placements` pair via the live Payload REST API, fetches the live `/api/globals/studio-profile` global, fetches each document's real admin edit view over HTTP with a real Payload session cookie, and asserts SEO_ASSISTANT_ADMIN_OBSERVABILITY.md's search-result-preview/canonical-URL/H1-preview/schema-preview recipes (rows 9-12) against each document's own value plus a negative cross-document check, against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.3.3.2-seo-assistant-admin-internal-link-suggestions-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process on http://localhost:4312, queries the live published pages/stories candidate set via /api/pages and /api/stories to decide a deterministic photographyType before creating a real published `pages` document and a real published `stories`/`gallery-placements` pair via the live Payload REST API, fetches each document's real admin edit view over HTTP with a real Payload session cookie, and asserts SEO_ASSISTANT_ADMIN_OBSERVABILITY.md's internal-link-suggestions recipe (row 14) against each document's own value against the real Postgres db container"
     }
   ]
 }
