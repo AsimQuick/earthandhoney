@@ -27,6 +27,12 @@
  *          resolves the `socialImage` upload relation (AC-31.6) to its
  *          media document so the caller can read `url` without a second
  *          query.
+ *          `photographyType`/`cityRegion`/`venue` (AC-37.3) are read straight
+ *          through so the [slug] route can pass them into
+ *          buildPageStructuredData — the same PRD §13.1 fields the Pages
+ *          collection already carries as "Service context and schema" /
+ *          "Local relevance" / "Venue relevance and image context"
+ *          (src/collections/Pages.ts), simply unread by this module until now.
  * created-by: dev-team
  * related-story: US-31
  * related-ac: 31.4
@@ -39,6 +45,9 @@
  * updated-by: dev-team
  * related-story: US-35
  * related-ac: 35.3
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.3
  * ---
  */
 import { getPayload } from 'payload'
@@ -59,6 +68,12 @@ export interface ResolvedPage {
   socialImage: string | null
   /** AC-35.3: which template this page renders through — 'standard' or 'details'. */
   template: 'standard' | 'details'
+  /** AC-37.3: PRD §13.1 "Service context and schema" — feeds buildPageStructuredData's makesOffer. */
+  photographyType: string
+  /** AC-37.3: PRD §13.1 "Local relevance" — feeds buildPageStructuredData's areaServed. */
+  cityRegion: string
+  /** AC-37.3: PRD §13.1 "Venue relevance and image context" — feeds buildPageStructuredData's location. */
+  venue: string
 }
 
 export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> {
@@ -85,6 +100,9 @@ export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> 
         } | null>
         socialImage?: { url?: string } | number | null
         template?: string
+        photographyType?: string
+        cityRegion?: string
+        venue?: string
       }
     | undefined
 
@@ -113,5 +131,8 @@ export async function getPageBySlug(slug: string): Promise<ResolvedPage | null> 
     galleryPlacements,
     socialImage,
     template: doc.template === 'details' ? 'details' : 'standard',
+    photographyType: doc.photographyType || '',
+    cityRegion: doc.cityRegion || '',
+    venue: doc.venue || '',
   }
 }

@@ -48,6 +48,21 @@
  *          new Details page needs no code change, only a `Pages` record with
  *          `template: 'details'` created through the same New Page form as
  *          any other page.
+ *          AC-37.2 — `description` (both the plain field and `openGraph`/
+ *          `twitter`) now falls back explicitly to
+ *          `StudioProfile.defaultMetaDescription` when the page defines none,
+ *          and a Twitter card (`summary_large_image`, mirroring the Open
+ *          Graph title/description/image) is emitted alongside the existing
+ *          canonical URL and Open Graph tags — closing the two gaps AC-31.6
+ *          left for "every public page ... emits a real title element, meta
+ *          description, canonical URL, Open Graph tags and Twitter card ...
+ *          with StudioProfile defaults ... as fallback".
+ *          AC-37.3 — the rendered page also carries its own JSON-LD block,
+ *          built by `buildPageStructuredData` (src/lib/studioStructuredData.ts)
+ *          from the same `StudioProfile` plus this page's own
+ *          `photographyType`/`cityRegion`/`venue` fields, mirroring the root
+ *          layout's site-wide `buildStudioStructuredData` script
+ *          (AC-24.5) but scoped to this page.
  * created-by: dev-team
  * related-story: US-31
  * related-ac: 31.4
@@ -60,6 +75,12 @@
  * updated-by: dev-team
  * related-story: US-35
  * related-ac: 35.3
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.2
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.3
  * ---
  */
 import type { Metadata } from 'next'
@@ -67,10 +88,12 @@ import { notFound } from 'next/navigation'
 
 import { DetailsPageTemplate } from '@/components/page-template/DetailsPageTemplate'
 import { StandardPageTemplate } from '@/components/page-template/StandardPageTemplate'
+import { absoluteSiteUrl } from '@/lib/absoluteSiteUrl'
 import { getPageBySlug } from '@/lib/getPageBySlug'
 import { getStudioProfile } from '@/lib/getStudioProfile'
 import { resolveDetailsMasonryPlacement } from '@/lib/resolveDetailsMasonryPlacement'
 import { resolvePageGalleryPlacements } from '@/lib/resolvePageGalleryPlacements'
+import { buildPageStructuredData } from '@/lib/studioStructuredData'
 
 // AC-31.5: the same 60-second safety-net cap the contract commits every
 // gallery-bearing route to (see file header).
@@ -92,9 +115,15 @@ export async function generateMetadata({ params }: PageRouteProps): Promise<Meta
   // derived from the page's own slug and resolved to an absolute URL against
   // the root layout's `metadataBase`.
   const canonicalPath = `/${slug}`
-  const title = page.seoTitle || page.heading
-  const description = page.metaDescription || undefined
   const studioProfile = await getStudioProfile()
+  const title = page.seoTitle || page.heading
+  // AC-37.2: the page's own field first, `StudioProfile.defaultMetaDescription`
+  // as fallback — computed explicitly here (not left to the Metadata API's
+  // between-segment inheritance) because this route always returns its own
+  // `openGraph`/`twitter` objects, which replace the root layout's wholesale
+  // rather than merging field-by-field, so an unset page description would
+  // otherwise render no og:description/twitter:description tag at all.
+  const description = page.metaDescription || studioProfile.defaultMetaDescription
   const ogImage = page.socialImage || studioProfile.defaultSocialImage?.url || undefined
 
   return {
@@ -106,6 +135,14 @@ export async function generateMetadata({ params }: PageRouteProps): Promise<Meta
       description,
       url: canonicalPath,
       images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+    // AC-37.2: the Twitter card every public page emits, mirroring the same
+    // fields/fallback chain as the Open Graph tags above.
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ogImage ? [ogImage] : undefined,
     },
     robots: page.indexing === 'noindex' ? { index: false, follow: false } : undefined,
   }
@@ -119,25 +156,52 @@ export default async function PublicPageRoute({ params }: PageRouteProps) {
     notFound()
   }
 
+  const studioProfile = await getStudioProfile()
+  // AC-37.3: the same absolute-URL resolution the root layout's
+  // `metadataBase` performs for the Metadata API, applied here because JSON-LD
+  // has no such field of its own — through the one origin owner
+  // (src/lib/absoluteSiteUrl.ts) the layout itself now calls, never a second
+  // copy of the env read and its fallback.
+  const canonicalUrl = absoluteSiteUrl(`/${slug}`)
+  const structuredData = buildPageStructuredData(studioProfile, {
+    url: canonicalUrl,
+    photographyType: page.photographyType || undefined,
+    cityRegion: page.cityRegion || undefined,
+    venue: page.venue || undefined,
+  })
+  const structuredDataScript = (
+    <script
+      type="application/ld+json"
+      data-testid="page-structured-data"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+    />
+  )
+
   if (page.template === 'details') {
     const masonryPlacement = await resolveDetailsMasonryPlacement(page.galleryPlacements)
 
     return (
-      <DetailsPageTemplate
-        heading={page.heading}
-        oneLineIntroduction={page.shortIntroduction || undefined}
-        masonryPlacement={masonryPlacement}
-      />
+      <>
+        {structuredDataScript}
+        <DetailsPageTemplate
+          heading={page.heading}
+          oneLineIntroduction={page.shortIntroduction || undefined}
+          masonryPlacement={masonryPlacement}
+        />
+      </>
     )
   }
 
   const galleryPlacements = await resolvePageGalleryPlacements(page.galleryPlacements)
 
   return (
-    <StandardPageTemplate
-      heading={page.heading}
-      shortIntroduction={page.shortIntroduction || undefined}
-      galleryPlacements={galleryPlacements}
-    />
+    <>
+      {structuredDataScript}
+      <StandardPageTemplate
+        heading={page.heading}
+        shortIntroduction={page.shortIntroduction || undefined}
+        galleryPlacements={galleryPlacements}
+      />
+    </>
   )
 }

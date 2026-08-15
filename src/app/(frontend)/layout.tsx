@@ -33,6 +33,12 @@
  * updated-by: dev-team
  * related-story: US-32
  * related-ac: 32.4
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.2
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.3
  * ---
  */
 import type { Metadata } from "next";
@@ -40,6 +46,7 @@ import { Rubik } from "next/font/google";
 import { preload } from "react-dom";
 import "./globals.css";
 import { PublicShell } from "@/components/layout/PublicShell";
+import { siteOrigin } from "@/lib/absoluteSiteUrl";
 import { getNavItems } from "@/lib/getNavItems";
 import { getStudioProfile } from "@/lib/getStudioProfile";
 import { buildStudioStructuredData } from "@/lib/studioStructuredData";
@@ -81,8 +88,11 @@ export async function generateMetadata(): Promise<Metadata> {
     // AC-31.6: the one place a relative canonical/Open Graph URL a route
     // returns (e.g. `alternates.canonical: "/${slug}"`) is resolved into an
     // absolute one — system-computed from the deployment's own public URL,
-    // never typed by the photographer on a per-page basis.
-    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+    // never typed by the photographer on a per-page basis. AC-37.3: that
+    // public URL now has a single owner (src/lib/absoluteSiteUrl.ts), shared
+    // with the page/story JSON-LD blocks, which must write absolute URLs
+    // themselves because structured data has no `metadataBase` equivalent.
+    metadataBase: new URL(siteOrigin()),
     title: {
       default: studioProfile.businessName,
       template: studioProfile.defaultTitlePattern,
@@ -91,6 +101,18 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: studioProfile.defaultSocialImage
       ? {
           images: [{ url: studioProfile.defaultSocialImage.url }],
+        }
+      : undefined,
+    // AC-37.2: the site-wide Twitter card default — every public route that
+    // does not return its own `twitter` object (e.g. the homepage, the story
+    // index) still emits one, mirroring the same defaultSocialImage fallback
+    // as `openGraph` above. Routes with their own SEO fields
+    // (`[slug]`, `stories/[slug]`) return their own `twitter` object, which
+    // replaces this default rather than merging with it.
+    twitter: studioProfile.defaultSocialImage
+      ? {
+          card: "summary_large_image",
+          images: [studioProfile.defaultSocialImage.url],
         }
       : undefined,
     icons: {

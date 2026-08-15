@@ -18,12 +18,20 @@
  *          padding/position control exists anywhere in this model — Pillar 3
  *          (deterministic beauty) and CLAUDE.md's retired "drag-and-drop page
  *          builder" non-goal.
+ *          AC-37.6.2.3 adds the read-only `seoAssistant` `ui` field, which
+ *          mounts SeoAssistantField
+ *          (src/components/admin/SeoAssistant/SeoAssistantField.tsx) to
+ *          preview the six DERIVED PRD 21.2 SEO controls computed from this
+ *          record's own AUTHORED fields above. It writes none of them.
  * created-by: dev-team
  * related-story: US-31
  * related-ac: 31.1
  * updated-by: dev-team
  * related-story: US-35
  * related-ac: 35.3
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.6.2.3
  * ---
  */
 import type { CollectionConfig } from 'payload'
@@ -210,6 +218,18 @@ export const Pages: CollectionConfig = {
       ],
       admin: {
         description: 'Publication state.',
+      },
+    },
+    {
+      // AC-37.6.2.3: read-only preview of the six DERIVED PRD §21.2 SEO
+      // controls, computed from this record's own fields above. Writes
+      // nothing back — see src/components/admin/SeoAssistant/SeoAssistantField.tsx.
+      name: 'seoAssistant',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/components/admin/SeoAssistant/SeoAssistantField#SeoAssistantField',
+        },
       },
     },
   ],

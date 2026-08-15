@@ -22,9 +22,15 @@
  *          pages the way us31-ac31.4-public-page-route.test.ts does — a
  *          metadata object in code is not sufficient evidence for a tag that
  *          must land in real response HTML (see US-37 AC-37.2's same rule).
+ *          updated (AC-37.2): the route's description now falls back to
+ *          `StudioProfile.defaultMetaDescription` instead of being left
+ *          undefined — one assertion below was updated to match.
  * created-by: dev-team
  * related-story: US-31
  * related-ac: 31.6
+ * updated-by: dev-team
+ * related-story: US-37
+ * related-ac: 37.2
  * ---
  */
 import type { ResolvedPage } from '@/lib/getPageBySlug'
@@ -60,6 +66,9 @@ function page(overrides: Partial<ResolvedPage> = {}): ResolvedPage {
     galleryPlacements: [],
     socialImage: null,
     template: 'standard',
+    photographyType: '',
+    cityRegion: '',
+    venue: '',
     ...overrides,
   }
 }
@@ -137,13 +146,16 @@ describe('US-31 AC-31.6: generateMetadata computes canonical URL and Open Graph 
     expect(metaA.openGraph).not.toEqual(metaB.openGraph)
   })
 
-  it('falls back the Open Graph title/description to the heading when seoTitle/metaDescription are unset', async () => {
-    getStudioProfile.mockResolvedValue(studioProfile())
+  it('falls back the Open Graph title to the heading, and the description to StudioProfile.defaultMetaDescription, when seoTitle/metaDescription are unset', async () => {
+    getStudioProfile.mockResolvedValue(studioProfile({ defaultMetaDescription: 'Studio default description.' }))
     getPageBySlug.mockResolvedValue(page({ heading: 'Heading Only', seoTitle: '', metaDescription: '' }))
 
     const meta = await metadataFor('heading-only')
 
-    expect(meta.openGraph).toMatchObject({ title: 'Heading Only', description: undefined })
+    // AC-37.2: description now falls back to StudioProfile.defaultMetaDescription
+    // rather than being left undefined — see us37-ac37.2-generate-metadata-fallback-and-twitter.test.ts
+    // for the full fallback-chain coverage this AC added.
+    expect(meta.openGraph).toMatchObject({ title: 'Heading Only', description: 'Studio default description.' })
   })
 
   it("uses the page's own socialImage for the Open Graph image when set", async () => {

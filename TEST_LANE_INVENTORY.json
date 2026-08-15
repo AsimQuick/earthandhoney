@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 210,
+  "totalSuites": 236,
   "counts": {
-    "live": 17,
-    "unit": 193
+    "live": 29,
+    "unit": 207
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -13,12 +13,12 @@
       {
         "option": "naming-convention",
         "label": "Naming convention enforced by a test (e.g. a `.live.test.ts` suffix)",
-        "reason": "Only 4 of 156 suites are LIVE and several LIVE-sounding filenames (webhook-live-proof, backstage-client-flow-a's sibling files, r2-storage) are actually UNIT once read — baking the lane into the filename would conflate 'reads about live behaviour' with 'is live behaviour', which is exactly the guessing-from-filename failure mode AC-30.1 forbids. It would also require renaming files across git history for no functional gain over an explicit manifest."
+        "reason": "Only 4 of 156 suites are LIVE and several LIVE-sounding filenames (webhook-live-proof, backstage-client-flow-a's sibling files, r2-storage) are actually UNIT once read \u2014 baking the lane into the filename would conflate 'reads about live behaviour' with 'is live behaviour', which is exactly the guessing-from-filename failure mode AC-30.1 forbids. It would also require renaming files across git history for no functional gain over an explicit manifest."
       },
       {
         "option": "testPathIgnorePatterns-pair",
         "label": "A testPathIgnorePatterns pair (two Jest configs/invocations, each ignoring the other lane's suites)",
-        "reason": "Works, but the LIVE and UNIT suite sets aren't derivable from a path pattern (see naming-convention rejection above), so each config would need its own explicit include/exclude list duplicating the same manifest in two places, and running both lanes from one `npm test` would require chaining two separate `jest --config` invocations rather than one Jest run — more moving parts than a single `projects` config needs."
+        "reason": "Works, but the LIVE and UNIT suite sets aren't derivable from a path pattern (see naming-convention rejection above), so each config would need its own explicit include/exclude list duplicating the same manifest in two places, and running both lanes from one `npm test` would require chaining two separate `jest --config` invocations rather than one Jest run \u2014 more moving parts than a single `projects` config needs."
       }
     ],
     "notes": "This AC records the classification and the mechanism decision only. Wiring jest.config.ts's `projects` array to the two lanes, and the package.json/CI scripts that select them, is scoped to AC-30.2/30.3/30.5."
@@ -522,7 +522,7 @@
     {
       "path": "src/__tests__/us25-ac25.2-backstage-client-flow-a.test.ts",
       "lane": "LIVE",
-      "reason": "a describe block gated on dns.lookup('backstage-backend') resolving performs real fetch calls to http://backstage-backend:3000 — admin login, gallery search/create/publish, and fetchPublishedGallery — against the live Backstage/PicPeak API"
+      "reason": "a describe block gated on dns.lookup('backstage-backend') resolving performs real fetch calls to http://backstage-backend:3000 \u2014 admin login, gallery search/create/publish, and fetchPublishedGallery \u2014 against the live Backstage/PicPeak API"
     },
     {
       "path": "src/__tests__/us25-ac25.3-backstage-gallery-mapper.test.ts",
@@ -562,7 +562,7 @@
     {
       "path": "src/__tests__/us26-ac26.4-webhook-live-proof.test.tsx",
       "lane": "UNIT",
-      "reason": "mocks @/lib/backstageGalleryPlacement and renders the page component with @testing-library/react; reads local shell script and PIVOT_AUDIT.md text — despite the filename, no live request is issued"
+      "reason": "mocks @/lib/backstageGalleryPlacement and renders the page component with @testing-library/react; reads local shell script and PIVOT_AUDIT.md text \u2014 despite the filename, no live request is issued"
     },
     {
       "path": "src/__tests__/us26-ac26.4.1.1-webhook-live-proof-harness.test.ts",
@@ -792,7 +792,7 @@
     {
       "path": "src/__tests__/us32-ac32.5-mobile-menu-accessibility-survives.test.tsx",
       "lane": "UNIT",
-      "reason": "jsdom component rendering plus keyboard simulation via @testing-library/user-event, git show for structural diffs, and an in-process Tailwind/postcss compile of globals.css — no network/db"
+      "reason": "jsdom component rendering plus keyboard simulation via @testing-library/user-event, git show for structural diffs, and an in-process Tailwind/postcss compile of globals.css \u2014 no network/db"
     },
     {
       "path": "src/__tests__/us33-ac33.1-forms-field-set.test.ts",
@@ -827,7 +827,7 @@
     {
       "path": "src/__tests__/us33-ac33.4-spam-protection-live.test.ts",
       "lane": "LIVE",
-      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process (three times, one per port/scenario), creates a real Forms document, and POSTs real submissions to /api/inquiries — a honeypot-filled one, a too-fast one, and a rapid-fire run past the rate limit — then queries /api/inquiries/count over the live Payload REST API to prove the blocked ones wrote no Inquiry, exercising Payload's live schema/connection against the real Postgres db container"
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process (three times, one per port/scenario), creates a real Forms document, and POSTs real submissions to /api/inquiries \u2014 a honeypot-filled one, a too-fast one, and a rapid-fire run past the rate limit \u2014 then queries /api/inquiries/count over the live Payload REST API to prove the blocked ones wrote no Inquiry, exercising Payload's live schema/connection against the real Postgres db container"
     },
     {
       "path": "src/__tests__/us33-ac33.4-spam-protection.test.ts",
@@ -837,12 +837,12 @@
     {
       "path": "src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts",
       "lane": "UNIT",
-      "reason": "fixture-level verifyMigrationsUnmodified checks with injected readFile/isForkAdditionDocumented, plus fs reads of the local vendor/picpeak tree and repo docs — no network or live service dependency"
+      "reason": "fixture-level verifyMigrationsUnmodified checks with injected readFile/isForkAdditionDocumented, plus fs reads of the local vendor/picpeak tree and repo docs \u2014 no network or live service dependency"
     },
     {
       "path": "src/__tests__/us33-ac33.5.2.2.2-inquiry-notification-route.test.ts",
       "lane": "UNIT",
-      "reason": "fs reads of the local vendor/picpeak route/server files, repo docs, and verifyVendoredMigrations against the local tree — no network or live service dependency"
+      "reason": "fs reads of the local vendor/picpeak route/server files, repo docs, and verifyVendoredMigrations against the local tree \u2014 no network or live service dependency"
     },
     {
       "path": "src/__tests__/us33-ac33.5.2.3-build-inquiry-submission-summary.test.ts",
@@ -852,7 +852,7 @@
     {
       "path": "src/__tests__/us33-ac33.5.2.3-end-to-end-proof-script.test.ts",
       "lane": "UNIT",
-      "reason": "fs read of the committed proof script in the local tree — asserts the script's contract, never runs Docker, psql, or the network"
+      "reason": "fs read of the committed proof script in the local tree \u2014 asserts the script's contract, never runs Docker, psql, or the network"
     },
     {
       "path": "src/__tests__/us33-ac33.5.2.3-inquiry-notification-client.test.ts",
@@ -872,7 +872,57 @@
     {
       "path": "src/__tests__/us33-ac33.6-inquiry-acknowledgement-route.test.ts",
       "lane": "UNIT",
-      "reason": "fs reads of the local vendor/picpeak route/server/migration files, repo docs, and verifyVendoredMigrations against the local tree — no network or live service dependency"
+      "reason": "fs reads of the local vendor/picpeak route/server/migration files, repo docs, and verifyVendoredMigrations against the local tree \u2014 no network or live service dependency"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.1-studio-profile-account-seo-field-mapping.test.ts",
+      "lane": "UNIT",
+      "reason": "imports the StudioProfile and Navigation global config objects directly and asserts on their field definitions in-memory, plus fs reads of src/payload.config.ts and its own source file for static text checks, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.2-generate-metadata-fallback-and-twitter.test.ts",
+      "lane": "UNIT",
+      "reason": "mocks @/lib/getPageBySlug, @/lib/getStoryBySlug, @/lib/getStudioProfile and @/lib/resolveStoryGalleryPlacements, then calls the [slug]/stories[slug] routes' generateMetadata directly against in-memory fixtures, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.2-live-seo-metadata.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process, calls getLiveApiAuthToken to create real Pages/Stories/gallery-placements documents, and fetches the rendered [slug] and stories/[slug] routes to assert title/description/canonical/og/twitter tags in real response HTML against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.3-live-structured-data.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process, calls getLiveApiAuthToken to create a real Pages document with photographyType/cityRegion/venue plus a real Stories/gallery-placements pair, and fetches the rendered [slug] and stories/[slug] routes to extract and shape-validate the application/ld+json blocks in real response HTML against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.3-structured-data-per-page-type.test.tsx",
+      "lane": "UNIT",
+      "reason": "unit tests on the pure buildPageStructuredData/buildStoryStructuredData/absoluteSiteUrl functions plus mocks of @/lib/getPageBySlug, @/lib/getStoryBySlug, @/lib/getStudioProfile and the gallery-placement resolvers, then renders the [slug]/stories[slug] routes via @testing-library/react against in-memory fixtures and regex-extracts the JSON-LD <script> from container.innerHTML, with fs reads of the layout/page/story sources for a static duplication check, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.4.1-sitemap-closed-set-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process, calls getLiveApiAuthToken to create two real published Pages documents and one published Stories/gallery-placements pair, fetches the real /sitemap.xml over HTTP and the live Payload REST API's filtered pages/stories lists, and asserts <loc> set equality in both directions against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.4.1-sitemap-source-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "fs reads of src/app/(frontend)/sitemap.ts and src/lib/getSitemapEntries.ts and regex assertions on their static source text, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.4.2-sitemap-excludes-draft-and-noindex-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process, calls getLiveApiAuthToken to create a draft Pages document, a published+noindex Pages document, a draft Stories/gallery-placements pair, and a published+index control Pages document, fetches the real /sitemap.xml over HTTP, and asserts the three excluded slugs are absent while the control slug is present against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.5-robots-txt.test.ts",
+      "lane": "UNIT",
+      "reason": "imports src/app/robots.ts directly and calls it as a pure function (only imports next's MetadataRoute type and the env-only src/lib/absoluteSiteUrl.ts, no payload import), no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.5-robots-and-dev-routes-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process and fetches the real /robots.txt, /sitemap.xml, and all six /dev/* routes over HTTP against the real Postgres db container"
     },
     {
       "path": "src/__tests__/us4-ac4.1-gallery-engine.test.tsx",
@@ -1057,7 +1107,7 @@
     {
       "path": "src/__tests__/us36-ac36.2-story-gallery-placement-resolution.test.tsx",
       "lane": "UNIT",
-      "reason": "walks the in-memory Stories.fields/GalleryPlacements.fields trees and renders StoryPageTemplate with @testing-library/react (jsdom) against resolveStoryGalleryPlacements output, with @/lib/backstageClient jest.mock()'d — no real network/db call"
+      "reason": "walks the in-memory Stories.fields/GalleryPlacements.fields trees and renders StoryPageTemplate with @testing-library/react (jsdom) against resolveStoryGalleryPlacements output, with @/lib/backstageClient jest.mock()'d \u2014 no real network/db call"
     },
     {
       "path": "src/__tests__/us36-ac36.3-heading-hierarchy.test.tsx",
@@ -1073,6 +1123,86 @@
       "path": "src/__tests__/us36-ac36.5-no-blog-chrome.test.tsx",
       "lane": "UNIT",
       "reason": "walks the in-memory Stories.fields tree, reads source files and STORY_NO_BLOG_CHROME.md/CLAUDE.md from disk with fs, and renders StoryPageTemplate with @testing-library/react (jsdom) against in-memory fixtures, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.4.3-sitemap-image-path.test.ts",
+      "lane": "UNIT",
+      "reason": "calls the import-free sitemapImagePath helper directly against in-memory GalleryImage fixtures and reads next.config.ts from disk with fs to cross-check the proxied tier list, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.4.3-sitemap-image-source-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "fs reads of src/app/(frontend)/sitemap.ts and src/lib/getSitemapEntries.ts and regex assertions on their static source text (Flow A import, no second Backstage client, no second Payload query, depth:1 on both collections, absoluteSiteUrl mapping for images), no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.4.3-sitemap-image-references-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') and dns.lookup('backstage-backend') resolving, then self-seeds a real published Backstage gallery and find-or-uploads a real photo into it via live admin API fetch() calls (polling resolveGalleryPlacementImages until the async upload pipeline processes it), spawns a real next dev child process with its own NEXT_PUBLIC_SITE_URL, creates a real Pages/gallery-placements pair via the live Payload REST API, fetches the real /sitemap.xml over HTTP and asserts the page's <url> block's <image:loc> set matches the Flow A photo URLs, then fetches one of those absolute URLs for real and asserts HTTP 200 with an image content type, against the real Postgres db container and the real Backstage stack"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.1-authored-seo-fields-parity.test.ts",
+      "lane": "UNIT",
+      "reason": "reads Pages.fields/Stories.fields in memory and the two collection files' source text with fs, regex-matching field names and line numbers, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.1-no-meta-keywords-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "walks the in-memory Pages.fields/Stories.fields trees recursively and asserts on field names, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.1-story-indexing-sitemap-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process, calls getLiveApiAuthToken to create a published+indexing:'index' control Stories/gallery-placements pair and a published+indexing:'noindex' Stories/gallery-placements pair over http://localhost:4307/api/stories and /api/gallery-placements, fetches the real /sitemap.xml, and asserts the noindex story's slug is absent while the control story's slug is present, against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.2.1-no-meta-keywords-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local source files via fs and calls buildSeoAssistantSnapshot with an in-memory fixture; no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.2.1-seo-assistant-snapshot.test.ts",
+      "lane": "UNIT",
+      "reason": "unit-level assertions against buildSeoAssistantSnapshot (src/lib/seoAssistant.ts), a pure function over an in-memory input object; no payload import, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.2-seo-assistant-panel.test.tsx",
+      "lane": "UNIT",
+      "reason": "RTL render of SeoAssistantPanel (src/components/admin/SeoAssistant/SeoAssistantPanel.tsx) against in-memory SeoAssistantSnapshot fixtures; component takes the snapshot as its only prop, no payload import, no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.2.3-seo-assistant-field-source-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "fs reads of SeoAssistantField.tsx, SeoAssistantPanel.tsx, seoAssistant.ts, Pages.ts, Stories.ts and the generated admin importMap.js, and regex assertions on their static source text (Flow A import, no second Backstage client, no gallery-placements collection query, no create/update/delete, sole payload importer, ui field registration and import-map resolution), no network/db"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.3.1-seo-assistant-admin-observability-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process and creates a real `pages` document via `/api/pages`, fetches its real admin edit view over HTTP at `/admin/collections/pages/:id` with a real Payload session cookie, and asserts the fourteen SEO-assistant control recipes against that live HTML"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.3.2-seo-assistant-admin-authored-controls-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving and a real (non-placeholder) R2 config, then spawns a real `next dev` child process on http://localhost:4310, uploads a real media document per fixture via /api/media, creates a real `pages` document and a real `stories`/`gallery-placements` pair via the live Payload REST API with all eight AC-37.6.1 authored fields carrying different values (including one noindex, one index), fetches each document's real admin edit view over HTTP with a real Payload session cookie, and asserts the eight SEO_ASSISTANT_ADMIN_OBSERVABILITY.md recipes against each document's own value plus a negative cross-document check, against the real Postgres db container and real R2 storage"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.3.3.1-seo-assistant-admin-derived-controls-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process on http://localhost:4311, creates a real `pages` document and a real `stories`/`gallery-placements` pair via the live Payload REST API, fetches the live `/api/globals/studio-profile` global, fetches each document's real admin edit view over HTTP with a real Payload session cookie, and asserts SEO_ASSISTANT_ADMIN_OBSERVABILITY.md's search-result-preview/canonical-URL/H1-preview/schema-preview recipes (rows 9-12) against each document's own value plus a negative cross-document check, against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.3.3.2-seo-assistant-admin-internal-link-suggestions-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real `next dev` child process on http://localhost:4312, queries the live published pages/stories candidate set via /api/pages and /api/stories to decide a deterministic photographyType before creating a real published `pages` document and a real published `stories`/`gallery-placements` pair via the live Payload REST API, fetches each document's real admin edit view over HTTP with a real Payload session cookie, and asserts SEO_ASSISTANT_ADMIN_OBSERVABILITY.md's internal-link-suggestions recipe (row 14) against each document's own value against the real Postgres db container"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.6.3.3.3-seo-assistant-admin-missing-alt-audit-live.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('db') AND dns.lookup('backstage-backend') resolving, then self-seeds a real published Backstage gallery and find-or-uploads a real photo into it via live admin API fetch() calls (the same seedLiveBackstageGalleryWithPhoto technique lifted from us37-ac37.4.3-sitemap-image-references-live.test.ts, sharing its GALLERY_NAME fixture), spawns a real `next dev` child process on http://localhost:4313, creates one real `gallery-placements` row over the live Payload REST API pointing at that gallery and attaches it to both a real `pages` document (galleryPlacements) and a real `stories` document (sections[].galleryPlacement), fetches each document's real admin edit view over HTTP with a real Payload session cookie, and asserts SEO_ASSISTANT_ADMIN_OBSERVABILITY.md's missing-alt-text-audit recipe (row 13) is shown in its NON-EMPTY state with the empty-state markup proven absent, against the real Postgres db container and the real Backstage stack"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.7-no-caption-generation-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local source files via fs, reads package.json, and calls buildSeoAssistantSnapshot with an in-memory fixture; no network/db"
     }
   ]
 }
