@@ -36,6 +36,52 @@ sync time for a permanent, project-specific deviation.
 
 ---
 
+## 2026-08-16 — `deviation`
+
+**`projects` gains the PRD 22.2 New Project form fields it did not yet
+carry.** At the pinned commit, `117_add_projects.js` created `projects`
+with exactly six columns (id, name, customer_account_id, status,
+created_at, updated_at) — none of photography type, first event date,
+venue/city, lead source, internal note, secondary contact, or current
+phase existed. Migration `122_add_project_new_project_fields.js` adds
+eleven new columns for those seven PRD fields: `photography_type`;
+`first_event_date` + `first_event_date_tbd` (a real boolean flag rather
+than an ambiguous NULL/magic-date for "or TBD"); `venue_city` +
+`venue_city_tbd` (same TBD pattern); `lead_source`; `internal_note`;
+`secondary_contact_name`/`_email`/`_phone` (split into three queryable
+columns rather than one JSON blob, matching how the primary contact's own
+fields are modelled elsewhere); and `current_phase`, defaulting to `lead`
+per PRD 23.1's seven-phase list. US-38 AC-38.1.
+
+- **Type:** permanent deviation — a genuine, intentional fork addition
+  (Fork Discipline: extend via new code, never by rewriting shipped
+  upstream logic; a new migration for any fork-side schema change, never
+  an edit to a shipped one), not an upstream-bug workaround, so
+  `UPSTREAM_SYNC.md` §4 does not apply; it is carried forward on every
+  future merge per §1.
+- **What changed:**
+  1. `vendor/picpeak/backend/migrations/core/122_add_project_new_project_fields.js`
+     — new migration, adds the eleven columns listed above to `projects`,
+     each guarded individually by `hasColumn` so a partial prior run is a
+     safe no-op on re-apply. US-38 AC-38.1.
+  2. `src/lib/picpeakMigrationManifest.ts` — migration `122` recorded as a
+     third `origin: 'fork'` entry, alongside its blob SHA. US-38 AC-38.1.
+- **Files touched:** the two files above.
+- **Evidence:** `src/__tests__/us38-ac38.1-project-new-fields-migration.test.ts`
+  drives the migration module's `up()`/`down()` against a fake knex schema
+  builder and names each of the eleven added columns individually — the
+  test fails if any one is absent or if an unexpected column sneaks in.
+  Applied live against the running `backstage-db` Postgres service in
+  Docker: `\d projects` showed exactly the six pinned-baseline columns
+  before, and all six plus the eleven new columns afterward, with the
+  same six-column result restored after running `down()`. Re-running `up()`
+  a second time changed nothing (every column already present).
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-38, AC-38.1)
+
+---
+
 ## 2026-08-14 — `deviation`
 
 **Backstage gains a second inquiry-triggered email: the optional branded
