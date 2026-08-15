@@ -29,9 +29,9 @@ The full per-suite mapping lives in [`TEST_LANE_INVENTORY.json`](TEST_LANE_INVEN
 
 | Lane | Count |
 |---|---|
-| LIVE | 25 |
+| LIVE | 26 |
 | UNIT | 206 |
-| **Total** | **231** |
+| **Total** | **232** |
 
 (UNIT includes this classification's own guard suite, `us30-ac30.1-test-lane-classification.test.ts`, AC-30.2's
 `us30-ac30.2-unit-lane-parallelism.test.ts` guard, and AC-30.3's `us30-ac30.3-live-lane-serial.test.ts` guard, all of
@@ -80,8 +80,9 @@ each suite rather than trusting its name.
 | `src/__tests__/us37-ac37.5-robots-and-dev-routes-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process` on `http://localhost:4305`, fetches the real `/robots.txt` and asserts its `User-Agent`/`Allow`/`Disallow: /dev/`/`Sitemap:` lines, fetches the real `/sitemap.xml` and asserts none of the six internal `/dev/*` demo/specimen routes appear in it, and fetches each of those six routes in turn to assert HTTP 200 with a real `<meta name="robots" content="...noindex...">` tag in its own rendered HTML — exercising the live Next.js routes against the real Postgres `db` container. No Payload fixtures are created since neither route reads from the database. |
 | `src/__tests__/us37-ac37.6.1-story-indexing-sitemap-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process` on `http://localhost:4307`, calls `getLiveApiAuthToken` to create a published+`indexing: 'index'` control `Stories`/`gallery-placements` pair and a published+`indexing: 'noindex'` `Stories`/`gallery-placements` pair over `http://localhost:4307/api/stories` and `/api/gallery-placements`, fetches the real `/sitemap.xml`, and asserts the noindex story's slug is absent from it while the control story's slug is present — exercising Payload's live schema/connection and the live Next.js route against the real Postgres `db` container, reusing AC-37.4.2's control-plus-excluded-record technique for the `indexing` field AC-37.6.1 added to `Stories`. |
 | `src/__tests__/us37-ac37.6.3.1-seo-assistant-admin-observability-live.test.ts` | Gated on `dns.lookup('db')` resolving, then spawns a real `next dev` child process via `child_process` on `http://localhost:4309`, calls `getLiveApiAuthToken` to create one real `Pages` document carrying all eight AC-37.6.1 authored fields (minus `socialImage`, which needs a `media` upload out of this AC's scope) over `http://localhost:4309/api/pages`, fetches its real admin edit view over HTTP at `/admin/collections/pages/:id` — once with a real `payload-token=<jwt>` session cookie, once with none — and asserts SEO_ASSISTANT_ADMIN_OBSERVABILITY.md's fourteen-control recipe table against that live HTML, exercising Payload's live schema/connection, its admin cookie-auth path (no prior live suite in this repository had fetched an admin page rather than `/api/*`), and the real Postgres `db` container. |
+| `src/__tests__/us37-ac37.6.3.2-seo-assistant-admin-authored-controls-live.test.ts` | Gated on `dns.lookup('db')` resolving **and** a real (non-placeholder) R2 config, then spawns a real `next dev` child process via `child_process` on `http://localhost:4310`, uploads one real `Media` document per fixture over `/api/media` (so the Open Graph image is per-document evidence), creates a real `Pages` document and a real `Stories`/`gallery-placements` pair over `/api/pages`, `/api/stories` and `/api/gallery-placements` with all eight AC-37.6.1 authored fields carrying a different value on each document (including `indexing`: one `noindex`, one `index`), fetches each document's real admin edit view over HTTP at `/admin/collections/pages/:id` and `/admin/collections/stories/:id` with a real Payload session cookie, and asserts SEO_ASSISTANT_ADMIN_OBSERVABILITY.md's eight-authored-control recipes against each document's own value plus a negative pass proving neither view carries the other's values — exercising Payload's live schema/connection, the admin cookie-auth path, the real Postgres `db` container and real R2 storage. |
 
-All twenty-five gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
+All twenty-six gate their live behaviour on a `dns.lookup()` check for the Docker-network hostname they
 depend on (`db` or `backstage-backend`) and return early — i.e. pass trivially — when that hostname
 doesn't resolve, so they are also safe to run on a bare host `npm test` outside Docker; they only
 become truly LIVE when the Docker network is up.
