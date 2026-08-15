@@ -38,6 +38,53 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-16 — `deviation`
 
+**`events` gains the PRD 22.4 event-detail fields it did not yet carry.**
+At the pinned commit plus migration 122, `events` already carried four of
+PRD 22.4's ten named event-detail items — name/type (`event_name`,
+`event_type`), date/time (`event_date`, `event_time_start`,
+`event_time_end`), and full-day state (`is_full_day`, added by the pinned
+upstream migration `107_crm_consolidated.js`) — but had no representation
+for "or TBD" on the date/time item (`event_date` is `NOT NULL`), and none of
+venue name, full address, map link, coordinator/contact, coverage notes,
+client-visible notes or internal notes existed. Migration
+`123_add_event_detail_fields.js` adds ten new columns: `event_date_tbd` (a
+real boolean flag for "date not yet set", same pattern as
+`projects.first_event_date_tbd`); `venue_name`; `venue_address`;
+`venue_map_link`; `coordinator_name`/`_email`/`_phone` (split into three
+queryable columns, matching how migration 122 split the secondary contact);
+`coverage_notes`; `client_visible_notes`; and `internal_notes` — kept as two
+structurally distinct columns (never one field gated by a flag) so US-44
+AC-44.2 can assert the internal one is absent from any client-facing payload
+by construction. US-38 AC-38.2.
+
+- **Type:** permanent deviation — a genuine, intentional fork addition
+  (Fork Discipline: extend via new code, never by rewriting shipped
+  upstream logic; a new migration for any fork-side schema change, never
+  an edit to a shipped one), not an upstream-bug workaround, so
+  `UPSTREAM_SYNC.md` §4 does not apply; it is carried forward on every
+  future merge per §1.
+- **What changed:**
+  1. `vendor/picpeak/backend/migrations/core/123_add_event_detail_fields.js`
+     — new migration, adds the ten columns listed above to `events`, each
+     guarded individually by `hasColumn` so a partial prior run is a safe
+     no-op on re-apply. US-38 AC-38.2.
+  2. `src/lib/picpeakMigrationManifest.ts` — migration `123` recorded as a
+     fourth `origin: 'fork'` entry, alongside its blob SHA. US-38 AC-38.2.
+- **Files touched:** the two files above.
+- **Evidence:** `src/__tests__/us38-ac38.2-event-detail-fields-migration.test.ts`
+  drives the migration module's `up()`/`down()` against a fake knex schema
+  builder, maps each of PRD 22.4's ten named items to the column that
+  carries it (the four pre-existing ones plus the six new columns split
+  across the migration's ten added columns), and fails if any single one is
+  missing. It also asserts `client_visible_notes` and `internal_notes` are
+  two distinct column names, never the same field.
+
+- **Recorded:** 2026-08-16
+
+---
+
+## 2026-08-16 — `deviation`
+
 **`projects` gains the PRD 22.2 New Project form fields it did not yet
 carry.** At the pinned commit, `117_add_projects.js` created `projects`
 with exactly six columns (id, name, customer_account_id, status,
