@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 235,
+  "totalSuites": 236,
   "counts": {
     "live": 29,
-    "unit": 206
+    "unit": 207
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -13,12 +13,12 @@
       {
         "option": "naming-convention",
         "label": "Naming convention enforced by a test (e.g. a `.live.test.ts` suffix)",
-        "reason": "Only 4 of 156 suites are LIVE and several LIVE-sounding filenames (webhook-live-proof, backstage-client-flow-a's sibling files, r2-storage) are actually UNIT once read — baking the lane into the filename would conflate 'reads about live behaviour' with 'is live behaviour', which is exactly the guessing-from-filename failure mode AC-30.1 forbids. It would also require renaming files across git history for no functional gain over an explicit manifest."
+        "reason": "Only 4 of 156 suites are LIVE and several LIVE-sounding filenames (webhook-live-proof, backstage-client-flow-a's sibling files, r2-storage) are actually UNIT once read \u2014 baking the lane into the filename would conflate 'reads about live behaviour' with 'is live behaviour', which is exactly the guessing-from-filename failure mode AC-30.1 forbids. It would also require renaming files across git history for no functional gain over an explicit manifest."
       },
       {
         "option": "testPathIgnorePatterns-pair",
         "label": "A testPathIgnorePatterns pair (two Jest configs/invocations, each ignoring the other lane's suites)",
-        "reason": "Works, but the LIVE and UNIT suite sets aren't derivable from a path pattern (see naming-convention rejection above), so each config would need its own explicit include/exclude list duplicating the same manifest in two places, and running both lanes from one `npm test` would require chaining two separate `jest --config` invocations rather than one Jest run — more moving parts than a single `projects` config needs."
+        "reason": "Works, but the LIVE and UNIT suite sets aren't derivable from a path pattern (see naming-convention rejection above), so each config would need its own explicit include/exclude list duplicating the same manifest in two places, and running both lanes from one `npm test` would require chaining two separate `jest --config` invocations rather than one Jest run \u2014 more moving parts than a single `projects` config needs."
       }
     ],
     "notes": "This AC records the classification and the mechanism decision only. Wiring jest.config.ts's `projects` array to the two lanes, and the package.json/CI scripts that select them, is scoped to AC-30.2/30.3/30.5."
@@ -522,7 +522,7 @@
     {
       "path": "src/__tests__/us25-ac25.2-backstage-client-flow-a.test.ts",
       "lane": "LIVE",
-      "reason": "a describe block gated on dns.lookup('backstage-backend') resolving performs real fetch calls to http://backstage-backend:3000 — admin login, gallery search/create/publish, and fetchPublishedGallery — against the live Backstage/PicPeak API"
+      "reason": "a describe block gated on dns.lookup('backstage-backend') resolving performs real fetch calls to http://backstage-backend:3000 \u2014 admin login, gallery search/create/publish, and fetchPublishedGallery \u2014 against the live Backstage/PicPeak API"
     },
     {
       "path": "src/__tests__/us25-ac25.3-backstage-gallery-mapper.test.ts",
@@ -562,7 +562,7 @@
     {
       "path": "src/__tests__/us26-ac26.4-webhook-live-proof.test.tsx",
       "lane": "UNIT",
-      "reason": "mocks @/lib/backstageGalleryPlacement and renders the page component with @testing-library/react; reads local shell script and PIVOT_AUDIT.md text — despite the filename, no live request is issued"
+      "reason": "mocks @/lib/backstageGalleryPlacement and renders the page component with @testing-library/react; reads local shell script and PIVOT_AUDIT.md text \u2014 despite the filename, no live request is issued"
     },
     {
       "path": "src/__tests__/us26-ac26.4.1.1-webhook-live-proof-harness.test.ts",
@@ -792,7 +792,7 @@
     {
       "path": "src/__tests__/us32-ac32.5-mobile-menu-accessibility-survives.test.tsx",
       "lane": "UNIT",
-      "reason": "jsdom component rendering plus keyboard simulation via @testing-library/user-event, git show for structural diffs, and an in-process Tailwind/postcss compile of globals.css — no network/db"
+      "reason": "jsdom component rendering plus keyboard simulation via @testing-library/user-event, git show for structural diffs, and an in-process Tailwind/postcss compile of globals.css \u2014 no network/db"
     },
     {
       "path": "src/__tests__/us33-ac33.1-forms-field-set.test.ts",
@@ -827,7 +827,7 @@
     {
       "path": "src/__tests__/us33-ac33.4-spam-protection-live.test.ts",
       "lane": "LIVE",
-      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process (three times, one per port/scenario), creates a real Forms document, and POSTs real submissions to /api/inquiries — a honeypot-filled one, a too-fast one, and a rapid-fire run past the rate limit — then queries /api/inquiries/count over the live Payload REST API to prove the blocked ones wrote no Inquiry, exercising Payload's live schema/connection against the real Postgres db container"
+      "reason": "gated on dns.lookup('db') resolving, then spawns a real next dev child process via child_process (three times, one per port/scenario), creates a real Forms document, and POSTs real submissions to /api/inquiries \u2014 a honeypot-filled one, a too-fast one, and a rapid-fire run past the rate limit \u2014 then queries /api/inquiries/count over the live Payload REST API to prove the blocked ones wrote no Inquiry, exercising Payload's live schema/connection against the real Postgres db container"
     },
     {
       "path": "src/__tests__/us33-ac33.4-spam-protection.test.ts",
@@ -837,12 +837,12 @@
     {
       "path": "src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts",
       "lane": "UNIT",
-      "reason": "fixture-level verifyMigrationsUnmodified checks with injected readFile/isForkAdditionDocumented, plus fs reads of the local vendor/picpeak tree and repo docs — no network or live service dependency"
+      "reason": "fixture-level verifyMigrationsUnmodified checks with injected readFile/isForkAdditionDocumented, plus fs reads of the local vendor/picpeak tree and repo docs \u2014 no network or live service dependency"
     },
     {
       "path": "src/__tests__/us33-ac33.5.2.2.2-inquiry-notification-route.test.ts",
       "lane": "UNIT",
-      "reason": "fs reads of the local vendor/picpeak route/server files, repo docs, and verifyVendoredMigrations against the local tree — no network or live service dependency"
+      "reason": "fs reads of the local vendor/picpeak route/server files, repo docs, and verifyVendoredMigrations against the local tree \u2014 no network or live service dependency"
     },
     {
       "path": "src/__tests__/us33-ac33.5.2.3-build-inquiry-submission-summary.test.ts",
@@ -852,7 +852,7 @@
     {
       "path": "src/__tests__/us33-ac33.5.2.3-end-to-end-proof-script.test.ts",
       "lane": "UNIT",
-      "reason": "fs read of the committed proof script in the local tree — asserts the script's contract, never runs Docker, psql, or the network"
+      "reason": "fs read of the committed proof script in the local tree \u2014 asserts the script's contract, never runs Docker, psql, or the network"
     },
     {
       "path": "src/__tests__/us33-ac33.5.2.3-inquiry-notification-client.test.ts",
@@ -872,7 +872,7 @@
     {
       "path": "src/__tests__/us33-ac33.6-inquiry-acknowledgement-route.test.ts",
       "lane": "UNIT",
-      "reason": "fs reads of the local vendor/picpeak route/server/migration files, repo docs, and verifyVendoredMigrations against the local tree — no network or live service dependency"
+      "reason": "fs reads of the local vendor/picpeak route/server/migration files, repo docs, and verifyVendoredMigrations against the local tree \u2014 no network or live service dependency"
     },
     {
       "path": "src/__tests__/us37-ac37.1-studio-profile-account-seo-field-mapping.test.ts",
@@ -1107,7 +1107,7 @@
     {
       "path": "src/__tests__/us36-ac36.2-story-gallery-placement-resolution.test.tsx",
       "lane": "UNIT",
-      "reason": "walks the in-memory Stories.fields/GalleryPlacements.fields trees and renders StoryPageTemplate with @testing-library/react (jsdom) against resolveStoryGalleryPlacements output, with @/lib/backstageClient jest.mock()'d — no real network/db call"
+      "reason": "walks the in-memory Stories.fields/GalleryPlacements.fields trees and renders StoryPageTemplate with @testing-library/react (jsdom) against resolveStoryGalleryPlacements output, with @/lib/backstageClient jest.mock()'d \u2014 no real network/db call"
     },
     {
       "path": "src/__tests__/us36-ac36.3-heading-hierarchy.test.tsx",
@@ -1198,6 +1198,11 @@
       "path": "src/__tests__/us37-ac37.6.3.3.3-seo-assistant-admin-missing-alt-audit-live.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('db') AND dns.lookup('backstage-backend') resolving, then self-seeds a real published Backstage gallery and find-or-uploads a real photo into it via live admin API fetch() calls (the same seedLiveBackstageGalleryWithPhoto technique lifted from us37-ac37.4.3-sitemap-image-references-live.test.ts, sharing its GALLERY_NAME fixture), spawns a real `next dev` child process on http://localhost:4313, creates one real `gallery-placements` row over the live Payload REST API pointing at that gallery and attaches it to both a real `pages` document (galleryPlacements) and a real `stories` document (sections[].galleryPlacement), fetches each document's real admin edit view over HTTP with a real Payload session cookie, and asserts SEO_ASSISTANT_ADMIN_OBSERVABILITY.md's missing-alt-text-audit recipe (row 13) is shown in its NON-EMPTY state with the empty-state markup proven absent, against the real Postgres db container and the real Backstage stack"
+    },
+    {
+      "path": "src/__tests__/us37-ac37.7-no-caption-generation-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local source files via fs, reads package.json, and calls buildSeoAssistantSnapshot with an in-memory fixture; no network/db"
     }
   ]
 }
