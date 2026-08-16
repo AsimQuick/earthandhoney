@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 1/8 stories | 7/51 ACs
-**Last Updated:** 2026-08-16T04:42:16+00:00
+**Last Updated:** 2026-08-16T04:45:50+00:00
 
 ## Sprint Goal
 Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finished Phase 4: the Frontstage is now a real website that publishes pages, stories and a sitemap and captures durable Inquiries. What it cannot do is run a booking. The Project is the PRD's operational backbone and it exists before the images, but at the pinned fork commit a Project is six columns - id, name, customer_account_id, status and two timestamps - with no phase, no milestone, no venue, no next action, no document area and no client-visible surface at all; migration 117's own header states 'Customers never see projects'. Sprint 6 turns that grouping row into the operational backbone: the extended data model through new migrations, the seven phases and eighteen milestones with a configurable booking rule and one server-side computed next action, a status vocabulary where colour is always paired with text and icon, automatic Project setup, both entry paths including converting a Frontstage Inquiry across the system boundary, the photographer's cockpit, and the client-safe Project Room. It opens with the one piece of debt sprint 5 measured and did not pay: the CI suite that grew 48% in eight days, and the two process failures now on their third and fourth consecutive recurrence. PRD Phase 3's exit criterion is the sprint's bar and is proven in one run rather than asserted: photographer and client can see the same authoritative workflow state.
@@ -121,6 +121,7 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
 - [ ] **AC-39.3.3:** With the map from AC-39.3.1 and the wiring from AC-39.3.2 in place, a live test fetches the cockpit's next action and the Project Room's next action for the same Project in one run and asserts they are identical strings, for at least two different Project states so the equality is a property of the shared computation rather than of one untouched default. The test follows AC-39.3.1's recorded authentication and seeding recipe and invents no new one; anything AC-39.3.1 recorded as blocked is named in the test's own NOT COVERED note and left to US-43 AC-43.2 and US-44 AC-44.7, which make this same assertion from the finished surfaces. Evidence: the passing run with both strings shown. This is PRD Phase 3's exit criterion - photographer and client seeing the same authoritative workflow state - proven here at the service boundary and proven again at the surfaces in US-44 AC-44.7, rather than asserted in either place.
   - Dev: implemented
 - [ ] **AC-39.4:** No phase yields an empty, null or placeholder next action. Evidence: a table-driven test covering all seven phases against representative milestone states, asserting a non-empty next action for every row, with the row count and the phases named in the test output.
+  - Dev: implemented
 - [ ] **AC-39.5:** A photographer can override the computed next action (PRD 23.4, 'manual overrides'). The override records the actor and timestamp, and is presented as an override rather than silently replacing the computation - the underlying computed value stays retrievable. Evidence: the override written and read back, and both values visible in the same response.
 - [ ] **AC-39.6:** Every phase change, milestone completion and manual override appends an entry to the Project's activity timeline (PRD 22.3, 23.4), each carrying actor, timestamp and what changed. Evidence: a sequence of three changes producing three ordered entries, asserted live.
 
@@ -161,6 +162,15 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
   - `vendor/picpeak/backend/src/routes/adminProjects.js` — additive: new `GET /:id/next-action` (`events.view`), appended after the last existing route with the service required inline, so no earlier line-citation test shifts.
   - `vendor/picpeak/backend/src/routes/customer.js` — additive: new `GET /projects/:id/next-action`, `customerAut …
   AC-39.3.3 implemented (local checks green): Full suite is running (42/247 suites so far). The AC-39.3.3 work itself is complete and verified live; I'll commit once the full run and coverage gate confirm green.
+  AC-39.4 already satisfied on the story branch (no new commit; Tester-verified): AC-39.4's deliverable is already fully satisfied by the AC-39.3.2 commit already on this branch. I verified this directly rather than just reading the diff:
+  
+  **ALREADY-SATISFIED**
+  
+  Evidence: `src/__tests__/us39-ac39.3.2-next-action-single-computation.test.ts`, describe block `"AC-39.3.2: the rules module, table-driven across all seven phases and representative milestone states"`:
+  
+  - A `ROWS` table (lines 83–103) with one row per PRD 23.1 phase (`lead`, `booking`, `preparation`, `shoot`, `post_production`, `delivery`, `closed`), each carrying representative milestone state for that phase (e.g. `booking` with a partial completion set that exercises the "outstanding requirements" branch, later phases with accumulated `completedMilestoneKeys`).
+  - `it('names all seven PRD 23.1 phases, and no eighth, in this table', ...)` asserts `expect(ROWS).toHaveLength(7)` — the row count.
+  - `it.each(ROWS)('phase "$phase" resolves to a specific, non-empty next action', ...)` — Jest's `$phase` interpolation names every phase individually in the test output (confirmed by actually running it, see below), and the body asserts `typeof nextAction === 'string'` and `nextAction.trim().length > 0` for every r …
 
 **Tester Status:** approved
 **Tester Notes:**
