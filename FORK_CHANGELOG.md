@@ -38,6 +38,62 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-16 — `deviation`
 
+**The `events.manage` permission now exists and is granted to super_admin.**
+NEXT_ACTION_CROSS_SURFACE_MAP.md (AC-39.3.1) recorded that every
+`events.manage`-gated admin route in `adminProjects.js` — create,
+update/relink, attach-event — returns an unconditional 403 for every role,
+including super_admin, because no migration in the pinned fork ever seeds a
+permission row named `events.manage`: migration 055's permission seed lists
+exactly five `events.*` rows (view, create, edit, delete, archive) and never
+`events.manage`, and migration 056's super_admin grant is "every row that
+exists in `permissions` at migration time", not a fixed list, so super_admin
+can only ever hold a permission that was actually seeded. That map deferred
+the fix to "whichever AC actually needs the admin write routes to work"
+rather than resolving it on AC-39.3.1's own authority. AC-39.6 is that AC —
+all three of its writes (phase change, milestone completion, manual
+override) go through those gated routes — so this is a deliberate fork
+behaviour change: it makes previously-unreachable vendored routes reachable.
+New migration 129 seeds the permission and grants it to super_admin,
+following migration 090's seed-then-grant pattern. This AC (AC-39.6.1.2) is
+the second of AC-39.6's two schema prerequisites and ships the permission
+seed only — no route is changed and no gated route is exercised here;
+AC-39.6.3 is what proves the gate actually opened.
+
+- **Type:** additive deviation — one new permission row and one new
+  role_permissions grant, no existing route, migration 055, or migration 056
+  touched.
+- **What changed:**
+  1. `events.manage` inserted into `permissions` (category `events`) if
+     absent, and granted to `super_admin` in `role_permissions`, both guarded
+     against re-insertion on a second run. AC-39.6.1.2.
+- **Files touched:**
+  - `vendor/picpeak/backend/migrations/core/129_seed_events_manage_permission.js`
+    — new — seeds `events.manage` and grants it to super_admin. AC-39.6.1.2.
+  - `src/lib/picpeakMigrationManifest.ts` — migration `129` recorded as the
+    manifest's tenth `origin: 'fork'` entry, with its blob SHA. AC-39.6.1.2.
+  - `src/__tests__/us39-ac39.6.1.2-events-manage-permission-migration.test.ts`
+    — new — drives migration 129 against a fake knex seeded with 055's and
+    056's own rows: the `events.manage` row asserted present after `up()`
+    and granted to super_admin, a second `up()` asserted to be a no-op, and
+    an assertion that the migration leaves every pre-existing `permissions`
+    and `role_permissions` row byte-for-byte unchanged.
+  - `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts` — updated —
+    migration 129 added to the later-fork-migration allowlist so the "every
+    other manifest entry is still pinned-upstream" invariant still holds.
+  - `TEST_LANE_INVENTORY.json` / `TEST_LANE_CLASSIFICATION.md` — updated —
+    new suite registered in the UNIT lane (total suites 249→250).
+- **Evidence:** the above test file; `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts`
+  stays green. This deviation adds no line to any of migrations 001-128 —
+  no already-shipped migration is modified — and
+  `src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity test
+  (`us15-ac15.6-picpeak-vendored-fork.test.ts` /
+  `us33-ac33.5.2.1-fork-migration-lane.test.ts`) covers migration 129 the
+  same way it covers every other fork addition.
+
+---
+
+## 2026-08-16 — `deviation`
+
 **A Project's activity timeline table now exists (schema only).** PRD 22.3
 and 23.4 require every phase change, milestone completion and manual
 override to append an entry to the Project's activity timeline. New
