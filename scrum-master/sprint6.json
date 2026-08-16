@@ -42,7 +42,7 @@
     {
       "id": "US-38",
       "title": "Extend the Backstage Project through new migrations: events, venues, phases, milestones, documents, and integration status",
-      "status": "in-progress",
+      "status": "done",
       "priority": "critical",
       "dependencies": [],
       "backlog_item": 22,
@@ -50,50 +50,50 @@
         {
           "id": "38.1",
           "text": "New numbered migrations starting at 122 extend the fork's `projects` table with every PRD 22.2 New Project field it does not already carry. Verified at the pinned commit, migration 117_add_projects.js creates `projects` with exactly six columns - id, name, customer_account_id, status, created_at, updated_at - so photography type, first event date (or an explicit TBD state), venue/city (or TBD), lead source, internal note, secondary contact and the current phase are all missing and must be added. Evidence: `\\d projects` output from the running `backstage-db` container before and after the migration, plus a passing test that names each added column individually and fails if any one is absent.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "38.2",
           "text": "Event detail per PRD 22.4 exists on the `events` row or a new child table, covering all ten named items: name/type, date/time or TBD, full-day state, venue name, full address, map link, coordinator/contact, coverage notes, client-visible notes, internal notes. Verified at the pinned commit, `events` carries only event_name, event_date, event_time_start, event_time_end, event_type, host_name and host_email - none of the venue, address, map, coordinator, coverage or note fields exist. Evidence: each of the ten named against the column that carries it, and a test that fails if any single one is missing. A client-visible note and an internal note must be distinct columns, because US-44 AC-44.2 asserts the internal one never reaches the client.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "38.3",
           "text": "PRD 23.2's eighteen milestones are stored as data rows, not as a hardcoded list inside a UI component, each carrying a completion state, a completion timestamp and the actor that completed it. Evidence: the seeded set queried from the database and asserted by name against the PRD's list, count asserted as eighteen, and a test proving the UI reads the rows rather than a literal.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "38.4",
           "text": "A per-Project document area and an integration-status record exist. The integration-status record must be able to represent a failure with a message and a timestamp, because PRD 23.4 requires the cockpit to show integration failures and US-43 AC-43.3 asserts an induced failure appears there. Evidence: a row written and read back for each of success, pending and failure states.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "38.5",
           "text": "Every new migration runs clean on an empty database and is idempotent on re-run, following the MIGRATION_IDEMPOTENCY.md convention already established for this fork. Evidence: the migration command run twice in Docker against a freshly created database, with both exit codes and the second run's no-op output recorded.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "38.6",
           "text": "Fork discipline is provably intact: no migration 001-121 is modified, every new migration is registered in the `origin: 'fork'` lane of `src/lib/picpeakMigrationManifest.ts` that US-33 AC-33.5.2.1 built, and each is recorded in FORK_CHANGELOG.md, PICPEAK_PORT_LEDGER.md and UPSTREAM_SYNC.md. Evidence: `git log --name-only` across the story's commits showing only new files under `vendor/picpeak/backend/migrations/core/`, the migration-manifest integrity test green, and the negative case still failing - an edited upstream migration must still be caught.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         },
         {
           "id": "38.7",
           "text": "PROJECT_DATA_MODEL_ADR.md records the option chosen, the options rejected and the reason, for two decisions specifically: (a) extending the fork's own `projects`/`events` tables versus creating a parallel Earth & Honey project table, and (b) where the Project-to-Inquiry and Project-to-ledger cross-system identifiers live. Reminder 4 requires stored external identifiers resolved over an API with no cross-database join, so (b) must state which side stores which identifier. The financial identifier is a placeholder in this sprint - PRD Phase 6 owns the ledger - and the ADR must say so rather than imply an integration exists. Evidence: the ADR document showing, for both (a) and (b), the option chosen, the options rejected, and the reason, plus the placeholder statement quoted verbatim.",
-          "checked": false,
-          "dev_status": "implemented",
+          "checked": true,
+          "dev_status": "done",
           "tester_status": "not-started"
         }
       ],
@@ -530,7 +530,7 @@
       "drained": "false until the orchestrator has copied it into po-requests.md; the criterion cannot close while this is false"
     }
   },
-  "last_updated": "2026-08-16T00:58:54+00:00",
+  "last_updated": "2026-08-16T01:21:55+00:00",
   "last_updated_by": "product-owner",
   "available_configuration": "Carried from sprint 5 and unchanged: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_ENDPOINT; the full SMTP_* / SENDER_EMAIL / EMAIL_USE_SSL set; DATABASE_URL and REDIS_URL; the Backstage-to-Frontstage webhook shared secret and receiver URL from US-26; BACKSTAGE_API_TOKEN; and STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_PRICEMAINT_ID, STRIPE_PRICEEMAIL_ID and STRIPE_PRICEDEV_ID as a coherent test-mode set. NO SPRINT-6 STORY TOUCHES STRIPE OR INVOICE NINJA - finance is PRD Phase 6, and US-41 AC-41.6 tests that the financial integration placeholder makes no call to either. NO NEW ENVIRONMENT VARIABLE IS EXPECTED THIS SPRINT: US-42's Inquiry conversion runs over the boundary and credentials US-25/US-26 already established, and US-44's Project Room uses the fork's own customer authentication. If a story does need one, .env.example is authoritative and the variable goes in with a placeholder and a comment before the story closes. Three human items remain outstanding and none blocks a sprint-6 story: the R2 delivery path (po-requests item 15) is still open and is a launch-phase and Phase 5 concern rather than a Phase 3 one; the UD-1 upstream defect report still needs a human GitHub identity (item 16); and SPF, DKIM and DMARC records are still required before any production email (item 17), which blocks launch rather than this sprint. One NEW item is raised at this planning: item 18, the status-colour conflict that US-40 AC-40.3 will hit. VPS: shared host root@140.82.43.36, project directory /root/earthandhoney, port set to be finalised at the deploy story (backlog item 39, launch phase).",
   "po_sprint_notes": "WHY THIS SCOPE. PRD Phase 3 is the designated next block and is now unblocked: po-requests items 7 and 13 were resolved by the human on 2026-08-13 as option (a), the sibling-PDF audit trail accepted for V1. The old 'blocked by contract signing' rationale that excluded Phase 3 from sprints 4 and 5 no longer applies and must not be restated. Backlog items 22-26 are exactly this sprint's five feature stories, and PRD 35.4's six V1 Projects criteria map onto them one for one.\n\nWHAT WAS VERIFIED AT PLANNING RATHER THAN ASSUMED. (1) No *_SPEC.md feature-specification document exists anywhere in this repository - re-confirmed by two repo-wide searches excluding node_modules/ and vendor/, one for the exact pattern and one case-insensitive for any spec markdown file, which returns only retrospective.md. Remaining scope therefore still comes from the PRD phase plan and the post-pivot backlog, as it has since sprint 1. (2) The fork's Project really is only six columns: migration 117_add_projects.js creates projects with id, name, customer_account_id, status, created_at, updated_at, plus events.project_id. (3) The events table carries event_name, event_date, event_time_start, event_time_end, event_type, host_name and host_email, and none of PRD 22.4's venue, address, map, coordinator, coverage or note fields. (4) src/styles/tokens.css declares no semantic status colour - no success, warning, danger or error token exists. (5) PAYLOAD_PICPEAK_API_CONTRACT.md already records that PicPeak's customer UI under frontend/src/pages/customer/ IS the Project Room under its user-facing name, so US-44 extends it rather than building a fourth surface.\n\nTHE ONE CONFLICT FOUND AT PLANNING, RAISED IN ADVANCE. PRD 23.3 requires five status colours - green, amber, blue, red, grey. The token set the human signed off as-is on 2026-08-13 was briefed as near-black ink and a neutral grey scale with no accent colour, and it carries no semantic colour at all. These cannot both hold. It is raised now as po-requests item 18 rather than discovered mid-sprint, and US-40 AC-40.3 is written so the implementing session routes it instead of editing a signed-off specification on its own authority. This is also the first genuine user of the pending_po_routing array, which sprint 5 built and never exercised once.\n\nWHY US-45 IS IN A FEATURE SPRINT. It earns its place on measurement, the same way US-30 did. CI's gated command is jest --runInBand across both lanes, so the lane split never reached CI: 10m30s at 159 suites on PR #82, 21m18s at 236 suites on PR #89, eight days apart. Phase 3 adds a data model, two surfaces and live proof documents, and Phases 5-8 follow. Its other two criteria convert the project's two longest-running process failures from definition-of-done sentences into failing tests: the routing hole has now failed three consecutive sprints and the retrospective four, and in both cases every previous fix was a stronger sentence. US-45 has no dependants, so if it stalls nothing is blocked.\n\nWHAT THIS SPRINT DELIBERATELY DOES NOT DO. It does not build finance. Quote status, contract status, invoices, payments, receipts and balance all appear in PRD 23.4's and 23.5's lists, and every one of them is owned by PRD Phase 6 or Phase 7. Both surface stories therefore require an explicit not-yet-connected or not-yet-available state rather than a fabricated value or a blank that reads as zero, and US-39 AC-39.2 states plainly that in this sprint the three booking milestones are set by a human action, not by a verified payment. An honest empty state now is what lets Phase 6 fill it without a rewrite; a fake one would have to be found and removed first.\n\nCARRIED FROM SPRINT 5, FOR THE ORCHESTRATOR. Sprint 5's one open defect - AC-33.5.2.1's migration-lane decision never reaching po-requests.md - was routed by the Product Owner at this planning, so sprint 5 closes clean and US-33 can be re-closed. The disposition recorded is accept as-is: the lane is additive, narrowly scoped, and already documented in FORK_CHANGELOG.md and PICPEAK_PORT_LEDGER.md. That entry is now in po-requests.md; what remains unproven is the mechanism itself, which US-45 AC-45.5 closes.",
