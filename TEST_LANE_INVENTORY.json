@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 244,
+  "totalSuites": 245,
   "counts": {
     "live": 29,
-    "unit": 215
+    "unit": 216
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1243,6 +1243,11 @@
       "path": "src/__tests__/us39-ac39.1-project-phases-lock-in.test.ts",
       "lane": "UNIT",
       "reason": "pure in-memory assertions against the src/lib/projectPhases.ts module export and a locally-defined guard function; no I/O, no network/db"
+    },
+    {
+      "path": "src/__tests__/us39-ac39.2-booking-rule.test.ts",
+      "lane": "UNIT",
+      "reason": "drives the vendored migration 126 module against a fake in-memory knex and src/lib/bookingRule.ts against a fake in-memory query client; no network/db"
     }
   ]
 }

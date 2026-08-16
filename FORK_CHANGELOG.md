@@ -38,6 +38,76 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-16 — `deviation`
 
+**PRD 23.2's booking-requirement configuration now exists as data rows, in
+a new `project_booking_requirements` table — the booking rule reads which
+milestones it requires from this table rather than a hardcoded
+three-item check.** PRD 23.2 states "A Project becomes Booked only when its
+configured booking requirements are complete" — the word "configured" means
+which milestones count toward Booked is data, and the PRD's own
+normal-case example (quote approved + contract signed + deposit paid) is
+one configuration, not the only legal one. Nothing in the fork carried this
+configuration before this migration. Migration
+`126_add_project_booking_requirements.js` creates
+`project_booking_requirements` (`project_id`, `milestone_key`,
+`created_at`) and seeds the normal-case three as canonical template rows
+(`project_id IS NULL`), following `project_milestones`' own template-row
+pattern (migration 124) exactly: `project_id IS NULL` is the default every
+Project uses until it has its own override rows, and a Project with its own
+rows uses exactly those instead — a non-default requirement set is simply
+more rows with a real `project_id`, never a second code path.
+`src/lib/bookingRule.ts`'s `evaluateBookingRule` is the rule itself, a pure
+predicate over an already-loaded required-keys set and an already-loaded
+completed-keys set (no milestone key literal of its own);
+`getBookingRequirements` and `isProjectBooked` are the DB-backed callers.
+Sprint 6 note: the milestones this rule reads are completed by a human or
+an admin action this sprint — the ledger and Stripe integration are PRD
+Phase 6 — so this entry evaluates whatever completion state it is given
+and claims no verified payment drove any transition. US-39 AC-39.2.
+
+- **Type:** permanent deviation — a genuine, intentional fork addition
+  (Fork Discipline: extend via new code, never by rewriting shipped
+  upstream logic; a new migration for any fork-side schema change, never
+  an edit to a shipped one), not an upstream-bug workaround, so
+  `UPSTREAM_SYNC.md` §4 does not apply; it is carried forward on every
+  future merge per §1.
+- **What changed:**
+  1. `vendor/picpeak/backend/migrations/core/126_add_project_booking_requirements.js`
+     — new migration, creates `project_booking_requirements` and seeds the
+     three normal-case template rows, guarded so a partial or repeated
+     prior run is a safe no-op on re-apply. US-39 AC-39.2.
+  2. `src/lib/picpeakMigrationManifest.ts` — migration `126` recorded as a
+     seventh `origin: 'fork'` entry, alongside its blob SHA. US-39 AC-39.2.
+  3. `src/lib/bookingRule.ts` — new. `evaluateBookingRule` (pure predicate),
+     `getBookingRequirements` (reads a Project's override rows, falling
+     back to the default template), and `isProjectBooked` (composes both
+     against a Project's actual milestone completion state). US-39
+     AC-39.2.
+- **Files touched:** the three files above; see `PICPEAK_PORT_LEDGER.md`
+  §10 for the flat list including the evidence suite.
+- **Evidence:** `src/__tests__/us39-ac39.2-booking-rule.test.ts` drives the
+  migration module's `up()`/`down()` against a fake knex, queries the
+  seeded template rows back, and asserts `evaluateBookingRule` books a
+  Project only once every member of a configured requirement set is
+  complete — completing each of the three default requirements
+  independently (each alone, and two of three, still not Booked), plus a
+  non-default two-milestone requirement set that books independently of
+  the default three. `getBookingRequirements`/`isProjectBooked` are proven
+  against a fake DB: a Project with no override rows uses the default
+  template, a Project with override rows uses exactly those (and one
+  Project's override never leaks into another's read), and
+  `isProjectBooked` flips from `false` to `true` exactly when the last
+  configured requirement's fixture milestone is marked complete. A final
+  check asserts `src/lib/bookingRule.ts`'s source contains no default
+  requirement key literal, proving the module reads configuration rather
+  than hardcoding it.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-39, AC-39.2)
+
+---
+
+## 2026-08-16 — `deviation`
+
 **A per-Project document area and an integration-status record now exist,
 in two new tables.** Neither existed in the fork before this migration.
 PRD 22.3 lists a "document area" among the ten things automatic Project

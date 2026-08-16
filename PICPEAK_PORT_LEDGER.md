@@ -249,3 +249,28 @@ proven live in `src/__tests__/us38-ac38.6-fork-discipline-integrity.test.ts`.
 
 - **Recorded:** 2026-08-16
 - **Recorded by:** dev-team (US-38, AC-38.1–AC-38.4; cross-referenced under AC-38.6)
+
+## 10. US-39 AC-39.2 — booking-requirement configuration migration (126), file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-08-16` in `FORK_CHANGELOG.md` (US-39 AC-39.2: PRD 23.2's booking rule
+evaluated from configured, data-backed milestone requirements rather than a
+hardcoded three-item check). See that changelog entry for the full
+description of what changed and why; this is the flat list of paths for
+cross-reference against `UPSTREAM_SYNC.md` §2 during a future sync.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/migrations/core/126_add_project_booking_requirements.js` | new — creates `project_booking_requirements` and seeds PRD 23.2's normal-case three requirements as template rows (`project_id IS NULL`), guarded so a partial or repeated prior run is a safe no-op. US-39 AC-39.2. |
+| `src/lib/picpeakMigrationManifest.ts` | migration `126` recorded as the manifest's seventh `origin: 'fork'` entry, with its blob SHA. US-39 AC-39.2. |
+| `src/lib/bookingRule.ts` | new — `evaluateBookingRule` (pure predicate over configured-vs-completed milestone key sets), `getBookingRequirements` (a Project's own override rows, falling back to the default template), and `isProjectBooked` (composes both against real milestone completion state). US-39 AC-39.2. |
+| `src/__tests__/us39-ac39.2-booking-rule.test.ts` | new — drives migration 126 against a fake knex, proves the booking rule books a Project only once every configured requirement is complete (each default requirement completed independently, plus a non-default requirement set), and proves `bookingRule.ts` carries no hardcoded requirement key. |
+
+None of the above is a file that already shipped under
+`vendor/picpeak/backend/migrations/core/` before this story — migration
+`126` is a brand-new file; no migration numbered 001-125 is touched — and
+`src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity test
+(`verifyVendoredMigrations`) stays green against this change.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-39, AC-39.2)
