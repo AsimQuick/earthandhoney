@@ -120,7 +120,7 @@ function createTableRecorder() {
         }
       }
       // unique(), etc. — chainable no-ops for anything this recorder does not track.
-      return (..._args: unknown[]) => proxy
+      return () => proxy
     },
   })
   return { table: proxy, columns, columnInfo, indexedColumnSets }
