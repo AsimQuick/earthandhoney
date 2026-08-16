@@ -38,6 +38,54 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-16 — `deviation`
 
+**The fork's backend now has its own read of PRD 23.3's five status states,
+sourced from the framework-free design-token export rather than a second,
+independent definition.** US-40 AC-40.1 locked the five states (green
+complete, amber waiting/pending, blue in progress, red blocked/overdue/
+action required, grey upcoming) as `src/lib/statusVocabulary.ts`, the one
+Frontstage-side definition. AC-40.5 requires that vocabulary be available to
+both surfaces from that one definition, not implemented twice; since the
+fork's backend cannot import a TypeScript/Next.js-coupled module directly,
+this deviation adds one new file that reads the framework-free export
+`exports/design-tokens/status-vocabulary.json` (itself generated from
+`statusVocabulary.ts`, following the export path AC-23.6 established for the
+design tokens) and re-exports the same five states for future cockpit/
+Project Room route handlers (US-43, US-44) to consume without redefining
+them.
+
+- **Type:** additive deviation — one new file, no route wired to it yet, no
+  vendored route or migration touched.
+- **What changed:**
+  1. New `vendor/picpeak/backend/src/services/statusVocabulary.js` requires
+     `exports/design-tokens/status-vocabulary.json` by relative path and
+     re-exports `STATUS_STATES`, `STATUS_STATE_KEYS` and
+     `isValidStatusStateKey`. It requires nothing else — no database, no
+     other service — so it is unit-testable without Docker. AC-40.5.
+  2. New `src/lib/statusVocabularyExport.ts` and
+     `scripts/generate-status-vocabulary-export.ts` (`npm run
+     status-vocabulary:export`) generate the checked-in export from the one
+     definition, the same split `tokenExport.ts` /
+     `generate-design-tokens-export.ts` established for AC-23.6. AC-40.5.
+- **Files touched:**
+  - `vendor/picpeak/backend/src/services/statusVocabulary.js` — new. AC-40.5.
+  - `src/lib/statusVocabularyExport.ts` — new — pure export generator.
+    AC-40.5.
+  - `scripts/generate-status-vocabulary-export.ts` — new — regeneration CLI.
+    AC-40.5.
+  - `exports/design-tokens/status-vocabulary.json` — new — the generated,
+    checked-in framework-free export. AC-40.5.
+  - `src/__tests__/us40-ac40.5-status-vocabulary-single-definition.test.ts`
+    — new — asserts the export reproduces the live definition (empty
+    diff), that both the Frontstage and fork consumers import it from that
+    one place rather than redefining it, and repository-scans for a second
+    parallel definition of the five states.
+- **Evidence:** the above test file. This deviation adds no migration and
+  modifies no already-shipped migration or route.
+
+---
+
+## 2026-08-16 — `deviation`
+
 **A Project's phase change, milestone completion and manual next-action
 override now each append one entry to that Project's activity timeline,
 all three through a single shared service.** PRD 22.3 and 23.4 require

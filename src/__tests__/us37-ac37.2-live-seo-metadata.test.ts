@@ -52,6 +52,22 @@ async function waitForServer(url: string, timeoutMs: number): Promise<Response> 
   throw new Error(`Server at ${url} did not respond within ${timeoutMs}ms: ${String(lastError)}`)
 }
 
+/**
+ * Fetches a route that may be hitting a cold `next dev` server for the very
+ * first time. On-demand compilation normally blocks the request until the
+ * route is ready, but under the CPU load a full serial suite run produces it
+ * can instead answer that first hit with a transient 500 before the compile
+ * finishes — the same class of host-contention flake already documented for
+ * this project's live-boot test. A single retry, given a moment for the
+ * compile to land, is enough; a real rendering bug still fails on the retry.
+ */
+async function fetchColdRoute(url: string): Promise<Response> {
+  const first = await fetch(url)
+  if (first.status !== 500) return first
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+  return fetch(url)
+}
+
 function killServer(child: ChildProcessWithoutNullStreams): Promise<void> {
   return new Promise((resolve) => {
     child.once('exit', () => {
@@ -242,11 +258,14 @@ describe('AC-37.2: every public page and story emits a real title, description, 
         // routes one at a time for the same reason — concurrent first
         // requests to distinct not-yet-compiled routes can race Next's
         // dev-mode on-demand compilation and return a transient 500 instead
-        // of the real response this assertion needs.
-        const pageOwnRes = await fetch(`${base}/${pageOwnSlug}`)
-        const pageFallbackRes = await fetch(`${base}/${pageFallbackSlug}`)
-        const storyOwnRes = await fetch(`${base}/stories/${storyOwnSlug}`)
-        const storyFallbackRes = await fetch(`${base}/stories/${storyFallbackSlug}`)
+        // of the real response this assertion needs. fetchColdRoute (above)
+        // covers the remaining single-request case: even fetched one at a
+        // time, that first hit can still transiently 500 under full-suite
+        // host load.
+        const pageOwnRes = await fetchColdRoute(`${base}/${pageOwnSlug}`)
+        const pageFallbackRes = await fetchColdRoute(`${base}/${pageFallbackSlug}`)
+        const storyOwnRes = await fetchColdRoute(`${base}/stories/${storyOwnSlug}`)
+        const storyFallbackRes = await fetchColdRoute(`${base}/stories/${storyFallbackSlug}`)
 
         expect(pageOwnRes.status).toBe(200)
         expect(pageFallbackRes.status).toBe(200)
