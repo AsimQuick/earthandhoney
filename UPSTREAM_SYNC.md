@@ -107,6 +107,21 @@ the same upgrade-ordering risk an `ALTER TABLE` would, and the full
 before/after AC-16.6 proof shape remains owed to whichever future migration
 is the first to change schema rather than only insert a row.
 
+**Update (2026-08-16, US-38 AC-38.5): deferral closed.** Migrations `122`,
+`123`, `124` and `125` (US-38, ACs 38.1-38.4) are this fork's first
+schema-altering extension migrations — `ALTER TABLE projects`/`events` and
+`CREATE TABLE project_milestones`/`project_documents`/
+`project_integration_status`. The full AC-16.6 proof shape (fresh install
+against an empty database, then the same command re-run twice against the
+now-migrated database as a no-op, migration-state table shown throughout)
+was repeated against them live in Docker and is recorded in
+`MIGRATION_IDEMPOTENCY.md` under "Extension migrations proof (US-38,
+AC-38.5)". Full paths, for AC-38.6's fork-discipline cross-reference:
+`vendor/picpeak/backend/migrations/core/122_add_project_new_project_fields.js`,
+`.../123_add_event_detail_fields.js`, `.../124_add_project_milestones.js`,
+and `.../125_add_project_documents_and_integration_status.js` — each also
+named in `FORK_CHANGELOG.md` and in `PICPEAK_PORT_LEDGER.md` §9.
+
 - **Recorded:** 2026-07-31
 - **Recorded by:** dev-team (US-16, AC-16.6)
 

@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 236,
+  "totalSuites": 243,
   "counts": {
     "live": 29,
-    "unit": 207
+    "unit": 214
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1203,6 +1203,41 @@
       "path": "src/__tests__/us37-ac37.7-no-caption-generation-guard.test.ts",
       "lane": "UNIT",
       "reason": "reads local source files via fs, reads package.json, and calls buildSeoAssistantSnapshot with an in-memory fixture; no network/db"
+    },
+    {
+      "path": "src/__tests__/us38-ac38.1-project-new-fields-migration.test.ts",
+      "lane": "UNIT",
+      "reason": "requires the vendored migration module directly and drives up()/down() against an in-memory fake knex schema builder; no network/db"
+    },
+    {
+      "path": "src/__tests__/us38-ac38.2-event-detail-fields-migration.test.ts",
+      "lane": "UNIT",
+      "reason": "requires the vendored migration module directly and drives up()/down() against an in-memory fake knex schema builder; no network/db"
+    },
+    {
+      "path": "src/__tests__/us38-ac38.3-project-milestones-migration.test.ts",
+      "lane": "UNIT",
+      "reason": "requires the vendored migration module directly and drives up()/down() against an in-memory fake knex query/schema builder, and exercises src/lib/projectMilestones.ts's getMilestoneDefinitions against an injected fake query client; no network/db"
+    },
+    {
+      "path": "src/__tests__/us38-ac38.4-project-documents-integration-status-migration.test.ts",
+      "lane": "UNIT",
+      "reason": "requires the vendored migration module directly and drives up()/down() against an in-memory fake knex query/schema builder, writing and reading back rows; no network/db"
+    },
+    {
+      "path": "src/__tests__/us38-ac38.5-migration-idempotency.test.ts",
+      "lane": "UNIT",
+      "reason": "reads MIGRATION_IDEMPOTENCY.md and UPSTREAM_SYNC.md; the live migration run is only quoted in a code comment, not executed"
+    },
+    {
+      "path": "src/__tests__/us38-ac38.6-fork-discipline-integrity.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PICPEAK_MIGRATION_MANIFEST and the real vendored migration files via fs, plus FORK_CHANGELOG.md/PICPEAK_PORT_LEDGER.md/UPSTREAM_SYNC.md; no network/db"
+    },
+    {
+      "path": "src/__tests__/us38-ac38.7-project-data-model-adr.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PROJECT_DATA_MODEL_ADR.md, PAYLOAD_PICPEAK_API_CONTRACT.md, sprint6.json and the vendored migration/service source files via fs; no network/db"
     }
   ]
 }

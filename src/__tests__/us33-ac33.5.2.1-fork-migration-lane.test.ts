@@ -124,11 +124,16 @@ describe('AC-33.5.2.1: migration 120 is the manifest\'s first fork-origin entry'
     expect(forkEntries[0]?.path).toBe(MIGRATION_PATH)
   })
 
-  it('every other manifest entry is still the pinned-upstream default (no origin field), except AC-33.6\'s migration 121', () => {
-    const ACKNOWLEDGEMENT_MIGRATION_PATH =
-      'backend/migrations/core/121_add_inquiry_acknowledgement_email_template.js'
+  it('every other manifest entry is still the pinned-upstream default (no origin field), except later fork additions (AC-33.6\'s migration 121, AC-38.1\'s migration 122, AC-38.2\'s migration 123, AC-38.3\'s migration 124, AC-38.4\'s migration 125)', () => {
+    const LATER_FORK_MIGRATION_PATHS = [
+      'backend/migrations/core/121_add_inquiry_acknowledgement_email_template.js',
+      'backend/migrations/core/122_add_project_new_project_fields.js',
+      'backend/migrations/core/123_add_event_detail_fields.js',
+      'backend/migrations/core/124_add_project_milestones.js',
+      'backend/migrations/core/125_add_project_documents_and_integration_status.js',
+    ]
     const nonFork = PICPEAK_MIGRATION_MANIFEST.filter(
-      (e) => e.path !== MIGRATION_PATH && e.path !== ACKNOWLEDGEMENT_MIGRATION_PATH,
+      (e) => e.path !== MIGRATION_PATH && !LATER_FORK_MIGRATION_PATHS.includes(e.path),
     )
     expect(nonFork.every((e) => e.origin === undefined)).toBe(true)
     expect(nonFork.length).toBeGreaterThan(100)
@@ -148,8 +153,6 @@ describe('AC-33.5.2.1: verifyVendoredMigrations against the real vendored tree',
   })
 
   it('fails closed when FORK_CHANGELOG.md cannot be read: every fork entry becomes "undocumented", upstream entries stay unaffected', () => {
-    const ACKNOWLEDGEMENT_MIGRATION_PATH =
-      'backend/migrations/core/121_add_inquiry_acknowledgement_email_template.js'
     const realReadFileSync = fs.readFileSync
     const spy = jest
       .spyOn(fs, 'readFileSync')
@@ -163,12 +166,13 @@ describe('AC-33.5.2.1: verifyVendoredMigrations against the real vendored tree',
     try {
       const result = verifyVendoredMigrations(path.join('vendor', 'picpeak'))
       // The lane refuses to vouch for a fork addition it cannot find a record
-      // for — it does not fall back to "assume documented".
+      // for — it does not fall back to "assume documented". Every fork-origin
+      // manifest entry (not a hardcoded pair) must show up "undocumented".
+      const forkPaths = PICPEAK_MIGRATION_MANIFEST.filter((e) => e.origin === 'fork').map((e) => e.path)
       expect(result.ok).toBe(false)
-      expect(result.violations).toEqual([
-        expect.objectContaining({ path: MIGRATION_PATH, reason: 'undocumented' }),
-        expect.objectContaining({ path: ACKNOWLEDGEMENT_MIGRATION_PATH, reason: 'undocumented' }),
-      ])
+      expect(result.violations).toEqual(
+        forkPaths.map((forkPath) => expect.objectContaining({ path: forkPath, reason: 'undocumented' })),
+      )
     } finally {
       spy.mockRestore()
     }

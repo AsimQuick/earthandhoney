@@ -213,3 +213,39 @@ test stays green against this change.
 
 - **Recorded:** 2026-08-14
 - **Recorded by:** dev-team (US-33, AC-33.6)
+
+## 9. US-38 ACs 38.1–38.4 — Project/Event/Milestone/Document schema extension migrations (122–125), file paths touched
+
+This section records the file paths touched by the four `deviation` entries
+dated `2026-08-16` in `FORK_CHANGELOG.md` (US-38, ACs 38.1–38.4: the fork's
+first *schema-altering* extension migrations — `ALTER TABLE projects`/
+`events` and `CREATE TABLE project_milestones`/`project_documents`/
+`project_integration_status`, closing the deferral `UPSTREAM_SYNC.md` §3
+tracked since AC-16.6). See those four changelog entries for the full
+description of what each migration changed and why; this is the flat list
+of paths for cross-reference against `UPSTREAM_SYNC.md` §2 during a future
+sync, and is the evidence AC-38.6 requires — that every new migration this
+story added is named here, not only in `FORK_CHANGELOG.md`.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/migrations/core/122_add_project_new_project_fields.js` | new — adds eleven columns to `projects` (PRD 22.2's New Project fields), each guarded individually by `hasColumn` so a partial or repeated prior run is a safe no-op. US-38 AC-38.1. |
+| `vendor/picpeak/backend/migrations/core/123_add_event_detail_fields.js` | new — adds ten columns to `events` (PRD 22.4's event-detail fields, including the distinct `client_visible_notes`/`internal_notes` pair), each guarded individually by `hasColumn`. US-38 AC-38.2. |
+| `vendor/picpeak/backend/migrations/core/124_add_project_milestones.js` | new — creates `project_milestones` and seeds PRD 23.2's eighteen milestone template rows (`project_id IS NULL`), guarded so a partial or repeated prior run is a safe no-op. US-38 AC-38.3. |
+| `vendor/picpeak/backend/migrations/core/125_add_project_documents_and_integration_status.js` | new — creates `project_documents` (the per-Project document area) and `project_integration_status` (success/pending/failure, with `message`/`occurred_at` on failure). US-38 AC-38.4. |
+| `src/lib/picpeakMigrationManifest.ts` | migrations `122`, `123`, `124` and `125` recorded as the manifest's third through sixth `origin: 'fork'` entries, each with its blob SHA. US-38 ACs 38.1–38.4. |
+| `src/lib/projectMilestones.ts` | new — `getMilestoneDefinitions` reader that returns the seeded `project_milestones` template rows from a query rather than a literal list. US-38 AC-38.3. |
+| `src/__tests__/us38-ac38.1-project-new-fields-migration.test.ts` | new — names each of the eleven added `projects` columns individually against a fake knex schema builder; live-verified with `\d projects` before/after in Docker. |
+| `src/__tests__/us38-ac38.2-event-detail-fields-migration.test.ts` | new — maps each of PRD 22.4's ten named items to the column that carries it, and asserts the client-visible/internal note columns are distinct. |
+| `src/__tests__/us38-ac38.3-project-milestones-migration.test.ts` | new — asserts the eighteen seeded milestone rows by name and count, and that the reader is not backed by a hardcoded literal. |
+| `src/__tests__/us38-ac38.4-project-documents-integration-status-migration.test.ts` | new — writes and reads back a `project_documents` row and a `project_integration_status` row for each of the success/pending/failure states. |
+
+None of the above is a file that already shipped under
+`vendor/picpeak/backend/migrations/core/` before this story — each of the
+four migrations is a brand-new file (`122`-`125`); no migration numbered
+001-121 is touched — and `src/lib/picpeakMigrationManifest.ts`'s SHA-1
+integrity test (`verifyVendoredMigrations`) stays green against this change,
+proven live in `src/__tests__/us38-ac38.6-fork-discipline-integrity.test.ts`.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-38, AC-38.1–AC-38.4; cross-referenced under AC-38.6)
