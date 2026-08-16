@@ -160,10 +160,10 @@ schema-detection bookkeeping is settled.
 
 This AC did not prove an upgrade path that applies *our own* extension
 migrations on top of an already-migrated upstream database, because under
-Fork Discipline (`FORK_CHANGELOG.md`) no such migration existed yet — this
+Fork Discipline (`FORK_CHANGELOG.md`) no such migration exists yet — this
 fork had not added a single schema migration of its own. Inventing a
-throwaway migration purely to exercise that path would have proven nothing
-real about our actual future migrations. That proof was deferred to the
+throwaway migration purely to exercise that path would prove nothing real
+about our actual future migrations. That proof was deferred to the
 sprint that introduces the first extension migration; the deferral was also
 recorded in `UPSTREAM_SYNC.md` so it would not be lost.
 
