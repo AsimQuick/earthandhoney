@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 1/8 stories | 7/51 ACs
-**Last Updated:** 2026-08-16T04:45:50+00:00
+**Last Updated:** 2026-08-16T05:13:42+00:00
 
 ## Sprint Goal
 Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finished Phase 4: the Frontstage is now a real website that publishes pages, stories and a sitemap and captures durable Inquiries. What it cannot do is run a booking. The Project is the PRD's operational backbone and it exists before the images, but at the pinned fork commit a Project is six columns - id, name, customer_account_id, status and two timestamps - with no phase, no milestone, no venue, no next action, no document area and no client-visible surface at all; migration 117's own header states 'Customers never see projects'. Sprint 6 turns that grouping row into the operational backbone: the extended data model through new migrations, the seven phases and eighteen milestones with a configurable booking rule and one server-side computed next action, a status vocabulary where colour is always paired with text and icon, automatic Project setup, both entry paths including converting a Frontstage Inquiry across the system boundary, the photographer's cockpit, and the client-safe Project Room. It opens with the one piece of debt sprint 5 measured and did not pay: the CI suite that grew 48% in eight days, and the two process failures now on their third and fourth consecutive recurrence. PRD Phase 3's exit criterion is the sprint's bar and is proven in one run rather than asserted: photographer and client can see the same authoritative workflow state.
@@ -123,6 +123,7 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
 - [ ] **AC-39.4:** No phase yields an empty, null or placeholder next action. Evidence: a table-driven test covering all seven phases against representative milestone states, asserting a non-empty next action for every row, with the row count and the phases named in the test output.
   - Dev: implemented
 - [ ] **AC-39.5:** A photographer can override the computed next action (PRD 23.4, 'manual overrides'). The override records the actor and timestamp, and is presented as an override rather than silently replacing the computation - the underlying computed value stays retrievable. Evidence: the override written and read back, and both values visible in the same response.
+  - Dev: implemented
 - [ ] **AC-39.6:** Every phase change, milestone completion and manual override appends an entry to the Project's activity timeline (PRD 22.3, 23.4), each carrying actor, timestamp and what changed. Evidence: a sequence of three changes producing three ordered entries, asserted live.
 
 **Dependencies:** US-38
@@ -171,6 +172,7 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
   - A `ROWS` table (lines 83–103) with one row per PRD 23.1 phase (`lead`, `booking`, `preparation`, `shoot`, `post_production`, `delivery`, `closed`), each carrying representative milestone state for that phase (e.g. `booking` with a partial completion set that exercises the "outstanding requirements" branch, later phases with accumulated `completedMilestoneKeys`).
   - `it('names all seven PRD 23.1 phases, and no eighth, in this table', ...)` asserts `expect(ROWS).toHaveLength(7)` — the row count.
   - `it.each(ROWS)('phase "$phase" resolves to a specific, non-empty next action', ...)` — Jest's `$phase` interpolation names every phase individually in the test output (confirmed by actually running it, see below), and the body asserts `typeof nextAction === 'string'` and `nextAction.trim().length > 0` for every r …
+  AC-39.5 implemented (local checks green): Full test suite with coverage is running in the background against the Docker stack; I'll report back once it finishes.
 
 **Tester Status:** approved
 **Tester Notes:**
