@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 248,
+  "totalSuites": 249,
   "counts": {
     "live": 30,
-    "unit": 218
+    "unit": 219
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1263,6 +1263,11 @@
       "path": "src/__tests__/us39-ac39.5-next-action-override.test.ts",
       "lane": "UNIT",
       "reason": "drives the vendored migration 127 module against a fake in-memory knex, drives the pure nextActionOverride.js presenter directly, and reads adminProjects.js/nextActionOverrideService.js via absolute fs paths for source-level assertions; no network/db"
+    },
+    {
+      "path": "src/__tests__/us39-ac39.6.1.1-activity-timeline-migration.test.ts",
+      "lane": "UNIT",
+      "reason": "drives the vendored migration 128 module against a fake in-memory knex (schema, FK cascade/set-null behaviours, idempotency, down()); no network/db"
     }
   ]
 }

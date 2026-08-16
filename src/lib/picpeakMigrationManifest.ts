@@ -191,6 +191,11 @@ export const PICPEAK_MIGRATION_MANIFEST: MigrationManifestEntry[] = [
     blobSha: '2393703f3ed186dfc1c017e1e87569a5a3f45faf',
     origin: 'fork',
   },
+  {
+    path: 'backend/migrations/core/128_add_project_activity_timeline.js',
+    blobSha: 'c9d47689d6bba9a1d749b97d127838d959c21ec5',
+    origin: 'fork',
+  },
   { path: 'backend/migrations/helpers.js', blobSha: 'a2227cd7d89075e89d1067d98af376681b19a673' },
   { path: 'backend/migrations/legacy/004_add_categories_and_cms.js', blobSha: 'a67f9526099c1f99b957c3563193edee3458b842' },
   { path: 'backend/migrations/legacy/006_add_photo_counter_to_categories.js', blobSha: '4f4a46a6671ac1cac2b4977d2602a907a958ffa0' },

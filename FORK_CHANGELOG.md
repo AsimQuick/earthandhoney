@@ -38,6 +38,52 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-16 — `deviation`
 
+**A Project's activity timeline table now exists (schema only).** PRD 22.3
+and 23.4 require every phase change, milestone completion and manual
+override to append an entry to the Project's activity timeline. New
+migration 128 creates `project_activity_timeline`, one append-only row per
+entry, with `id` as the authoritative ordering column (two entries appended
+within the same request can share a millisecond-resolution `occurred_at`),
+`project_id` NOT NULL with `ON DELETE CASCADE`, an `entry_type`, a
+human-readable `summary`, the `actor_admin_id`/`actor_name` pairing
+migration 127 already established (`SET NULL` on delete, so the "who"
+survives an admin account being deleted later), a nullable structured
+`metadata` column, and `occurred_at`. This AC (AC-39.6.1.1) is the first of
+AC-39.6's two schema prerequisites and ships the table only — no service
+writes to it yet and no route reads it; that is later AC-39.6 work.
+
+- **Type:** additive deviation — one new table, no existing route or
+  service touched.
+- **What changed:**
+  1. `project_activity_timeline` created, guarded by `hasTable`, matching
+     migrations 122-127's convention. AC-39.6.1.1.
+- **Files touched:**
+  - `vendor/picpeak/backend/migrations/core/128_add_project_activity_timeline.js`
+    — new — creates `project_activity_timeline`. AC-39.6.1.1.
+  - `src/lib/picpeakMigrationManifest.ts` — migration `128` recorded as
+    the manifest's ninth `origin: 'fork'` entry, with its blob SHA.
+    AC-39.6.1.1.
+  - `src/__tests__/us39-ac39.6.1.1-activity-timeline-migration.test.ts` —
+    new — drives migration 128 against a fake knex: every column asserted
+    by name, the `project_id` cascade and `actor_admin_id` set-null
+    behaviours asserted, idempotency (a second `up()` call is a no-op), and
+    `down()` drops the table.
+  - `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts` — updated
+    — migration 128 added to the later-fork-migration allowlist so the
+    "every other manifest entry is still pinned-upstream" invariant still
+    holds.
+- **Evidence:** the above test file; `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts`
+  stays green. This deviation adds no migration line to any of migrations
+  001-127 — no already-shipped migration is modified — and
+  `src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity test
+  (`us15-ac15.6-picpeak-vendored-fork.test.ts` /
+  `us33-ac33.5.2.1-fork-migration-lane.test.ts`) covers migration 128 the
+  same way it covers every other fork addition.
+
+---
+
+## 2026-08-16 — `deviation`
+
 **A photographer can now manually override the computed next action, and
 the override is presented alongside the computation rather than replacing
 it.** PRD 23.4 lists "manual overrides" as one of the photographer
