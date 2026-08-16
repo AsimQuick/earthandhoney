@@ -38,6 +38,402 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-16 — `deviation`
 
+**A Project's phase change, milestone completion and manual next-action
+override now each append one entry to that Project's activity timeline,
+all three through a single shared service.** PRD 22.3 and 23.4 require
+every phase change, milestone completion and manual override to append an
+entry to the Project's activity timeline (migration 128, AC-39.6.1.1's
+schema-only `project_activity_timeline`). This AC wires that table up:
+one append function (`activityTimelineService.appendActivityTimelineEntry`,
+taking the Project, the entry type, the actor and what changed) that all
+three write handlers require directly and call — never three call-site
+inserts that happen to agree, the same single-authority shape AC-39.3.2
+established for the next-action computation. A change that changes
+nothing (setting the phase to its current value; re-completing an
+already-complete milestone) appends no entry: `projectPhaseService.js` and
+`projectMilestoneService.js` each detect the no-op via the pure
+`projectChangeRules.js` and simply skip calling the timeline service,
+rather than the timeline service silently deduplicating after the fact.
+
+- **Type:** additive deviation — one new table now has a writer and a
+  reader, two new cockpit write routes, one new cockpit read route, and an
+  additive extension of AC-39.5's existing override route. No existing
+  route's request/response contract for any prior AC is narrowed.
+- **What changed:**
+  1. New `PUT /api/admin/projects/:id/phase` (`events.manage`) sets
+     `projects.current_phase` via `projectPhaseService.js`, then, only
+     when the phase actually changed, the route itself appends one
+     `phase_change` entry. AC-39.6.2.
+  2. New `PUT /api/admin/projects/:id/milestones/:key/complete`
+     (`events.manage`) marks one of a Project's own `project_milestones`
+     rows complete via `projectMilestoneService.js`, then, only when it
+     was not already complete, the route itself appends one
+     `milestone_completed` entry. AC-39.6.2.
+  3. `PUT /api/admin/projects/:id/next-action/override` (AC-39.5) now also
+     appends one `next_action_override_set` entry after recording the
+     override — every call is a deliberate photographer action, so this
+     write route carries no no-op case. AC-39.6.2.
+  4. New `GET /api/admin/projects/:id/timeline` (`events.view`) returns
+     one Project's timeline entries oldest-first (by `id`, migration 128's
+     own authoritative ordering column — not `occurred_at` alone, which
+     two entries appended in the same request can share). AC-39.6.2.
+  5. The shared service is split the same way AC-39.3.2 split
+     `nextActionRules.js` from `nextActionService.js`:
+     `activityTimelineEntry.js` is a pure module (no requires,
+     unit-testable without Docker) shaping the inserted row, the
+     read-back entry, and the oldest-first sort;
+     `activityTimelineService.js` owns the database insert/select against
+     migration 128's table. `projectChangeRules.js` is a second pure
+     module deciding both no-op cases and building a real change's
+     summary text; `projectPhaseService.js`/`projectMilestoneService.js`
+     own the `projects`/`project_milestones` mutations only — neither
+     requires or references the timeline service or table, keeping "one
+     shared append function" true by construction rather than by
+     convention. AC-39.6.2.
+- **Files touched:**
+  - `vendor/picpeak/backend/src/services/activityTimelineEntry.js` — new
+    — pure entry-shape module. AC-39.6.2.
+  - `vendor/picpeak/backend/src/services/activityTimelineService.js` —
+    new — `appendActivityTimelineEntry`/`getProjectTimeline` against
+    migration 128's table. AC-39.6.2.
+  - `vendor/picpeak/backend/src/services/projectChangeRules.js` — new —
+    pure no-op detection and summary-text module. AC-39.6.2.
+  - `vendor/picpeak/backend/src/services/projectPhaseService.js` — new —
+    `setProjectPhase`, the database-backed phase mutation. AC-39.6.2.
+  - `vendor/picpeak/backend/src/services/projectMilestoneService.js` —
+    new — `completeProjectMilestone`, the database-backed milestone
+    mutation. AC-39.6.2.
+  - `vendor/picpeak/backend/src/routes/adminProjects.js` — additive —
+    new `PUT /:id/phase`, new `PUT /:id/milestones/:key/complete`, new
+    `GET /:id/timeline`; `PUT /:id/next-action/override`'s handler
+    extended to also append a timeline entry. AC-39.6.2.
+  - `src/__tests__/us39-ac39.6.2-shared-activity-timeline.test.ts` — new —
+    drives the two pure modules directly (entry shape, oldest-first sort,
+    both no-op cases, a three-entries-appended-out-of-order-read-back-
+    ordered simulation), and asserts from source that each of the three
+    write handlers requires `activityTimelineService.js` directly, that
+    the literal table name never appears in `adminProjects.js`, and that
+    the two new mutation services never reference the timeline service or
+    table themselves. It also pins the routes' placement: all four are
+    registered after `router.use(adminAuth)` on the router `server.js`
+    mounts at `/api/admin/projects`, with no second auth middleware and
+    no third permission — the path and credential AC-39.3.1's
+    `NEXT_ACTION_CROSS_SURFACE_MAP.md` recorded, and no other.
+- **Evidence:** the above test file. This deviation adds no migration and
+  modifies no already-shipped migration.
+
+---
+
+## 2026-08-16 — `deviation`
+
+**The `events.manage` permission now exists and is granted to super_admin.**
+NEXT_ACTION_CROSS_SURFACE_MAP.md (AC-39.3.1) recorded that every
+`events.manage`-gated admin route in `adminProjects.js` — create,
+update/relink, attach-event — returns an unconditional 403 for every role,
+including super_admin, because no migration in the pinned fork ever seeds a
+permission row named `events.manage`: migration 055's permission seed lists
+exactly five `events.*` rows (view, create, edit, delete, archive) and never
+`events.manage`, and migration 056's super_admin grant is "every row that
+exists in `permissions` at migration time", not a fixed list, so super_admin
+can only ever hold a permission that was actually seeded. That map deferred
+the fix to "whichever AC actually needs the admin write routes to work"
+rather than resolving it on AC-39.3.1's own authority. AC-39.6 is that AC —
+all three of its writes (phase change, milestone completion, manual
+override) go through those gated routes — so this is a deliberate fork
+behaviour change: it makes previously-unreachable vendored routes reachable.
+New migration 129 seeds the permission and grants it to super_admin,
+following migration 090's seed-then-grant pattern. This AC (AC-39.6.1.2) is
+the second of AC-39.6's two schema prerequisites and ships the permission
+seed only — no route is changed and no gated route is exercised here;
+AC-39.6.3 is what proves the gate actually opened.
+
+- **Type:** additive deviation — one new permission row and one new
+  role_permissions grant, no existing route, migration 055, or migration 056
+  touched.
+- **What changed:**
+  1. `events.manage` inserted into `permissions` (category `events`) if
+     absent, and granted to `super_admin` in `role_permissions`, both guarded
+     against re-insertion on a second run. AC-39.6.1.2.
+- **Files touched:**
+  - `vendor/picpeak/backend/migrations/core/129_seed_events_manage_permission.js`
+    — new — seeds `events.manage` and grants it to super_admin. AC-39.6.1.2.
+  - `src/lib/picpeakMigrationManifest.ts` — migration `129` recorded as the
+    manifest's tenth `origin: 'fork'` entry, with its blob SHA. AC-39.6.1.2.
+  - `src/__tests__/us39-ac39.6.1.2-events-manage-permission-migration.test.ts`
+    — new — drives migration 129 against a fake knex seeded with 055's and
+    056's own rows: the `events.manage` row asserted present after `up()`
+    and granted to super_admin, a second `up()` asserted to be a no-op, and
+    an assertion that the migration leaves every pre-existing `permissions`
+    and `role_permissions` row byte-for-byte unchanged.
+  - `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts` — updated —
+    migration 129 added to the later-fork-migration allowlist so the "every
+    other manifest entry is still pinned-upstream" invariant still holds.
+  - `TEST_LANE_INVENTORY.json` / `TEST_LANE_CLASSIFICATION.md` — updated —
+    new suite registered in the UNIT lane (total suites 249→250).
+- **Evidence:** the above test file; `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts`
+  stays green. This deviation adds no line to any of migrations 001-128 —
+  no already-shipped migration is modified — and
+  `src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity test
+  (`us15-ac15.6-picpeak-vendored-fork.test.ts` /
+  `us33-ac33.5.2.1-fork-migration-lane.test.ts`) covers migration 129 the
+  same way it covers every other fork addition.
+
+---
+
+## 2026-08-16 — `deviation`
+
+**A Project's activity timeline table now exists (schema only).** PRD 22.3
+and 23.4 require every phase change, milestone completion and manual
+override to append an entry to the Project's activity timeline. New
+migration 128 creates `project_activity_timeline`, one append-only row per
+entry, with `id` as the authoritative ordering column (two entries appended
+within the same request can share a millisecond-resolution `occurred_at`),
+`project_id` NOT NULL with `ON DELETE CASCADE`, an `entry_type`, a
+human-readable `summary`, the `actor_admin_id`/`actor_name` pairing
+migration 127 already established (`SET NULL` on delete, so the "who"
+survives an admin account being deleted later), a nullable structured
+`metadata` column, and `occurred_at`. This AC (AC-39.6.1.1) is the first of
+AC-39.6's two schema prerequisites and ships the table only — no service
+writes to it yet and no route reads it; that is later AC-39.6 work.
+
+- **Type:** additive deviation — one new table, no existing route or
+  service touched.
+- **What changed:**
+  1. `project_activity_timeline` created, guarded by `hasTable`, matching
+     migrations 122-127's convention. AC-39.6.1.1.
+- **Files touched:**
+  - `vendor/picpeak/backend/migrations/core/128_add_project_activity_timeline.js`
+    — new — creates `project_activity_timeline`. AC-39.6.1.1.
+  - `src/lib/picpeakMigrationManifest.ts` — migration `128` recorded as
+    the manifest's ninth `origin: 'fork'` entry, with its blob SHA.
+    AC-39.6.1.1.
+  - `src/__tests__/us39-ac39.6.1.1-activity-timeline-migration.test.ts` —
+    new — drives migration 128 against a fake knex: every column asserted
+    by name, the `project_id` cascade and `actor_admin_id` set-null
+    behaviours asserted, idempotency (a second `up()` call is a no-op), and
+    `down()` drops the table.
+  - `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts` — updated
+    — migration 128 added to the later-fork-migration allowlist so the
+    "every other manifest entry is still pinned-upstream" invariant still
+    holds.
+- **Evidence:** the above test file; `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts`
+  stays green. This deviation adds no migration line to any of migrations
+  001-127 — no already-shipped migration is modified — and
+  `src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity test
+  (`us15-ac15.6-picpeak-vendored-fork.test.ts` /
+  `us33-ac33.5.2.1-fork-migration-lane.test.ts`) covers migration 128 the
+  same way it covers every other fork addition.
+
+---
+
+## 2026-08-16 — `deviation`
+
+**A photographer can now manually override the computed next action, and
+the override is presented alongside the computation rather than replacing
+it.** PRD 23.4 lists "manual overrides" as one of the photographer
+cockpit's nine items. New migration 127 creates
+`project_next_action_overrides` (one row per Project — a repeat override
+replaces the prior one, it does not accumulate), recording the override
+text, the acting admin (`actor_admin_id` + a durable `actor_name`
+snapshot), and when it was set (`created_at`/`updated_at`). PRD 23.5's
+client Project Room list does not mention overrides, so this AC's write
+path is cockpit-only (`adminProjects.js`); the Project Room's own
+next-action route (`customer.js`) is untouched.
+
+- **Type:** additive deviation — new table, two new vendored service
+  modules, and an additive extension of one existing cockpit route plus
+  one new cockpit route. No existing route's request/response contract for
+  any prior AC is narrowed.
+- **What changed:**
+  1. `GET /api/admin/projects/:id/next-action` (AC-39.3.2) now also reads
+     this Project's override, if any, and returns `computedNextAction`
+     (always the AC-39.3.2 value) alongside `nextAction` (the active
+     value — the override's text when one is set, else identical to
+     `computedNextAction`) and `override` (`null`, or the override's text,
+     actor and timestamp). AC-39.5.
+  2. New `PUT /api/admin/projects/:id/next-action/override`
+     (`events.manage`) sets or replaces the current override, recording
+     `req.admin` as the actor and the write's own timestamp — never a
+     caller-supplied actor or time — and echoes the same
+     computed-value-plus-override shape the GET returns, so the override
+     is visible written-and-read-back in the one response that set it.
+     AC-39.5.
+  3. The override read/write is split the same way AC-39.3.2 split
+     `nextActionRules.js` from `nextActionService.js`: `nextActionOverride.js`
+     is a pure presenter (no requires, unit-testable without Docker) that
+     decides the active value and the response shape;
+     `nextActionOverrideService.js` owns the database read/write against
+     migration 127's table. AC-39.5.
+- **Files touched:**
+  - `vendor/picpeak/backend/migrations/core/127_add_project_next_action_overrides.js` —
+    new — creates `project_next_action_overrides`. AC-39.5.
+  - `src/lib/picpeakMigrationManifest.ts` — migration `127` recorded as
+    the manifest's eighth `origin: 'fork'` entry, with its blob SHA.
+    AC-39.5.
+  - `vendor/picpeak/backend/src/services/nextActionOverride.js` — new —
+    `presentNextAction({ computedNextAction, override })`, the pure
+    computed/override merge. AC-39.5.
+  - `vendor/picpeak/backend/src/services/nextActionOverrideService.js` —
+    new — `getProjectNextActionOverride`/`setProjectNextActionOverride`,
+    the database-backed read/upsert against migration 127's table. AC-39.5.
+  - `vendor/picpeak/backend/src/routes/adminProjects.js` — additive —
+    `GET /:id/next-action`'s handler extended to merge in the override;
+    new `PUT /:id/next-action/override` route added after it. AC-39.5.
+  - `src/__tests__/us39-ac39.5-next-action-override.test.ts` — new — drives
+    migration 127 against a fake knex (schema, idempotency, an
+    upsert-not-accumulate write/read-back round trip), table-drives the
+    pure `presentNextAction` merge (no override → passthrough; an override
+    set → active value is the override's text with the computed value and
+    the actor/timestamp still present in the same object), and asserts
+    from source that both routes require the one override service/presenter
+    pair and that the write route is `events.manage`-gated.
+- **Evidence:** the above test file; `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts`
+  (migration 127 added to the later-fork-migration allowlist) stays green.
+  This deviation adds no migration line to any of migrations 001-126 — no
+  already-shipped migration is modified — and
+  `src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity test
+  (`verifyVendoredMigrations`) stays green against this change.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-39, AC-39.5)
+
+---
+
+## 2026-08-16 — `deviation`
+
+**The Project's "next action" is now computed once, server-side, by one
+new service module that both the photographer's cockpit and the client's
+Project Room require — the same function reference, not two
+implementations that happen to agree.** AC-39.3.1 mapped the two request
+paths this depends on (`adminProjects.js` mounted at `/api/admin/projects`;
+`customer.js` mounted at `/api/customer`, with no project-scoped route yet)
+against the pinned fork. This entry adds the computation and wires both
+surfaces to it. `nextActionRules.js` is the pure rule set — PRD 23.1's
+phase in, one next-action string out, `booking` phase resolved from
+outstanding configured requirements (`project_booking_requirements`,
+migration 126) sorted by PRD 23.2's own `sequence_order` so two separately-
+fetched HTTP responses render the same ordering rather than depending on
+Postgres row-arrival order — and requires nothing, so it is unit-testable
+without Docker. `nextActionService.js` does the database reads
+(`projects.current_phase`, `project_milestones`, `project_booking_requirements`)
+and calls the rules module; `computeProjectNextAction` is the one export
+both routes call. `adminProjects.js` gained `GET /:id/next-action`
+(`events.view`, the existing read permission). `customer.js` gained
+`GET /projects/:id/next-action`, gated by `customerAuth` per-route like
+every other route in that file, scoping to the caller's own
+`customer_account_id` and returning 404 (not 403) for a Project that
+exists but isn't theirs — the same non-disclosing shape the rest of that
+router already uses. US-39 AC-39.3.2.
+
+- **Type:** permanent deviation — a genuine, intentional fork addition
+  (Fork Discipline: extend via new code, never by rewriting shipped
+  upstream logic), not an upstream-bug workaround, so `UPSTREAM_SYNC.md`
+  §4 does not apply; it is carried forward on every future merge per §1.
+- **What changed:**
+  1. `vendor/picpeak/backend/src/services/nextActionRules.js` — new. The
+     pure rule set: `resolveNextAction`, plus the exported phase-copy
+     constants a source-level guard checks appear nowhere else in the
+     backend. US-39 AC-39.3.2.
+  2. `vendor/picpeak/backend/src/services/nextActionService.js` — new.
+     `computeProjectNextAction(projectId)`, the single DB-backed entry
+     point both route handlers require. US-39 AC-39.3.2.
+  3. `vendor/picpeak/backend/src/routes/adminProjects.js` — additive:
+     requires `nextActionService` and adds `GET /:id/next-action`. US-39
+     AC-39.3.2.
+  4. `vendor/picpeak/backend/src/routes/customer.js` — additive: requires
+     `nextActionService` and adds `GET /projects/:id/next-action`. US-39
+     AC-39.3.2.
+- **Files touched:** the four files above; see `PICPEAK_PORT_LEDGER.md`
+  §11 for the flat list including the evidence suite.
+- **Evidence:** `src/__tests__/us39-ac39.3.2-next-action-single-computation.test.ts`
+  drives `nextActionRules.js` directly across all seven PRD 23.1 phases and
+  representative milestone states (table-driven, one row per phase), plus
+  the booking-phase ordering/fallback/complete/unconfigured cases, then
+  asserts from source that both route files require the one service by the
+  same require path, register the two AC-39.3.1-recorded mount paths,
+  never contain `project_milestones`/`project_booking_requirements`, and
+  that every next-action phrase exists in exactly one file —
+  `nextActionRules.js` — nowhere else in the vendored backend. This AC's
+  evidence clause is entirely UNIT lane; the live cross-surface equality
+  proof is AC-39.3.3.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-39, AC-39.3.2)
+
+---
+
+## 2026-08-16 — `deviation`
+
+**PRD 23.2's booking-requirement configuration now exists as data rows, in
+a new `project_booking_requirements` table — the booking rule reads which
+milestones it requires from this table rather than a hardcoded
+three-item check.** PRD 23.2 states "A Project becomes Booked only when its
+configured booking requirements are complete" — the word "configured" means
+which milestones count toward Booked is data, and the PRD's own
+normal-case example (quote approved + contract signed + deposit paid) is
+one configuration, not the only legal one. Nothing in the fork carried this
+configuration before this migration. Migration
+`126_add_project_booking_requirements.js` creates
+`project_booking_requirements` (`project_id`, `milestone_key`,
+`created_at`) and seeds the normal-case three as canonical template rows
+(`project_id IS NULL`), following `project_milestones`' own template-row
+pattern (migration 124) exactly: `project_id IS NULL` is the default every
+Project uses until it has its own override rows, and a Project with its own
+rows uses exactly those instead — a non-default requirement set is simply
+more rows with a real `project_id`, never a second code path.
+`src/lib/bookingRule.ts`'s `evaluateBookingRule` is the rule itself, a pure
+predicate over an already-loaded required-keys set and an already-loaded
+completed-keys set (no milestone key literal of its own);
+`getBookingRequirements` and `isProjectBooked` are the DB-backed callers.
+Sprint 6 note: the milestones this rule reads are completed by a human or
+an admin action this sprint — the ledger and Stripe integration are PRD
+Phase 6 — so this entry evaluates whatever completion state it is given
+and claims no verified payment drove any transition. US-39 AC-39.2.
+
+- **Type:** permanent deviation — a genuine, intentional fork addition
+  (Fork Discipline: extend via new code, never by rewriting shipped
+  upstream logic; a new migration for any fork-side schema change, never
+  an edit to a shipped one), not an upstream-bug workaround, so
+  `UPSTREAM_SYNC.md` §4 does not apply; it is carried forward on every
+  future merge per §1.
+- **What changed:**
+  1. `vendor/picpeak/backend/migrations/core/126_add_project_booking_requirements.js`
+     — new migration, creates `project_booking_requirements` and seeds the
+     three normal-case template rows, guarded so a partial or repeated
+     prior run is a safe no-op on re-apply. US-39 AC-39.2.
+  2. `src/lib/picpeakMigrationManifest.ts` — migration `126` recorded as a
+     seventh `origin: 'fork'` entry, alongside its blob SHA. US-39 AC-39.2.
+  3. `src/lib/bookingRule.ts` — new. `evaluateBookingRule` (pure predicate),
+     `getBookingRequirements` (reads a Project's override rows, falling
+     back to the default template), and `isProjectBooked` (composes both
+     against a Project's actual milestone completion state). US-39
+     AC-39.2.
+- **Files touched:** the three files above; see `PICPEAK_PORT_LEDGER.md`
+  §10 for the flat list including the evidence suite.
+- **Evidence:** `src/__tests__/us39-ac39.2-booking-rule.test.ts` drives the
+  migration module's `up()`/`down()` against a fake knex, queries the
+  seeded template rows back, and asserts `evaluateBookingRule` books a
+  Project only once every member of a configured requirement set is
+  complete — completing each of the three default requirements
+  independently (each alone, and two of three, still not Booked), plus a
+  non-default two-milestone requirement set that books independently of
+  the default three. `getBookingRequirements`/`isProjectBooked` are proven
+  against a fake DB: a Project with no override rows uses the default
+  template, a Project with override rows uses exactly those (and one
+  Project's override never leaks into another's read), and
+  `isProjectBooked` flips from `false` to `true` exactly when the last
+  configured requirement's fixture milestone is marked complete. A final
+  check asserts `src/lib/bookingRule.ts`'s source contains no default
+  requirement key literal, proving the module reads configuration rather
+  than hardcoding it.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-39, AC-39.2)
+
+---
+
+## 2026-08-16 — `deviation`
+
 **A per-Project document area and an integration-status record now exist,
 in two new tables.** Neither existed in the fork before this migration.
 PRD 22.3 lists a "document area" among the ten things automatic Project

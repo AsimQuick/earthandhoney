@@ -356,3 +356,242 @@ upgrade proof `UPSTREAM_SYNC.md` §3 deferred is now recorded.
 
 - **Recorded:** 2026-08-16
 - **Recorded by:** dev-team (US-38, AC-38.5)
+
+## Extension migrations proof (US-39, AC-39.6.1.3)
+
+This section repeats the same proof shape for AC-39.6's two schema
+prerequisites — `128_add_project_activity_timeline.js` (AC-39.6.1.1, the
+Project's append-only activity timeline table) and
+`129_seed_events_manage_permission.js` (AC-39.6.1.2, seeding the
+`events.manage` permission and granting it to `super_admin`) — the first
+extension migrations added since AC-38.5's proof of `122`-`125`. Unlike
+AC-38.5, this AC also proves an **up-down-up** cycle: both new migrations
+rolled back and re-applied, not just re-run forward.
+
+Executed 2026-08-16, against the local Docker Compose stack.
+`backstage-backend` was rebuilt (`--build`) before this run: AC-39.3.1's
+request-path map had recorded a stale running container serving code that no
+longer existed in source, and the two new migration files are baked into the
+image at build time, so a stale image would not have shown them at all. Same
+command convention as AC-16.6/AC-38.5: the vendored entrypoint's
+`npm run migrate:safe` (`vendor/picpeak/backend/migrations/run-migrations-safe.js`),
+no substitute.
+
+### (a) Fresh install against an empty database
+
+```
+$ docker compose --profile backstage down -v
+$ docker compose --profile backstage up -d --build backstage-db backstage-backend
+...
+ Volume "earthandhoney_backstage_pgdata"  Created
+ Container earthandhoney-backstage-db-1  Created
+ Container earthandhoney-backstage-backend-1  Created
+ Container earthandhoney-backstage-db-1  Started
+ Container earthandhoney-backstage-db-1  Healthy
+ Container earthandhoney-backstage-backend-1  Started
+```
+
+`backstage-backend` reported `healthy` on its Docker healthcheck (13 checks,
+~26s). The vendored entrypoint ran `migrate:safe` before the server started
+listening, producing (excerpted from the full log around the new
+migrations):
+
+```
+Running migration: core/126_add_project_booking_requirements.js
+Migration core/126_add_project_booking_requirements.js completed successfully
+Running migration: core/127_add_project_next_action_overrides.js
+Migration core/127_add_project_next_action_overrides.js completed successfully
+Running migration: core/128_add_project_activity_timeline.js
+Migration core/128_add_project_activity_timeline.js completed successfully
+Running migration: core/129_seed_events_manage_permission.js
+Migration core/129_seed_events_manage_permission.js completed successfully
+
+Migration Summary:
+- Applied: 106 migration(s)
+- Skipped: 0 migration(s) (already applied)
+- Total: 106 migration(s)
+
+All migrations completed successfully
+```
+
+`Skipped: 0` on a completely empty database confirms every one of the 106
+core migration files — including the two new ones — runs clean, in order,
+with no error, on a fresh install.
+
+**Migration-state table immediately after run (a):**
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select count(*), min(id), max(id) from migrations;"
+ count | min | max
+-------+-----+-----
+   106 |   1 | 106
+(1 row)
+```
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select filename from migrations where filename like '%12%' order by filename;"
+...
+ 126_add_project_booking_requirements.js
+ 127_add_project_next_action_overrides.js
+ 128_add_project_activity_timeline.js
+ 129_seed_events_manage_permission.js
+(11 rows)
+```
+
+Both new migrations are recorded. `\d project_activity_timeline` confirms
+the AC-39.6.1.1 table (`id`, `project_id`, `entry_type`, `summary`,
+`actor_admin_id`, `actor_name`, `metadata`, `occurred_at`) exists on the live
+database, with `project_id` a `NOT NULL` foreign key to `projects.id`
+`ON DELETE CASCADE` and `actor_admin_id` a nullable foreign key to
+`admin_users.id` `ON DELETE SET NULL`. A live query confirms the
+`events.manage` permission row exists and is granted to `super_admin`.
+
+### (b) Up-down-up: both new migrations rolled back and re-applied
+
+Run inside the same running `backstage-backend` container, against the
+database run (a) had just migrated — no volume dropped, no container
+recreated. Because the vendored entrypoint ships no rollback command (only
+`migrate`/`migrate:safe`), this drove the two migration modules' own
+`down()`/`up()` functions directly against the real database connection
+(`src/database/db`), using the identical transactional
+insert/delete-from-`migrations` convention `run-migrations-safe.js`'s own
+`runMigrationSafely()` uses, so the tracking table is left exactly as a real
+runner would leave it. Rolled back in reverse creation order (`129` then
+`128`, since `129`'s permission seed has no dependency on `128`'s table);
+re-applied in forward order (`128` then `129`).
+
+```
+Database connection verified
+
+--- DOWN phase (reverse order: 129, then 128) ---
+DOWN ok: 129_seed_events_manage_permission.js
+DOWN ok: 128_add_project_activity_timeline.js
+Rows remaining for 128/129 after DOWN: 0
+project_activity_timeline table exists after DOWN: false
+events.manage permission row exists after DOWN: false
+
+--- UP phase (forward order: 128, then 129) ---
+UP ok: 128_add_project_activity_timeline.js
+UP ok: 129_seed_events_manage_permission.js
+Rows present for 128/129 after UP: 128_add_project_activity_timeline.js, 129_seed_events_manage_permission.js
+project_activity_timeline table exists after UP: true
+events.manage permission row exists after UP: true
+events.manage granted to super_admin after UP: true
+$ echo "EXIT CODE: $?"
+EXIT CODE: 0
+```
+
+`down()` dropped `project_activity_timeline` and deleted the `events.manage`
+permission row (its `role_permissions` grant went with it via the `056`
+`ON DELETE CASCADE`); `up()` recreated both from a clean slate. Migration
+row count unchanged at `106` after the cycle (two deleted, two re-inserted):
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select count(*), min(id), max(id) from migrations;"
+ count | min | max
+-------+-----+-----
+   106 |   1 | 108
+(1 row)
+```
+
+(`max` moved from `106` to `108` because the delete-then-reinsert bumped the
+tracking table's own auto-increment sequence — expected and harmless; it is
+not a migration-numbering column.) No duplicate filenames:
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select filename, count(*) from migrations group by filename having count(*) > 1;"
+ filename | count
+----------+-------
+(0 rows)
+```
+
+### (c) Re-run of the vendored entrypoint's own migration command, twice
+
+The identical command (`npm run migrate:safe`) was run twice inside the
+running `backstage-backend` container, against the database (b) had just
+returned to a fully-migrated state.
+
+**First re-run:**
+
+```
+$ docker compose --profile backstage exec -T backstage-backend npm run migrate:safe
+Starting production-safe database migrations...
+Database connection verified
+Detecting existing schema...
+Marked migration 004_add_categories_and_cms.js as applied
+... (26 filenames total, the same legacy-schema bookkeeping AC-16.6/AC-38.5 recorded)
+Existing deployment detected - checking all migrations
+
+Migration Summary:
+- Applied: 0 migration(s)
+- Skipped: 132 migration(s) (already applied)
+- Total: 132 migration(s)
+
+All migrations completed successfully
+$ echo "EXIT CODE: $?"
+EXIT CODE: 0
+```
+
+`Applied: 0` proves neither new migration's SQL was re-executed — in
+particular, `128`'s `CREATE TABLE` and `129`'s permission/grant inserts did
+not re-run, which would otherwise error with `relation already exists` /
+insert a duplicate row.
+
+**Second re-run — steady-state no-op:**
+
+```
+$ docker compose --profile backstage exec -T backstage-backend npm run migrate:safe
+Starting production-safe database migrations...
+Database connection verified
+Detecting existing schema...
+Existing deployment detected - checking all migrations
+
+Migration Summary:
+- Applied: 0 migration(s)
+- Skipped: 132 migration(s) (already applied)
+- Total: 132 migration(s)
+
+All migrations completed successfully
+$ echo "EXIT CODE: $?"
+EXIT CODE: 0
+```
+
+No "Marked ... as applied" lines this time, `Applied: 0`, exit code `0`,
+migration row count unchanged at `132`, zero duplicate filenames, no data
+loss (`admin_users` still holds exactly the one seeded administrator; the
+public schema holds 76 tables):
+
+```
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select count(*), min(id), max(id) from migrations;"
+ count | min | max
+-------+-----+-----
+   132 |   1 | 134
+(1 row)
+
+$ docker compose --profile backstage exec -T backstage-db psql -U backstage -d backstage \
+    -c "select filename, count(*) from migrations group by filename having count(*) > 1;"
+ filename | count
+----------+-------
+(0 rows)
+```
+
+### Result
+
+Run (a) proves both new migrations (`128`, `129`) apply cleanly, in order,
+with zero skips, on a fresh empty database. Run (b) proves an up-down-up
+cycle: both migrations' `down()` cleanly removes what their `up()` created
+(the timeline table, the permission row and its grant), and re-running
+`up()` recreates them from a clean slate, exit code `0` throughout. Run (c),
+run twice against the database that cycle left behind, proves the same
+vendored migration command is safe to re-run: `Applied: 0` and exit `0` both
+times, with the second run a true steady-state no-op (no schema-detection
+bookkeeping left to do) and zero duplicate migration filenames — the
+AC-39.6.1.3 live idempotency proof.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-39, AC-39.6.1.3)

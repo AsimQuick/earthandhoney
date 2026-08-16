@@ -710,4 +710,60 @@ router.get('/contracts/:id/pdf', customerAuth, async (req, res) => {
   }
 });
 
+// ---- project next action (Project Room, US-39 AC-39.3.2) ---------------
+
+/**
+ * GET /projects/:id/next-action
+ *
+ * The Project Room's half of the single computed next action — the
+ * cockpit's equivalent is `GET /api/admin/projects/:id/next-action`
+ * (adminProjects.js). Both require the exact same
+ * `nextActionService.computeProjectNextAction` function reference, never
+ * two implementations that happen to agree.
+ *
+ * Ownership is checked here (a customer may only ever read their own
+ * Project's next action, mirroring how the gallery access-token exchange
+ * above scopes to the logged-in customer) by selecting only `id` off
+ * `projects` — this route never reads `current_phase`, and never queries
+ * the milestone or booking-requirement tables itself; all of that is the
+ * service's job. Returns 404 (not 403) for a Project that exists but
+ * isn't this customer's, the same non-disclosing shape `customerAuth`-
+ * gated routes already use elsewhere in this file.
+ *
+ * Appended after every existing route, with its service required inline
+ * (the same inline-require pattern the /quotes, /invoices and /contracts
+ * routes above already use), so this addition never shifts the line
+ * numbers earlier ACs' evidence cites against this pinned file.
+ */
+router.get('/projects/:id/next-action', [
+  customerAuth,
+  param('id').isInt({ min: 1 }),
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const projectId = parseInt(req.params.id, 10);
+    const project = await db('projects')
+      .where({ id: projectId, customer_account_id: req.customer.id })
+      .select('id')
+      .first();
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    const nextActionService = require('../services/nextActionService');
+    const result = await nextActionService.computeProjectNextAction(project.id);
+    if (!result) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    res.json(result);
+  } catch (error) {
+    logger.error('Customer project next-action error:', error);
+    res.status(500).json({ error: 'Failed to compute next action' });
+  }
+});
+
 module.exports = router;
