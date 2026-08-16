@@ -274,3 +274,33 @@ None of the above is a file that already shipped under
 
 - **Recorded:** 2026-08-16
 - **Recorded by:** dev-team (US-39, AC-39.2)
+
+## 11. US-39 AC-39.3.2 — the single next-action computation, wired into both surfaces, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-08-16` in `FORK_CHANGELOG.md` (US-39 AC-39.3.2: the Project's next
+action computed once, server-side, by one module both the cockpit and the
+Project Room require). See that changelog entry for the full description of
+what changed and why; this is the flat list of paths for cross-reference
+against `UPSTREAM_SYNC.md` §2 during a future sync, and against
+`NEXT_ACTION_CROSS_SURFACE_MAP.md` (AC-39.3.1) for the mount paths and
+middleware each route was wired against.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/src/services/nextActionRules.js` | new — the pure rule set (`resolveNextAction`); requires nothing, unit-testable without Docker. US-39 AC-39.3.2. |
+| `vendor/picpeak/backend/src/services/nextActionService.js` | new — `computeProjectNextAction(projectId)`, the single DB-backed entry point (`projects.current_phase`, `project_milestones`, `project_booking_requirements`) both route handlers require. US-39 AC-39.3.2. |
+| `vendor/picpeak/backend/src/routes/adminProjects.js` | additive — requires `nextActionService`; adds `GET /:id/next-action` (`events.view`). US-39 AC-39.3.2. |
+| `vendor/picpeak/backend/src/routes/customer.js` | additive — requires `nextActionService`; adds `GET /projects/:id/next-action`, `customerAuth`-gated per-route, scoped to the caller's own `customer_account_id`. US-39 AC-39.3.2. |
+| `src/__tests__/us39-ac39.3.2-next-action-single-computation.test.ts` | new — table-driven across all seven phases and representative milestone states against the real `nextActionRules.js`, plus source-level assertions that both routes require the one service and neither reads the phase/milestone/booking-requirement tables itself or duplicates its wording. |
+
+No migration is added by this AC — `project_milestones` (124) and
+`project_booking_requirements` (126) already exist — so
+`src/lib/picpeakMigrationManifest.ts` is untouched and its SHA-1 integrity
+test is unaffected. `adminProjects.js` and `customer.js` are pre-existing
+vendored route files each already amended by earlier stories; this AC's
+changes to them are purely additive (one new route each), per Fork
+Discipline.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-39, AC-39.3.2)

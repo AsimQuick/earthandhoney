@@ -38,6 +38,69 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-16 — `deviation`
 
+**The Project's "next action" is now computed once, server-side, by one
+new service module that both the photographer's cockpit and the client's
+Project Room require — the same function reference, not two
+implementations that happen to agree.** AC-39.3.1 mapped the two request
+paths this depends on (`adminProjects.js` mounted at `/api/admin/projects`;
+`customer.js` mounted at `/api/customer`, with no project-scoped route yet)
+against the pinned fork. This entry adds the computation and wires both
+surfaces to it. `nextActionRules.js` is the pure rule set — PRD 23.1's
+phase in, one next-action string out, `booking` phase resolved from
+outstanding configured requirements (`project_booking_requirements`,
+migration 126) sorted by PRD 23.2's own `sequence_order` so two separately-
+fetched HTTP responses render the same ordering rather than depending on
+Postgres row-arrival order — and requires nothing, so it is unit-testable
+without Docker. `nextActionService.js` does the database reads
+(`projects.current_phase`, `project_milestones`, `project_booking_requirements`)
+and calls the rules module; `computeProjectNextAction` is the one export
+both routes call. `adminProjects.js` gained `GET /:id/next-action`
+(`events.view`, the existing read permission). `customer.js` gained
+`GET /projects/:id/next-action`, gated by `customerAuth` per-route like
+every other route in that file, scoping to the caller's own
+`customer_account_id` and returning 404 (not 403) for a Project that
+exists but isn't theirs — the same non-disclosing shape the rest of that
+router already uses. US-39 AC-39.3.2.
+
+- **Type:** permanent deviation — a genuine, intentional fork addition
+  (Fork Discipline: extend via new code, never by rewriting shipped
+  upstream logic), not an upstream-bug workaround, so `UPSTREAM_SYNC.md`
+  §4 does not apply; it is carried forward on every future merge per §1.
+- **What changed:**
+  1. `vendor/picpeak/backend/src/services/nextActionRules.js` — new. The
+     pure rule set: `resolveNextAction`, plus the exported phase-copy
+     constants a source-level guard checks appear nowhere else in the
+     backend. US-39 AC-39.3.2.
+  2. `vendor/picpeak/backend/src/services/nextActionService.js` — new.
+     `computeProjectNextAction(projectId)`, the single DB-backed entry
+     point both route handlers require. US-39 AC-39.3.2.
+  3. `vendor/picpeak/backend/src/routes/adminProjects.js` — additive:
+     requires `nextActionService` and adds `GET /:id/next-action`. US-39
+     AC-39.3.2.
+  4. `vendor/picpeak/backend/src/routes/customer.js` — additive: requires
+     `nextActionService` and adds `GET /projects/:id/next-action`. US-39
+     AC-39.3.2.
+- **Files touched:** the four files above; see `PICPEAK_PORT_LEDGER.md`
+  §11 for the flat list including the evidence suite.
+- **Evidence:** `src/__tests__/us39-ac39.3.2-next-action-single-computation.test.ts`
+  drives `nextActionRules.js` directly across all seven PRD 23.1 phases and
+  representative milestone states (table-driven, one row per phase), plus
+  the booking-phase ordering/fallback/complete/unconfigured cases, then
+  asserts from source that both route files require the one service by the
+  same require path, register the two AC-39.3.1-recorded mount paths,
+  never contain `project_milestones`/`project_booking_requirements`, and
+  that every next-action phrase exists in exactly one file —
+  `nextActionRules.js` — nowhere else in the vendored backend. This AC's
+  evidence clause is entirely UNIT lane; the live cross-surface equality
+  proof is AC-39.3.3.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-39, AC-39.3.2)
+
+---
+
+## 2026-08-16 — `deviation`
+
 **PRD 23.2's booking-requirement configuration now exists as data rows, in
 a new `project_booking_requirements` table — the booking rule reads which
 milestones it requires from this table rather than a hardcoded

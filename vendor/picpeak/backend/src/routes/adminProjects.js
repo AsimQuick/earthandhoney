@@ -99,4 +99,21 @@ router.get('/email/:emailId/preview', requirePermission('events.view'), [param('
   return successResponse(res, preview);
 }));
 
+// Next action (US-39 AC-39.3.2) — the single server-computed value; see
+// ../services/nextActionService, the same module the Project Room's
+// `GET /api/customer/projects/:id/next-action` route requires. This route
+// only forwards the id — it never reads the milestone or booking-
+// requirement tables itself, and carries no next-action wording of its own.
+// Required inline (not at the top of the file, matching the pattern
+// customer.js already uses for several of its own services) so this
+// addition appends after every existing route rather than shifting the
+// line numbers earlier ACs' evidence cites against this pinned file.
+router.get('/:id/next-action', requirePermission('events.view'), [param('id').isInt({ min: 1 })], handleAsync(async (req, res) => {
+  validateRequest(req);
+  const nextActionService = require('../services/nextActionService');
+  const result = await nextActionService.computeProjectNextAction(parseInt(req.params.id, 10));
+  if (!result) return res.status(404).json({ error: 'Project not found' });
+  return successResponse(res, result);
+}));
+
 module.exports = router;
