@@ -80,7 +80,7 @@ function makeFakeKnex(seed: {
     let filter: (row: AnyRow) => boolean = () => true
 
     const builder = {
-      select(..._cols: string[]) {
+      select() {
         return builder
       },
       whereIn(col: string, values: unknown[]) {
