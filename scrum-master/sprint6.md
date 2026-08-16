@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 1/8 stories | 7/49 ACs
-**Last Updated:** 2026-08-16T01:40:39+00:00
+**Last Updated:** 2026-08-16T02:08:48+00:00
 
 ## Sprint Goal
 Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finished Phase 4: the Frontstage is now a real website that publishes pages, stories and a sitemap and captures durable Inquiries. What it cannot do is run a booking. The Project is the PRD's operational backbone and it exists before the images, but at the pinned fork commit a Project is six columns - id, name, customer_account_id, status and two timestamps - with no phase, no milestone, no venue, no next action, no document area and no client-visible surface at all; migration 117's own header states 'Customers never see projects'. Sprint 6 turns that grouping row into the operational backbone: the extended data model through new migrations, the seven phases and eighteen milestones with a configurable booking rule and one server-side computed next action, a status vocabulary where colour is always paired with text and icon, automatic Project setup, both entry paths including converting a Frontstage Inquiry across the system boundary, the photographer's cockpit, and the client-safe Project Room. It opens with the one piece of debt sprint 5 measured and did not pay: the CI suite that grew 48% in eight days, and the two process failures now on their third and fourth consecutive recurrence. PRD Phase 3's exit criterion is the sprint's bar and is proven in one run rather than asserted: photographer and client can see the same authoritative workflow state.
@@ -113,6 +113,7 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
 - [ ] **AC-39.1:** Exactly PRD 23.1's seven phases exist and no eighth: Lead, Booking, Preparation, Shoot, Post-production, Delivery, Closed. Evidence: the set asserted by name, and a lock-in test that fails if a phase is added or renamed - the same pattern as US-31 AC-31.2's no-page-builder guard, because the phase list is a product decision rather than an implementation detail.
   - Dev: implemented
 - [ ] **AC-39.2:** The booking rule is evaluated from milestone completion, not hardcoded: PRD 23.2's normal case is quote approved + contract signed + deposit paid = Booked, and the PRD's wording is 'its configured booking requirements', so which milestones are required must be configuration. Evidence: a test that completes each of the three milestones independently and asserts the Project becomes Booked only when every configured requirement is complete, plus one case with a non-default requirement set. Note explicitly in the implementation and the story record that in sprint 6 those three milestones are set by a human or by an admin action - the ledger and Stripe are PRD Phase 6 - so no AC in this sprint may claim a verified payment drove the transition.
+  - Dev: implemented
 - [ ] **AC-39.3:** The next action is computed once, server-side, from the Project's phase and milestone state, and both surfaces read that single value. Evidence: a live test that fetches the cockpit's next action and the Project Room's next action for the same Project in one run and asserts they are identical strings. This is PRD Phase 3's exit criterion - photographer and client seeing the same authoritative workflow state - and it is proven here rather than asserted.
 - [ ] **AC-39.4:** No phase yields an empty, null or placeholder next action. Evidence: a table-driven test covering all seven phases against representative milestone states, asserting a non-empty next action for every row, with the row count and the phases named in the test output.
 - [ ] **AC-39.5:** A photographer can override the computed next action (PRD 23.4, 'manual overrides'). The override records the actor and timestamp, and is presented as an override rather than silently replacing the computation - the underlying computed value stays retrievable. Evidence: the override written and read back, and both values visible in the same response.
@@ -123,6 +124,15 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
 **Dev Team Status:** not-started
 **Dev Team Notes:**
   AC-39.1 implemented (local checks green): Waiting on the full Docker test run (244 suites, both lanes) to confirm everything's green before committing. I'll pick this back up automatically when it finishes.
+  AC-39.2 implemented (local checks green): Lint is clean. Implementation summary:
+  
+  ## AC-39.2 — Booking rule evaluated from configured milestone completion
+  
+  **Files changed:**
+  - `vendor/picpeak/backend/migrations/core/126_add_project_booking_requirements.js` (new) — creates `project_booking_requirements`, seeded with PRD 23.2's normal-case three (`quote_approved`, `contract_signed`, `deposit_paid`) as default template rows (`project_id IS NULL`), following the same template-row pattern as `project_milestones` (migration 124). Idempotent, guarded like migrations 122–125.
+  - `src/lib/bookingRule.ts` (new) — `evaluateBookingRule(required, completed)`: pure predicate, Booked iff every required key is present in completed (empty required set is never Booked, not vacuously true). `getBookingRequirements(db, projectId)`: reads a Project's own override rows, falling back to the default template — a non-default requirement set is just more rows, never a second code path. `isProjectBooked(db, projectId)`: composes both against real milestone completion state. Contains no hardcoded milestone-key literal.
+  - `src/lib/picpeakMigrationManifest.ts` — migration 126 registered as the 7th `origin: 'fork'` entry, with blob SHA.
+  - `src/__tests__ …
 
 **Tester Status:** approved
 **Tester Notes:**
