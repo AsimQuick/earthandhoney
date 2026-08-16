@@ -304,3 +304,27 @@ Discipline.
 
 - **Recorded:** 2026-08-16
 - **Recorded by:** dev-team (US-39, AC-39.3.2)
+
+## 12. US-39 AC-39.5 — the manual next-action override, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-08-16` in `FORK_CHANGELOG.md` (US-39 AC-39.5: a photographer can
+override the computed next action; the override is presented alongside the
+computation, never silently replacing it). See that changelog entry for the
+full description of what changed and why.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/migrations/core/127_add_project_next_action_overrides.js` | new — creates `project_next_action_overrides` (one row per Project, unique on `project_id`); `override_text`, `actor_admin_id` (FK `admin_users`, `SET NULL`), `actor_name` snapshot, `created_at`/`updated_at`. US-39 AC-39.5. |
+| `src/lib/picpeakMigrationManifest.ts` | migration `127` recorded as the manifest's eighth `origin: 'fork'` entry, with its blob SHA. US-39 AC-39.5. |
+| `vendor/picpeak/backend/src/services/nextActionOverride.js` | new — `presentNextAction({ computedNextAction, override })`, the pure computed/override merge; requires nothing, unit-testable without Docker. US-39 AC-39.5. |
+| `vendor/picpeak/backend/src/services/nextActionOverrideService.js` | new — `getProjectNextActionOverride`/`setProjectNextActionOverride`, the database-backed read/upsert against migration 127's table. US-39 AC-39.5. |
+| `vendor/picpeak/backend/src/routes/adminProjects.js` | additive — `GET /:id/next-action`'s handler extended to merge in the override (`computedNextAction`/`nextAction`/`override` fields); new `PUT /:id/next-action/override` (`events.manage`) added after it. US-39 AC-39.5. |
+| `src/__tests__/us39-ac39.5-next-action-override.test.ts` | new — drives migration 127 against a fake knex (schema, idempotency, upsert-not-accumulate write/read-back), table-drives the pure `presentNextAction` merge, and asserts from source that both routes wire in the one override service/presenter pair. |
+
+No migration numbered 001-126 is touched — migration `127` is a brand-new
+file — and `src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity test
+(`verifyVendoredMigrations`) stays green against this change.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-39, AC-39.5)

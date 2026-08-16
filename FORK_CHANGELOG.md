@@ -38,6 +38,79 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-16 — `deviation`
 
+**A photographer can now manually override the computed next action, and
+the override is presented alongside the computation rather than replacing
+it.** PRD 23.4 lists "manual overrides" as one of the photographer
+cockpit's nine items. New migration 127 creates
+`project_next_action_overrides` (one row per Project — a repeat override
+replaces the prior one, it does not accumulate), recording the override
+text, the acting admin (`actor_admin_id` + a durable `actor_name`
+snapshot), and when it was set (`created_at`/`updated_at`). PRD 23.5's
+client Project Room list does not mention overrides, so this AC's write
+path is cockpit-only (`adminProjects.js`); the Project Room's own
+next-action route (`customer.js`) is untouched.
+
+- **Type:** additive deviation — new table, two new vendored service
+  modules, and an additive extension of one existing cockpit route plus
+  one new cockpit route. No existing route's request/response contract for
+  any prior AC is narrowed.
+- **What changed:**
+  1. `GET /api/admin/projects/:id/next-action` (AC-39.3.2) now also reads
+     this Project's override, if any, and returns `computedNextAction`
+     (always the AC-39.3.2 value) alongside `nextAction` (the active
+     value — the override's text when one is set, else identical to
+     `computedNextAction`) and `override` (`null`, or the override's text,
+     actor and timestamp). AC-39.5.
+  2. New `PUT /api/admin/projects/:id/next-action/override`
+     (`events.manage`) sets or replaces the current override, recording
+     `req.admin` as the actor and the write's own timestamp — never a
+     caller-supplied actor or time — and echoes the same
+     computed-value-plus-override shape the GET returns, so the override
+     is visible written-and-read-back in the one response that set it.
+     AC-39.5.
+  3. The override read/write is split the same way AC-39.3.2 split
+     `nextActionRules.js` from `nextActionService.js`: `nextActionOverride.js`
+     is a pure presenter (no requires, unit-testable without Docker) that
+     decides the active value and the response shape;
+     `nextActionOverrideService.js` owns the database read/write against
+     migration 127's table. AC-39.5.
+- **Files touched:**
+  - `vendor/picpeak/backend/migrations/core/127_add_project_next_action_overrides.js` —
+    new — creates `project_next_action_overrides`. AC-39.5.
+  - `src/lib/picpeakMigrationManifest.ts` — migration `127` recorded as
+    the manifest's eighth `origin: 'fork'` entry, with its blob SHA.
+    AC-39.5.
+  - `vendor/picpeak/backend/src/services/nextActionOverride.js` — new —
+    `presentNextAction({ computedNextAction, override })`, the pure
+    computed/override merge. AC-39.5.
+  - `vendor/picpeak/backend/src/services/nextActionOverrideService.js` —
+    new — `getProjectNextActionOverride`/`setProjectNextActionOverride`,
+    the database-backed read/upsert against migration 127's table. AC-39.5.
+  - `vendor/picpeak/backend/src/routes/adminProjects.js` — additive —
+    `GET /:id/next-action`'s handler extended to merge in the override;
+    new `PUT /:id/next-action/override` route added after it. AC-39.5.
+  - `src/__tests__/us39-ac39.5-next-action-override.test.ts` — new — drives
+    migration 127 against a fake knex (schema, idempotency, an
+    upsert-not-accumulate write/read-back round trip), table-drives the
+    pure `presentNextAction` merge (no override → passthrough; an override
+    set → active value is the override's text with the computed value and
+    the actor/timestamp still present in the same object), and asserts
+    from source that both routes require the one override service/presenter
+    pair and that the write route is `events.manage`-gated.
+- **Evidence:** the above test file; `src/__tests__/us33-ac33.5.2.1-fork-migration-lane.test.ts`
+  (migration 127 added to the later-fork-migration allowlist) stays green.
+  This deviation adds no migration line to any of migrations 001-126 — no
+  already-shipped migration is modified — and
+  `src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity test
+  (`verifyVendoredMigrations`) stays green against this change.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-39, AC-39.5)
+
+---
+
+## 2026-08-16 — `deviation`
+
 **The Project's "next action" is now computed once, server-side, by one
 new service module that both the photographer's cockpit and the client's
 Project Room require — the same function reference, not two

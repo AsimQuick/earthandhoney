@@ -108,12 +108,69 @@ router.get('/email/:emailId/preview', requirePermission('events.view'), [param('
 // customer.js already uses for several of its own services) so this
 // addition appends after every existing route rather than shifting the
 // line numbers earlier ACs' evidence cites against this pinned file.
+//
+// AC-39.5 extends the response (never the computation) with this Project's
+// manual override, if one is set: `computedNextAction` is always
+// AC-39.3.2's value; `nextAction` is the value a reader should act on (the
+// override's text when one exists, else identical to `computedNextAction`);
+// `override` is non-null only once a photographer has set one, carrying
+// who and when — presented alongside the computation, never silently
+// replacing it.
 router.get('/:id/next-action', requirePermission('events.view'), [param('id').isInt({ min: 1 })], handleAsync(async (req, res) => {
   validateRequest(req);
+  const projectId = parseInt(req.params.id, 10);
   const nextActionService = require('../services/nextActionService');
-  const result = await nextActionService.computeProjectNextAction(parseInt(req.params.id, 10));
-  if (!result) return res.status(404).json({ error: 'Project not found' });
-  return successResponse(res, result);
+  const computed = await nextActionService.computeProjectNextAction(projectId);
+  if (!computed) return res.status(404).json({ error: 'Project not found' });
+
+  const nextActionOverrideService = require('../services/nextActionOverrideService');
+  const { presentNextAction } = require('../services/nextActionOverride');
+  const override = await nextActionOverrideService.getProjectNextActionOverride(projectId);
+
+  return successResponse(res, {
+    projectId: computed.projectId,
+    phase: computed.phase,
+    ...presentNextAction({ computedNextAction: computed.nextAction, override }),
+  });
 }));
+
+// Manual next-action override (US-39 AC-39.5) — PRD 23.4 "manual
+// overrides". Write side of the override surfaced by the GET above.
+// `events.manage`, matching this router's other write routes (the create
+// route above, `POST /`). One row per Project
+// (`project_next_action_overrides`, migration 127): a repeat call replaces
+// the prior override rather than accumulating a history, and always
+// records the acting admin (`req.admin`) and the write's own timestamp —
+// never a caller-supplied actor or time. The response echoes the same
+// computed-value-plus-override shape as the GET, so the override is
+// visible written-and-read-back in the one response that set it.
+router.put('/:id/next-action/override',
+  requirePermission('events.manage'),
+  [
+    param('id').isInt({ min: 1 }),
+    body('overrideText').isString().trim().isLength({ min: 1, max: 2000 }),
+  ],
+  handleAsync(async (req, res) => {
+    validateRequest(req);
+    const projectId = parseInt(req.params.id, 10);
+    const nextActionService = require('../services/nextActionService');
+    const computed = await nextActionService.computeProjectNextAction(projectId);
+    if (!computed) return res.status(404).json({ error: 'Project not found' });
+
+    const nextActionOverrideService = require('../services/nextActionOverrideService');
+    const { presentNextAction } = require('../services/nextActionOverride');
+    const override = await nextActionOverrideService.setProjectNextActionOverride(projectId, {
+      overrideText: req.body.overrideText,
+      actorAdminId: req.admin.id,
+      actorName: req.admin.username,
+    });
+
+    return successResponse(res, {
+      projectId: computed.projectId,
+      phase: computed.phase,
+      ...presentNextAction({ computedNextAction: computed.nextAction, override }),
+    }, 200, 'Next action override recorded');
+  }),
+);
 
 module.exports = router;
