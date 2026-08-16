@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 255,
+  "totalSuites": 256,
   "counts": {
     "live": 31,
-    "unit": 224
+    "unit": 225
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1298,6 +1298,11 @@
       "path": "src/__tests__/us40-ac40.2-status-renders-text-icon-color.test.tsx",
       "lane": "UNIT",
       "reason": "jsdom render of src/components/status/StatusBadge.tsx via @testing-library/react, plus inline JSX fixtures for the negative-case guard; no I/O, no network/db"
+    },
+    {
+      "path": "src/__tests__/us40-ac40.3-status-colour-token-routing-guard.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local repository files only — src/styles/tokens.css, exports/design-tokens/tokens.css, src/lib/statusVocabulary.ts, src/components/status/StatusBadge.tsx and scrum-master/po-requests.md — and asserts on their text content; no I/O beyond local fs, no network/db"
     }
   ]
 }
