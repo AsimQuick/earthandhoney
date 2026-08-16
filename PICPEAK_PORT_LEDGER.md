@@ -328,3 +328,26 @@ file — and `src/lib/picpeakMigrationManifest.ts`'s SHA-1 integrity test
 
 - **Recorded:** 2026-08-16
 - **Recorded by:** dev-team (US-39, AC-39.5)
+
+## 13. US-40 AC-40.5 — the fork's read of the status vocabulary via the framework-free export, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-08-16` in `FORK_CHANGELOG.md` (US-40 AC-40.5: the status vocabulary
+is available to both surfaces from one definition, exposed to the fork's
+backend through the AC-23.6 framework-free export path rather than a
+second, independent definition). See that changelog entry for the full
+description of what changed and why.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/src/services/statusVocabulary.js` | new — requires `exports/design-tokens/status-vocabulary.json` by relative path and re-exports `STATUS_STATES`/`STATUS_STATE_KEYS`/`isValidStatusStateKey`. Requires nothing else; unit-testable without Docker. US-40 AC-40.5. |
+| `src/lib/statusVocabularyExport.ts` | new — pure generator producing the export's JSON text from `src/lib/statusVocabulary.ts`'s `STATUS_STATES`, the same split `tokenExport.ts` established for AC-23.6. US-40 AC-40.5. |
+| `scripts/generate-status-vocabulary-export.ts` | new — `npm run status-vocabulary:export` CLI that writes the checked-in export. US-40 AC-40.5. |
+| `exports/design-tokens/status-vocabulary.json` | new — the generated, checked-in framework-free export. US-40 AC-40.5. |
+| `src/__tests__/us40-ac40.5-status-vocabulary-single-definition.test.ts` | new — asserts the export reproduces the live definition (empty diff), both consumers import from that one place, and a repository-wide scan finds no second parallel definition of the five states. |
+
+No migration is added by this AC and no vendored route is touched —
+`src/lib/picpeakMigrationManifest.ts` is unaffected.
+
+- **Recorded:** 2026-08-16
+- **Recorded by:** dev-team (US-40, AC-40.5)

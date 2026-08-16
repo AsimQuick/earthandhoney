@@ -1,0 +1,45 @@
+{
+  "_meta": {
+    "file": "exports/design-tokens/status-vocabulary.json",
+    "project": "earthandhoney",
+    "purpose": "AC-40.5 — framework-free export of the single status-vocabulary definition (src/lib/statusVocabulary.ts), so the fork's backend and any other non-TypeScript/non-Next.js consumer reads PRD 23.3's five status states without a second, independent definition. GENERATED FILE — do not edit by hand.",
+    "createdBy": "dev-team",
+    "relatedStory": "US-40",
+    "relatedAc": "40.5",
+    "generatedFile": true,
+    "sourceOfTruth": "src/lib/statusVocabulary.ts",
+    "regenerateWith": "npm run status-vocabulary:export"
+  },
+  "states": [
+    {
+      "key": "complete",
+      "colorName": "green",
+      "label": "complete",
+      "icon": "check-circle"
+    },
+    {
+      "key": "waiting_pending",
+      "colorName": "amber",
+      "label": "waiting/pending",
+      "icon": "clock"
+    },
+    {
+      "key": "in_progress",
+      "colorName": "blue",
+      "label": "in progress",
+      "icon": "arrow-right-circle"
+    },
+    {
+      "key": "blocked",
+      "colorName": "red",
+      "label": "blocked/overdue/action required",
+      "icon": "alert-triangle"
+    },
+    {
+      "key": "upcoming",
+      "colorName": "grey",
+      "label": "upcoming",
+      "icon": "circle-dashed"
+    }
+  ]
+}

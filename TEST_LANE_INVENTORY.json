@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 257,
+  "totalSuites": 258,
   "counts": {
     "live": 31,
-    "unit": 226
+    "unit": 227
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1308,6 +1308,11 @@
       "path": "src/__tests__/us40-ac40.4-status-pairing-contrast.test.ts",
       "lane": "UNIT",
       "reason": "computes WCAG contrast from src/styles/tokens.css via src/lib/statusPairingContrast.ts (pure fs read + arithmetic, no network/db) and asserts on the in-memory result"
+    },
+    {
+      "path": "src/__tests__/us40-ac40.5-status-vocabulary-single-definition.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local repository files (src/lib/statusVocabulary.ts, exports/design-tokens/status-vocabulary.json, StatusBadge.tsx, the fork's statusVocabulary.js) and repository-scans src/scripts/vendor/exports for a duplicate definition; requires the pure fork module directly; no network/db"
     }
   ]
 }
