@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 241,
+  "totalSuites": 242,
   "counts": {
     "live": 29,
-    "unit": 212
+    "unit": 213
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1228,6 +1228,11 @@
       "path": "src/__tests__/us38-ac38.5-migration-idempotency.test.ts",
       "lane": "UNIT",
       "reason": "reads MIGRATION_IDEMPOTENCY.md and UPSTREAM_SYNC.md; the live migration run is only quoted in a code comment, not executed"
+    },
+    {
+      "path": "src/__tests__/us38-ac38.6-fork-discipline-integrity.test.ts",
+      "lane": "UNIT",
+      "reason": "reads PICPEAK_MIGRATION_MANIFEST and the real vendored migration files via fs, plus FORK_CHANGELOG.md/PICPEAK_PORT_LEDGER.md/UPSTREAM_SYNC.md; no network/db"
     }
   ]
 }
