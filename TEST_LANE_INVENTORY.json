@@ -1,9 +1,9 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 252,
+  "totalSuites": 253,
   "counts": {
-    "live": 30,
+    "live": 31,
     "unit": 222
   },
   "mechanism": {
@@ -1283,6 +1283,11 @@
       "path": "src/__tests__/us39-ac39.6.2-shared-activity-timeline.test.ts",
       "lane": "UNIT",
       "reason": "drives the pure activityTimelineEntry.js and projectChangeRules.js modules directly, and reads adminProjects.js/activityTimelineService.js/projectPhaseService.js/projectMilestoneService.js via absolute fs paths for source-level assertions; no network/db"
+    },
+    {
+      "path": "src/__tests__/us39-ac39.6.3-activity-timeline-live-proof.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on dns.lookup('backstage-backend')/dns.lookup('backstage-db') resolving, opens a real pg connection to backstage-db to seed customer_accounts/projects/project_milestones rows, logs in against backstage-backend over the real admin auth route, and drives three real writes plus a read over live admin routes"
     }
   ]
 }
