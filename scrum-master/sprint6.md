@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 2/8 stories | 19/55 ACs
-**Last Updated:** 2026-08-16T11:43:55+00:00
+**Last Updated:** 2026-08-16T12:37:16+00:00
 
 ## Sprint Goal
 Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finished Phase 4: the Frontstage is now a real website that publishes pages, stories and a sitemap and captures durable Inquiries. What it cannot do is run a booking. The Project is the PRD's operational backbone and it exists before the images, but at the pinned fork commit a Project is six columns - id, name, customer_account_id, status and two timestamps - with no phase, no milestone, no venue, no next action, no document area and no client-visible surface at all; migration 117's own header states 'Customers never see projects'. Sprint 6 turns that grouping row into the operational backbone: the extended data model through new migrations, the seven phases and eighteen milestones with a configurable booking rule and one server-side computed next action, a status vocabulary where colour is always paired with text and icon, automatic Project setup, both entry paths including converting a Frontstage Inquiry across the system boundary, the photographer's cockpit, and the client-safe Project Room. It opens with the one piece of debt sprint 5 measured and did not pay: the CI suite that grew 48% in eight days, and the two process failures now on their third and fourth consecutive recurrence. PRD Phase 3's exit criterion is the sprint's bar and is proven in one run rather than asserted: photographer and client can see the same authoritative workflow state.
@@ -263,6 +263,7 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
 - [ ] **AC-40.4:** Each status pairing meets WCAG AA contrast, computed from the token values themselves rather than asserted, following US-23 AC-23.3's precedent, and verified on both the cockpit and the Project Room backgrounds. Evidence: the computed ratio per pairing printed by the test, with the minimum for its usage class.
   - Dev: implemented
 - [ ] **AC-40.5:** The status vocabulary is available to both surfaces from one definition - it is not implemented twice. Where the Frontstage and the fork's templates need it, it is exposed through the framework-free export path US-23 AC-23.6 established (`exports/design-tokens/`). Evidence: the single definition named, both consumers shown importing it from that one place, and a test that fails if a second parallel definition of the five states appears in the repository.
+  - Dev: implemented
 
 **Dependencies:** US-39
 
@@ -290,6 +291,17 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
   
   **Files added:**
   - `src/lib/statusPairingContrast.ts` — computes contrast live from `src/styles/tokens.css`, reusing the same `contrastRatio`/token-parsing implementation AC-23.3/AC-23.5 already validate (`designTokenSpecimen.ts`). Maps the two named surfaces to the token set's two existing surface tokens: Project Room → `--color-surface` (matches existing Frontstage page-template usage), cockpit → `--color-surface-muted` (no cockpit UI ships …
+  AC-40.5 implemented (local checks green): Working tree is clean and the commit is in place on `feature/US-40`. Here's the summary for the orchestrator:
+  
+  ## AC-40.5 implemented
+  
+  **Files changed:**
+  
+  - `src/lib/statusVocabularyExport.ts` (new) — pure generator producing the framework-free JSON export text from `src/lib/statusVocabulary.ts`'s `STATUS_STATES` (AC-40.1's single definition), mirroring the split `tokenExport.ts` established for AC-23.6.
+  - `scripts/generate-status-vocabulary-export.ts` (new) — `npm run status-vocabulary:export` CLI that writes the checked-in export.
+  - `exports/design-tokens/status-vocabulary.json` (new, generated) — the framework-free export at the AC-23.6 path, carrying a `_meta` header (JSON has no comment syntax, so this is the metadata-header equivalent) naming `src/lib/statusVocabulary.ts` as its source of truth.
+  - `vendor/picpeak/backend/src/services/statusVocabulary.js` (new) — the fork's backend consumer: requires the JSON export by relative path and re-exports `STATUS_STATES`/`STATUS_STATE_KEYS`/`isValidStatusStateKey`, with no hardcoded copy of the vocabulary. Requires nothing else, so it's unit-testable without Docker.
+  - `src/__tests__/us40-ac40.5-status-vocabulary-single-definition.test …
 
 **Tester Status:** approved
 **Tester Notes:**
