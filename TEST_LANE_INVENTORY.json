@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 253,
+  "totalSuites": 254,
   "counts": {
     "live": 31,
-    "unit": 222
+    "unit": 223
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1288,6 +1288,11 @@
       "path": "src/__tests__/us39-ac39.6.3-activity-timeline-live-proof.test.ts",
       "lane": "LIVE",
       "reason": "gated on dns.lookup('backstage-backend')/dns.lookup('backstage-db') resolving, opens a real pg connection to backstage-db to seed customer_accounts/projects/project_milestones rows, logs in against backstage-backend over the real admin auth route, and drives three real writes plus a read over live admin routes"
+    },
+    {
+      "path": "src/__tests__/us40-ac40.1-status-vocabulary-lock-in.test.ts",
+      "lane": "UNIT",
+      "reason": "pure in-memory assertions against the src/lib/statusVocabulary.ts module export and a locally-defined guard function; no I/O, no network/db"
     }
   ]
 }
