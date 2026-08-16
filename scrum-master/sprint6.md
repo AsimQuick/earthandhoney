@@ -2,7 +2,7 @@
 
 **Phase:** planning
 **Progress:** 0/8 stories | 0/49 ACs
-**Last Updated:** 2026-08-16T00:32:05+00:00
+**Last Updated:** 2026-08-16T00:58:54+00:00
 
 ## Sprint Goal
 Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finished Phase 4: the Frontstage is now a real website that publishes pages, stories and a sitemap and captures durable Inquiries. What it cannot do is run a booking. The Project is the PRD's operational backbone and it exists before the images, but at the pinned fork commit a Project is six columns - id, name, customer_account_id, status and two timestamps - with no phase, no milestone, no venue, no next action, no document area and no client-visible surface at all; migration 117's own header states 'Customers never see projects'. Sprint 6 turns that grouping row into the operational backbone: the extended data model through new migrations, the seven phases and eighteen milestones with a configurable booking rule and one server-side computed next action, a status vocabulary where colour is always paired with text and icon, automatic Project setup, both entry paths including converting a Frontstage Inquiry across the system boundary, the photographer's cockpit, and the client-safe Project Room. It opens with the one piece of debt sprint 5 measured and did not pay: the CI suite that grew 48% in eight days, and the two process failures now on their third and fourth consecutive recurrence. PRD Phase 3's exit criterion is the sprint's bar and is proven in one run rather than asserted: photographer and client can see the same authoritative workflow state.
@@ -62,6 +62,7 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
 - [ ] **AC-38.6:** Fork discipline is provably intact: no migration 001-121 is modified, every new migration is registered in the `origin: 'fork'` lane of `src/lib/picpeakMigrationManifest.ts` that US-33 AC-33.5.2.1 built, and each is recorded in FORK_CHANGELOG.md, PICPEAK_PORT_LEDGER.md and UPSTREAM_SYNC.md. Evidence: `git log --name-only` across the story's commits showing only new files under `vendor/picpeak/backend/migrations/core/`, the migration-manifest integrity test green, and the negative case still failing - an edited upstream migration must still be caught.
   - Dev: implemented
 - [ ] **AC-38.7:** PROJECT_DATA_MODEL_ADR.md records the option chosen, the options rejected and the reason, for two decisions specifically: (a) extending the fork's own `projects`/`events` tables versus creating a parallel Earth & Honey project table, and (b) where the Project-to-Inquiry and Project-to-ledger cross-system identifiers live. Reminder 4 requires stored external identifiers resolved over an API with no cross-database join, so (b) must state which side stores which identifier. The financial identifier is a placeholder in this sprint - PRD Phase 6 owns the ledger - and the ADR must say so rather than imply an integration exists. Evidence: the ADR document showing, for both (a) and (b), the option chosen, the options rejected, and the reason, plus the placeholder statement quoted verbatim.
+  - Dev: implemented
 
 **Dev Team Status:** not-started
 **Dev Team Notes:**
@@ -97,6 +98,7 @@ Complete PRD Phase 3 - the Project cockpit and the Project Room. Sprint 5 finish
   - New test: `src/__tests__/us38-ac38.4-project-documents-integration-status-migrat …
   AC-38.5 implemented (local checks green): I've kicked off the full Docker test suite with coverage in the background and will report back once it completes — no need to check in the meantime.
   AC-38.6 implemented (local checks green): I've implemented AC-38.6 and am now waiting on the full local test suite (242 suites, both UNIT and LIVE lanes) to finish running in Docker before confirming the coverage gate and committing. I'll pick this back up automatically when it completes or the scheduled wakeup fires — no action needed from you right now.
+  AC-38.7 implemented (local checks green): I'll hold here and wait for the background monitor to notify me when the coverage run finishes.
 
 **Tester Status:** approved
 **Tester Notes:**
