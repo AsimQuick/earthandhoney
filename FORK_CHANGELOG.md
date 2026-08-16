@@ -38,6 +38,94 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-08-16 — `deviation`
 
+**A Project's phase change, milestone completion and manual next-action
+override now each append one entry to that Project's activity timeline,
+all three through a single shared service.** PRD 22.3 and 23.4 require
+every phase change, milestone completion and manual override to append an
+entry to the Project's activity timeline (migration 128, AC-39.6.1.1's
+schema-only `project_activity_timeline`). This AC wires that table up:
+one append function (`activityTimelineService.appendActivityTimelineEntry`,
+taking the Project, the entry type, the actor and what changed) that all
+three write handlers require directly and call — never three call-site
+inserts that happen to agree, the same single-authority shape AC-39.3.2
+established for the next-action computation. A change that changes
+nothing (setting the phase to its current value; re-completing an
+already-complete milestone) appends no entry: `projectPhaseService.js` and
+`projectMilestoneService.js` each detect the no-op via the pure
+`projectChangeRules.js` and simply skip calling the timeline service,
+rather than the timeline service silently deduplicating after the fact.
+
+- **Type:** additive deviation — one new table now has a writer and a
+  reader, two new cockpit write routes, one new cockpit read route, and an
+  additive extension of AC-39.5's existing override route. No existing
+  route's request/response contract for any prior AC is narrowed.
+- **What changed:**
+  1. New `PUT /api/admin/projects/:id/phase` (`events.manage`) sets
+     `projects.current_phase` via `projectPhaseService.js`, then, only
+     when the phase actually changed, the route itself appends one
+     `phase_change` entry. AC-39.6.2.
+  2. New `PUT /api/admin/projects/:id/milestones/:key/complete`
+     (`events.manage`) marks one of a Project's own `project_milestones`
+     rows complete via `projectMilestoneService.js`, then, only when it
+     was not already complete, the route itself appends one
+     `milestone_completed` entry. AC-39.6.2.
+  3. `PUT /api/admin/projects/:id/next-action/override` (AC-39.5) now also
+     appends one `next_action_override_set` entry after recording the
+     override — every call is a deliberate photographer action, so this
+     write route carries no no-op case. AC-39.6.2.
+  4. New `GET /api/admin/projects/:id/timeline` (`events.view`) returns
+     one Project's timeline entries oldest-first (by `id`, migration 128's
+     own authoritative ordering column — not `occurred_at` alone, which
+     two entries appended in the same request can share). AC-39.6.2.
+  5. The shared service is split the same way AC-39.3.2 split
+     `nextActionRules.js` from `nextActionService.js`:
+     `activityTimelineEntry.js` is a pure module (no requires,
+     unit-testable without Docker) shaping the inserted row, the
+     read-back entry, and the oldest-first sort;
+     `activityTimelineService.js` owns the database insert/select against
+     migration 128's table. `projectChangeRules.js` is a second pure
+     module deciding both no-op cases and building a real change's
+     summary text; `projectPhaseService.js`/`projectMilestoneService.js`
+     own the `projects`/`project_milestones` mutations only — neither
+     requires or references the timeline service or table, keeping "one
+     shared append function" true by construction rather than by
+     convention. AC-39.6.2.
+- **Files touched:**
+  - `vendor/picpeak/backend/src/services/activityTimelineEntry.js` — new
+    — pure entry-shape module. AC-39.6.2.
+  - `vendor/picpeak/backend/src/services/activityTimelineService.js` —
+    new — `appendActivityTimelineEntry`/`getProjectTimeline` against
+    migration 128's table. AC-39.6.2.
+  - `vendor/picpeak/backend/src/services/projectChangeRules.js` — new —
+    pure no-op detection and summary-text module. AC-39.6.2.
+  - `vendor/picpeak/backend/src/services/projectPhaseService.js` — new —
+    `setProjectPhase`, the database-backed phase mutation. AC-39.6.2.
+  - `vendor/picpeak/backend/src/services/projectMilestoneService.js` —
+    new — `completeProjectMilestone`, the database-backed milestone
+    mutation. AC-39.6.2.
+  - `vendor/picpeak/backend/src/routes/adminProjects.js` — additive —
+    new `PUT /:id/phase`, new `PUT /:id/milestones/:key/complete`, new
+    `GET /:id/timeline`; `PUT /:id/next-action/override`'s handler
+    extended to also append a timeline entry. AC-39.6.2.
+  - `src/__tests__/us39-ac39.6.2-shared-activity-timeline.test.ts` — new —
+    drives the two pure modules directly (entry shape, oldest-first sort,
+    both no-op cases, a three-entries-appended-out-of-order-read-back-
+    ordered simulation), and asserts from source that each of the three
+    write handlers requires `activityTimelineService.js` directly, that
+    the literal table name never appears in `adminProjects.js`, and that
+    the two new mutation services never reference the timeline service or
+    table themselves. It also pins the routes' placement: all four are
+    registered after `router.use(adminAuth)` on the router `server.js`
+    mounts at `/api/admin/projects`, with no second auth middleware and
+    no third permission — the path and credential AC-39.3.1's
+    `NEXT_ACTION_CROSS_SURFACE_MAP.md` recorded, and no other.
+- **Evidence:** the above test file. This deviation adds no migration and
+  modifies no already-shipped migration.
+
+---
+
+## 2026-08-16 — `deviation`
+
 **The `events.manage` permission now exists and is granted to super_admin.**
 NEXT_ACTION_CROSS_SURFACE_MAP.md (AC-39.3.1) recorded that every
 `events.manage`-gated admin route in `adminProjects.js` — create,

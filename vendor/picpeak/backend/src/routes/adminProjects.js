@@ -165,6 +165,24 @@ router.put('/:id/next-action/override',
       actorName: req.admin.username,
     });
 
+    // US-39 AC-39.6.2 — every override write also appends one entry
+    // through the shared activityTimelineService, never a direct insert
+    // of its own. Unlike the phase/milestone routes below, an override
+    // call carries no no-op case here: PRD 23.4 treats each override call
+    // as a deliberate photographer action worth its own timeline entry,
+    // even if its text happens to repeat the prior override.
+    const activityTimelineService = require('../services/activityTimelineService');
+    const { ENTRY_TYPES } = require('../services/activityTimelineEntry');
+    await activityTimelineService.appendActivityTimelineEntry(
+      { id: projectId },
+      ENTRY_TYPES.NEXT_ACTION_OVERRIDE_SET,
+      { adminId: req.admin.id, name: req.admin.username },
+      {
+        summary: `Next action manually overridden: "${req.body.overrideText}"`,
+        metadata: { overrideText: req.body.overrideText },
+      },
+    );
+
     return successResponse(res, {
       projectId: computed.projectId,
       phase: computed.phase,
@@ -172,5 +190,101 @@ router.put('/:id/next-action/override',
     }, 200, 'Next action override recorded');
   }),
 );
+
+// Phase change (US-39 AC-39.6.2) — updates projects.current_phase via
+// projectPhaseService, then, only when that write actually changed
+// something, this handler itself requires the shared
+// activityTimelineService and appends one 'phase_change' entry. Setting
+// the phase to its current value is a no-op: no database write, no
+// timeline entry, so the timeline stays a history of real changes rather
+// than of requests. events.manage, matching this router's other write
+// routes. PROJECT_PHASE_KEYS is AC-39.1's locked seven-phase list,
+// mirrored into this CommonJS backend by projectPhaseService.js (see that
+// file's header for why it is a mirror, not an import).
+const projectPhaseService = require('../services/projectPhaseService');
+router.put('/:id/phase',
+  requirePermission('events.manage'),
+  [
+    param('id').isInt({ min: 1 }),
+    body('phase').isString().trim().isIn(projectPhaseService.PROJECT_PHASE_KEYS),
+  ],
+  handleAsync(async (req, res) => {
+    validateRequest(req);
+    const projectId = parseInt(req.params.id, 10);
+    const result = await projectPhaseService.setProjectPhase(projectId, req.body.phase);
+    if (!result) return res.status(404).json({ error: 'Project not found' });
+
+    if (result.changed) {
+      const activityTimelineService = require('../services/activityTimelineService');
+      const { ENTRY_TYPES } = require('../services/activityTimelineEntry');
+      const { describePhaseChange } = require('../services/projectChangeRules');
+      await activityTimelineService.appendActivityTimelineEntry(
+        { id: projectId },
+        ENTRY_TYPES.PHASE_CHANGE,
+        { adminId: req.admin.id, name: req.admin.username },
+        {
+          summary: describePhaseChange(result.previousPhase, result.project.phase),
+          metadata: { from: result.previousPhase, to: result.project.phase },
+        },
+      );
+    }
+
+    return successResponse(res, result, 200, result.changed ? 'Project phase updated' : 'Project phase already set — no change');
+  }),
+);
+
+// Milestone completion (US-39 AC-39.6.2) — marks one of this Project's own
+// milestone rows complete via projectMilestoneService, then, only when
+// that write actually changed something, this handler itself requires the
+// shared activityTimelineService and appends one 'milestone_completed'
+// entry. Re-completing an already-complete milestone is a no-op: no
+// database write, no timeline entry. events.manage, matching this
+// router's other write routes.
+const projectMilestoneService = require('../services/projectMilestoneService');
+router.put('/:id/milestones/:key/complete',
+  requirePermission('events.manage'),
+  [
+    param('id').isInt({ min: 1 }),
+    param('key').isString().trim().isLength({ min: 1, max: 64 }),
+  ],
+  handleAsync(async (req, res) => {
+    validateRequest(req);
+    const projectId = parseInt(req.params.id, 10);
+    const milestoneKey = req.params.key;
+    const result = await projectMilestoneService.completeProjectMilestone(projectId, milestoneKey, req.admin.username);
+    if (!result) return res.status(404).json({ error: 'Project or milestone not found' });
+
+    if (result.changed) {
+      const activityTimelineService = require('../services/activityTimelineService');
+      const { ENTRY_TYPES } = require('../services/activityTimelineEntry');
+      const { describeMilestoneCompletion } = require('../services/projectChangeRules');
+      await activityTimelineService.appendActivityTimelineEntry(
+        { id: projectId },
+        ENTRY_TYPES.MILESTONE_COMPLETED,
+        { adminId: req.admin.id, name: req.admin.username },
+        {
+          summary: describeMilestoneCompletion(result.milestone.name),
+          metadata: { milestoneKey },
+        },
+      );
+    }
+
+    return successResponse(res, result, 200, result.changed ? 'Milestone marked complete' : 'Milestone already complete — no change');
+  }),
+);
+
+// Timeline (US-39 AC-39.6.2) — one Project's activity timeline entries,
+// oldest first (PRD 22.3, 23.4): the three routes above, and no other
+// write path, are what populate it. events.view, matching this router's
+// other read routes.
+router.get('/:id/timeline', requirePermission('events.view'), [param('id').isInt({ min: 1 })], handleAsync(async (req, res) => {
+  validateRequest(req);
+  const projectId = parseInt(req.params.id, 10);
+  const project = await projectService.getProjectById(projectId);
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+  const activityTimelineService = require('../services/activityTimelineService');
+  const entries = await activityTimelineService.getProjectTimeline(projectId);
+  return successResponse(res, { projectId, entries });
+}));
 
 module.exports = router;
