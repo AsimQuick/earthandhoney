@@ -37,21 +37,28 @@ another document's summary.
 **A note on the projectSetupService.js draft.** Three files —
 `vendor/picpeak/backend/src/services/projectSetupService.js` and its two
 companion test files (`src/__tests__/us41-ac41.1-project-setup-service.test.ts`,
-`src/__tests__/us41-ac41.1-project-setup-live-proof.test.ts`) — are an
+`src/__tests__/us41-ac41.1-project-setup-live-proof.test.ts`) — were an
 earlier, out-of-sequence attempt at the full AC-41.1 live create, written
 before this mapping AC existed — the same situation
 `NEXT_ACTION_CROSS_SURFACE_MAP.md`'s own "operational hazard" section and
 commit `0f914eb` record for the analogous AC-39.3 → AC-39.3.1 split. They
 were uncommitted in this working tree at the moment this map was first
 written and verified; a later follow-up commit on this branch (`e18fb64`,
-"dev agent did not commit") has since swept them into git history without
-this map's review. That commit does not make AC-41.1 done, and does not
-change this map's own treatment of the draft: it remains unused as
+"dev agent did not commit") swept them into git history without this
+map's review, silently expanding `vendor/picpeak/backend/src` beyond the
+pinned commit's own content and leaving two suites this branch's other
+inventories did not know about — breaking AC-17.4.1.1.1.1.1.1's pinned-tree
+grep counts and AC-30.1's suite manifest, neither of which this AC is
+meant to touch. A subsequent commit on this branch removed all three files
+again to restore this AC's own stated scope ("ships no service, no route
+and no behaviour") and both inventories' accuracy. That round trip does
+not change this map's own treatment of the draft: it remains unused as
 evidence and untouched by this document, out of this AC's scope, exactly
 as `0f914eb` treated the equivalent
 `nextActionRules.js`/`nextActionService.js` pair. Several of this draft's
 own in-file claims turned out to be useful leads and are verified
-independently below; one — `ENTRY_TYPES.PROJECT_CREATED`
+independently below (against the file's content as read while it existed
+on this branch); one — `ENTRY_TYPES.PROJECT_CREATED`
 (`projectSetupService.js:238`) — is verified **wrong**: see item 10.
 
 ## PRD 22.3's ten items, in the PRD's own order
@@ -483,8 +490,11 @@ never a parallel renderer.
   one claim checked (item 10's `ENTRY_TYPES.PROJECT_CREATED`).** They were
   read as a source of leads, not verified line-by-line, and remain
   untouched by this map and out of its scope — their later, out-of-sequence
-  commit to this branch (`e18fb64`) does not constitute AC-41.1 being
-  implemented or reviewed.
+  commit to this branch (`e18fb64`) did not constitute AC-41.1 being
+  implemented or reviewed, and their subsequent removal from this branch
+  does not constitute AC-41.1 being abandoned either: the draft's leads
+  remain cited above, and whichever AC implements item 10 for real can
+  still consult this map's item 10 finding without needing the file back.
 - **Fixing F6/F7 at the source level** (removing Gallery-create's local-fs
   fallback in `adminEvents.js`). Recorded as reproduced and explained
   above; `po-requests.md`'s existing disposition for F6/F7 (schedule fork
