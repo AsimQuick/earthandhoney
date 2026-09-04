@@ -118,7 +118,6 @@ function findInsertWriters(tableName: string): string[] {
     const constDeclPattern = new RegExp(`const\\s+(\\w+)\\s*=\\s*['"\`]${tableName}['"\`]`, 'g')
     let match: RegExpExecArray | null
     let wrote = false
-    // eslint-disable-next-line no-cond-assign
     while ((match = constDeclPattern.exec(stripped))) {
       const callPattern = new RegExp(`db\\(\\s*${match[1]}\\s*\\)\\s*\\.insert\\(`)
       if (callPattern.test(stripped)) {
@@ -333,6 +332,12 @@ describe('AC-41.1.2.2 item 9: financial integration placeholder — one migratio
 })
 
 describe('AC-41.1.2.2 item 10: activity timeline — activityTimelineService.appendActivityTimelineEntry, never a direct insert, carrying PROJECT_CREATED', () => {
+  it('appendActivityTimelineEntry is defined and exported by activityTimelineService.js, matching the map', () => {
+    const src = read(ACTIVITY_TIMELINE_SERVICE_PATH)
+    expect(src).toMatch(/async function appendActivityTimelineEntry\(/)
+    expect(code(src)).toMatch(/module\.exports = \{[\s\S]*appendActivityTimelineEntry/)
+  })
+
   it('appendActivityTimelineEntry is the sole writer of project_activity_timeline', () => {
     expect(findInsertWriters('project_activity_timeline').map(rel)).toEqual([
       'services/activityTimelineService.js',
