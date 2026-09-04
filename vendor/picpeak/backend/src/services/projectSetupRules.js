@@ -71,15 +71,18 @@ function cloneMilestoneTemplateRows(templates, projectId, now) {
  * The one `project_integration_status` row Project setup writes.
  * AC-41.6: a placeholder and provably nothing more — no external system
  * is named, and no Invoice Ninja/Stripe call is ever made from here.
+ * Migration 125's own header reserves `message` for the 'failure' status
+ * ("required in practice whenever status is 'failure'"); a 'pending'
+ * placeholder carries no message of its own, so this row leaves it null
+ * rather than filling it with descriptive text a failure row would need
+ * that space for.
  */
 function buildFinancialPlaceholderRow(projectId, now) {
   return {
     project_id: projectId,
     integration_key: FINANCIAL_PLACEHOLDER_INTEGRATION_KEY,
     status: FINANCIAL_PLACEHOLDER_STATUS,
-    message:
-      'Placeholder only — the real financial integration is a later PRD '
-      + 'phase; Project setup makes no external call of its own.',
+    message: null,
     occurred_at: now,
     created_at: now,
     updated_at: now,
