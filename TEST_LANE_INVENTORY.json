@@ -1,9 +1,9 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 261,
+  "totalSuites": 262,
   "counts": {
-    "live": 31,
+    "live": 32,
     "unit": 230
   },
   "mechanism": {
@@ -1328,6 +1328,11 @@
       "path": "src/__tests__/us41-ac41.1.2.3-project-setup-read-back-routes.test.ts",
       "lane": "UNIT",
       "reason": "reads local repository files only \u2014 adminProjects.js, projectSetupService.js, server.js, customer.js \u2014 asserting on their text content via regex/indexOf; never requires the DB-backed projectSetupService.js, so no network/db"
+    },
+    {
+      "path": "src/__tests__/us41-ac41.1.3-project-setup-live-proof.test.ts",
+      "lane": "LIVE",
+      "reason": "gated on both dns.lookup('backstage-backend') and dns.lookup('backstage-db') resolving, then opens a real pg connection straight to the backstage-db container and drives one real POST /api/admin/projects call (with a real admin login) against the running backstage-backend, reading all ten PRD 22.3 setup items back through GET /:id, /:id/media-area, /:id/room-access, /:id/next-action, /:id/milestones, /:id/documents, /:id/integration-status, /:id/timeline plus one direct email_queue read \u2014 exercising the live Backstage/PicPeak API (including the AC-39.6.1.2 events.manage gate) and the real backstage-db Postgres container. Created/queued rows are deleted in afterAll."
     }
   ]
 }
