@@ -43,6 +43,9 @@
  * created-by: dev-team
  * related-story: US-41
  * related-ac: 41.1.2.2
+ * updated-by: dev-team
+ * related-story: US-41
+ * related-ac: 41.1.2.3
  * ---
  */
 import fs from 'fs'
@@ -292,8 +295,14 @@ describe('AC-41.1.2.2 item 7: document area — nothing is ever inserted for it'
     expect(findInsertWriters('project_documents')).toEqual([])
   })
 
-  it('project_documents is not referenced by projectSetupService.js at all', () => {
-    expect(code(read(SETUP_SERVICE_PATH))).not.toContain('project_documents')
+  // AC-41.1.2.3 gives projectSetupService.js a read-back function for this
+  // item (getProjectDocuments, backing GET /:id/documents), so the file
+  // now references project_documents — through a SELECT only. The write
+  // side this AC-41.1.2.2 suite proves is unchanged: still no insert.
+  it('projectSetupService.js reads project_documents through a SELECT only — still no insert', () => {
+    const stripped = code(read(SETUP_SERVICE_PATH))
+    expect(stripped).toContain('project_documents')
+    expect(stripped).not.toMatch(/db\(\s*['"`]project_documents['"`]\s*\)\s*\.insert\(/)
   })
 })
 

@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 260,
+  "totalSuites": 261,
   "counts": {
     "live": 31,
-    "unit": 229
+    "unit": 230
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1323,6 +1323,11 @@
       "path": "src/__tests__/us41-ac41.1.2.2-project-setup-mapped-mechanisms.test.ts",
       "lane": "UNIT",
       "reason": "reads local repository files only \u2014 projectSetupService.js, projectService.js, customerAccountsService.js, storage/index.js, nextActionService.js, activityTimelineService.js, adminProjects.js, customer.js, migration 124, and every .js under the fork backend's src/ except __tests__ \u2014 asserting on their text content via regex; requires only the pure activityTimelineEntry.js module directly, so no network/db"
+    },
+    {
+      "path": "src/__tests__/us41-ac41.1.2.3-project-setup-read-back-routes.test.ts",
+      "lane": "UNIT",
+      "reason": "reads local repository files only \u2014 adminProjects.js, projectSetupService.js, server.js, customer.js \u2014 asserting on their text content via regex/indexOf; never requires the DB-backed projectSetupService.js, so no network/db"
     }
   ]
 }

@@ -382,3 +382,33 @@ changes to both are purely additive, per Fork Discipline.
 
 - **Recorded:** 2026-09-05
 - **Recorded by:** dev-team (US-41, AC-41.1.2.1)
+
+## 15. US-41 AC-41.1.2.3 — the five read-back routes, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-09-05` in `FORK_CHANGELOG.md` (US-41 AC-41.1.2.3: exactly the
+read-back routes `PROJECT_SETUP_MECHANISM_MAP.md`'s question 12 recorded
+as absent — media area, Project Room access, the milestone list, the
+document area, the integration status — are added to the cockpit router,
+and no others). See that changelog entry for the full description of what
+changed and why.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/src/services/projectSetupService.js` | additive — five new exported read-back functions (`getProjectMediaAreaStatus`, `getProjectRoomAccessStatus`, `getProjectMilestones`, `getProjectDocuments`, `getProjectIntegrationStatus`), each returning `null` when the Project itself does not exist. US-41 AC-41.1.2.3. |
+| `vendor/picpeak/backend/src/routes/adminProjects.js` | additive, appended after the existing route set — five new `GET`s (`/:id/media-area`, `/:id/room-access`, `/:id/milestones`, `/:id/documents`, `/:id/integration-status`), each behind `router.use(adminAuth)` and `requirePermission('events.view')`, no new permission, no new mount. Appended rather than inserted so no line number earlier ACs' evidence cites against this pinned file shifts. US-41 AC-41.1.2.3. |
+| `src/__tests__/us41-ac41.1.2.3-project-setup-read-back-routes.test.ts` | new — proves all five routes registered, gated, validated and wired to their one named read-back function each, that the router's whole route set is exactly the map's twelve plus these five (closed enumeration), and that the mount path and permission set are read from source rather than assumed. |
+| `src/__tests__/us41-ac41.1.2.1-project-setup-single-path.test.ts` | amended — its exports assertion now names all six `projectSetupService.js` exports (`completeProjectSetup` plus the five read-back functions) rather than asserting the five are absent. |
+| `src/__tests__/us41-ac41.1.2.2-project-setup-mapped-mechanisms.test.ts` | amended — item 7's "not referenced at all" assertion replaced with "referenced through a SELECT only, still no insert", since this AC gives item 7 a read-back; the write-side (insert) proof that AC's own suite exists for is unchanged. |
+| `TEST_LANE_INVENTORY.json`, `TEST_LANE_CLASSIFICATION.md` | the new suite registered as UNIT (261 total, 230 unit, 31 live). |
+
+No migration is added by this AC — `project_milestones` (124),
+`project_documents`/`project_integration_status` (125) are all
+already-shipped tables this AC only reads — so
+`src/lib/picpeakMigrationManifest.ts` is untouched and its SHA-1 integrity
+test is unaffected. `adminProjects.js` and `projectSetupService.js` are
+each already amended by AC-41.1.2.1; this AC's changes to both are purely
+additive, per Fork Discipline.
+
+- **Recorded:** 2026-09-05
+- **Recorded by:** dev-team (US-41, AC-41.1.2.3)

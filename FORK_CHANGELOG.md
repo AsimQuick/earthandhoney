@@ -38,6 +38,84 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-09-05 — `deviation`
 
+**The cockpit router gains five `GET` read-back routes, one per PRD 22.3
+setup item `PROJECT_SETUP_MECHANISM_MAP.md`'s (US-41 AC-41.1.1) question 12
+recorded as having no read-back route of any kind at the pinned commit.**
+That map's answer 12 table named twelve existing routes and recorded five
+of PRD 22.3's ten items — the media-folder status (item 3), the Project
+Room access state (item 4), the per-Project milestone list (item 5), the
+document area (item 7) and the integration status (item 9) — as absent
+without a new route each. AC-41.1.2.3 adds exactly those five, no others:
+`GET /:id/media-area`, `GET /:id/room-access`, `GET /:id/milestones`,
+`GET /:id/documents`, `GET /:id/integration-status`, each delegating to one
+new read-back function on AC-41.1.2.1's `projectSetupService` and never to
+a query of the route's own — the single-authority shape now proven for
+reads as well as for the write.
+
+- **Type:** additive deviation — one existing service file gains five new
+  exported functions, one existing route file gains five new `GET`s. No
+  migration is added, no already-shipped migration is touched, no new
+  permission is introduced, no new mount, no customer-side route.
+- **What changed:**
+  1. `vendor/picpeak/backend/src/services/projectSetupService.js` gains
+     five read-back functions alongside `completeProjectSetup`:
+     `getProjectMediaAreaStatus` (checks the zero-byte media marker via the
+     storage abstraction's own `exists()`, never a raw filesystem check),
+     `getProjectRoomAccessStatus` (resolves the Project's client's access
+     state — an active `customer_accounts` login, a still-open
+     `customer_invitations` row, or neither — per the mechanism map's
+     answer B, since no dedicated per-Project access table exists),
+     `getProjectMilestones` (this Project's own cloned `project_milestones`
+     rows, sequence-order first), `getProjectDocuments` (this Project's
+     `project_documents` rows — correctly empty today, matching migration
+     125's own docstring), and `getProjectIntegrationStatus` (this
+     Project's `project_integration_status` rows). Each returns `null`
+     when the Project itself does not exist, so its route can 404 without
+     a lookup of its own. AC-41.1.2.3.
+  2. `vendor/picpeak/backend/src/routes/adminProjects.js` gains five `GET`
+     routes, appended after the existing `GET /:id/timeline` (so no line
+     number earlier ACs' evidence cites against this pinned file shifts —
+     the same reason the write side's `POST /` requires its service
+     inline rather than at the top of the file). Each new route validates
+     `:id` with its own `param('id').isInt`, sits behind the same
+     `router.use(adminAuth)` and the same `events.view` permission this
+     router's other `GET`s already use, requires `projectSetupService`
+     inline, calls its one named read-back function, and 404s when that
+     function returns `null`. AC-41.1.2.3.
+- **Files touched:**
+  - `vendor/picpeak/backend/src/services/projectSetupService.js` —
+    additive — five new exported read-back functions. AC-41.1.2.3.
+  - `vendor/picpeak/backend/src/routes/adminProjects.js` — additive — five
+    new `GET` routes appended after the existing route set. AC-41.1.2.3.
+  - `src/__tests__/us41-ac41.1.2.3-project-setup-read-back-routes.test.ts`
+    — new — proves all five routes are registered after `router.use(adminAuth)`,
+    each gated on `events.view` with its own `param('id').isInt`
+    validation, each delegating to its named `projectSetupService`
+    function with no route-level query, that the router's whole route set
+    is exactly the map's twelve plus these five (a closed enumeration),
+    that the mount path (`server.js`) and permission set are read from
+    source rather than assumed, and that item 4's read-back — the one
+    item with no table of its own — reads exactly the two objects the
+    mechanism map's answer B names and states no third access rule.
+  - `src/__tests__/us41-ac41.1.2.1-project-setup-single-path.test.ts` —
+    amended — its "exports exactly `completeProjectSetup`" assertion
+    (explicitly scoped to AC-41.1.2.3 in its own comment) now asserts the
+    six-function export set this deviation produces.
+  - `src/__tests__/us41-ac41.1.2.2-project-setup-mapped-mechanisms.test.ts`
+    — amended — item 7's "not referenced by projectSetupService.js at
+    all" assertion is replaced with "referenced through a SELECT only,
+    still no insert", since this deviation gives item 7 a read-back.
+  - `TEST_LANE_INVENTORY.json` / `TEST_LANE_CLASSIFICATION.md` — the new
+    suite registered as UNIT (261 total, 230 unit).
+- **Evidence:** the new test file above. Live read-back behaviour against
+  a running stack is AC-41.1.3's lane, not this deviation's — five of that
+  AC's ten live assertions have no read-back at all without these five
+  routes, so this AC closes before that one runs.
+
+---
+
+## 2026-09-05 — `deviation`
+
 **Creating a Project through `POST /api/admin/projects` now runs one shared
 setup path for the other nine items PRD 22.3 names, instead of only
 inserting the `projects` row.** `PROJECT_SETUP_MECHANISM_MAP.md` (US-41

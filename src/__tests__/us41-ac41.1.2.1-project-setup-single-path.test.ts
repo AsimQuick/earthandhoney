@@ -22,15 +22,18 @@
  *             use it.
  *          3. Structural assertions on `projectSetupService.js` (never
  *             `require()`-d directly here — it requires `../database/db`,
- *             like every other DB-backed service in this fork): it
- *             exports exactly `completeProjectSetup`, never inserts into
- *             `projects` itself, builds every write through the pure
- *             rules module, appends the timeline entry through the one
- *             shared service using the new entry type, writes the media
- *             marker through the storage abstraction (never a raw
- *             `fs.mkdir`), and rejects a caller supplying neither
- *             `customerAccountId` nor `primaryContactEmail` with a
- *             `ValidationError`.
+ *             like every other DB-backed service in this fork): its write
+ *             side never inserts into `projects` itself, builds every
+ *             write through the pure rules module, appends the timeline
+ *             entry through the one shared service using the new entry
+ *             type, writes the media marker through the storage
+ *             abstraction (never a raw `fs.mkdir`), and rejects a caller
+ *             supplying neither `customerAccountId` nor
+ *             `primaryContactEmail` with a `ValidationError`. The exports
+ *             assertion itself was updated by AC-41.1.2.3, which added
+ *             this module's five read-back functions alongside
+ *             `completeProjectSetup` — see that AC's own suite for the
+ *             read-back functions' own structural proof.
  *          4. Source-level assertions against the real
  *             `routes/adminProjects.js`: `POST /` validates the one new
  *             `primaryContactEmail` field, requires
@@ -51,6 +54,9 @@
  * created-by: dev-team
  * related-story: US-41
  * related-ac: 41.1.2.1
+ * updated-by: dev-team
+ * related-story: US-41
+ * related-ac: 41.1.2.3
  * ---
  */
 import fs from 'fs'
@@ -168,13 +174,10 @@ describe('AC-41.1.2.1: projectSetupService.js is structurally correct (not requi
     expect(src).toContain("require('../database/db')")
   })
 
-  it('exports exactly one entry point, completeProjectSetup — no read-back function (that is AC-41.1.2.3\'s scope)', () => {
-    expect(src).toMatch(/module\.exports = \{\s*completeProjectSetup,?\s*\}/)
-    expect(src).not.toContain('getProjectMediaAreaStatus')
-    expect(src).not.toContain('getProjectRoomAccessStatus')
-    expect(src).not.toContain('getProjectMilestones')
-    expect(src).not.toContain('getProjectDocuments')
-    expect(src).not.toContain('getProjectIntegrationStatuses')
+  it('exports completeProjectSetup plus AC-41.1.2.3\'s five read-back functions, and nothing else', () => {
+    expect(src).toMatch(
+      /module\.exports = \{\s*completeProjectSetup,\s*getProjectMediaAreaStatus,\s*getProjectRoomAccessStatus,\s*getProjectMilestones,\s*getProjectDocuments,\s*getProjectIntegrationStatus,?\s*\}/,
+    )
   })
 
   it('never inserts into projects itself — item 1 stays projectService.createProject\'s own insert', () => {

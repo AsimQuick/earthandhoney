@@ -78,9 +78,26 @@
  *
  *          Whether the writes below belong in one transaction is
  *          AC-41.4's question, not this AC's.
+ *
+ *          US-41 AC-41.1.2.3 adds this module's other half: one read-back
+ *          function per item the mechanism map's question 12 recorded as
+ *          having no read-back route at all — media area (item 3), Project
+ *          Room access (item 4), the milestone list (item 5), the
+ *          document area (item 7) and the integration status (item 9).
+ *          `routes/adminProjects.js` adds one `GET` per function
+ *          (`/:id/media-area`, `/:id/room-access`, `/:id/milestones`,
+ *          `/:id/documents`, `/:id/integration-status`), each reading
+ *          through its named function here and never through a query of
+ *          its own — the same single-authority shape as the write side,
+ *          now proven for reads too. Each function returns `null` when the
+ *          Project itself does not exist, so the route can 404 without a
+ *          lookup of its own.
  * created-by: dev-team
  * related-story: US-41
  * related-ac: 41.1.2.1
+ * updated-by: dev-team
+ * related-story: US-41
+ * related-ac: 41.1.2.3
  * ---
  */
 
@@ -100,7 +117,9 @@ const { ValidationError, ConflictError } = require('../utils/errors');
 
 const PROJECT_MILESTONES_TABLE = 'project_milestones';
 const PROJECT_INTEGRATION_STATUS_TABLE = 'project_integration_status';
+const PROJECT_DOCUMENTS_TABLE = 'project_documents';
 const CUSTOMER_ACCOUNTS_TABLE = 'customer_accounts';
+const CUSTOMER_INVITATIONS_TABLE = 'customer_invitations';
 
 /**
  * PRD 22.3 item 2. An explicit existing `customerAccountId`, or — only
@@ -231,6 +250,102 @@ async function completeProjectSetup(project, { customerAccountId = null, primary
   );
 }
 
+/**
+ * AC-41.1.2.3 read-back, item 3: whether the zero-byte media-area marker
+ * `ensureProjectMediaArea` writes actually exists, checked through the same
+ * storage abstraction's own `exists()` — never a raw filesystem check.
+ * Returns `null` when the Project itself does not exist.
+ */
+async function getProjectMediaAreaStatus(projectId) {
+  const project = await projectService.getProjectById(projectId);
+  if (!project) return null;
+  const key = projectMediaFolderKey(projectId);
+  const exists = await getStorage().exists(key);
+  return { projectId, key, exists };
+}
+
+/**
+ * AC-41.1.2.3 read-back, item 4: this Project's resolved client's access
+ * state. Per PROJECT_SETUP_MECHANISM_MAP.md's answer B there is no
+ * dedicated per-Project access table — access resolves to whichever of
+ * item 2's own objects lets the client authenticate: an active
+ * `customer_accounts` login, or a still-open (not yet accepted)
+ * `customer_invitations` row — the map's own wording for this item, kept
+ * literally, so this read-back states no access rule the map did not
+ * record. Returns `null` when the Project itself does not exist.
+ */
+async function getProjectRoomAccessStatus(projectId) {
+  const project = await projectService.getProjectById(projectId);
+  if (!project) return null;
+  if (!project.customerAccountId) {
+    return { projectId, customerAccountId: null, hasActiveAccount: false, invitationPending: false };
+  }
+
+  const account = await db(CUSTOMER_ACCOUNTS_TABLE).where({ id: project.customerAccountId }).first();
+  const hasActiveAccount = !!(account && account.password_hash);
+  let invitationPending = false;
+  if (!hasActiveAccount && account) {
+    const pending = await db(CUSTOMER_INVITATIONS_TABLE).where({ email: account.email }).whereNull('accepted_at').first();
+    invitationPending = !!pending;
+  }
+  return { projectId, customerAccountId: project.customerAccountId, hasActiveAccount, invitationPending };
+}
+
+/**
+ * AC-41.1.2.3 read-back, item 5's milestone list: this Project's own
+ * cloned `project_milestones` rows (never the `project_id IS NULL`
+ * templates), sequence-order first. Returns `null` when the Project
+ * itself does not exist.
+ */
+async function getProjectMilestones(projectId) {
+  const project = await projectService.getProjectById(projectId);
+  if (!project) return null;
+  const milestones = await db(PROJECT_MILESTONES_TABLE)
+    .where({ project_id: projectId })
+    .select('milestone_key', 'name', 'sequence_order', 'completion_state', 'completed_at', 'completed_by')
+    .orderBy('sequence_order', 'asc');
+  return { projectId, milestones };
+}
+
+/**
+ * AC-41.1.2.3 read-back, item 7: this Project's `project_documents` rows.
+ * Migration 125 records this table as additive and carrying no data of
+ * its own yet, so a correctly-empty array is the expected answer for
+ * every Project today — the same well-defined empty result the map's item
+ * 7 already described. Returns `null` when the Project itself does not
+ * exist.
+ */
+async function getProjectDocuments(projectId) {
+  const project = await projectService.getProjectById(projectId);
+  if (!project) return null;
+  const documents = await db(PROJECT_DOCUMENTS_TABLE)
+    .where({ project_id: projectId })
+    .select('id', 'document_type', 'title', 'storage_key', 'external_reference', 'created_at', 'updated_at')
+    .orderBy('created_at', 'asc');
+  return { projectId, documents };
+}
+
+/**
+ * AC-41.1.2.3 read-back, item 9: this Project's `project_integration_status`
+ * rows — today, exactly the one 'financial_placeholder' row
+ * `recordFinancialPlaceholder` writes. Returns `null` when the Project
+ * itself does not exist.
+ */
+async function getProjectIntegrationStatus(projectId) {
+  const project = await projectService.getProjectById(projectId);
+  if (!project) return null;
+  const integrations = await db(PROJECT_INTEGRATION_STATUS_TABLE)
+    .where({ project_id: projectId })
+    .select('integration_key', 'status', 'message', 'occurred_at', 'created_at', 'updated_at')
+    .orderBy('occurred_at', 'asc');
+  return { projectId, integrations };
+}
+
 module.exports = {
   completeProjectSetup,
+  getProjectMediaAreaStatus,
+  getProjectRoomAccessStatus,
+  getProjectMilestones,
+  getProjectDocuments,
+  getProjectIntegrationStatus,
 };

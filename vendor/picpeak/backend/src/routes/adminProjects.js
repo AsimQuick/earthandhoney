@@ -287,4 +287,56 @@ router.get('/:id/timeline', requirePermission('events.view'), [param('id').isInt
   return successResponse(res, { projectId, entries });
 }));
 
+// Read-back routes (US-41 AC-41.1.2.3) — PROJECT_SETUP_MECHANISM_MAP.md's
+// question 12 recorded exactly five of PRD 22.3's ten setup items (3, 4,
+// 5's milestone list, 7 and 9) with no read-back route of any kind at the
+// pinned commit; these five close that gap, one GET per item, same mount
+// (/api/admin/projects), same router.use(adminAuth) and same
+// events.view this router's other GETs already use — no new permission,
+// no new mount. Each delegates to its own named function on
+// projectSetupService (AC-41.1.2.1's single setup path) and never builds
+// a query of its own, so the single-authority shape holds for the reads
+// as well as for the write. Required inline, matching this file's
+// established pattern for a repeatedly-required service (see
+// `GET /:id/next-action` above), so nothing above this point shifts.
+router.get('/:id/media-area', requirePermission('events.view'), [param('id').isInt({ min: 1 })], handleAsync(async (req, res) => {
+  validateRequest(req);
+  const projectSetupService = require('../services/projectSetupService');
+  const status = await projectSetupService.getProjectMediaAreaStatus(parseInt(req.params.id, 10));
+  if (!status) return res.status(404).json({ error: 'Project not found' });
+  return successResponse(res, status);
+}));
+
+router.get('/:id/room-access', requirePermission('events.view'), [param('id').isInt({ min: 1 })], handleAsync(async (req, res) => {
+  validateRequest(req);
+  const projectSetupService = require('../services/projectSetupService');
+  const status = await projectSetupService.getProjectRoomAccessStatus(parseInt(req.params.id, 10));
+  if (!status) return res.status(404).json({ error: 'Project not found' });
+  return successResponse(res, status);
+}));
+
+router.get('/:id/milestones', requirePermission('events.view'), [param('id').isInt({ min: 1 })], handleAsync(async (req, res) => {
+  validateRequest(req);
+  const projectSetupService = require('../services/projectSetupService');
+  const result = await projectSetupService.getProjectMilestones(parseInt(req.params.id, 10));
+  if (!result) return res.status(404).json({ error: 'Project not found' });
+  return successResponse(res, result);
+}));
+
+router.get('/:id/documents', requirePermission('events.view'), [param('id').isInt({ min: 1 })], handleAsync(async (req, res) => {
+  validateRequest(req);
+  const projectSetupService = require('../services/projectSetupService');
+  const result = await projectSetupService.getProjectDocuments(parseInt(req.params.id, 10));
+  if (!result) return res.status(404).json({ error: 'Project not found' });
+  return successResponse(res, result);
+}));
+
+router.get('/:id/integration-status', requirePermission('events.view'), [param('id').isInt({ min: 1 })], handleAsync(async (req, res) => {
+  validateRequest(req);
+  const projectSetupService = require('../services/projectSetupService');
+  const result = await projectSetupService.getProjectIntegrationStatus(parseInt(req.params.id, 10));
+  if (!result) return res.status(404).json({ error: 'Project not found' });
+  return successResponse(res, result);
+}));
+
 module.exports = router;
