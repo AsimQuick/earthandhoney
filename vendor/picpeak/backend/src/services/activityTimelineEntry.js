@@ -14,19 +14,32 @@
  *          shape AC-39.3.2 proved for the next action").
  *          `activityTimelineService.js` owns the database insert/select
  *          this file's inputs/outputs feed.
+ *
+ *          US-41 AC-41.1.2.1 adds the fourth `ENTRY_TYPES` member,
+ *          `PROJECT_CREATED`, acting on PROJECT_SETUP_MECHANISM_MAP.md's
+ *          item 10 finding: automatic Project setup's own timeline entry
+ *          has no entry type to append with until this member exists, and
+ *          referencing one that does not exist would silently insert
+ *          `undefined` into `entry_type`. `projectSetupService.js` is its
+ *          only caller.
  * created-by: dev-team
  * related-story: US-39
  * related-ac: 39.6.2
+ * updated-by: dev-team
+ * related-story: US-41
+ * related-ac: 41.1.2.1
  * ---
  */
 
 // Stable machine-readable entry_type values, one per call site AC-39.6.2
-// wires into the shared append function — a single authority so a typo'd
-// literal string can never silently create a fourth, unrecognised kind.
+// (and, for PROJECT_CREATED, AC-41.1.2.1) wires into the shared append
+// function — a single authority so a typo'd literal string can never
+// silently create a fifth, unrecognised kind.
 const ENTRY_TYPES = {
   PHASE_CHANGE: 'phase_change',
   MILESTONE_COMPLETED: 'milestone_completed',
   NEXT_ACTION_OVERRIDE_SET: 'next_action_override_set',
+  PROJECT_CREATED: 'project_created',
 };
 
 /**

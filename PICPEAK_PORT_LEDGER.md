@@ -351,3 +351,34 @@ No migration is added by this AC and no vendored route is touched —
 
 - **Recorded:** 2026-08-16
 - **Recorded by:** dev-team (US-40, AC-40.5)
+
+## 14. US-41 AC-41.1.2.1 — the single automatic-Project-setup path, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-09-05` in `FORK_CHANGELOG.md` (US-41 AC-41.1.2.1: one shared
+`projectSetupService` performs the setup for all ten items PRD 22.3 names,
+and `POST /api/admin/projects` calls it — one create call, one setup path).
+See that changelog entry for the full description of what changed and why,
+and `PROJECT_SETUP_MECHANISM_MAP.md` (AC-41.1.1) for the per-item mechanism
+each of the ten was mapped to against the pinned commit.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/src/services/projectSetupRules.js` | new — the pure shapes setup's writes are built from (`projectMediaFolderKey`, `cloneMilestoneTemplateRows`, `buildFinancialPlaceholderRow`, `describeProjectCreated`); requires nothing, unit-testable without Docker. US-41 AC-41.1.2.1. |
+| `vendor/picpeak/backend/src/services/projectSetupService.js` | new — `completeProjectSetup(project, request, actor)`, the one DB- and storage-backed entry point covering PRD 22.3's items 2, 3, 4, 5's milestone half, 9 and 10; never creates the Project itself (item 1 stays `projectService.createProject`'s insert) and adds no read-back function (AC-41.1.2.3's scope). US-41 AC-41.1.2.1. |
+| `vendor/picpeak/backend/src/services/activityTimelineEntry.js` | additive — fourth `ENTRY_TYPES` member, `PROJECT_CREATED: 'project_created'`, the source edit the map's item 10 recorded as required before any append call could reference it without silently inserting `undefined`. US-41 AC-41.1.2.1. |
+| `vendor/picpeak/backend/src/routes/adminProjects.js` | additive, **zero net lines** — `POST /` validates one new optional body field (`primaryContactEmail`), requires `projectSetupService` inline, calls `completeProjectSetup` once immediately after `createProject` with `req.admin` as the actor, and re-reads the Project for the 201 response. Packed to zero added lines so the line numbers `PIVOT_AUDIT.md` and the US-17 suites cite against this file do not shift. US-41 AC-41.1.2.1. |
+| `src/__tests__/us41-ac41.1.2.1-project-setup-single-path.test.ts` | new — drives the pure rules module directly (no requires, no database), asserts `ENTRY_TYPES` now carries the fourth member, asserts `projectSetupService.js`'s structure without `require()`-ing it, asserts the create handler's wiring from source, and proves `completeProjectSetup` has exactly one call site anywhere under the fork backend's `src/`. |
+| `src/__tests__/us39-ac39.6.2-shared-activity-timeline.test.ts` | amended — AC-39.6.2's exhaustive `ENTRY_TYPES` equality assertion now also names `PROJECT_CREATED`. |
+| `TEST_LANE_INVENTORY.json`, `TEST_LANE_CLASSIFICATION.md` | the new suite registered as UNIT (259 total, 228 unit, 31 live). |
+
+No migration is added by this AC — `project_milestones` (124),
+`project_documents`/`project_integration_status` (125) and
+`project_activity_timeline` (128) already exist — so
+`src/lib/picpeakMigrationManifest.ts` is untouched and its SHA-1 integrity
+test is unaffected. `adminProjects.js` and `activityTimelineEntry.js` are
+pre-existing files each already amended by earlier stories; this AC's
+changes to both are purely additive, per Fork Discipline.
+
+- **Recorded:** 2026-09-05
+- **Recorded by:** dev-team (US-41, AC-41.1.2.1)

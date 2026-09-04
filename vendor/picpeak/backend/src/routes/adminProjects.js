@@ -27,17 +27,17 @@ router.get('/', requirePermission('events.view'), handleAsync(async (req, res) =
   return successResponse(res, { projects });
 }));
 
-// Create
+// Create — US-41 AC-41.1.2.1: one create call, one setup path. `createProject` still owns PRD 22.3's item 1 (the `projects` insert); `projectSetupService.completeProjectSetup` is the single shared path for the other nine, called once immediately after it with `req.admin` as the actor — see PROJECT_SETUP_MECHANISM_MAP.md and that service's own header. Required inline, and this block packed to zero added lines, so no line number earlier ACs' evidence cites against this pinned file shifts — the same reason `GET /:id/next-action` below requires its services inline rather than at the top of the file.
 router.post('/',
   requirePermission('events.manage'),
-  [body('name').isString().trim().isLength({ min: 1, max: 255 }), body('customerAccountId').optional({ values: 'falsy' }).isInt({ min: 1 })],
+  [body('name').isString().trim().isLength({ min: 1, max: 255 }), body('customerAccountId').optional({ values: 'falsy' }).isInt({ min: 1 }), body('primaryContactEmail').optional({ values: 'falsy' }).isEmail()],
   handleAsync(async (req, res) => {
     validateRequest(req);
-    const project = await projectService.createProject(
-      { name: req.body.name, customerAccountId: req.body.customerAccountId || null },
-      req.admin.id,
-    );
-    return successResponse(res, { project }, 201, 'Project created');
+    const projectSetupService = require('../services/projectSetupService');
+    const project = await projectService.createProject({ name: req.body.name, customerAccountId: req.body.customerAccountId || null }, req.admin.id);
+    await projectSetupService.completeProjectSetup(project, { customerAccountId: req.body.customerAccountId || null, primaryContactEmail: req.body.primaryContactEmail || null }, { adminId: req.admin.id, adminName: req.admin.username });
+    const created = await projectService.getProjectById(project.id);
+    return successResponse(res, { project: created }, 201, 'Project created');
   }),
 );
 

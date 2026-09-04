@@ -36,6 +36,97 @@ sync time for a permanent, project-specific deviation.
 
 ---
 
+## 2026-09-05 — `deviation`
+
+**Creating a Project through `POST /api/admin/projects` now runs one shared
+setup path for the other nine items PRD 22.3 names, instead of only
+inserting the `projects` row.** `PROJECT_SETUP_MECHANISM_MAP.md` (US-41
+AC-41.1.1) established, item by item and against this pinned commit, which
+existing fork mechanism satisfies each of PRD 22.3's ten automatic-setup
+items, and recorded that item 1 — `projectService.createProject`'s own
+insert — was the whole of what a create did. AC-41.1.2.1 wires the rest in:
+one entry point, `projectSetupService.completeProjectSetup`, that the
+create handler calls once, immediately after `createProject` — one create
+call, one setup path, not ten call sites that happen to agree, the same
+single-authority shape AC-39.3.2 established for the next-action
+computation and AC-39.6.2 for the activity timeline.
+
+- **Type:** additive deviation — two new service files, one new
+  `ENTRY_TYPES` member, and the existing `POST /` handler extended. No
+  migration is added and no already-shipped migration is touched.
+- **What changed:**
+  1. New `vendor/picpeak/backend/src/services/projectSetupRules.js` — the
+     pure half: the deterministic media-area marker key, the shape of a
+     cloned milestone row, the shape of the financial-placeholder row, and
+     the timeline summary text. It requires nothing, so it is unit-testable
+     without Docker, the same pure/DB-backed split `nextActionRules.js` and
+     `activityTimelineEntry.js` established. AC-41.1.2.1.
+  2. New `vendor/picpeak/backend/src/services/projectSetupService.js` —
+     `completeProjectSetup(project, request, actor)`, the one DB- and
+     storage-backed entry point, covering the map's items 2 (client
+     relationship, through `customerAccountsService` and
+     `projectService.updateProject`), 3 (media area, through
+     `getStorage().put()` only — never the raw `fs.mkdir` that causes
+     F6/F7's EACCES in Gallery-create), 4 (Project Room access, reusing
+     `customerAccountsService.createInvitation` including its own duplicate
+     guard, and with it item 8's merge context via the email queue's own
+     `queueEmail`), 5's milestone half (cloning migration 124's eighteen
+     `project_id IS NULL` template rows), 9 (one migration-125
+     `project_integration_status` placeholder row naming no external
+     system) and 10 (one timeline entry through the shared
+     `activityTimelineService`). Items 1, 6, 7 and 8 need no code of their
+     own, for the structural reasons the map gives under each.
+     AC-41.1.2.1.
+  3. `vendor/picpeak/backend/src/services/activityTimelineEntry.js` gains a
+     fourth `ENTRY_TYPES` member, `PROJECT_CREATED: 'project_created'`.
+     The map's item 10 recorded that the enum held exactly three members,
+     so an append call referencing `ENTRY_TYPES.PROJECT_CREATED` would
+     evaluate to `undefined` and silently insert that; the member is added
+     in that one file, matching its own stated reason for the enum, before
+     any call site uses it. AC-41.1.2.1.
+  4. `vendor/picpeak/backend/src/routes/adminProjects.js`'s `POST /`
+     handler requires the one setup module inline, validates exactly one
+     new optional body field (`primaryContactEmail`, alongside the existing
+     `name`/`customerAccountId` pair), calls `completeProjectSetup` once
+     after `createProject` passing `req.admin` as the actor, and re-reads
+     the Project so the 201 response reflects a client relationship setup
+     assigned. A create supplying neither `customerAccountId` nor
+     `primaryContactEmail` is rejected by the setup path with a
+     `ValidationError`, rather than producing a Project that fails item 2.
+     The block is deliberately packed to **zero added lines**, and requires
+     its service inline, so no line number `PIVOT_AUDIT.md` or the US-17
+     suites cite against this pinned file shifts — the same reason
+     `GET /:id/next-action` gives for its own inline requires.
+     AC-41.1.2.1.
+- **Files touched:**
+  - `vendor/picpeak/backend/src/services/projectSetupRules.js` — new — the
+    pure shapes; requires nothing. AC-41.1.2.1.
+  - `vendor/picpeak/backend/src/services/projectSetupService.js` — new —
+    the single `completeProjectSetup` entry point. AC-41.1.2.1.
+  - `vendor/picpeak/backend/src/services/activityTimelineEntry.js` —
+    additive — fourth `ENTRY_TYPES` member, `PROJECT_CREATED`.
+    AC-41.1.2.1.
+  - `vendor/picpeak/backend/src/routes/adminProjects.js` — additive, zero
+    net lines — `POST /` validates `primaryContactEmail` and calls the one
+    setup path. AC-41.1.2.1.
+  - `src/__tests__/us41-ac41.1.2.1-project-setup-single-path.test.ts` —
+    new — drives the pure rules module directly and asserts from source
+    that the create handler calls the one setup path exactly once, after
+    `createProject`, with `req.admin` as the actor, and that it is that
+    function's only call site anywhere under the fork backend's `src/`.
+  - `src/__tests__/us39-ac39.6.2-shared-activity-timeline.test.ts` —
+    amended — AC-39.6.2's exhaustive `ENTRY_TYPES` assertion now also
+    names the fourth member this deviation adds.
+  - `TEST_LANE_INVENTORY.json` / `TEST_LANE_CLASSIFICATION.md` — the new
+    suite registered as UNIT (259 total, 228 unit).
+- **Evidence:** the new test file above. Behaviour against a running stack
+  is AC-41.1.3's live lane, not this deviation's; this one is proven
+  structurally, because `projectSetupService.js` requires
+  `../database/db` and is therefore never `require()`-d in a unit suite,
+  matching every other DB-backed service in this fork.
+
+---
+
 ## 2026-08-16 — `deviation`
 
 **The fork's backend now has its own read of PRD 23.3's five status states,

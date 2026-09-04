@@ -1,10 +1,10 @@
 {
   "$schema": "committed test-lane classification for US-30 AC-30.1",
   "generatedFor": "US-30 AC-30.1",
-  "totalSuites": 258,
+  "totalSuites": 259,
   "counts": {
     "live": 31,
-    "unit": 227
+    "unit": 228
   },
   "mechanism": {
     "chosen": "jest-projects",
@@ -1313,6 +1313,11 @@
       "path": "src/__tests__/us40-ac40.5-status-vocabulary-single-definition.test.ts",
       "lane": "UNIT",
       "reason": "reads local repository files (src/lib/statusVocabulary.ts, exports/design-tokens/status-vocabulary.json, StatusBadge.tsx, the fork's statusVocabulary.js) and repository-scans src/scripts/vendor/exports for a duplicate definition; requires the pure fork module directly; no network/db"
+    },
+    {
+      "path": "src/__tests__/us41-ac41.1.2.1-project-setup-single-path.test.ts",
+      "lane": "UNIT",
+      "reason": "drives the pure vendor/picpeak/backend/src/services/projectSetupRules.js directly (it requires nothing) and otherwise reads local repository files \u2014 projectSetupService.js, routes/adminProjects.js, activityTimelineEntry.js and every .js under the fork backend's src/ \u2014 asserting on their text content; the DB-backed projectSetupService.js is never require()-d, so no network/db"
     }
   ]
 }

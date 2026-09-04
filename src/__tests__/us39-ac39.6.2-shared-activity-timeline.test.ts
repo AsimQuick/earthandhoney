@@ -104,11 +104,12 @@ const rules = require(RULES_PATH) as {
 }
 
 describe('AC-39.6.2: activityTimelineEntry.js — the appended entry\'s shape', () => {
-  it('ENTRY_TYPES names exactly the three kinds the three call sites use', () => {
+  it('ENTRY_TYPES names exactly the three kinds this AC\'s three call sites use, plus AC-41.1.2.1\'s later PROJECT_CREATED addition', () => {
     expect(entry.ENTRY_TYPES).toEqual({
       PHASE_CHANGE: 'phase_change',
       MILESTONE_COMPLETED: 'milestone_completed',
       NEXT_ACTION_OVERRIDE_SET: 'next_action_override_set',
+      PROJECT_CREATED: 'project_created',
     })
   })
 
