@@ -8,12 +8,12 @@ purpose: AC-41.1.1 — maps the mechanism behind each of PRD 22.3's ten
          NEXT_ACTION_CROSS_SURFACE_MAP.md established. Answers a closed
          list of twelve questions; every answer carries a file and line
          from the pinned commit, never a claim from PRD prose or from the
-         uncommitted projectSetupService.js draft left in this working
-         tree by an earlier, out-of-sequence AC-41.1 attempt (that file's
-         own claims are treated here as a hypothesis to verify, not as a
-         source). It ships no service, no route and no behaviour — a
-         mechanism found missing or broken here is recorded as a finding,
-         not silently patched or worked around.
+         projectSetupService.js draft an earlier, out-of-sequence AC-41.1
+         attempt wrote (that file's own claims are treated here as a
+         hypothesis to verify, not as a source, regardless of its own
+         commit status on this branch). It ships no service, no route and
+         no behaviour — a mechanism found missing or broken here is
+         recorded as a finding, not silently patched or worked around.
 created-by: dev-team
 related-story: US-41
 related-ac: 41.1.1
@@ -34,20 +34,24 @@ directly against the live `earthandhoney-backstage-backend-1` container —
 never inferred from a comment, this file's own prose, PRD wording, or
 another document's summary.
 
-**A note on the untracked files already in this working tree.** Three
-untracked files exist on disk that this map does not use as evidence and
-does not touch: `vendor/picpeak/backend/src/services/projectSetupService.js`
-and its two companion test files
-(`src/__tests__/us41-ac41.1-project-setup-service.test.ts`,
-`src/__tests__/us41-ac41.1-project-setup-live-proof.test.ts`). They are an
-earlier, uncommitted, out-of-sequence attempt at the full AC-41.1 live
-create — written before this mapping AC existed, the same situation
+**A note on the projectSetupService.js draft.** Three files —
+`vendor/picpeak/backend/src/services/projectSetupService.js` and its two
+companion test files (`src/__tests__/us41-ac41.1-project-setup-service.test.ts`,
+`src/__tests__/us41-ac41.1-project-setup-live-proof.test.ts`) — are an
+earlier, out-of-sequence attempt at the full AC-41.1 live create, written
+before this mapping AC existed — the same situation
 `NEXT_ACTION_CROSS_SURFACE_MAP.md`'s own "operational hazard" section and
 commit `0f914eb` record for the analogous AC-39.3 → AC-39.3.1 split. They
-are left untouched, out of this AC's scope, exactly as `0f914eb` treated
-the equivalent `nextActionRules.js`/`nextActionService.js` pair. Several of
-this draft's own in-file claims turned out to be useful leads and are
-verified independently below; one — `ENTRY_TYPES.PROJECT_CREATED`
+were uncommitted in this working tree at the moment this map was first
+written and verified; a later follow-up commit on this branch (`e18fb64`,
+"dev agent did not commit") has since swept them into git history without
+this map's review. That commit does not make AC-41.1 done, and does not
+change this map's own treatment of the draft: it remains unused as
+evidence and untouched by this document, out of this AC's scope, exactly
+as `0f914eb` treated the equivalent
+`nextActionRules.js`/`nextActionService.js` pair. Several of this draft's
+own in-file claims turned out to be useful leads and are verified
+independently below; one — `ENTRY_TYPES.PROJECT_CREATED`
 (`projectSetupService.js:238`) — is verified **wrong**: see item 10.
 
 ## PRD 22.3's ten items, in the PRD's own order
@@ -162,7 +166,7 @@ legitimately insert a row for it — it doesn't have one to insert into.
 scoped by `project_id`, cascade-deleted with the Project. No service reads
 or writes it yet (confirmed: no `project_documents` reference anywhere
 under `vendor/picpeak/backend/src/routes/` or `src/services/` other than
-the untracked draft's `getProjectDocuments` helper, which itself performs
+the draft's `getProjectDocuments` helper, which itself performs
 only a `SELECT`).
 **(b) ADDRESSABLE only.** The migration's own docstring says so directly:
 "Both tables are additive and carry no data of their own yet" (migration
@@ -226,8 +230,8 @@ convention is `ENTRY_TYPES`
 (`vendor/picpeak/backend/src/services/activityTimelineEntry.js:26-30`),
 which at the pinned commit holds exactly three members —
 `PHASE_CHANGE`, `MILESTONE_COMPLETED`, `NEXT_ACTION_OVERRIDE_SET` — and no
-fourth entry for "a Project was created." **This is where the untracked
-draft is verified wrong**: `projectSetupService.js:238-241` calls
+fourth entry for "a Project was created." **This is where the draft is
+verified wrong**: `projectSetupService.js:238-241` calls
 `activityTimelineService.appendActivityTimelineEntry(..., ENTRY_TYPES
 .PROJECT_CREATED, ...)`, but `ENTRY_TYPES.PROJECT_CREATED` does not exist
 in the committed `activityTimelineEntry.js` — that expression evaluates to
@@ -475,10 +479,12 @@ never a parallel renderer.
   status, and — separately — a Project Room-side equivalent of any of
   these). Building them is whichever AC actually needs them to prove a
   live create, not this one.
-- **The three untracked draft files' correctness beyond the one claim
-  checked (item 10's `ENTRY_TYPES.PROJECT_CREATED`).** They were read as a
-  source of leads, not verified line-by-line, and remain untouched,
-  uncommitted, and out of scope.
+- **The three projectSetupService.js draft files' correctness beyond the
+  one claim checked (item 10's `ENTRY_TYPES.PROJECT_CREATED`).** They were
+  read as a source of leads, not verified line-by-line, and remain
+  untouched by this map and out of its scope — their later, out-of-sequence
+  commit to this branch (`e18fb64`) does not constitute AC-41.1 being
+  implemented or reviewed.
 - **Fixing F6/F7 at the source level** (removing Gallery-create's local-fs
   fallback in `adminEvents.js`). Recorded as reproduced and explained
   above; `po-requests.md`'s existing disposition for F6/F7 (schedule fork
