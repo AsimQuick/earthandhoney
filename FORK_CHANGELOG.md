@@ -38,6 +38,59 @@ sync time for a permanent, project-specific deviation.
 
 ## 2026-09-05 — `deviation`
 
+**One new assignment path explicitly assigns the operational Client to a
+Gallery, per upstream finding F1 and `GALLERY_CLIENT_ASSIGNMENT_MAP.md`
+(AC-41.2.1).** That map found the Gallery-to-Client link is never inherited
+at the pinned commit (F1) and that `PUT /api/admin/events/:id` 500s when
+`customer_account_ids` is the only field a request carries (F2), because the
+handler deletes that field before its own `db('events').update(updates)`
+call and Knex throws synchronously on an empty update object. Two new files
+add the one assignment path this AC scopes: `galleryClientAssignmentRules.js`
+builds the request-body shape the map's answer 4 named —
+`customer_account_ids` always paired with `event_name`, the map's own
+named cleanest genuine no-op passthrough — so F2's bare shape is
+unreachable by construction, never guarded by a retry.
+`galleryClientAssignmentService.js` asserts the map's answer 5
+`customerPortal` feature-flag precondition explicitly and throws rather than
+inheriting the existing routes' silent `200` when it is off (this
+deployment's flag is currently off, per the map's own live probe), then
+calls `customerAccountsService.setAssignmentsForEvent` — the map's answer 6
+mechanism — never a direct insert of its own into
+`event_customer_assignments`. US-41 AC-41.2.2.
+
+- **Type:** additive deviation — two new service files, no existing file
+  changed, no new route, no new permission, no new mount, no client-facing
+  surface. Not an upstream-bug workaround in itself (F1/F2 are recorded
+  findings, not patched here) so `UPSTREAM_SYNC.md` §4 does not apply.
+- **What changed:**
+  1. `vendor/picpeak/backend/src/services/galleryClientAssignmentRules.js`
+     — new, pure, no requires — `buildGalleryClientAssignmentRequestBody`.
+     US-41 AC-41.2.2.
+  2. `vendor/picpeak/backend/src/services/galleryClientAssignmentService.js`
+     — new — `assignClientToGallery`, the one assignment path: the
+     feature-flag precondition, the event lookup, and the one call to
+     `customerAccountsService.setAssignmentsForEvent`. US-41 AC-41.2.2.
+- **Files touched:** the two files above.
+- **Evidence:**
+  `src/__tests__/us41-ac41.2.2-gallery-client-assignment-shape.test.ts` —
+  the pure rules module driven directly (the shape always carries exactly
+  `customer_account_ids` and `event_name`, never F2's bare shape, for every
+  input tried); source-level assertions that the service asserts the
+  feature-flag precondition and throws, builds its body through the rules
+  module, calls `setAssignmentsForEvent`, and never names
+  `event_customer_assignments` in real code; a whole-backend scan proving
+  `setAssignmentsForEvent` gains exactly one NEW call site (this service —
+  the pre-existing `adminEvents.js` and vendored
+  `customerAccountsService.test.js` callers are unchanged); and a guard
+  that neither new file registers a route, a permission or a mount.
+
+- **Recorded:** 2026-09-05
+- **Recorded by:** dev-team (US-41, AC-41.2.2)
+
+---
+
+## 2026-09-05 — `deviation`
+
 **The cockpit router gains five `GET` read-back routes, one per PRD 22.3
 setup item `PROJECT_SETUP_MECHANISM_MAP.md`'s (US-41 AC-41.1.1) question 12
 recorded as having no read-back route of any kind at the pinned commit.**

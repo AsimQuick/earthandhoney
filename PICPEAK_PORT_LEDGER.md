@@ -412,3 +412,28 @@ additive, per Fork Discipline.
 
 - **Recorded:** 2026-09-05
 - **Recorded by:** dev-team (US-41, AC-41.1.2.3)
+
+## 16. US-41 AC-41.2.2 — the Gallery-to-Client assignment path, file paths touched
+
+This section records the file paths touched by the `deviation` entry dated
+`2026-09-05` in `FORK_CHANGELOG.md` (US-41 AC-41.2.2: one assignment path,
+built from `GALLERY_CLIENT_ASSIGNMENT_MAP.md`'s (AC-41.2.1) answers 4, 5 and
+6, that explicitly assigns the operational Client to a Gallery). See that
+changelog entry for the full description of what changed and why.
+
+| File | Change |
+|---|---|
+| `vendor/picpeak/backend/src/services/galleryClientAssignmentRules.js` | new, pure, no requires — `buildGalleryClientAssignmentRequestBody(customerAccountId, currentEventName)`, always pairing `customer_account_ids` with `event_name` per the map's answer 4, so F2's bare-shape 500 is unreachable by construction. US-41 AC-41.2.2. |
+| `vendor/picpeak/backend/src/services/galleryClientAssignmentService.js` | new — `assignClientToGallery(eventId, customerAccountId, adminId)`: asserts the map's answer 5 `customerPortal` precondition explicitly (throws a 409 `AppError` rather than proceeding when the flag is off), looks up the event, builds the request body via the rules module, then calls `customerAccountsService.setAssignmentsForEvent` — the map's answer 6 mechanism, never a direct insert into `event_customer_assignments`. No new route, no new permission, no new mount. US-41 AC-41.2.2. |
+| `src/__tests__/us41-ac41.2.2-gallery-client-assignment-shape.test.ts` | new — drives the pure rules module directly, asserts the service's structure (flag precondition, rules-module use, the one `setAssignmentsForEvent` call, no `event_customer_assignments` literal in real code), proves that call is the function's only NEW call site anywhere under `vendor/picpeak/backend/src` (the pre-existing `adminEvents.js` and vendored `customerAccountsService.test.js` callers are unchanged), and guards against any new route/permission/mount. |
+| `TEST_LANE_INVENTORY.json`, `TEST_LANE_CLASSIFICATION.md` | the new suite registered as UNIT (263 total, 231 unit, 32 live). |
+
+No migration is added by this AC — no schema changes at all, only two new
+service files reached through their own explicit call, plus one new
+`AppError` throw. `adminEvents.js`, `customerAccountsService.js` and
+`server.js` are all untouched by this AC. This AC does not enable the
+`customerPortal` feature flag; that remains routed to the Product Owner via
+`GALLERY_CLIENT_ASSIGNMENT_MAP.md`'s own `pending_po_routing` finding.
+
+- **Recorded:** 2026-09-05
+- **Recorded by:** dev-team (US-41, AC-41.2.2)
